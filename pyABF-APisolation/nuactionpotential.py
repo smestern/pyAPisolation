@@ -39,7 +39,7 @@ def thresholdavg(abf, sweep, thresdvdt = 20):
         if j > aploc:
             k = slopey[j]
             apend = int(j + (abf.dataPointsPerMs * 5)) #searches in the next 10ms for the peak
-            apstrt = int(j - (abf.dataPointsPerMs * 5))
+            apstrt = int(j - (abf.dataPointsPerMs * 2))
             if apstrt < 0: 
                         apstrt=0
             aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt
@@ -74,7 +74,8 @@ def appreprocess2(abf, tag = 'default', save = False, plot = False):
         np.nan_to_num(slopey, nan=0, copy=False)
         indexhigher = np.nonzero(np.where(slopey > thresholdsl, 1, 0)) #Returns indices only where the slope is greater than the threshold
         indexhigher = indexhigher[0] #flattens
-        print(indexhigher)
+        p = npconsec(indexhigher)
+        print(p)
         for i in indexhigher:
                if i > (aploc + (abf.dataPointsPerMs * 2)):
                     apstrt = (int(i - (abf.dataPointsPerMs * 5)))
