@@ -28,8 +28,10 @@ for filename in os.listdir(directory):
             print(pyabf.tools.ap.ap_points_currentSweep(abf))
             print(filename + ' import')
             tag = file_path.split('/')
+            tag = tag[(len(tag) - 1)]
+            fileno, void = tag.split('-')
             thresholdavg(abf,0)
-            #appreprocess3(abf, tag[(len(tag) - 1)], False, True)
+            appreprocess(abf, fileno, False, True)
             
 
 plt.show()
