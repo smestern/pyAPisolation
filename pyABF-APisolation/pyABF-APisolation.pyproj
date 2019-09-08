@@ -21,6 +21,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="abfderivative.py" />
     <Compile Include="lib\pyABF\dev\python\2018-06-20 digital waveform.py" />
     <Compile Include="lib\pyABF\dev\python\2018-06-20 sweep measurements.py" />
     <Compile Include="lib\pyABF\dev\python\2018-06-22 32bit abfs.py" />
@@ -155,6 +156,7 @@
     <Compile Include="lib\pyABF\tests\tests\py2and3.py" />
     <Compile Include="lib\pyABF\tests\tests\testHeaders.py" />
     <Compile Include="lib\pyABF\tests\tests\valueChecks.py" />
+    <Compile Include="nuactionpotential.py" />
     <Compile Include="pyABF_APisolation.py" />
   </ItemGroup>
   <ItemGroup>
