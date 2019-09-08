@@ -11,7 +11,8 @@ import random
 
 def derivative(abf, sweepNumber, filter=0):
     abf.setSweep(sweepNumber)
-    pyabf.filter.gaussian(abf,filter,0)
+    if filter > 0:
+        pyabf.filter.gaussian(abf,filter,0)
     
     dy=np.diff(abf.sweepY,1)
     dx=np.diff(abf.sweepX,1)
@@ -24,7 +25,8 @@ def derivative(abf, sweepNumber, filter=0):
 def doublederivative(abf, sweepNumber, filter=0):
     dataY = []
     i2 = abf.sweepPointCount
-    pyabf.filter.gaussian(abf,filter,0)
+    if filter > 0:
+        pyabf.filter.gaussian(abf,filter,0)
     abf.setSweep(sweepNumber)
     dy=np.diff(abf.sweepY,1)
     dx=np.diff(abf.sweepX,1)
@@ -42,7 +44,8 @@ def doublederivative(abf, sweepNumber, filter=0):
 
 def integrate(abf, sweepNumber, filter=0, step=1, xlwllim=0, xupplim=-1):
    i1, i2 = int(((xlwllim * 1000) * abf.dataPointsPerMs)), int(((xupplim * 1000) * abf.dataPointsPerMs))
-   pyabf.filter.gaussian(abf, filter, 0)
+   if filter > 0:
+        pyabf.filter.gaussian(abf,filter,0)
    abf.setSweep(sweepNumber)
    x = abf.sweepX[i1:i2]
    y = abf.sweepY[i1:i2]
@@ -54,7 +57,8 @@ def integrate(abf, sweepNumber, filter=0, step=1, xlwllim=0, xupplim=-1):
 def derivintegrate(abf, sweepNumber, filter=0, step=1):
    dataY2, dataX2 = [],[]
    abf.setSweep(sweepNumber)
-   pyabf.filter.gaussian(abf,filter,0)
+   if filter > 0:
+        pyabf.filter.gaussian(abf,filter,0)
    i1,i2 = 0,1
    lstnum = 0
    dy=np.diff(abf.sweepY,1)

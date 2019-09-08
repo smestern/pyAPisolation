@@ -22,7 +22,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="abfderivative.py" />
-    <Compile Include="find_runs.py" />
     <Compile Include="lib\pyABF\dev\python\2018-06-20 digital waveform.py" />
     <Compile Include="lib\pyABF\dev\python\2018-06-20 sweep measurements.py" />
     <Compile Include="lib\pyABF\dev\python\2018-06-22 32bit abfs.py" />
