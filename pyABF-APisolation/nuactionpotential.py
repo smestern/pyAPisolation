@@ -21,6 +21,9 @@ def apfeaturearray(abf):
     
     return 0
 
+def npconsec(a):
+    index = np.nonzero(np.where(np.ediff1d(a) > 1, 1, 0))
+    return index[0]
 
 def thresholdavg(abf, sweep, thresdvdt = 20):
     abf.setSweep(sweep)
@@ -35,10 +38,13 @@ def thresholdavg(abf, sweep, thresdvdt = 20):
     for j in indexhigher: 
         if j > aploc:
             k = slopey[j]
-            apend = int(j + (abf.dataPointsPerMs * 10)) #searches in the next 10ms for the peak
-            aploc = np.argmax(abf.sweepY[j:apend]) + j
+            apend = int(j + (abf.dataPointsPerMs * 5)) #searches in the next 10ms for the peak
+            apstrt = int(j - (abf.dataPointsPerMs * 5))
+            if apstrt < 0: 
+                        apstrt=0
+            aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt
             if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
-                maxdvdt = np.amax(slopey[j:aploc])
+                maxdvdt = np.amax(slopey[apstrt:aploc])
                 thresholdavghold = np.append(thresholdavghold, maxdvdt)
     thresholdavg = np.mean(thresholdavghold[1:]) 
     return thresholdavg
