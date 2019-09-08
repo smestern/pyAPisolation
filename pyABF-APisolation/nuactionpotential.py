@@ -50,7 +50,7 @@ def appreprocess2(abf, tag = 'default', save = False, plot = False):
     fileno, void = tag.split('-')
     sweepcount = 1
     apcount = 0
-    aps = np.full((4000, 5000), np.nan)
+    aps = np.full((5000, 5000), np.nan)
     aplochold = 0
     if abf.sweepCount > 1:
         sweepcount = (abf.sweepCount - 1)
@@ -58,6 +58,7 @@ def appreprocess2(abf, tag = 'default', save = False, plot = False):
         print(sweepNumber)
         abf.setSweep(sweepNumber)
         aploc = 0
+        idx = 0
         thresholdV = np.amax(abf.sweepY)
         thresholdsl = (thresholdavg(abf,sweepNumber) * 0.05)
         print(thresholdsl)
@@ -73,22 +74,28 @@ def appreprocess2(abf, tag = 'default', save = False, plot = False):
                     apstrt = (int(i - (abf.dataPointsPerMs * 5)))
                     if apstrt < 0: 
                         apstrt=0
-                    apend = int(i + (abf.dataPointsPerMs * 20)) #searches in the next 5ms for the peak
+                    apend = int(i + (abf.dataPointsPerMs * 20)) #searches in the next 20ms for the peak
+                    #aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
                     aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt
                     if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
-                        print(aploc)
-                        apstrt = (int(aploc - abf.dataRate * 0.010))
+                        apstrt = (int(aploc - abf.dataPointsPerMs * 5))
                         thresholdslloc = (np.argmax(slopey[apstrt:aploc]) + apstrt)
-                        apstrt = (int(apstrt - abf.dataRate * 0.020))
+                        apstrt = (int(apstrt - abf.dataPointsPerMs * 5))
                         if apstrt < 0:
                             apstrt = 0
-                        idx = (np.abs(slopey[apstrt:thresholdslloc] - thresholdsl)).argmin()
+                        for y in range(thresholdslloc, 0, -1):
+                            if slopey[y] < thresholdsl:
+                                idx = y
+                                break
+                            elif y == (thresholdslloc-5000):
+                                idx = y
+                                break
+                        #idx = (np.abs(slopey[apstrt:thresholdslloc] - thresholdsl)).argmin()
                         if idx < 1: 
                             print(abf.sweepY[idx])
                             print(thresholdsl)
-                        apstrt = idx + apstrt
+                        apstrt = idx
                         apend = abs(int(aploc + abf.dataPointsPerMs * 20))
-                        print('threshold Hit')
                         k,  = abf.sweepY.shape
                         if apend > k:
                             apend = int(k)
@@ -128,22 +135,5 @@ def apisolate(abf, threshold, filter, tag = 'default', save = False):
 
 
 
-directory = 'Processed/'
-
-
-for filename in os.listdir(directory):
-    if filename.endswith(".abf"):
-        file_path = directory + filename
-        abf = pyabf.ABF(file_path)
-
-        #print (abf.sweepLabelY)
-        if abf.sweepLabelY != 'Clamp Current (pA)':
-            print(filename + ' import')
-            tag = file_path.split('/')
-            print(str(thresholdavg(abf,0)))
-            appreprocess2(abf, tag[(len(tag) - 1)], False, True)
-            
-
-plt.show()
 
 
