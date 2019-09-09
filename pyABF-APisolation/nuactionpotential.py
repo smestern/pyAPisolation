@@ -56,7 +56,7 @@ def thresholdavg(abf, sweep, thresdvdt = 20):
     if l > 1:
         thresholdavg1 = np.mean(thresholdavghold)
     elif l == 1:
-        thresholdavg1 = thresholdavghold[0] #np mean fails if array is 1 long. So we prevent that by just setting it to the single AP
+        thresholdavg1 = thresholdavghold[0] #np mean fails if array is 1 value long. So we prevent that by just setting it to the single AP
     else:
         thresholdavg1 = np.nan #return nan if no action potentials are found
     return float(thresholdavg1)
@@ -66,7 +66,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
     sweepcount = abf.sweepCount
     apcount = 0
 
-    #Build arrays to fill. This has to be pre-created as size of ap varies, appending different sized arrays to another makes numpy throw an error. Unused values are truncated later
+    #Build arrays to fill. This has to be pre-created because the size of each ap varies, appending different sized arrays to another makes numpy throw an error. Unused values are truncated later
     aps = np.full((1000, 1000), np.nan)
     peakposDvdt = np.full((1000, 2), np.nan)
     peaknegDvdt = np.full((1000, 2), np.nan)
@@ -95,15 +95,17 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
         ind = 0
         for i in indexhigher:
                #if i > (aploc):
+                    #searches in the next 10ms for the peak    
                     apstrt = (int(i - (abf.dataPointsPerMs * 5)))
                     if apstrt < 0: 
                         apstrt=0
-                    apend = int(i + (abf.dataPointsPerMs * 5)) #searches in the next 10ms for the peak
-                    #aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
-                    aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt
+                    apend = int(i + (abf.dataPointsPerMs * 5)) 
+                    aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt #aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
+
                     if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
                         apstrt = (int(aploc - abf.dataPointsPerMs * 5))
                         thresholdslloc = (np.argmax(slopey[apstrt:aploc]) + apstrt) #Finds the action potential max dvdt
+                        nthresholdslloc = (np.argmin(slopey[apstrt:aploc]) + apstrt) #Finds the action potential max negative dvdt
                         apstrt = (int(apstrt - abf.dataPointsPerMs * 5))
                         if apstrt < 0:
                             apstrt = 0
@@ -114,7 +116,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                             elif y == (thresholdslloc - 800):
                                 idx = y
                                 break
-                        okoko = 0
+                        
                         if idx < 1: 
                             print(abf.sweepY[idx])
                             print(i)
@@ -136,7 +138,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
 
                         #Now fill out our arrays
                         peakposDvdt[apcount,0] = slopey[thresholdslloc]
-                        peakposDvdt[apcount,0] = abf.sweepX[thresholdslloc]
+                        peakposDvdt[apcount,1] = abf.sweepX[thresholdslloc]
                         aps[apcount,:points] = apfull1
                         apcount += 1
                         ind += 1
