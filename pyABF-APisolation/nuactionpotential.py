@@ -20,7 +20,7 @@ def apfeaturearray(abf):
 def npindofgrt(a, evalp):
     """ Pass through an numpy array and expression, Return indices where eval is true"""
     index = np.nonzero(np.where(a > evalp, 1, 0))
-    return index[0]
+    return index[0] #returns a flattened array of numbers
 
 def thresholdavg(abf, sweep, thresdvdt = 20):
     """ Given an ABF file and a sweep, this function returns the avg max DVdT of action potentials in a sweep.
@@ -246,6 +246,9 @@ def appreprocess2(abf, tag = 'default', save = False, plot = False):
     return aps, abf
 
 def apisolate(abf, threshold, filter, tag = 'default', save = False):
+            
+    if filter > 0:
+       pyabf.filter.gaussian(abf,0,0)
     aps, thresholdavg, abf = appreprocess(abf,tag,save)
     
 
