@@ -24,14 +24,15 @@ for filename in os.listdir(directory):
         file_path = directory + filename
         abf = pyabf.ABF(file_path)
         if abf.sweepLabelY != 'Clamp Current (pA)':
-
-            print(pyabf.tools.ap.ap_points_currentSweep(abf))
             print(filename + ' import')
+            pyabf.filter.gaussian(abf,0,0)
+            print(pyabf.tools.ap.ap_points_currentSweep(abf))
+            np.nan_to_num(abf.data, nan=-9999, copy=False)
             tag = file_path.split('/')
             tag = tag[(len(tag) - 1)]
-            fileno, void = tag.split('-')
+            #fileno, void = tag.split('-')
             thresholdavg(abf,0)
-            appreprocess(abf, fileno, False, True)
+            appreprocess(abf, tag, False, True)
             
 
 plt.show()

@@ -17,9 +17,9 @@ def apfeaturearray(abf):
     
     return 0
 
-def npindof(a, expression):
+def npindofgrt(a, evalp):
     """ Pass through an numpy array and expression, Return indices where eval is true"""
-    index = np.nonzero(np.where(eval(expression), 1, 0))
+    index = np.nonzero(np.where(a > evalp, 1, 0))
     return index[0]
 
 def thresholdavg(abf, sweep, thresdvdt = 20):
@@ -65,11 +65,21 @@ def thresholdavg(abf, sweep, thresdvdt = 20):
 def appreprocess(abf, tag = 'default', save = False, plot = False):
     sweepcount = abf.sweepCount
     apcount = 0
-    aps = np.full((1000, 5000), np.nan) #Build an array to fill. This has to be pre-created as size of ap varies. Unused values are truncated later
-    aplochold = 0
+
+    #Build arrays to fill. This has to be pre-created as size of ap varies. Unused values are truncated later
+    aps = np.full((1000, 1000), np.nan)
+    peakposDvdt = np.full((1000, 2), np.nan)
+    peaknegDvdt = np.full((1000, 2), np.nan)
+    peakmV = np.full((1000, 2), np.nan)
+    apTime = np.full((1000, 2), np.nan)
+
+    
+    #If there is more than one sweep, we need to ensure we dont iterate out of range
     if abf.sweepCount > 1:
         sweepcount = (abf.sweepCount - 1)
-    for sweepNumber in range(sweepcount):
+
+    #Now we walk through the sweeps looking for action potentials
+    for sweepNumber in range(sweepcount): 
         print(sweepNumber)
         abf.setSweep(sweepNumber)
         aploc = 0
@@ -82,17 +92,18 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
         np.nan_to_num(slopey, nan=0, copy=False)
         indexhigher = pyabf.tools.ap.ap_points_currentSweep(abf)
         print('Ap count: ' + str(apcount))
+        ind = 0
         for i in indexhigher:
                #if i > (aploc):
                     apstrt = (int(i - (abf.dataPointsPerMs * 5)))
                     if apstrt < 0: 
                         apstrt=0
-                    apend = int(i + (abf.dataPointsPerMs * 5)) #searches in the next 20ms for the peak
+                    apend = int(i + (abf.dataPointsPerMs * 5)) #searches in the next 10ms for the peak
                     #aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
                     aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt
                     if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
                         apstrt = (int(aploc - abf.dataPointsPerMs * 5))
-                        thresholdslloc = (np.argmax(slopey[apstrt:aploc]) + apstrt)
+                        thresholdslloc = (np.argmax(slopey[apstrt:aploc]) + apstrt) #Finds the action potential max dvdt
                         apstrt = (int(apstrt - abf.dataPointsPerMs * 5))
                         if apstrt < 0:
                             apstrt = 0
@@ -110,16 +121,28 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                             print(thresholdsl)
                             
                         apstrt = idx
-                        apend = abs(int(aploc + abf.dataPointsPerMs * 10))
+                        if (ind+1) < (len(indexhigher) - 1):
+                            if((indexhigher[ind+1] - indexhigher[ind]) > (abf.dataPointsPerMs * 10)):
+                                apend = abs(int(aploc + abf.dataPointsPerMs * 10))
+                            else:
+                                apend = indexhigher[ind+1]
+                        else:
+                            apend = abs(int(aploc + abf.dataPointsPerMs * 10))
                         k,  = abf.sweepY.shape
                         if apend > k:
                             apend = int(k)
                         apfull1 = abf.sweepY[apstrt:apend]
                         points = apend - apstrt
+
+                        #Now fill out our arrays
+                        peakposDvdt[apcount,0] = slopey[thresholdslloc]
+                        peakposDvdt[apcount,0] = abf.sweepX[thresholdslloc]
                         aps[apcount,:points] = apfull1
                         apcount += 1
+                        ind += 1
     if apcount > 0:
-        aps = aps[1:apcount,:]
+        print(apcount)
+        #aps = aps[1:apcount,:]
         apsend = np.argwhere(np.invert(np.isnan(aps[:,:])))
         apsend = np.amax(apsend[:,1])
         aps = aps[:,:apsend]
@@ -127,9 +150,8 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
             void, l = aps.shape
             test = np.linspace(0, 10, l,endpoint=False)
             for o in range(80):
-                j = int(random.uniform(1, apcount - 1))
+                j = int(random.uniform(1, apcount - 2))
                 plt.plot(test, aps[j,:])
-    
         if save == True:
             np.savetxt('output/' + tag + '.txt', aps, delimiter=",", fmt='%12.5f')
     return aps, abf
