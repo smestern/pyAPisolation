@@ -66,7 +66,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
     sweepcount = abf.sweepCount
     apcount = 0
 
-    #Build arrays to fill. This has to be pre-created as size of ap varies. Unused values are truncated later
+    #Build arrays to fill. This has to be pre-created as size of ap varies, appending different sized arrays to another makes numpy throw an error. Unused values are truncated later
     aps = np.full((1000, 1000), np.nan)
     peakposDvdt = np.full((1000, 2), np.nan)
     peaknegDvdt = np.full((1000, 2), np.nan)
