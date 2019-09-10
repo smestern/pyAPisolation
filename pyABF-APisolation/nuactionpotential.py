@@ -100,36 +100,41 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                     if apstrt < 0: 
                         apstrt=0
                     apend = int(i + (abf.dataPointsPerMs * 5)) 
-                    aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt #aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
+                    aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt #alternatively aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
 
                     if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
                         apstrt = (int(aploc - abf.dataPointsPerMs * 5))
                         thresholdslloc = (np.argmax(slopey[apstrt:aploc]) + apstrt) #Finds the action potential max dvdt
-                        nthresholdslloc = (np.argmin(slopey[apstrt:aploc]) + apstrt) #Finds the action potential max negative dvdt
+                        nthresholdslloc = (np.argmin(slopey[apstrt:apend]) + apstrt) #Finds the action potential max negative dvdt
                         apstrt = (int(apstrt - abf.dataPointsPerMs * 5))
                         if apstrt < 0:
                             apstrt = 0
-                        for y in range(thresholdslloc, 0, -1):
-                            if slopey[y] < thresholdsl:
-                                idx = y
-                                break
-                            elif y == (thresholdslloc - 800):
-                                idx = y
-                                break
-                        
-                        if idx < 1: 
-                            print(abf.sweepY[idx])
-                            print(i)
-                            print(thresholdsl)
-                            
+
+                        # Now find the point where DVDT falls below the 5% threshold
+                        indexloc = np.nonzero(np.where(slopey[apstrt:thresholdslloc] < thresholdsl, 1, 0))[0]
+                        if indexloc.size < 1:
+                            idx = apstrt
+                        else:
+                            indexloc += apstrt
+                            idx = indexloc[-1]
                         apstrt = idx
+                        ### Alternatively we can walk through, however above code is much faster
+                        ##for y in range(thresholdslloc, 0, -1):
+                        #    if slopey[y] < thresholdsl:
+                        #        idx = y
+                        #        break
+                        #    elif y == (thresholdslloc - 800):
+                        #        idx = y
+                        #        break
+                        
+                        ## Now we check to ensure the action potentials do not over lap
                         if (ind+1) < (len(indexhigher) - 1):
-                            if((indexhigher[ind+1] - indexhigher[ind]) > (abf.dataPointsPerMs * 10)):
+                            if((indexhigher[ind+1] - indexhigher[ind]) > (abf.dataPointsPerMs * 10)): ##if the next ap is over 10ms away then we simple cap off at 10ms
                                 apend = abs(int(aploc + abf.dataPointsPerMs * 10))
                             else:
-                                apend = indexhigher[ind+1]
+                                apend = indexhigher[ind+1] #otherwise we cap the end at the next threshold
                         else:
-                            apend = abs(int(aploc + abf.dataPointsPerMs * 10))
+                            apend = abs(int(aploc + abf.dataPointsPerMs * 10)) #if this is the last ap in the sweep we cap at 10ms
                         k,  = abf.sweepY.shape
                         if apend > k:
                             apend = int(k)
@@ -140,6 +145,9 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                         peakposDvdt[apcount,0] = slopey[thresholdslloc]
                         peakposDvdt[apcount,1] = abf.sweepX[thresholdslloc]
                         peaknegDvdt[apcount,0] = slopey[nthresholdslloc]
+                        peaknegDvdt[apcount,1] = abf.sweepX[nthresholdslloc]
+                        peakmV[apcount, 0] = abf.sweepY[aploc]
+                        peakmV[apcount, 1] = abf.sweepX[aploc]
                         aps[apcount,:points] = apfull1
                         apcount += 1
                         ind += 1
@@ -160,91 +168,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
     return aps, abf, peakposDvdt, peaknegDvdt, thresholdsl, apcount
 
 
-def appreprocess2(abf, tag = 'default', save = False, plot = False):
-    #### For now this is uneeded. New Method found in appreprocess is better
 
-    apf = False
-    apstrt = 0
-    apend = 0
-    fileno, void = tag.split('-')
-    sweepcount = 1
-    apcount = 0
-    aps = np.full((5000, 5000), np.nan)
-    aplochold = 0
-    if abf.sweepCount > 1:
-        sweepcount = (abf.sweepCount - 1)
-    for sweepNumber in range(sweepcount):
-        print(sweepNumber)
-        abf.setSweep(sweepNumber)
-        aploc = 0
-        idx = 0
-        thresholdV = np.amax(abf.sweepY)
-        thresholdsl = (thresholdavg(abf,sweepNumber) * 0.05)
-        print(thresholdsl)
-        apf = False
-        slopex, slopey = derivative(abf,sweepNumber,1)
-        np.nan_to_num(abf.sweepY, nan=-9999, copy=False)
-        np.nan_to_num(slopey, nan=0, copy=False)
-        indexhigher = np.nonzero(np.where(slopey > thresholdsl, 1, 0)) #Returns indices only where the slope is greater than the threshold
-        indexhigher = indexhigher[0] #flattens
-        p = npconsec(indexhigher)
-        print(p.shape)
-        print(apcount)
-        for i in indexhigher:
-               if i > (aploc):
-                    apstrt = (int(i - (abf.dataPointsPerMs * 5)))
-                    if apstrt < 0: 
-                        apstrt=0
-                    apend = int(i + (abf.dataPointsPerMs * 5)) #searches in the next 20ms for the peak
-                    #aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
-                    aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt
-                    if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
-                        apstrt = (int(aploc - abf.dataPointsPerMs * 5))
-                        thresholdslloc = (np.argmax(slopey[apstrt:aploc]) + apstrt)
-                        apstrt = (int(apstrt - abf.dataPointsPerMs * 5))
-                        if apstrt < 0:
-                            apstrt = 0
-                        for y in range(thresholdslloc, 0, -1):
-                            if slopey[y] < thresholdsl:
-                                idx = y
-                                break
-                            elif y == (thresholdslloc - 800):
-                                idx = y
-                                break
-                        #idx = (np.abs(slopey[apstrt:thresholdslloc] - thresholdsl)).argmin()
-                        if idx < 1: 
-                            print(abf.sweepY[idx])
-                            print(thresholdsl)
-                            print(i)
-                        apstrt = idx
-                        apend = abs(int(aploc + abf.dataPointsPerMs * 20))
-                        k,  = abf.sweepY.shape
-                        if apend > k:
-                            apend = int(k)
-                        apfull1 = abf.sweepY[apstrt:apend]
-                        points = apend - apstrt
-                        #plt.plot(np.linspace(0,points,points), apfull1)
-                        aps[apcount,:points] = apfull1
-                        apcount += 1
-    if apcount > 0:
-        aps = aps[1:apcount,:]
-        apsend = np.argwhere(np.invert(np.isnan(aps[:,:])))
-        apsend = np.amax(apsend[:,1])
-        aps = aps[:,:apsend]
-        if plot == True:
-            void, l = aps.shape
-            test = np.linspace(0, l, num=l,endpoint=False)
-            for o in range(5):
-                j = int(random.uniform(1, apcount - 1))
-                if abf.dataRate > 10000:
-                    test = test[:int(l/2)]
-                    #plt.plot(test, aps[j,::2])
-                else:
-                    plt.plot(test, aps[j,:])
-    
-        if save == True:
-            np.savetxt('output/' + tag + '.txt', aps, delimiter=",", fmt='%12.5f')
-    return aps, abf
 
 def apisolate(abf, threshold, filter, tag = 'default', save = False):
             

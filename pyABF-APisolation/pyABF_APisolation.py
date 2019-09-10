@@ -25,7 +25,6 @@ for filename in os.listdir(directory):
         abf = pyabf.ABF(file_path)
         if abf.sweepLabelY != 'Clamp Current (pA)':
             print(filename + ' import')
-            print(pyabf.tools.ap.ap_points_currentSweep(abf))
             np.nan_to_num(abf.data, nan=-9999, copy=False)
             tag = file_path.split('/')
             tag = tag[(len(tag) - 1)]
