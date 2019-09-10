@@ -139,6 +139,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                         #Now fill out our arrays
                         peakposDvdt[apcount,0] = slopey[thresholdslloc]
                         peakposDvdt[apcount,1] = abf.sweepX[thresholdslloc]
+                        peaknegDvdt[apcount,0] = slopey[nthresholdslloc]
                         aps[apcount,:points] = apfull1
                         apcount += 1
                         ind += 1
@@ -156,7 +157,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                 plt.plot(test, aps[j,:])
         if save == True:
             np.savetxt('output/' + tag + '.txt', aps, delimiter=",", fmt='%12.5f')
-    return aps, abf
+    return aps, abf, peakposDvdt, peaknegDvdt, thresholdsl, apcount
 
 
 def appreprocess2(abf, tag = 'default', save = False, plot = False):
@@ -248,8 +249,8 @@ def appreprocess2(abf, tag = 'default', save = False, plot = False):
 def apisolate(abf, threshold, filter, tag = 'default', save = False):
             
     if filter > 0:
-       pyabf.filter.gaussian(abf,0,0)
-    aps, thresholdavg, abf = appreprocess(abf,tag,save)
+       pyabf.filter.gaussian(abf,filter,0)
+    aps, abf = appreprocess(abf,tag,save)
     
 
 
