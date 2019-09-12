@@ -63,6 +63,16 @@ def thresholdavg(abf, sweep, thresdvdt = 20):
 
 
 def appreprocess(abf, tag = 'default', save = False, plot = False):
+    """ Function takes a given abf file and returns raw and feature data for action potentials across all sweeps. 
+        You may wish to use apisolate which returns more fleshed out data
+        ______
+        abf: An abf file
+        tag: if save is turned on, the tag is appeneded to the output files
+        save: determines if the raw data is written to a file
+        plot: if true, will display a plot of 5 randomly selected aps from the data. Useful for debugging
+    """
+    
+    
     sweepcount = abf.sweepCount
     apcount = 0
 
@@ -93,7 +103,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
         indexhigher = pyabf.tools.ap.ap_points_currentSweep(abf)
         print('Ap count: ' + str(apcount))
         ind = 0
-        for i in indexhigher:
+        for ind, i in enumerate(indexhigher):
                #if i > (aploc):
                     #searches in the next 10ms for the peak    
                     apstrt = (int(i - (abf.dataPointsPerMs * 5)))
@@ -118,6 +128,9 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                             indexloc += apstrt
                             idx = indexloc[-1]
                         apstrt = idx
+                        ## throw away the ap if the threshold to peak time is more than 2ms
+                        if (aploc-idx) > (abf.dataPointsPerMs * 2):
+                            break
                         ### Alternatively we can walk through, however above code is much faster
                         ##for y in range(thresholdslloc, 0, -1):
                         #    if slopey[y] < thresholdsl:
@@ -137,7 +150,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                             apend = abs(int(aploc + abf.dataPointsPerMs * 10)) #if this is the last ap in the sweep we cap at 10ms
                         k,  = abf.sweepY.shape
                         if apend > k:
-                            apend = int(k)
+                            apend = int(k) - 1
                         apfull1 = abf.sweepY[apstrt:apend]
                         points = apend - apstrt
 
@@ -148,19 +161,20 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                         peaknegDvdt[apcount,1] = abf.sweepX[nthresholdslloc]
                         peakmV[apcount, 0] = abf.sweepY[aploc]
                         peakmV[apcount, 1] = abf.sweepX[aploc]
+                        apTime[apcount, 0] = abf.sweepX[apstrt]
+                        apTime[apcount, 1] = abf.sweepX[apend]
                         aps[apcount,:points] = apfull1
                         apcount += 1
-                        ind += 1
     if apcount > 0:
         print(apcount)
-        #aps = aps[1:apcount,:]
+        aps = aps[:apcount,:]
         apsend = np.argwhere(np.invert(np.isnan(aps[:,:])))
         apsend = np.amax(apsend[:,1])
         aps = aps[:,:apsend]
         if plot == True:
             void, l = aps.shape
             test = np.linspace(0, 10, l,endpoint=False)
-            for o in range(80):
+            for o in range(5):
                 j = int(random.uniform(1, apcount - 2))
                 plt.plot(test, aps[j,:])
         if save == True:
@@ -169,16 +183,19 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
 
 
 
-
-def apisolate(abf, threshold, filter, tag = 'default', save = False):
+def apisolate(abf, filter, tag = 'default', save = False):
             
     if filter > 0:
        pyabf.filter.gaussian(abf,filter,0)
-    aps, abf = appreprocess(abf,tag,save)
+    aps, abf, _, _, _, apcount = appreprocess(abf,tag)
     
-
-
-
+    _, d = aps.shape
+    apoints = np.arange(0, d)
+    if save == True:
+        for i in range(0, apcount - 1):
+            
+            aphold = np.array((aps[i], apoints))
+            np.savetxt('output/' + str(i) + tag + '.txt', aphold, delimiter=",", fmt='%12.5f')
     return 0
 
 
