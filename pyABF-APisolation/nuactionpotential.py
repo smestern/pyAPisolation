@@ -100,8 +100,6 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
         np.nan_to_num(abf.sweepY, nan=-9999, copy=False)
         np.nan_to_num(slopey, nan=0, copy=False)
         indexhigher = pyabf.tools.ap.ap_points_currentSweep(abf)
-        print('Ap count: ' + str(apcount))
-        ind = 0
         for ind, i in enumerate(indexhigher):
                #if i > (aploc):
                     #searches in the next 10ms for the peak    
@@ -145,6 +143,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                                 apend = abs(int(aploc + abf.dataPointsPerMs * 10))
                             else:
                                 apend = indexhigher[ind+1] #otherwise we cap the end at the next threshold
+                                aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt
                         else:
                             apend = abs(int(aploc + abf.dataPointsPerMs * 10)) #if this is the last ap in the sweep we cap at 10ms
                         k,  = abf.sweepY.shape
@@ -163,11 +162,9 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                         apTime[apcount, 0] = abf.sweepX[apstrt]
                         apTime[apcount, 1] = abf.sweepX[apend]
                         aps[apcount,:points] = apfull1
-                        print(aploc)
-                        print(peakmV[apcount,1] * abf.dataRate)
                         apcount += 1
+        print('Ap count: ' + str(apcount))
     if apcount > 0:
-        print(apcount)
         aps = aps[:apcount,:]
         apsend = np.argwhere(np.invert(np.isnan(aps[:,:])))
         apsend = np.amax(apsend[:,1])
@@ -180,7 +177,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                 plt.plot(test, aps[j,:])
         if save == True:
             np.savetxt('output/' + tag + '.txt', aps, delimiter=",", fmt='%12.5f')
-    return aps, abf, peakposDvdt, peaknegDvdt, peakmV, thresholdsl, apcount
+    return aps, abf, peakposDvdt, peaknegDvdt, peakmV, apTime, thresholdsl, apcount
 
 
 
@@ -188,21 +185,36 @@ def apisolate(abf, filter, tag = 'default', save = False):
     
     if filter > 0:
        pyabf.filter.gaussian(abf,filter,0)
-    aps, abf, peakposDvdt, peaknegDvdt, peakmV, thresholdsl, apcount = appreprocess(abf,tag)
+    aps, abf, peakposDvdt, peaknegDvdt, peakmV, apTime, thresholdsl, apcount = appreprocess(abf,tag)
     
     _, d = aps.shape
     apoints = np.linspace(0, (d / abf.dataPointsPerMs), d)
+
+
+
+
     ## Intialize the rest of the arrays to fill
     dvDtRatio = np.empty((apcount, 1))
     trough = np.empty((apcount, 1))
     slwtrough = np.empty((apcount, 1))
     fsttrough = np.empty((apcount, 1))
+
+
     for i in range(0, apcount - 1):
             ### Fill more variables
-            aploc = int(peakmV[i,1] * abf.dataRate)
+            apstrt = int(apTime[i,0] * abf.dataRate)
+            aploc = int(peakmV[i,1] * abf.dataRate) - apstrt
+            apend = int(apTime[i,1] * abf.dataRate) - apstrt
+            ttime = (5 * abf.dataPointsPerMs) + aploc
+            if ttime > apend:
+                ttime = apend
             dvDtRatio[i] = peakposDvdt[i, 0] / peaknegDvdt[i, 0]
-            trough = np.amax(aps[i])
-            slwtrough = np.amax(aps[i,])
+            trough[i] = np.amax(aps[i])
+            fsttrough[i] = np.amin(aps[i,aploc:ttime])
+            if ttime != apend:
+                slwtrough[i] = np.amin(aps[i,ttime:apend])
+            else:
+                slwtrough[i] = fsttrough[i]
             aphold = np.array((aps[i], apoints))
             if save == True:
                 np.savetxt('output/' + str(i) + tag + '.txt', aphold, delimiter=",", fmt='%12.5f')
