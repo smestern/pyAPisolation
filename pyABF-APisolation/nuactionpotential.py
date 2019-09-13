@@ -11,7 +11,7 @@ from pyabf.tools import *
 from pyabf import filter
 from matplotlib import cm
 import os
-
+import pandas as pd
 
 def apfeaturearray(abf):
     
@@ -82,7 +82,8 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
     peaknegDvdt = np.full((1000, 2), np.nan)
     peakmV = np.full((1000, 2), np.nan)
     apTime = np.full((1000, 2), np.nan)
-    
+    apsweep = np.full((1000, 1), np.nan)
+    arthreshold = np.full((1000, 1), np.nan)
     #If there is more than one sweep, we need to ensure we dont iterate out of range
     if abf.sweepCount > 1:
         sweepcount = (abf.sweepCount - 1)
@@ -161,11 +162,20 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                         peakmV[apcount, 1] = abf.sweepX[aploc]
                         apTime[apcount, 0] = abf.sweepX[apstrt]
                         apTime[apcount, 1] = abf.sweepX[apend]
+                        arthreshold[apcount] = thresholdsl
+                        apsweep[apcount] = sweepNumber
                         aps[apcount,:points] = apfull1
                         apcount += 1
         print('Ap count: ' + str(apcount))
     if apcount > 0:
         aps = aps[:apcount,:]
+        ## For some Reason truncating these values throws an error, for now they are not truncated
+        #peakmV = peakmV[:apcount,:]
+        #apTime = apTime[:apcount,:]
+        #apsweep = apsweep[:apcount]
+        #arthreshold = arthreshold[:apcount]
+        #peakposDvdt = peakposDvdt[:apcount] ###Specifically these two throw an error
+        #peaknegDvdt = peaknegDvdt[:apcount] ### May be worth it to truncate later
         apsend = np.argwhere(np.invert(np.isnan(aps[:,:])))
         apsend = np.amax(apsend[:,1])
         aps = aps[:,:apsend]
@@ -177,47 +187,88 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                 plt.plot(test, aps[j,:])
         if save == True:
             np.savetxt('output/' + tag + '.txt', aps, delimiter=",", fmt='%12.5f')
-    return aps, abf, peakposDvdt, peaknegDvdt, peakmV, apTime, thresholdsl, apcount
+    return aps, abf, peakposDvdt, peaknegDvdt, peakmV, apTime, apsweep, arthreshold, apcount
 
 
 
-def apisolate(abf, filter, tag = 'default', save = False):
+def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, relative = True):
     
     if filter > 0:
        pyabf.filter.gaussian(abf,filter,0)
-    aps, abf, peakposDvdt, peaknegDvdt, peakmV, apTime, thresholdsl, apcount = appreprocess(abf,tag)
+    aps, abf, peakposDvdt, peaknegDvdt, peakmV, apTime, apsweep, arthreshold, apcount = appreprocess(abf,tag)
     
     _, d = aps.shape
     apoints = np.linspace(0, (d / abf.dataPointsPerMs), d)
-
-
-
-
+    
+    
     ## Intialize the rest of the arrays to fill
     dvDtRatio = np.empty((apcount, 1))
     trough = np.empty((apcount, 1))
-    slwtrough = np.empty((apcount, 1))
-    fsttrough = np.empty((apcount, 1))
-
-
+    slwtrough = np.empty((apcount, 2))
+    slwratio = np.empty((apcount, 1))
+    fsttrough = np.empty((apcount, 2))
+    apheight = np.empty((apcount, 1))
+    apwidthloc = np.empty((apcount, 2))
+    apfullwidth = np.empty((apcount, 1))
+    thresmV = np.empty((apcount, 1))
+    apno = np.arange(1, (apcount + 1))
     for i in range(0, apcount - 1):
-            ### Fill more variables
+            abf.setSweep(int(apsweep[i]))
+            ### Fill the arrays
             apstrt = int(apTime[i,0] * abf.dataRate)
             aploc = int(peakmV[i,1] * abf.dataRate) - apstrt
             apend = int(apTime[i,1] * abf.dataRate) - apstrt
+            thresmV[i] = aps[i,0]
             ttime = (5 * abf.dataPointsPerMs) + aploc
             if ttime > apend:
                 ttime = apend
-            dvDtRatio[i] = peakposDvdt[i, 0] / peaknegDvdt[i, 0]
             trough[i] = np.amax(aps[i])
-            fsttrough[i] = np.amin(aps[i,aploc:ttime])
+            fsttrough[i, 0] = np.amin(aps[i,aploc:ttime])
+            fsttrough[i, 1] = np.argmin(aps[i,aploc:ttime]) + aploc
             if ttime != apend:
-                slwtrough[i] = np.amin(aps[i,ttime:apend])
+                slwtrough[i, 0] = np.amin(aps[i,ttime:apend])
+                slwtrough[i, 1] = np.argmin(aps[i,ttime:apend])
             else:
                 slwtrough[i] = fsttrough[i]
+            apheight[i] = (peakmV[i, 0] - fsttrough[i, 0])
+            apwidthloc[i,1] = int((np.argmin(aps[i,aploc:ttime]) - aploc) * 0.5)
+            apwidthloc[i,0] = (np.abs(aps[i,:aploc] - (aps[i, int(apwidthloc[i,1])]))).argmin()
+            apfullwidth[i] = abf.sweepX[int(apwidthloc[i,1])] - abf.sweepX[int(apwidthloc[i,0])]
+            slwratio[i] = ((slwtrough[i, 1] - aploc) / abf.dataRate) / ((apend - aploc) / abf.dataRate)
             aphold = np.array((aps[i], apoints))
-            if save == True:
+            if saveind == True:
                 np.savetxt('output/' + str(i) + tag + '.txt', aphold, delimiter=",", fmt='%12.5f')
+    
+                
+    if relative == True:
+        peakmV[:,1] = peakmV[:,1] - apTime[:,0]
+        peakposDvdt[:,1] = peakposDvdt[:,1] - apTime[:,0]
+        peaknegDvdt[:,1] = peaknegDvdt[:,1] - apTime[:,0]
+        fsttrough[:, 1] = fsttrough[:, 1] / abf.dataRate
+        slwtrough[:, 1] = slwtrough[:, 1] / abf.dataRate
+    else:
+        fsttrough[:, 1] = (fsttrough[:, 1] / abf.dataRate) + apTime[:,0]
+        slwtrough[:, 1] = (slwtrough[:, 1] / abf.dataRate)  + apTime[:,0]
+    dvDtRatio[:,0] = peakposDvdt[:apcount, 0] / peaknegDvdt[:apcount, 0]
+    
+
+    peakmV = peakmV[:apcount,:]
+    apTime = apTime[:apcount,:]
+    apsweep = apsweep[:apcount]
+    arthreshold = arthreshold[:apcount]
+    peakposDvdt = peakposDvdt[:apcount, :] ###Specifically these two throw an error
+    peaknegDvdt = peaknegDvdt[:(apcount+1), :] ### May be worth it to truncate later
+
+
+
+    
+    labels = np.array(['AP Number', 'Sweep', 'Start Time', 'End Time', '5% Threshold', 'mV at Threshold', 'AP Peak (mV)', 'Ap peak (S)', 
+                       'AP fast trough (mV)', 'AP fast trough time (S)', 'AP slow trough (mV)', 'AP slow trough time (S)', 'AP slow trough time ratio', 'AP height',
+                       'AP Full width (S)', 'AP Upstroke (mV/mS)', 'AP Upstroke time (S)', 'AP downstroke (mV/mS)', 'AP Downstroke time (S)', 'Upstroke / Downstroke Ratio'])
+    ardata = np.array([apno, apsweep, apTime[:,0], apTime[:,1], arthreshold, thresmV, peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
+                     slwratio, apheight, apfullwidth, peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:,0], peaknegDvdt[:,1], dvDtRatio[:,0]])
+    tardata = ardata.reshape(-1,1)
+    arfrme = pd.DataFrame()
     return 0
 
 
