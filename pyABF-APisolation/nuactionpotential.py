@@ -283,8 +283,9 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, r
                      slwratio[:,0], apheight[:,0], apfullwidth[:,0], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:,0], peaknegDvdt[:,1], dvDtRatio[:,0]],
                           index=labels[1:],
                           columns=apno[:])
-        tarfrme = arfrme.T ##Transpose for organization reasons
+        tarfrme = arfrme.T[:apcount] ##Transpose for organization reasons
         tarfrme.to_csv('output/feat' + tag + '.csv')
+        Print('feat' + tag + '.csv saved')
     return 0
 
 
