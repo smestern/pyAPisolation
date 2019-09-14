@@ -110,7 +110,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                     if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
                         apstrt = (int(aploc - abf.dataPointsPerMs * 5))
                         thresholdslloc = (np.argmax(slopey[apstrt:aploc]) + apstrt) #Finds the action potential max dvdt
-                        nthresholdslloc = (np.argmin(slopey[apstrt:apend]) + apstrt) #Finds the action potential max negative dvdt
+                        
                         apstrt = (int(apstrt - abf.dataPointsPerMs * 5))
                         if apstrt < 0:
                             apstrt = 0
@@ -149,7 +149,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                             apend = int(k) - 1
                         apfull1 = abf.sweepY[apstrt:apend]
                         points = apend - apstrt
-
+                        nthresholdslloc = (np.argmin(slopey[aploc:apend]) + aploc) #Finds the action potential max negative dvdt
                         #Now fill out our arrays
                         peakposDvdt[apcount,0] = slopey[thresholdslloc]
                         peakposDvdt[apcount,1] = abf.sweepX[thresholdslloc]
@@ -188,7 +188,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
 
 
 
-def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, relative = True):
+def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, relative = True, plot = 0):
     """ Function takes a given abf file and returns raw and feature data for action potentials across all sweeps. 
         The data is returned in a feature complete way. Saving requires the creation of an '/output' folder
         ---Takes---
@@ -198,16 +198,18 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, r
         saveind: Saves the individual aps as raw traces
         savefeat: Saves the feature array of all action potentials to a file
         relative: if true, calculated features are based on thier time post threshold, and not in respect to the start of the sweep
+        plot: Int, plots a randomly selected (int)number of aps from the abf, with the features highlighted. Call matplotlib.plot.show() to see
         ---Returns---
         aps: the raw current traces in a numpy array
         tarframe: the feature array in a pandas data frame (ONLY if savefeat = true, otherwise returns 0)
         abf: the original abf file passed to the function
     """
-
+    
 
     if filter > 0:
        pyabf.filter.gaussian(abf,filter,0)
-    aps, abf, peakposDvdt, peaknegDvdt, peakmV, apTime, apsweep, arthreshold, apcount = appreprocess(abf,tag,False, True)
+       np.nan_to_num(abf.data, nan=-9999, copy=False)
+    aps, abf, peakposDvdt, peaknegDvdt, peakmV, apTime, apsweep, arthreshold, apcount = appreprocess(abf,tag,False)
     
     _, d = aps.shape
     apoints = np.linspace(0, (d / abf.dataPointsPerMs), d)
@@ -240,7 +242,7 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, r
             fsttrough[i, 1] = np.argmin(aps[i,aploc:ttime]) + aploc
             if ttime != apend:
                    slwtrough[i, 0] = np.amin(aps[i,ttime:apend])
-                   slwtrough[i, 1] = np.argmin(aps[i,ttime:apend])
+                   slwtrough[i, 1] = np.argmin(aps[i,ttime:apend]) + ttime
             else:
                     slwtrough[i] = fsttrough[i]
             apheight[i] = (peakmV[i, 0] - fsttrough[i, 0])
@@ -277,8 +279,29 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, r
     peakposDvdt = peakposDvdt[:apcount, :] ###Specifically these two throw an error
     peaknegDvdt = peaknegDvdt[:(apcount+1), :] ### this fixes it, im not sure why
 
-    
-
+    if plot > 0 and apcount > 0:
+            _, l = aps.shape
+            xdata = np.linspace(0, 10, l,endpoint=False)
+            for o in range(plot):
+                j = int(random.uniform(1, apcount - 2))
+                plt.plot(xdata, aps[j,:])
+                q = int(peaknegDvdt[j,1]  * abf.dataRate)
+                plt.plot(xdata[q], aps[j,q], 'rx', label='Peak Neg dVdT')
+                q = int(peakposDvdt[j,1]  * abf.dataRate)
+                plt.plot(xdata[q], aps[j,q], 'bx', label='Peak Pos dVdT')
+                q = int(peakmV[j,1] * abf.dataRate)
+                plt.plot(xdata[q], aps[j,q], 'gx', label='Peak mV')
+                q = int(slwtrough[j, 1] * abf.dataRate)
+                plt.plot(xdata[q], aps[j,q], 'r>', label='Slow Trough')
+                q = int(fsttrough[j, 1] * abf.dataRate)
+                plt.plot(xdata[q], aps[j,q], 'b>', label='Fst Trough')
+                q = int(apwidthloc[i,0])
+                q2 = int(apwidthloc[i,1])
+                
+                plt.plot(xdata[q], aps[j,q2], 'yx')
+                plt.plot(xdata[q2], aps[j,q2], 'yx')
+                plt.plot(xdata[q:q2], np.full(((q2-q)), aps[j,q2]), 'y-', solid_capstyle='round', label='Full Width')
+                
     
     ## If saving the feature array we need to construct the labels
     labels = np.array(['AP Number', 'Sweep', 'Start Time', 'End Time', 'ISI', '5% Threshold', 'mV at Threshold', 'AP Peak (mV)', 'Ap peak (S)', 
