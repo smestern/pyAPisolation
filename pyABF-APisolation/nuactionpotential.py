@@ -297,7 +297,7 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, r
     tarfrme = arfrme.T[:apcount] ##Transpose for organization reasons
     if savefeat == True:
         tarfrme.to_csv('output/feat' + tag + '.csv')
-        Print('feat' + tag + '.csv saved')
+        print('feat' + tag + '.csv saved')
     
     return aps, tarfrme, abf
 
