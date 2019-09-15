@@ -1,5 +1,3 @@
-#!/usr/bin/evn python
-
 import numpy as np
 from numpy import genfromtxt
 import matplotlib.pyplot as plt
@@ -303,8 +301,8 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
                        'AP fast trough (mV)', 'AP fast trough time (S)', 'AP slow trough (mV)', 'AP slow trough time (S)', 'AP slow trough time ratio', 'AP height',
                        'AP Full width (S)', 'AP Upstroke (mV/mS)', 'AP Upstroke time (S)', 'AP downstroke (mV/mS)', 'AP Downstroke time (S)', 'Upstroke / Downstroke Ratio'])
     ## We could put it in a numpy array, but arrays of different types slow down the code...
-    #ardata = np.array([apno[:], apsweep[:,0], apTime[:,0], apTime[:,1], isi, arthreshold[:,0], thresmV[:,0], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
-    #                 slwratio[:,0], apheight[:,0], apfullwidth[:,0], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:,0], peaknegDvdt[:,1], dvDtRatio[:,0]])
+    #ardata = np.vstack((apno[:-1], apsweep[:,0], apTime[:,0], apTime[:,1], isi, arthreshold[:,0], thresmV[:,0], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
+    #               slwratio[:,0], apheight[:,0], apfullwidth[:,0], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:-1,0], peaknegDvdt[:-1,1], dvDtRatio[:,0]))
     ### Or we dump it into a panda dataframe. Faster / handles better than a numpy array
     arfrme = pd.DataFrame([apsweep[:,0], apTime[:,0], apTime[:,1], isi, arthreshold[:,0], thresmV[:,0], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
                      slwratio[:,0], apheight[:,0], apfullwidth[:,0], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:,0], peaknegDvdt[:,1], dvDtRatio[:,0]],
@@ -319,6 +317,7 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
             if apsweep[z,0] == apsweep[z+1,0]:
                 tarfrme = tarfrme[tarfrme.index != z]
                 aps = np.delete(aps, z, 0)
+                #ardata = np.delete(ardata, z, 1)
     if savefeat == True:
         tarfrme.to_csv('output/feat' + tag + '.csv')
         print('feat' + tag + '.csv saved')
