@@ -100,11 +100,11 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
         indexhigher = pyabf.tools.ap.ap_points_currentSweep(abf)
         for ind, i in enumerate(indexhigher):
                #if i > (aploc):
-                    #searches in the next 10ms for the peak    
+                    #searches in the next 14ms for the peak    
                     apstrt = (int(i - (abf.dataPointsPerMs * 5)))
                     if apstrt < 0: 
                         apstrt=0
-                    apend = int(i + (abf.dataPointsPerMs * 5)) 
+                    apend = int(i + (abf.dataPointsPerMs * 9)) 
                     aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt #alternatively aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
 
                     if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
@@ -136,12 +136,13 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                         #        break
                         
                         ## Now we check to ensure the action potentials do not over lap
-                        if (ind+1) < (len(indexhigher) - 1):
+                        if (ind+1) < (len(indexhigher)):
                             if((indexhigher[ind+1] - indexhigher[ind]) > (abf.dataPointsPerMs * 10)): ##if the next ap is over 10ms away then we simple cap off at 10ms
                                 apend = abs(int(aploc + abf.dataPointsPerMs * 10))
-                            else:
+                            elif apend > indexhigher[ind+1]:
+                                nxtthres = np.nonzero(np.where(slopey[aploc:] >  thresholdsl, 1, 0))[0] + aploc
                                 apend = indexhigher[ind+1] #otherwise we cap the end at the next threshold
-                                aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt
+                                aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt #and re-find the peak
                         else:
                             apend = abs(int(aploc + abf.dataPointsPerMs * 10)) #if this is the last ap in the sweep we cap at 10ms
                         k,  = abf.sweepY.shape
@@ -152,13 +153,13 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                         nthresholdslloc = (np.argmin(slopey[aploc:apend]) + aploc) #Finds the action potential max negative dvdt
                         #Now fill out our arrays
                         peakposDvdt[apcount,0] = slopey[thresholdslloc]
-                        peakposDvdt[apcount,1] = abf.sweepX[thresholdslloc]
+                        peakposDvdt[apcount,1] = (thresholdslloc - apstrt)
                         peaknegDvdt[apcount,0] = slopey[nthresholdslloc]
-                        peaknegDvdt[apcount,1] = abf.sweepX[nthresholdslloc]
+                        peaknegDvdt[apcount,1] = (nthresholdslloc - apstrt)
                         peakmV[apcount, 0] = abf.sweepY[aploc]
-                        peakmV[apcount, 1] = abf.sweepX[aploc]
-                        apTime[apcount, 0] = abf.sweepX[apstrt]
-                        apTime[apcount, 1] = abf.sweepX[apend]
+                        peakmV[apcount, 1] = (aploc - apstrt)
+                        apTime[apcount, 0] = apstrt
+                        apTime[apcount, 1] = points
                         arthreshold[apcount] = thresholdsl
                         apsweep[apcount] = sweepNumber
                         aps[apcount,:points] = apfull1
@@ -188,7 +189,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
 
 
 
-def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, relative = True, plot = 0):
+def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, plot = 0):
     """ Function takes a given abf file and returns raw and feature data for action potentials across all sweeps. 
         The data is returned in a feature complete way. Saving requires the creation of an '/output' folder
         ---Takes---
@@ -204,7 +205,7 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, r
         tarframe: the feature array in a pandas data frame (ONLY if savefeat = true, otherwise returns 0)
         abf: the original abf file passed to the function
     """
-    
+    relative = True
 
     if filter > 0:
        pyabf.filter.gaussian(abf,filter,0)
@@ -230,9 +231,9 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, r
     for i in range(0, apcount - 1):
             abf.setSweep(int(apsweep[i]))
             ### Fill the arrays if we need to
-            apstrt = int(apTime[i,0] * abf.dataRate)
-            aploc = int(peakmV[i,1] * abf.dataRate) - apstrt
-            apend = int(apTime[i,1] * abf.dataRate) - apstrt
+            apstrt = int(apTime[i,0])
+            aploc = int(peakmV[i,1])
+            apend = int(apTime[i,1])
             thresmV[i] = aps[i,0]
             ttime = (5 * abf.dataPointsPerMs) + aploc
             if ttime > apend:
@@ -249,7 +250,7 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, r
             if i != (apcount-1):
                     isi[i] = abs(apTime[i, 0] - apTime[i+1, 0])
             else:
-                    isi[i] = np.nan
+                    isi[i] = 0
 
             apwidthloc[i,1] = int((np.argmin(aps[i,aploc:ttime]) - aploc) * 0.5)
             apwidthloc[i,0] = (np.abs(aps[i,:aploc] - (aps[i, int(apwidthloc[i,1])]))).argmin()
@@ -260,18 +261,13 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, r
             if saveind == True:
                 aphold = np.array((aps[i], apoints))
                 np.savetxt('output/' + str(i) + tag + '.csv', aphold, delimiter=",", fmt='%12.5f')
-    if relative == True:
-        peakmV[:,1] = peakmV[:,1] - apTime[:,0]
-        peakposDvdt[:,1] = peakposDvdt[:,1] - apTime[:,0]
-        peaknegDvdt[:,1] = peaknegDvdt[:,1] - apTime[:,0]
-        fsttrough[:, 1] = fsttrough[:, 1] / abf.dataRate
-        slwtrough[:, 1] = slwtrough[:, 1] / abf.dataRate
-    else:
-        fsttrough[:, 1] = (fsttrough[:, 1] / abf.dataRate) + apTime[:,0]
-        slwtrough[:, 1] = (slwtrough[:, 1] / abf.dataRate)  + apTime[:,0]
-        dvDtRatio[:,0] = peakposDvdt[:apcount, 0] / peaknegDvdt[:apcount, 0]
-    
-
+  
+    peakmV[:,1] = peakmV[:,1] / abf.dataRate
+    peakposDvdt[:,1] = peakposDvdt[:,1] / abf.dataRate
+    peaknegDvdt[:,1] = peaknegDvdt[:,1] / abf.dataRate
+    fsttrough[:, 1] = fsttrough[:, 1] / abf.dataRate
+    slwtrough[:, 1] = slwtrough[:, 1] / abf.dataRate
+    dvDtRatio[:,0] = peakposDvdt[:apcount, 0] / peaknegDvdt[:apcount, 0]
     peakmV = peakmV[:apcount,:]
     apTime = apTime[:apcount,:]
     apsweep = apsweep[:apcount]
