@@ -102,7 +102,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                     apstrt = (int(i - (abf.dataPointsPerMs * 5)))
                     if apstrt < 0: 
                         apstrt=0
-                    apend = int(i + (abf.dataPointsPerMs * 9)) 
+                    apend = int(i + (abf.dataPointsPerMs * 3)) 
                     aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt #alternatively aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
 
                     if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
