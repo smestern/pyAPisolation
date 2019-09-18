@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>309e1fdf-ac34-46f7-ad12-a763af3594f1</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>pyABF_APisolation.py</StartupFile>
+    <StartupFile>pyABF_APisolation_NHP.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -156,7 +156,10 @@
     <Compile Include="lib\pyABF\tests\tests\py2and3.py" />
     <Compile Include="lib\pyABF\tests\tests\testHeaders.py" />
     <Compile Include="lib\pyABF\tests\tests\valueChecks.py" />
+    <Compile Include="nwbactionpotential.py" />
     <Compile Include="nuactionpotential.py" />
+    <Compile Include="nwb_pyABF_APisolation.py" />
+    <Compile Include="pyABF_APisolation_NHP.py" />
     <Compile Include="pyABF_APisolation.py" />
   </ItemGroup>
   <ItemGroup>

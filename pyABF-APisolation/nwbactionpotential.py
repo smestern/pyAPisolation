@@ -8,10 +8,6 @@ from pyabf import filter
 import os
 import pandas as pd
 import statistics
-
-vlon = 10000
-
-
 def apfeaturearray(abf):
     
     return 0
@@ -42,7 +38,7 @@ def thresholdavg(abf, sweep, thresdvdt = 20):
             k = slopey[j]
             #searches in the next 10ms for the peak
             apend = int(j + (abf.dataPointsPerMs * 5)) 
-            apstrt = int(j - (abf.dataPointsPerMs * 2))
+            apstrt = int(j - (abf.dataPointsPerMs * 5))
             if apstrt < 0: 
                         apstrt=0
 
@@ -76,13 +72,13 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
     apcount = 0
 
     #Build arrays to fill. This has to be pre-created because the size of each ap varies, appending different sized arrays to another makes numpy throw an error. Unused values are truncated later
-    aps = np.full((vlon, 1000), np.nan)
-    peakposDvdt = np.full((vlon, 2), np.nan)
-    peaknegDvdt = np.full((vlon, 2), np.nan)
-    peakmV = np.full((vlon, 2), np.nan)
-    apTime = np.full((vlon, 2), np.nan)
-    apsweep = np.full((vlon, 1), np.nan)
-    arthreshold = np.full((vlon, 1), np.nan)
+    aps = np.full((1000, 1000), np.nan)
+    peakposDvdt = np.full((1000, 2), np.nan)
+    peaknegDvdt = np.full((1000, 2), np.nan)
+    peakmV = np.full((1000, 2), np.nan)
+    apTime = np.full((1000, 2), np.nan)
+    apsweep = np.full((1000, 1), np.nan)
+    arthreshold = np.full((1000, 1), np.nan)
     #If there is more than one sweep, we need to ensure we dont iterate out of range
     if abf.sweepCount > 1:
         sweepcount = (abf.sweepCount - 1)
@@ -103,17 +99,14 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
         for ind, i in enumerate(indexhigher):
                #if i > (aploc):
                     #searches in the next 14ms for the peak    
-                    apstrt = (int(i - (abf.dataPointsPerMs * 2)))
+                    apstrt = (int(i - (abf.dataPointsPerMs * 5)))
                     if apstrt < 0: 
                         apstrt=0
-                    apend = int(i + (abf.dataPointsPerMs * 5)) 
+                    apend = int(i + (abf.dataPointsPerMs * 3)) 
                     aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt #alternatively aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
 
                     if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
                         apstrt = (int(aploc - abf.dataPointsPerMs * 5))
-                        if apstrt < 0:
-                            apstrt = 0
-
                         thresholdslloc = (np.argmax(slopey[apstrt:aploc]) + apstrt) #Finds the action potential max dvdt
                         
                         apstrt = (int(apstrt - abf.dataPointsPerMs * 5))
@@ -158,21 +151,18 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                         nthresholdslloc = (np.argmin(slopey[aploc:apend]) + aploc) #Finds the action potential max negative dvdt
  
                         #Now fill out our arrays
-                        try:
-                            peakposDvdt[apcount,0] = slopey[thresholdslloc]
-                            peakposDvdt[apcount,1] = (thresholdslloc - apstrt)
-                            peaknegDvdt[apcount,0] = slopey[nthresholdslloc]
-                            peaknegDvdt[apcount,1] = (nthresholdslloc - apstrt)
-                            peakmV[apcount, 0] = abf.sweepY[aploc]
-                            peakmV[apcount, 1] = (aploc - apstrt)
-                            apTime[apcount, 0] = apstrt
-                            apTime[apcount, 1] = points
-                            arthreshold[apcount] = thresholdsl
-                            apsweep[apcount] = sweepNumber
-                            aps[apcount,:points] = apfull1
-                            apcount += 1
-                        except:
-                            print('aplimit hit', end="\r")
+                        peakposDvdt[apcount,0] = slopey[thresholdslloc]
+                        peakposDvdt[apcount,1] = (thresholdslloc - apstrt)
+                        peaknegDvdt[apcount,0] = slopey[nthresholdslloc]
+                        peaknegDvdt[apcount,1] = (nthresholdslloc - apstrt)
+                        peakmV[apcount, 0] = abf.sweepY[aploc]
+                        peakmV[apcount, 1] = (aploc - apstrt)
+                        apTime[apcount, 0] = apstrt
+                        apTime[apcount, 1] = points
+                        arthreshold[apcount] = thresholdsl
+                        apsweep[apcount] = sweepNumber
+                        aps[apcount,:points] = apfull1
+                        apcount += 1
         print('Ap count: ' + str(apcount))
     if apcount > 0:
         aps = aps[:apcount,:]
