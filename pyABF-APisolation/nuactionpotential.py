@@ -9,12 +9,8 @@ import os
 import pandas as pd
 import statistics
 
-vlon = 10000
+vlon = 7000
 
-
-def apfeaturearray(abf):
-    
-    return 0
 
 def npindofgrt(a, evalp):
     """ Pass through an numpy array and expression, Return indices where eval is true"""
@@ -37,7 +33,7 @@ def thresholdavg(abf, sweep, thresdvdt = 20):
     thresholdavghold = np.empty((1))
 
     slopex, slopey = derivative(abf,sweep) #Pass through the derivative function
-    indexhigher = pyabf.tools.ap.ap_points_currentSweep(abf, thresdvdt) #Returns indices only where the slope is greater than the threshold. Using the built in functions for now. Otherwise index = np.nonzero(np.where(slopey > Threshold, 1, 0)) would work
+    indexhigher = pyabf.tools.ap.ap_points_currentSweep(abf) #Returns indices only where the slope is greater than the threshold. Using the built in functions for now. Otherwise index = np.nonzero(np.where(slopey > Threshold, 1, 0)) would work
     for j in indexhigher: #iterates through the known threshold values 
             k = slopey[j]
             #searches in the next 10ms for the peak
@@ -48,6 +44,8 @@ def thresholdavg(abf, sweep, thresdvdt = 20):
 
             aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt #Finds the peak mV of within 10ms of ap
             if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
+                if aploc== apstrt:
+                    aploc +=1
                 maxdvdt = np.amax(slopey[apstrt:aploc])
                 thresholdavghold = np.append(thresholdavghold, maxdvdt) #otherwise adds the value to our array
     thresholdavghold = thresholdavghold[1:] #truncates the intial value which was meaningless
@@ -176,13 +174,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
         print('Ap count: ' + str(apcount))
     if apcount > 0:
         aps = aps[:apcount,:]
-        ## For some Reason truncating these values throws an error, for now they are not truncated
-        #peakmV = peakmV[:apcount,:]
-        #apTime = apTime[:apcount,:]
-        #apsweep = apsweep[:apcount]
-        #arthreshold = arthreshold[:apcount]
-        #peakposDvdt = peakposDvdt[:apcount] ###Specifically these two throw an error
-        #peaknegDvdt = peaknegDvdt[:apcount] ### May be worth it to truncate later
+
         apsend = np.argwhere(np.invert(np.isnan(aps[:,:])))
         apsend = np.amax(apsend[:,1])
         aps = aps[:,:apsend]
@@ -321,21 +313,18 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
     tarfrme = arfrme.T[:apcount] ##Transpose for organization reasons
     
     ##Check one more time for duplicates
-    height = np.nonzero(np.where(isi == 0, 1, 0)) ##finding only indicies where ISI == 0
-    for z in height[0]:
-        if z != (apno[-1] - 1):
-            if apsweep[z,0] == apsweep[z+1,0]:
-                tarfrme = tarfrme[tarfrme.index != z]
-                aps = np.delete(aps, z, 0)
+    zheight = np.nonzero(np.where(isi == 0, 1, 0))[0] ##finding only indicies where ISI == 0
+    tarfrme.drop(zheight, axis=0)
+    aps = np.delete(aps, zheight, 0)
                 #ardata = np.delete(ardata, z, 1)
     if savefeat == True:
-        tarfrme.to_csv('output/feat' + tag + '.csv')
+        tarfrme.to_csv('output/feat' + abf.abfID + '.csv')
         print('feat' + tag + '.csv saved')
     ## Save raw traces if we need to
     if saveind == True:
         for m in range(0, apcount - 1):
                 aphold = np.array((aps[m], apoints))
-                np.savetxt('output/' + str(m) + tag + '.csv', aphold, delimiter=",", fmt='%12.5f')
+                np.savetxt('output/' + str(m) + abf.abfID + '.csv', aphold, delimiter=",", fmt='%12.5f')
     return aps, tarfrme, abf
 
 
