@@ -9,7 +9,7 @@ import os
 import pandas as pd
 import statistics
 
-vlon = 7000
+vlon = 2330
 
 
 def npindofgrt(a, evalp):
@@ -75,12 +75,12 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
 
     #Build arrays to fill. This has to be pre-created because the size of each ap varies, appending different sized arrays to another makes numpy throw an error. Unused values are truncated later
     aps = np.full((vlon, 1000), np.nan)
-    peakposDvdt = np.full((vlon, 2), np.nan)
-    peaknegDvdt = np.full((vlon, 2), np.nan)
-    peakmV = np.full((vlon, 2), np.nan)
-    apTime = np.full((vlon, 2), np.nan)
-    apsweep = np.full((vlon, 1), np.nan)
-    arthreshold = np.full((vlon, 1), np.nan)
+    peakposDvdt = np.empty((vlon, 2))
+    peaknegDvdt = np.empty((vlon, 2))
+    peakmV = np.empty((vlon, 2))
+    apTime = np.empty((vlon, 2))
+    apsweep = np.empty(vlon)
+    arthreshold = np.empty(vlon)
     #If there is more than one sweep, we need to ensure we dont iterate out of range
     if abf.sweepCount > 1:
         sweepcount = (abf.sweepCount - 1)
@@ -218,17 +218,17 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
     
     
     ## Intialize the rest of the arrays to fill
-    dvDtRatio = np.empty((apcount, 1))
-    trough = np.empty((apcount, 1))
+    dvDtRatio = np.empty(apcount)
+    trough = np.empty(apcount)
     slwtrough = np.empty((apcount, 2))
-    slwratio = np.empty((apcount, 1))
+    slwratio = np.empty(apcount)
     fsttrough = np.empty((apcount, 2))
-    apheight = np.empty((apcount, 1))
+    apheight = np.empty(apcount)
     apwidthloc = np.empty((apcount, 2))
-    apfullwidth = np.empty((apcount, 1))
-    thresmV = np.empty((apcount, 1))
+    apfullwidth = np.empty(apcount)
+    thresmV = np.empty(apcount)
     isi = np.empty(apcount)
-    apno = np.arange(0, (apcount + 1))
+    apno = np.arange(0, (apcount))
     for i in range(0, apcount):
             abf.setSweep(int(apsweep[i]))
             ### Fill the arrays if we need to
@@ -266,13 +266,13 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
     peaknegDvdt[:,1] = peaknegDvdt[:,1] / abf.dataRate
     fsttrough[:, 1] = fsttrough[:, 1] / abf.dataRate
     slwtrough[:, 1] = slwtrough[:, 1] / abf.dataRate
-    dvDtRatio[:,0] = peakposDvdt[:apcount, 0] / peaknegDvdt[:apcount, 0]
+    dvDtRatio[:] = peakposDvdt[:apcount, 0] / peaknegDvdt[:apcount, 0]
     peakmV = peakmV[:apcount,:]
     apTime = apTime[:apcount,:] / abf.dataRate
     apsweep = apsweep[:apcount]
     arthreshold = arthreshold[:apcount]
     peakposDvdt = peakposDvdt[:apcount, :] ###Specifically these two throw an error
-    peaknegDvdt = peaknegDvdt[:(apcount+1), :] ### this fixes it, im not sure why
+    peaknegDvdt = peaknegDvdt[:(apcount), :] ### this fixes it, im not sure why
 
     if plot > 0 and apcount > 0:
             _, l = aps.shape
@@ -306,8 +306,8 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
     #ardata = np.vstack((apno[:-1], apsweep[:,0], apTime[:,0], apTime[:,1], isi, arthreshold[:,0], thresmV[:,0], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
     #               slwratio[:,0], apheight[:,0], apfullwidth[:,0], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:-1,0], peaknegDvdt[:-1,1], dvDtRatio[:,0]))
     ### Or we dump it into a panda dataframe. Faster / handles better than a numpy array
-    arfrme = pd.DataFrame([apsweep[:,0], apTime[:,0], apTime[:,1], isi, arthreshold[:,0], thresmV[:,0], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
-                     slwratio[:,0], apheight[:,0], apfullwidth[:,0], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:,0], peaknegDvdt[:,1], dvDtRatio[:,0]],
+    arfrme = pd.DataFrame([apsweep[:], apTime[:,0], apTime[:,1], isi, arthreshold[:], thresmV[:], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
+                     slwratio[:], apheight[:], apfullwidth[:], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:,0], peaknegDvdt[:,1], dvDtRatio[:]],
                           index=labels[1:],
                           columns=apno[:])
     tarfrme = arfrme.T[:apcount] ##Transpose for organization reasons
