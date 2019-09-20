@@ -271,8 +271,8 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
     apTime = apTime[:apcount,:] / abf.dataRate
     apsweep = apsweep[:apcount]
     arthreshold = arthreshold[:apcount]
-    peakposDvdt = peakposDvdt[:apcount, :] ###Specifically these two throw an error
-    peaknegDvdt = peaknegDvdt[:(apcount), :] ### this fixes it, im not sure why
+    peakposDvdt = peakposDvdt[:apcount, :]
+    peaknegDvdt = peaknegDvdt[:apcount, :] 
 
     if plot > 0 and apcount > 0:
             _, l = aps.shape
