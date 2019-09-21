@@ -10,34 +10,17 @@ from nwbactionpotential import *
 from datetime import datetime
 from dateutil.tz import tzlocal
 
-from allensdk.core.brain_observatory_cache import BrainObservatoryCache
-import allensdk.brain_observatory.stimulus_info as si
+from pynwb import *
+from pynwb.icephys import *
 
-from pynwb import NWBFile, NWBHDF5IO, TimeSeries
-from pynwb.ophys import OpticalChannel, DfOverF, ImageSegmentation
-from pynwb.image import ImageSeries, IndexSeries
-from pynwb.device import Device
-
-# Settings:
-ophys_experiment_id = 562095852
-save_file_name = 'brain_observatory.nwb'
-
-
-directory = 'Processed/'
+directory = 'nwb2\\specimen_313860745/'
 
 
 for filename in os.listdir(directory):
-    if filename.endswith(".abf"):
+    if filename.endswith(".nwb"):
         file_path = directory + filename
-        abf = pyabf.ABF(file_path)
-        if abf.sweepLabelY != 'Clamp Current (pA)':
-            print(filename + ' import')
-            np.nan_to_num(abf.data, nan=-9999, copy=False)
-            tag = file_path.split('/')
-            tag = tag[(len(tag) - 1)]
-            #fileno, void = tag.split('-')
-            thresholdavg(abf,0)
-            apisolate(abf, 0, tag, False, True, plot=1)
+        io = NWBHDF5IO(file_path, 'r+')
+        nwbfile_in = io.read()
             
 
 plt.show()

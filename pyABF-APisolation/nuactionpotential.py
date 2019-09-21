@@ -190,7 +190,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
 
 
 
-def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, plot = 0):
+def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0):
     """ Function takes a given abf file and returns raw and feature data for action potentials across all sweeps. 
         The data is returned in a feature complete way. Saving requires the creation of an '/output' folder
         ---Takes---
@@ -316,15 +316,18 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
     zheight = np.nonzero(np.where(isi == 0, 1, 0))[0] ##finding only indicies where ISI == 0
     tarfrme.drop(zheight, axis=0)
     aps = np.delete(aps, zheight, 0)
-                #ardata = np.delete(ardata, z, 1)
+    #ardata = np.delete(ardata, z, 1)
+
+
+    ## if the user requests we save the feat array
     if savefeat == True:
-        tarfrme.to_csv('output/feat' + abf.abfID + '.csv')
+        tarfrme.to_csv('output/feat' + tag + abf.abfID + '.csv')
         print('feat' + tag + '.csv saved')
     ## Save raw traces if we need to
     if saveind == True:
         for m in range(0, apcount - 1):
                 aphold = np.array((aps[m], apoints))
-                np.savetxt('output/' + str(m) + abf.abfID + '.csv', aphold, delimiter=",", fmt='%12.5f')
+                np.savetxt('output/' + str(m) + tag + abf.abfID + '.csv', aphold, delimiter=",", fmt='%12.5f')
     return aps, tarfrme, abf
 
 
