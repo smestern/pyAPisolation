@@ -213,7 +213,6 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     
     ## Intialize the rest of the arrays to fill
     dvDtRatio = np.empty(apcount)
-    trough = np.empty(apcount)
     slwtrough = np.empty((apcount, 2))
     slwratio = np.empty(apcount)
     fsttrough = np.empty((apcount, 2))
@@ -223,8 +222,7 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     thresmV = np.empty(apcount)
     isi = np.empty(apcount)
     apno = np.arange(0, (apcount))
-    ttime = np.empty(apcount)
-
+ 
     for i in range(0, apcount): 
             abf.setSweep(int(apsweep[i]))
             ### Fill the arrays if we need to
@@ -232,10 +230,9 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
             aploc = int(peakmV[i,1])
             apend = int(apTime[i,1])
             thresmV[i] = aps[i,0]
-            ttime[i] = int((5 * abf.dataPointsPerMs) + peakmV[i,1])
+            ttime = int((5 * abf.dataPointsPerMs) + peakmV[i,1])
             if ttime > apend:
                     ttime = apend
-            trough[i] = np.amax(aps[i])
             fsttrough[i, 0] = np.amin(aps[i,aploc:ttime])
             fsttrough[i, 1] = np.argmin(aps[i,aploc:ttime]) + aploc
             if ttime != apend: 
