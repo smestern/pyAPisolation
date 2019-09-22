@@ -224,7 +224,7 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     isi = np.empty(apcount)
     apno = np.arange(0, (apcount))
     ttime = np.empty(apcount)
-    apst
+
     for i in range(0, apcount): 
             abf.setSweep(int(apsweep[i]))
             ### Fill the arrays if we need to
