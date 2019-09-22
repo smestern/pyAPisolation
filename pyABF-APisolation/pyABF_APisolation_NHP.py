@@ -34,8 +34,8 @@ for root, dirs, files in os.walk(directory):
             tag = fileno[-17:]
             thresholdavg(abf,0)
 
-            apisolate(abf, 0, tag, True, True, plot=1)
-
+            _, df, _ = apisolate(abf, 0, tag, True, True, plot=1)
+            df.hist()
             gc.collect()
 
 

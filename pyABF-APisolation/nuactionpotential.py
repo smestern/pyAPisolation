@@ -9,7 +9,8 @@ import os
 import pandas as pd
 import statistics
 
-vlon = 1000
+vlon = 2330
+
 
 def npindofgrt(a, evalp):
     """ Pass through an numpy array and expression, Return indices where eval is true"""
@@ -32,17 +33,19 @@ def thresholdavg(abf, sweep, thresdvdt = 20):
     thresholdavghold = np.empty((1))
 
     slopex, slopey = derivative(abf,sweep) #Pass through the derivative function
-    indexhigher = pyabf.tools.ap.ap_points_currentSweep(abf, thresdvdt) #Returns indices only where the slope is greater than the threshold. Using the built in functions for now. Otherwise index = np.nonzero(np.where(slopey > Threshold, 1, 0)) would work
+    indexhigher = pyabf.tools.ap.ap_points_currentSweep(abf) #Returns indices only where the slope is greater than the threshold. Using the built in functions for now. Otherwise index = np.nonzero(np.where(slopey > Threshold, 1, 0)) would work
     for j in indexhigher: #iterates through the known threshold values 
             k = slopey[j]
             #searches in the next 10ms for the peak
             apend = int(j + (abf.dataPointsPerMs * 5)) 
-            apstrt = int(j - (abf.dataPointsPerMs * 5))
+            apstrt = int(j - (abf.dataPointsPerMs * 2))
             if apstrt < 0: 
                         apstrt=0
 
             aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt #Finds the peak mV of within 10ms of ap
             if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
+                if aploc== apstrt:
+                    aploc +=1
                 maxdvdt = np.amax(slopey[apstrt:aploc])
                 thresholdavghold = np.append(thresholdavghold, maxdvdt) #otherwise adds the value to our array
     thresholdavghold = thresholdavghold[1:] #truncates the intial value which was meaningless
@@ -72,12 +75,12 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
 
     #Build arrays to fill. This has to be pre-created because the size of each ap varies, appending different sized arrays to another makes numpy throw an error. Unused values are truncated later
     aps = np.full((vlon, 1000), np.nan)
-    peakposDvdt = np.full((vlon, 2), np.nan)
-    peaknegDvdt = np.full((vlon, 2), np.nan)
-    peakmV = np.full((vlon, 2), np.nan)
-    apTime = np.full((vlon, 2), np.nan)
-    apsweep = np.full((vlon, 1), np.nan)
-    arthreshold = np.full((vlon, 1), np.nan)
+    peakposDvdt = np.empty((vlon, 2))
+    peaknegDvdt = np.empty((vlon, 2))
+    peakmV = np.empty((vlon, 2))
+    apTime = np.empty((vlon, 2))
+    apsweep = np.empty(vlon)
+    arthreshold = np.empty(vlon)
     #If there is more than one sweep, we need to ensure we dont iterate out of range
     if abf.sweepCount > 1:
         sweepcount = (abf.sweepCount - 1)
@@ -98,14 +101,17 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
         for ind, i in enumerate(indexhigher):
                #if i > (aploc):
                     #searches in the next 14ms for the peak    
-                    apstrt = (int(i - (abf.dataPointsPerMs * 5)))
+                    apstrt = (int(i - (abf.dataPointsPerMs * 2)))
                     if apstrt < 0: 
                         apstrt=0
-                    apend = int(i + (abf.dataPointsPerMs * 3)) 
+                    apend = int(i + (abf.dataPointsPerMs * 5)) 
                     aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt #alternatively aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
 
                     if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
                         apstrt = (int(aploc - abf.dataPointsPerMs * 5))
+                        if apstrt < 0:
+                            apstrt = 0
+
                         thresholdslloc = (np.argmax(slopey[apstrt:aploc]) + apstrt) #Finds the action potential max dvdt
                         
                         apstrt = (int(apstrt - abf.dataPointsPerMs * 5))
@@ -150,28 +156,25 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                         nthresholdslloc = (np.argmin(slopey[aploc:apend]) + aploc) #Finds the action potential max negative dvdt
  
                         #Now fill out our arrays
-                        peakposDvdt[apcount,0] = slopey[thresholdslloc]
-                        peakposDvdt[apcount,1] = (thresholdslloc - apstrt)
-                        peaknegDvdt[apcount,0] = slopey[nthresholdslloc]
-                        peaknegDvdt[apcount,1] = (nthresholdslloc - apstrt)
-                        peakmV[apcount, 0] = abf.sweepY[aploc]
-                        peakmV[apcount, 1] = (aploc - apstrt)
-                        apTime[apcount, 0] = apstrt
-                        apTime[apcount, 1] = points
-                        arthreshold[apcount] = thresholdsl
-                        apsweep[apcount] = sweepNumber
-                        aps[apcount,:points] = apfull1
-                        apcount += 1
+                        try:
+                            peakposDvdt[apcount,0] = slopey[thresholdslloc]
+                            peakposDvdt[apcount,1] = (thresholdslloc - apstrt)
+                            peaknegDvdt[apcount,0] = slopey[nthresholdslloc]
+                            peaknegDvdt[apcount,1] = (nthresholdslloc - apstrt)
+                            peakmV[apcount, 0] = abf.sweepY[aploc]
+                            peakmV[apcount, 1] = (aploc - apstrt)
+                            apTime[apcount, 0] = apstrt
+                            apTime[apcount, 1] = points
+                            arthreshold[apcount] = thresholdsl
+                            apsweep[apcount] = sweepNumber
+                            aps[apcount,:points] = apfull1
+                            apcount += 1
+                        except:
+                            print('aplimit hit', end="\r")
         print('Ap count: ' + str(apcount))
     if apcount > 0:
         aps = aps[:apcount,:]
-        ## For some Reason truncating these values throws an error, for now they are not truncated
-        #peakmV = peakmV[:apcount,:]
-        #apTime = apTime[:apcount,:]
-        #apsweep = apsweep[:apcount]
-        #arthreshold = arthreshold[:apcount]
-        #peakposDvdt = peakposDvdt[:apcount] ###Specifically these two throw an error
-        #peaknegDvdt = peaknegDvdt[:apcount] ### May be worth it to truncate later
+
         apsend = np.argwhere(np.invert(np.isnan(aps[:,:])))
         apsend = np.amax(apsend[:,1])
         aps = aps[:,:apsend]
@@ -187,7 +190,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
 
 
 
-def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, plot = 0):
+def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0):
     """ Function takes a given abf file and returns raw and feature data for action potentials across all sweeps. 
         The data is returned in a feature complete way. Saving requires the creation of an '/output' folder
         ---Takes---
@@ -215,17 +218,17 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
     
     
     ## Intialize the rest of the arrays to fill
-    dvDtRatio = np.empty((apcount, 1))
-    trough = np.empty((apcount, 1))
+    dvDtRatio = np.empty(apcount)
+    trough = np.empty(apcount)
     slwtrough = np.empty((apcount, 2))
-    slwratio = np.empty((apcount, 1))
+    slwratio = np.empty(apcount)
     fsttrough = np.empty((apcount, 2))
-    apheight = np.empty((apcount, 1))
+    apheight = np.empty(apcount)
     apwidthloc = np.empty((apcount, 2))
-    apfullwidth = np.empty((apcount, 1))
-    thresmV = np.empty((apcount, 1))
+    apfullwidth = np.empty(apcount)
+    thresmV = np.empty(apcount)
     isi = np.empty(apcount)
-    apno = np.arange(0, (apcount + 1))
+    apno = np.arange(0, (apcount))
     for i in range(0, apcount):
             abf.setSweep(int(apsweep[i]))
             ### Fill the arrays if we need to
@@ -263,13 +266,13 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
     peaknegDvdt[:,1] = peaknegDvdt[:,1] / abf.dataRate
     fsttrough[:, 1] = fsttrough[:, 1] / abf.dataRate
     slwtrough[:, 1] = slwtrough[:, 1] / abf.dataRate
-    dvDtRatio[:,0] = peakposDvdt[:apcount, 0] / peaknegDvdt[:apcount, 0]
+    dvDtRatio[:] = peakposDvdt[:apcount, 0] / peaknegDvdt[:apcount, 0]
     peakmV = peakmV[:apcount,:]
     apTime = apTime[:apcount,:] / abf.dataRate
     apsweep = apsweep[:apcount]
     arthreshold = arthreshold[:apcount]
-    peakposDvdt = peakposDvdt[:apcount, :] ###Specifically these two throw an error
-    peaknegDvdt = peaknegDvdt[:(apcount+1), :] ### this fixes it, im not sure why
+    peakposDvdt = peakposDvdt[:apcount, :]
+    peaknegDvdt = peaknegDvdt[:apcount, :] 
 
     if plot > 0 and apcount > 0:
             _, l = aps.shape
@@ -303,8 +306,8 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
     #ardata = np.vstack((apno[:-1], apsweep[:,0], apTime[:,0], apTime[:,1], isi, arthreshold[:,0], thresmV[:,0], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
     #               slwratio[:,0], apheight[:,0], apfullwidth[:,0], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:-1,0], peaknegDvdt[:-1,1], dvDtRatio[:,0]))
     ### Or we dump it into a panda dataframe. Faster / handles better than a numpy array
-    arfrme = pd.DataFrame([apsweep[:,0], apTime[:,0], apTime[:,1], isi, arthreshold[:,0], thresmV[:,0], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
-                     slwratio[:,0], apheight[:,0], apfullwidth[:,0], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:,0], peaknegDvdt[:,1], dvDtRatio[:,0]],
+    arfrme = pd.DataFrame([apsweep[:], apTime[:,0], apTime[:,1], isi, arthreshold[:], thresmV[:], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
+                     slwratio[:], apheight[:], apfullwidth[:], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:,0], peaknegDvdt[:,1], dvDtRatio[:]],
                           index=labels[1:],
                           columns=apno[:])
     tarfrme = arfrme.T[:apcount] ##Transpose for organization reasons
@@ -313,15 +316,18 @@ def apisolate(abf, filter, tag = 'default', saveind = False, savefeat = False, p
     zheight = np.nonzero(np.where(isi == 0, 1, 0))[0] ##finding only indicies where ISI == 0
     tarfrme.drop(zheight, axis=0)
     aps = np.delete(aps, zheight, 0)
-                #ardata = np.delete(ardata, z, 1)
+    #ardata = np.delete(ardata, z, 1)
+
+
+    ## if the user requests we save the feat array
     if savefeat == True:
-        tarfrme.to_csv('output/feat' + abf.abfID + '.csv')
+        tarfrme.to_csv('output/feat' + tag + abf.abfID + '.csv')
         print('feat' + tag + '.csv saved')
     ## Save raw traces if we need to
     if saveind == True:
         for m in range(0, apcount - 1):
                 aphold = np.array((aps[m], apoints))
-                np.savetxt('output/' + str(m) + tag + '.csv', aphold, delimiter=",", fmt='%12.5f')
+                np.savetxt('output/' + str(m) + tag + abf.abfID + '.csv', aphold, delimiter=",", fmt='%12.5f')
     return aps, tarfrme, abf
 
 
