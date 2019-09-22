@@ -223,14 +223,16 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     thresmV = np.empty(apcount)
     isi = np.empty(apcount)
     apno = np.arange(0, (apcount))
-    for i in range(0, apcount):
+    ttime = np.empty(apcount)
+    apst
+    for i in range(0, apcount): 
             abf.setSweep(int(apsweep[i]))
             ### Fill the arrays if we need to
             apstrt = int(apTime[i,0])
             aploc = int(peakmV[i,1])
             apend = int(apTime[i,1])
             thresmV[i] = aps[i,0]
-            ttime = (5 * abf.dataPointsPerMs) + aploc
+            ttime[i] = int((5 * abf.dataPointsPerMs) + peakmV[i,1])
             if ttime > apend:
                     ttime = apend
             trough[i] = np.amax(aps[i])
@@ -254,14 +256,14 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
             slwratio[i] = ((slwtrough[i, 1] - aploc) / abf.dataRate) / ((apend - aploc) / abf.dataRate)
 
             
-  
+    
     peakmV[:,1] = peakmV[:,1] / abf.dataRate
     peakposDvdt[:,1] = peakposDvdt[:,1] / abf.dataRate
     peaknegDvdt[:,1] = peaknegDvdt[:,1] / abf.dataRate
     fsttrough[:, 1] = fsttrough[:, 1] / abf.dataRate
     slwtrough[:, 1] = slwtrough[:, 1] / abf.dataRate
     dvDtRatio[:] = peakposDvdt[:apcount, 0] / peaknegDvdt[:apcount, 0]
-    
+    apTime = apTime / abf.dataRate
 
     if plot > 0 and apcount > 0:
             _, l = aps.shape
@@ -305,6 +307,7 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     zheight = np.nonzero(np.where(isi == 0, 1, 0))[0] ##finding only indicies where ISI == 0
     tarfrme.drop(zheight, axis=0)
     aps = np.delete(aps, zheight, 0)
+    apcount -= len(zheight)
     #ardata = np.delete(ardata, z, 1)
 
 
