@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>309e1fdf-ac34-46f7-ad12-a763af3594f1</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>nwb_pyABF_APisolation.py</StartupFile>
+    <StartupFile>pyABF_APisolation.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>

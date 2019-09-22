@@ -99,8 +99,6 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
         np.nan_to_num(slopey, nan=0, copy=False)
         indexhigher = pyabf.tools.ap.ap_points_currentSweep(abf)
         for ind, i in enumerate(indexhigher):
-               #if i > (aploc):
-                    #searches in the next 14ms for the peak    
                     apstrt = (int(i - (abf.dataPointsPerMs * 2)))
                     if apstrt < 0: 
                         apstrt=0
@@ -128,16 +126,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                         apstrt = idx
                         ## throw away the ap if the threshold to peak time is more than 2ms
                         if (aploc-idx) > (abf.dataPointsPerMs * 2):
-                            break
-                        ### Alternatively we can walk through, however above code is much faster
-                        ##for y in range(thresholdslloc, 0, -1):
-                        #    if slopey[y] < thresholdsl:
-                        #        idx = y
-                        #        break
-                        #    elif y == (thresholdslloc - 800):
-                        #        idx = y
-                        #        break
-                        
+                            continue
                         ## Now we check to ensure the action potentials do not over lap
                         if (ind+1) < (len(indexhigher)):
                             if((indexhigher[ind+1] - indexhigher[ind]) > (abf.dataPointsPerMs * 10)): ##if the next ap is over 10ms away then we simple cap off at 10ms
@@ -174,7 +163,12 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
         print('Ap count: ' + str(apcount))
     if apcount > 0:
         aps = aps[:apcount,:]
-
+        peakmV = peakmV[:apcount,:]
+        apTime = apTime[:apcount,:] 
+        apsweep = apsweep[:apcount]
+        arthreshold = arthreshold[:apcount]
+        peakposDvdt = peakposDvdt[:apcount, :]
+        peaknegDvdt = peaknegDvdt[:apcount, :] 
         apsend = np.argwhere(np.invert(np.isnan(aps[:,:])))
         apsend = np.amax(apsend[:,1])
         aps = aps[:,:apsend]
@@ -267,12 +261,7 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     fsttrough[:, 1] = fsttrough[:, 1] / abf.dataRate
     slwtrough[:, 1] = slwtrough[:, 1] / abf.dataRate
     dvDtRatio[:] = peakposDvdt[:apcount, 0] / peaknegDvdt[:apcount, 0]
-    peakmV = peakmV[:apcount,:]
-    apTime = apTime[:apcount,:] / abf.dataRate
-    apsweep = apsweep[:apcount]
-    arthreshold = arthreshold[:apcount]
-    peakposDvdt = peakposDvdt[:apcount, :]
-    peaknegDvdt = peaknegDvdt[:apcount, :] 
+    
 
     if plot > 0 and apcount > 0:
             _, l = aps.shape
