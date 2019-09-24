@@ -11,7 +11,6 @@ import statistics
 
 vlon = 2330
 
-
 def npindofgrt(a, evalp):
     """ Pass through an numpy array and expression, Return indices where eval is true"""
     index = np.nonzero(np.where(a > evalp, 1, 0))
@@ -210,7 +209,8 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     _, d = aps.shape
     apoints = np.linspace(0, (d / abf.dataPointsPerMs), d)
     
-    
+    if apcount <1:
+        return 0,0,0
     ## Intialize the rest of the arrays to fill
     dvDtRatio = np.empty(apcount)
     slwtrough = np.empty((apcount, 2))
@@ -311,7 +311,7 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     ## if the user requests we save the feat array
     if savefeat == True:
         tarfrme.to_csv('output/feat' + tag + abf.abfID + '.csv')
-        print('feat' + tag + '.csv saved')
+        print('feat' + tag + abf.abfID + '.csv saved')
     ## Save raw traces if we need to
     if saveind == True:
         for m in range(0, apcount - 1):

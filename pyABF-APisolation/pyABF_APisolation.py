@@ -30,7 +30,7 @@ for filename in os.listdir(directory):
             tag = tag[(len(tag) - 1)]
             #fileno, void = tag.split('-')
             thresholdavg(abf,0)
-            _, df, _ = apisolate(abf, 0, tag, False, True, plot=0)
+            _, df, _ = apisolate(abf, 0, "", False, True, plot=8)
                      
 
 plt.show()
