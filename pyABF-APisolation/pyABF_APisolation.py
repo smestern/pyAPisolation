@@ -18,9 +18,11 @@ import pandas
 
 directory = 'Processed/'
 
-
+i = 0
+k = 0
 for filename in os.listdir(directory):
     if filename.endswith(".abf"):
+        i += 1
         file_path = directory + filename
         abf = pyabf.ABF(file_path)
         if abf.sweepLabelY != 'Clamp Current (pA)':
@@ -31,6 +33,10 @@ for filename in os.listdir(directory):
             #fileno, void = tag.split('-')
             thresholdavg(abf,0)
             _, df, _ = apisolate(abf, 0, "", False, True, plot=8)
+        else: 
+            k += 1
+            print('current wrong')
                      
-
+print(i)
+print(k)
 plt.show()
