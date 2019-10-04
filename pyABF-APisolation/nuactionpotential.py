@@ -244,7 +244,8 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
             if i != (apcount-1) and apsweep[i+1] == apsweep[i]:
                     isi[i] = abs(apTime[i, 0] - apTime[i+1, 0]) / abf.dataRate
             else:
-                    isi[i] = abs((apTime[i, 0] / abf.dataRate) - abf.sweepX[-1])
+                    #isi[i] = abs((apTime[i, 0] / abf.dataRate) - abf.sweepX[-1])
+                    isi[i] = np.nan
             aphalfheight = statistics.median([peakmV[i, 0], fsttrough[i, 0]])
             #apwidthloc[i,1] = int((np.argmin(aps[i,aploc:ttime]) + aploc) * 0.5)
             apwidthloc[i,1] = (np.abs(aps[i, aploc:ttime] - aphalfheight)).argmin() + aploc
