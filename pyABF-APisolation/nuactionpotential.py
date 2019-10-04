@@ -82,7 +82,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
     arthreshold = np.empty(vlon)
     #If there is more than one sweep, we need to ensure we dont iterate out of range
     if abf.sweepCount > 1:
-        sweepcount = (abf.sweepCount - 1)
+        sweepcount = (abf.sweepCount)
 
     #Now we walk through the sweeps looking for action potentials
     for sweepNumber in range(0, sweepcount): 
