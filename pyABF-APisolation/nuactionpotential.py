@@ -244,7 +244,8 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
             if i != (apcount-1) and apsweep[i+1] == apsweep[i]:
                     isi[i] = abs(apTime[i, 0] - apTime[i+1, 0]) / abf.dataRate
             else:
-                    isi[i] = abs((apTime[i, 0] / abf.dataRate) - abf.sweepX[-1])
+                    #isi[i] = abs((apTime[i, 0] / abf.dataRate) - abf.sweepX[-1])
+                    isi[i] = np.nan
             aphalfheight = statistics.median([peakmV[i, 0], fsttrough[i, 0]])
             #apwidthloc[i,1] = int((np.argmin(aps[i,aploc:ttime]) + aploc) * 0.5)
             apwidthloc[i,1] = (np.abs(aps[i, aploc:ttime] - aphalfheight)).argmin() + aploc
@@ -302,7 +303,7 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     
     ##Check one more time for duplicates
     zheight = np.nonzero(np.where(isi == 0, 1, 0))[0] ##finding only indicies where ISI == 0
-    tarfrme.drop(zheight, axis=0)
+    tarframe = tarfrme.drop(zheight, axis=0)
     aps = np.delete(aps, zheight, 0)
     apcount -= len(zheight)
     #ardata = np.delete(ardata, z, 1)
