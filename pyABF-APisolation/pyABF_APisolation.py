@@ -2,28 +2,29 @@
 
 import numpy as np
 from numpy import genfromtxt
-import scipy.linalg
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
 from abfderivative import *
 from nuactionpotential import *
 import pyabf
 from pyabf.tools import *
-from matplotlib import cm
 import tkinter as tk
 from tkinter import filedialog
 import os
 import pandas
 
-
-directory = 'Processed/'
+root = tk.Tk()
+root.withdraw()
+files = filedialog.askopenfilenames(filetypes=(('ABF Files', '*.abf'),
+                                   ('All files', '*.*')),
+                                   title='Select Input File'
+                                   )
+fileList = root.tk.splitlist(files)
 
 i = 0
 k = 0
-for filename in os.listdir(directory):
+for filename in fileList:
     if filename.endswith(".abf"):
         i += 1
-        file_path = directory + filename
+        file_path = filename
         abf = pyabf.ABF(file_path)
         if abf.sweepLabelY != 'Clamp Current (pA)':
             print(filename + ' import')
