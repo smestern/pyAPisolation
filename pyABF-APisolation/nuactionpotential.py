@@ -101,7 +101,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
                     apstrt = (int(i - (abf.dataPointsPerMs * 2)))
                     if apstrt < 0: 
                         apstrt=0
-                    apend = int(i + (abf.dataPointsPerMs * 5)) 
+                    apend = int(i + (abf.dataPointsPerMs * 3)) 
                     aploc = np.argmax(abf.sweepY[apstrt:apend]) + apstrt #alternatively aploc = (np.abs(abf.sweepY[apstrt:apend] - thresholdV)).argmin() + apstrt
 
                     if abf.sweepY[aploc] > -30: #Rejects ap if absolute peak is less than -30mv
@@ -303,7 +303,7 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     
     ##Check one more time for duplicates
     zheight = np.nonzero(np.where(isi == 0, 1, 0))[0] ##finding only indicies where ISI == 0
-    tarframe = tarfrme.drop(zheight, axis=0)
+    tarfrme = tarfrme.drop(zheight, axis=0)
     aps = np.delete(aps, zheight, 0)
     apcount -= len(zheight)
     #ardata = np.delete(ardata, z, 1)
