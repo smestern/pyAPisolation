@@ -1,9 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import pyabf
 from pyabf import filter
-import tkinter as tk
-from tkinter import filedialog
 import random
 
 
@@ -15,11 +12,10 @@ def derivative(abf, sweepNumber, filter=0):
         pyabf.filter.gaussian(abf,filter,0)
     
     dy=np.diff(abf.sweepY,1)
-    dx=np.diff(abf.sweepX,1)
-    dataY=dy/dx
+    dx=np.diff((abf.sweepX * abf.dataRate / 1000),1) 
+    dataY=dy/dx 
     dataX = 0.5*(abf.sweepX[:-1]+abf.sweepX[1:])
-
-
+    
     return dataX, dataY
     
 def doublederivative(abf, sweepNumber, filter=0):
@@ -29,7 +25,7 @@ def doublederivative(abf, sweepNumber, filter=0):
         pyabf.filter.gaussian(abf,filter,0)
     abf.setSweep(sweepNumber)
     dy=np.diff(abf.sweepY,1)
-    dx=np.diff(abf.sweepX,1)
+    dx=np.diff((abf.sweepX * abf.dataRate / 1000),1) 
     dataY=dy/dx
     dataX = 0.5*(abf.sweepX[:-1]+abf.sweepX[1:])
     dyfirst=np.diff(dataY,1)
@@ -62,7 +58,7 @@ def derivintegrate(abf, sweepNumber, filter=0, step=1):
    i1,i2 = 0,1
    lstnum = 0
    dy=np.diff(abf.sweepY,1)
-   dx=np.diff(abf.sweepX,1)
+   dx=np.diff((abf.sweepX * abf.dataRate / 1000),1) 
    dataY=dy/dx
    dataX = 0.5*(abf.sweepX[:-1]+abf.sweepX[1:])
 
