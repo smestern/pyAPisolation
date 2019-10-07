@@ -159,7 +159,6 @@
     <Compile Include="nwbactionpotential.py" />
     <Compile Include="nuactionpotential.py" />
     <Compile Include="nwb_pyABF_APisolation.py" />
-    <Compile Include="pyABF_APisolation_NHP.py" />
     <Compile Include="pyABF_APisolation.py" />
   </ItemGroup>
   <ItemGroup>
