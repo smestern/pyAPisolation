@@ -337,5 +337,6 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
-/pyABF-APisolation/output
-/pyABF-APisolation/NHP
+/pyAPisolation/output
+/pyAPisolation/bin/build/pyABF_APisolation
+/pyAPisolation/bin/dist/pyABF_APisolation

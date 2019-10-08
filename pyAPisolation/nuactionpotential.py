@@ -311,10 +311,14 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
 
     ## if the user requests we save the feat array
     if savefeat == True:
+        if not os.path.exists('output/'):
+                    os.makedirs('output/')
         tarfrme.to_csv('output/feat' + tag + abf.abfID + '.csv')
         print('feat' + tag + abf.abfID + '.csv saved')
     ## Save raw traces if we need to
     if saveind == True:
+        if not os.path.exists('output/'):
+                    os.makedirs('output/')
         for m in range(0, apcount - 1):
                 aphold = np.array((aps[m], apoints))
                 np.savetxt('output/' + str(m) + tag + abf.abfID + '.csv', aphold, delimiter=",", fmt='%12.5f')
