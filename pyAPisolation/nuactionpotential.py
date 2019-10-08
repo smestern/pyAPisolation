@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import genfromtxt
 import matplotlib.pyplot as plt
-from abfderivative import *
+from .abfderivative import *
 import pyabf
 from pyabf.tools import *
 from pyabf import filter

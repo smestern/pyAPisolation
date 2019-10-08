@@ -340,3 +340,4 @@ healthchecksdb
 /pyAPisolation/output
 /pyAPisolation/bin/build/pyABF_APisolation
 /pyAPisolation/bin/dist/pyABF_APisolation
+/pyAPisolation/bin/output

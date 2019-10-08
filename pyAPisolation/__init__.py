@@ -1,3 +1,3 @@
 name = 'pyAPisolation'
-import abfderivative
-import nuactionpotential
+from .abfderivative import *
+from .nuactionpotential import *
