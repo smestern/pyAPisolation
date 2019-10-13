@@ -16,6 +16,45 @@ files = filedialog.askopenfilenames(filetypes=(('ABF Files', '*.abf'),
                                    )
 fileList = root.tk.splitlist(files)
 
+##Declare our options at default
+filter = input("Filter (recommended to be set to 0): ")
+braw = False
+bfeat = True
+try: 
+    filter = int(filter)
+except:
+    filter = 0
+tag = input("tag to apply output to files: ")
+try: 
+    tag = str(tag)
+except:
+    tag = ""
+raw = input("save raw action potential traces? (y/n): ")
+try: 
+    raw = str(raw)
+except:
+    raw = "n"
+if raw == "y" or raw =="Y":
+    braw = True
+
+feat = input("save feature arrays for each file? (y/n): ")
+try: 
+    feat = str(feat)
+except:
+    feat = "n"
+if feat == "n" or feat =="N":
+    bfeat = False
+else: 
+    bfeat = True
+
+debugplot = input("return a plot of sample action potentials from the files (debug) (int): ")
+try:
+    debugplot = int(debugplot)
+except:
+    debugplot = 0
+
+
+
 for filename in fileList:
     if filename.endswith(".abf"):
         file_path = filename
@@ -23,11 +62,8 @@ for filename in fileList:
         if abf.sweepLabelY != 'Clamp Current (pA)':
             print(filename + ' import')
             np.nan_to_num(abf.data, nan=-9999, copy=False)
-            tag = file_path.split('/')
-            tag = tag[(len(tag) - 1)]
-            #fileno, void = tag.split('-')
             apis.nuactionpotential.thresholdavg(abf,0)
-            _, df, _ = apis.nuactionpotential.apisolate(abf, 0, "", False, True, plot=8)
+            _, df, _ = apis.nuactionpotential.apisolate(abf, filter, tag, braw, bfeat, plot=debugplot)
         else:
             print('Not Current CLamp')
                      
