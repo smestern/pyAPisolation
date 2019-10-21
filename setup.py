@@ -15,5 +15,6 @@ setup(
     install_requires=[	
        'matplotlib>=2.1.0',
        'numpy>=1.17',
+       'pyabf==2.1.9'
 	]
 )
