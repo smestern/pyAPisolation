@@ -6,7 +6,7 @@ import pyabf
 import tkinter as tk
 from tkinter import filedialog
 import os
-import pandas
+import pandas as pd
 import pyAPisolation as apis
 root = tk.Tk()
 root.withdraw()
@@ -47,25 +47,44 @@ if feat == "n" or feat =="N":
 else: 
     bfeat = True
 
+featcon = input("save feature arrays all-in-one file? (y/n): ")
+try: 
+    feat = str(featcon)
+except:
+    feat = "n"
+if feat == "n" or feat =="N":
+    bfeatcon = False
+else: 
+    bfeatcon = True
+    bfeat = False
+
 debugplot = input("return a plot of sample action potentials from the files (debug) (int): ")
 try:
     debugplot = int(debugplot)
 except:
     debugplot = 0
 
-
+dfs = pd.DataFrame()
 
 for filename in fileList:
     if filename.endswith(".abf"):
         file_path = filename
         abf = pyabf.ABF(file_path)
+        abf.abfID
         if abf.sweepLabelY != 'Clamp Current (pA)':
             print(filename + ' import')
             np.nan_to_num(abf.data, nan=-9999, copy=False)
             apis.nuactionpotential.thresholdavg(abf,0)
             _, df, _ = apis.nuactionpotential.apisolate(abf, filter, tag, braw, bfeat, plot=debugplot)
+            df = df.assign(file_name=np.full(len(df.index),abf.abfID))
+            cols = df.columns.tolist()
+            cols = cols[-1:] + cols[:-1]
+            df = df[cols]
+            if bfeatcon == True:
+               dfs = dfs.append(df)
         else:
             print('Not Current CLamp')
                      
-
+if bfeatcon == True:
+    dfs.to_csv('output/allfeat' + tag + '.csv')
 plt.show()

@@ -222,14 +222,16 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     thresmV = np.empty(apcount)
     isi = np.empty(apcount)
     apno = np.arange(0, (apcount))
- 
+    currinput = np.empty(apcount)
     for i in range(0, apcount): 
             abf.setSweep(int(apsweep[i]))
             ### Fill the arrays if we need to
+            
             apstrt = int(apTime[i,0])
             aploc = int(peakmV[i,1])
             apend = int(apTime[i,1])
             thresmV[i] = aps[i,0]
+            currinput[i] = abf.sweepC[apstrt]
             ttime = int((5 * abf.dataPointsPerMs) + peakmV[i,1])
             if ttime > apend:
                     ttime = apend
@@ -288,14 +290,14 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
                 
     
     ## If saving the feature array we need to construct the labels
-    labels = np.array(['AP Number', 'Sweep', 'Start Time', 'End Time', 'ISI', '5% Threshold', 'mV at Threshold', 'AP Peak (mV)', 'Ap peak (S)', 
+    labels = np.array(['AP Number', 'Sweep', 'Start Time', 'End Time', 'ISI', '5% Threshold', 'mV at Threshold', 'input at threshold', 'AP Peak (mV)', 'Ap peak (S)', 
                        'AP fast trough (mV)', 'AP fast trough time (S)', 'AP slow trough (mV)', 'AP slow trough time (S)', 'AP slow trough time ratio', 'AP height',
                        'AP Full width (S)', 'AP Upstroke (mV/mS)', 'AP Upstroke time (S)', 'AP downstroke (mV/mS)', 'AP Downstroke time (S)', 'Upstroke / Downstroke Ratio'])
     ## We could put it in a numpy array, but arrays of different types slow down the code...
     #ardata = np.vstack((apno[:-1], apsweep[:,0], apTime[:,0], apTime[:,1], isi, arthreshold[:,0], thresmV[:,0], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
     #               slwratio[:,0], apheight[:,0], apfullwidth[:,0], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:-1,0], peaknegDvdt[:-1,1], dvDtRatio[:,0]))
     ### Or we dump it into a panda dataframe. Faster / handles better than a numpy array
-    arfrme = pd.DataFrame([apsweep[:], apTime[:,0], apTime[:,1], isi, arthreshold[:], thresmV[:], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
+    arfrme = pd.DataFrame([apsweep[:], apTime[:,0], apTime[:,1], isi, arthreshold[:], thresmV[:], currinput[:], peakmV[:,0], peakmV[:,1], fsttrough[:, 0], fsttrough[:, 1], slwtrough[:, 0], slwtrough[:, 1], 
                      slwratio[:], apheight[:], apfullwidth[:], peakposDvdt[:,0], peakposDvdt[:,1], peaknegDvdt[:,0], peaknegDvdt[:,1], dvDtRatio[:]],
                           index=labels[1:],
                           columns=apno[:])

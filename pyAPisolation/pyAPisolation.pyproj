@@ -24,7 +24,6 @@
   <ItemGroup>
     <Compile Include="abfderivative.py" />
     <Compile Include="nuactionpotential.py" />
-    <Compile Include="bin/nwb_pyABF_APisolation.py" />
     <Compile Include="__init__.py">
       <SubType>Code</SubType>
     </Compile>
