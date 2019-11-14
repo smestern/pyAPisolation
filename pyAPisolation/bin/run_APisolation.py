@@ -74,7 +74,6 @@ for filename in fileList:
         if abf.sweepLabelY != 'Clamp Current (pA)':
             print(filename + ' import')
             np.nan_to_num(abf.data, nan=-9999, copy=False)
-            apis.nuactionpotential.thresholdavg(abf,0)
             _, df, _ = apis.nuactionpotential.apisolate(abf, filter, tag, braw, bfeat, plot=debugplot)
             df = df.assign(file_name=np.full(len(df.index),abf.abfID))
             cols = df.columns.tolist()
