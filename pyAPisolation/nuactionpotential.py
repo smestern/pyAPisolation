@@ -37,7 +37,7 @@ def thresholdavg(abf, sweep, thresdvdt = 20):
             k = slopey[j]
             #searches in the next 10ms for the peak
             apend = int(j + (abf.dataPointsPerMs * 5)) 
-            apstrt = int(j - (abf.dataPointsPerMs * 2))
+            apstrt = int(j - (abf.dataPointsPerMs * 0.5))
             if apstrt < 0: 
                         apstrt=0
 
@@ -98,7 +98,7 @@ def appreprocess(abf, tag = 'default', save = False, plot = False):
         np.nan_to_num(slopey, nan=0, copy=False)
         indexhigher = pyabf.tools.ap.ap_points_currentSweep(abf)
         for ind, i in enumerate(indexhigher):
-                    apstrt = (int(i - (abf.dataPointsPerMs * 2)))
+                    apstrt = (int(i - (abf.dataPointsPerMs * 0.5)))
                     if apstrt < 0: 
                         apstrt=0
                     apend = int(i + (abf.dataPointsPerMs * 3)) 
@@ -210,7 +210,7 @@ def apisolate(abf, filter, tag = '', saveind = False, savefeat = False, plot = 0
     apoints = np.linspace(0, (d / abf.dataPointsPerMs), d)
     
     if apcount <1:
-        return 0,0,0
+        return 0,pd.DataFrame(),abf
     ## Intialize the rest of the arrays to fill
     dvDtRatio = np.empty(apcount)
     slwtrough = np.empty((apcount, 2))

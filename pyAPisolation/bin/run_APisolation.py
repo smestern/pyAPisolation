@@ -8,6 +8,7 @@ from tkinter import filedialog
 import os
 import pandas as pd
 import pyAPisolation as apis
+from sklearn.ensemble import IsolationForest
 root = tk.Tk()
 root.withdraw()
 files = filedialog.askopenfilenames(filetypes=(('ABF Files', '*.abf'),
@@ -76,6 +77,7 @@ for filename in fileList:
             np.nan_to_num(abf.data, nan=-9999, copy=False)
             _, df, _ = apis.nuactionpotential.apisolate(abf, filter, tag, braw, bfeat, plot=debugplot)
             df = df.assign(file_name=np.full(len(df.index),abf.abfID))
+            
             cols = df.columns.tolist()
             cols = cols[-1:] + cols[:-1]
             df = df[cols]
@@ -83,7 +85,21 @@ for filename in fileList:
                dfs = dfs.append(df)
         else:
             print('Not Current CLamp')
-                     
+   
+od = IsolationForest(contamination=0.01)
+d_out = dfs.iloc[:,2:].to_numpy()
+d_out = np.nan_to_num(d_out, False, 0.0)
+f_outliers = od.fit_predict(d_out)
+drop_o = np.nonzero(np.where(f_outliers==-1, 1, 0))[0]         
+
+outliers = dfs.iloc[drop_o].copy(deep=True)
+dfs = dfs.drop(dfs.index[drop_o], axis=0)
+
+
 if bfeatcon == True:
     dfs.to_csv('output/allfeat' + tag + '.csv')
+    outliers.to_csv('output/outliers_' + tag + '.csv')
+
+
+
 plt.show()
