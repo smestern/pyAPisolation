@@ -59,6 +59,40 @@ else:
     bfeatcon = True
     bfeat = False
 
+
+if bfeatcon == True:
+    featfile = input("save feature arrays all-in-one file averaging per input file? (y/n): ")
+    try: 
+        featfile = str(featfile)
+    except:
+        featfile = "n"
+    if featfile == "n" or featfile =="N":
+        featfile = False
+    else: 
+        featfile = True
+
+    featrheo = input("save feature arrays all-in-one file rheobase only? (y/n): ")
+    try: 
+        featrheo = str(featrheo)
+    except:
+        featrheo = "n"
+    if featrheo == "n" or featrheo =="N":
+        featrheo = False
+    else: 
+        featrheo = True
+
+
+    boutlier = input("Perform Outlier Elim? (y/n): ")
+    try: 
+        boutlier = str(boutlier)
+    except:
+        boutlier = "n"
+    if boutlier == "n" or boutlier =="N":
+        boutlier = False
+    else: 
+        boutlier = True
+        
+
 debugplot = input("return a plot of sample action potentials from the files (debug) (int): ")
 try:
     debugplot = int(debugplot)
@@ -86,19 +120,34 @@ for filename in fileList:
         else:
             print('Not Current CLamp')
    
-od = IsolationForest(contamination=0.01)
-d_out = dfs.iloc[:,2:].to_numpy()
-d_out = np.nan_to_num(d_out, False, 0.0)
-f_outliers = od.fit_predict(d_out)
-drop_o = np.nonzero(np.where(f_outliers==-1, 1, 0))[0]         
+if boutlier == True:
+    od = IsolationForest(contamination=0.01)
+    d_out = dfs.iloc[:,2:].to_numpy()
+    d_out = np.nan_to_num(d_out, False, 0.0)
+    f_outliers = od.fit_predict(d_out)
+    drop_o = np.nonzero(np.where(f_outliers==-1, 1, 0))[0]         
 
-outliers = dfs.iloc[drop_o].copy(deep=True)
-dfs = dfs.drop(dfs.index[drop_o], axis=0)
+    outliers = dfs.iloc[drop_o].copy(deep=True)
+    dfs = dfs.drop(dfs.index[drop_o], axis=0)
+    outliers.to_csv('output/outliers_' + tag + '.csv')
+
+if featfile == True:
+    ids = dfs['file_name'].unique()
+    tempframe = dfs.groupby('file_name').mean().reset_index()
+    tempframe.to_csv('output/allAVG' + tag + '.csv')
+
+if featrheo == True:
+    tempframe = dfs.drop_duplicates(subset='file_name')
+    tempframe.to_csv('output/allRheo' + tag + '.csv')
+
+        
+
+
 
 
 if bfeatcon == True:
     dfs.to_csv('output/allfeat' + tag + '.csv')
-    outliers.to_csv('output/outliers_' + tag + '.csv')
+    
 
 
 
