@@ -5,7 +5,7 @@
     <ProjectGuid>309e1fdf-ac34-46f7-ad12-a763af3594f1</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>bin\run_APisolation.py</StartupFile>
+    <StartupFile>bin\run_APisolation_dir.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -23,6 +23,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="abfderivative.py" />
+    <Compile Include="bin\run_APisolation_dir.py" />
     <Compile Include="nuactionpotential.py" />
     <Compile Include="__init__.py">
       <SubType>Code</SubType>
