@@ -5,7 +5,7 @@
     <ProjectGuid>309e1fdf-ac34-46f7-ad12-a763af3594f1</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>bin\run_APisolation_dir.py</StartupFile>
+    <StartupFile>bin\run_APisolation.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>

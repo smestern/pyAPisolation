@@ -110,8 +110,17 @@ for filename in fileList:
             print(filename + ' import')
             np.nan_to_num(abf.data, nan=-9999, copy=False)
             _, df, _ = apis.nuactionpotential.apisolate(abf, filter, tag, braw, bfeat, plot=debugplot)
-            df = df.assign(file_name=np.full(len(df.index),abf.abfID))
             
+            df = df.drop(df.index[df['Start Time'] >= 0.65], axis=0)
+            df = df.drop(df.index[df['Start Time'] <= 0.25], axis=0)
+            sweeps = df['Sweep'].unique()
+            sweep_ap_count = []
+            for x in sweeps:
+                temp_count = df[df['Sweep']==x].shape[0]
+                sweep_ap_count = np.hstack((sweep_ap_count, np.hstack(([temp_count], np.full(temp_count-1,np.nan)))))
+
+            df['sweep_ap_count'] = sweep_ap_count
+            df = df.assign(file_name=np.full(len(df.index),abf.abfID))
             cols = df.columns.tolist()
             cols = cols[-1:] + cols[:-1]
             df = df[cols]
@@ -133,6 +142,9 @@ if boutlier == True:
 
 if featfile == True:
     ids = dfs['file_name'].unique()
+    
+
+
     tempframe = dfs.groupby('file_name').mean().reset_index()
     tempframe.to_csv('output/allAVG' + tag + '.csv')
 
@@ -146,6 +158,7 @@ if featrheo == True:
 
 
 if bfeatcon == True:
+
     dfs.to_csv('output/allfeat' + tag + '.csv')
     
 
