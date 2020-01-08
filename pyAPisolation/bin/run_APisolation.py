@@ -107,12 +107,12 @@ for filename in fileList:
         abf = pyabf.ABF(file_path)
         abf.abfID
         if abf.sweepLabelY != 'Clamp Current (pA)':
-            print(filename + ' import')
-            np.nan_to_num(abf.data, nan=-9999, copy=False)
-            _, df, _ = apis.nuactionpotential.apisolate(abf, filter, tag, braw, bfeat, plot=debugplot)
-            
-            df = df.drop(df.index[df['Start Time'] >= 0.65], axis=0)
-            df = df.drop(df.index[df['Start Time'] <= 0.25], axis=0)
+           print(filename + ' import')
+           np.nan_to_num(abf.data, nan=-9999, copy=False)
+           _, df, _ = apis.nuactionpotential.apisolate(abf, filter, tag, braw, bfeat, plot=debugplot)
+           try:
+            df = df.drop(df.index[df['Start Time'] >= 1.30], axis=0)
+            df = df.drop(df.index[df['Start Time'] <= 0.55], axis=0)
             sweeps = df['Sweep'].unique()
             sweep_ap_count = []
             for x in sweeps:
@@ -122,16 +122,18 @@ for filename in fileList:
             df['sweep_ap_count'] = sweep_ap_count
             df = df.assign(file_name=np.full(len(df.index),abf.abfID))
             cols = df.columns.tolist()
-            cols = cols[-1:] + cols[:-1]
+            cols = cols[-1:] + cols[:-1] 
             df = df[cols]
             if bfeatcon == True:
                dfs = dfs.append(df)
+           except:
+                print('No viable Sweeps')
         else:
             print('Not Current CLamp')
    
 if boutlier == True:
     od = IsolationForest(contamination=0.01)
-    d_out = dfs.iloc[:,2:].to_numpy()
+    d_out = dfs.iloc[:,2:-1].to_numpy()
     d_out = np.nan_to_num(d_out, False, 0.0)
     f_outliers = od.fit_predict(d_out)
     drop_o = np.nonzero(np.where(f_outliers==-1, 1, 0))[0]         
