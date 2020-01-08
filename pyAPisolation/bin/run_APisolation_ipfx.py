@@ -31,13 +31,6 @@ try:
     tag = str(tag)
 except:
     tag = ""
-raw = input("save raw action potential traces? (y/n): ")
-try: 
-    raw = str(raw)
-except:
-    raw = "n"
-if raw == "y" or raw =="Y":
-    braw = True
 
 feat = input("save feature arrays for each file? (y/n): ")
 try: 
@@ -94,11 +87,8 @@ if bfeatcon == True:
         boutlier = True
         
 
-debugplot = input("return a plot of sample action potentials from the files (debug) (int): ")
-try:
-    debugplot = int(debugplot)
-except:
-    debugplot = 0
+
+debugplot = 0
 
 dfs = pd.DataFrame()
 
@@ -110,11 +100,38 @@ for filename in fileList:
         if abf.sweepLabelY != 'Clamp Current (pA)':
             print(filename + ' import')
             np.nan_to_num(abf.data, nan=-9999, copy=False)
-            for sweep in abf.SweepCount():
-                print('vca')
+             #If there is more than one sweep, we need to ensure we dont iterate out of range
+            if abf.sweepCount > 1:
+                sweepcount = (abf.sweepCount)
+            else:
+                sweepcount = 1
+            df = pd.DataFrame()
+            #Now we walk through the sweeps looking for action potentials
+            for sweepNumber in range(0, sweepcount): 
+                
+                spikext = feature_extractor.SpikeFeatureExtractor(filter=0, dv_cutoff=15)
+                spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=0.6, end=1.5)
+                abf.setSweep(sweepNumber)
+                dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+                spike_in_sweep = spikext.process(dataT, dataV, dataI)
+                spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
+                spike_count = spike_in_sweep.shape[0]
+                if spike_count > 0:
+                    spike_train_df = pd.DataFrame(spike_train, index=[0])
+                    nan_series = pd.DataFrame(np.full(abs(spike_count-1), np.nan))
+                    #spike_train_df = spike_train_df.append(nan_series)
+                    spike_in_sweep['spike count'] = np.hstack((spike_count, np.full(abs(spike_count-1), np.nan)))
+                    spike_in_sweep['sweep Number'] = np.hstack(((sweepNumber+1), np.full(abs(spike_count-1), np.nan)))
+                    spike_in_sweep = spike_in_sweep.join(spike_train_df)
+                    print("Processed Sweep " + str(sweepNumber+1) + " with " + str(spike_count) + " aps")
+                    df = df.append(spike_in_sweep, ignore_index=True, sort=True)
+            df = df.assign(file_name=np.full(len(df.index),abf.abfID))
+            cols = df.columns.tolist()
+            cols = cols[-1:] + cols[:-1]
+            df = df[cols]
             df = df[cols]
             if bfeatcon == True:
-               dfs = dfs.append(df)
+               dfs = dfs.append(df, sort=True)
         else:
             print('Not Current CLamp')
    
