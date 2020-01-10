@@ -91,7 +91,7 @@ if bfeatcon == True:
 debugplot = 0
 
 dfs = pd.DataFrame()
-df_spike_count = pd.Dataframe()
+df_spike_count = pd.DataFrame()
 for filename in fileList:
     if filename.endswith(".abf"):
         file_path = filename
@@ -108,7 +108,7 @@ for filename in fileList:
             df = pd.DataFrame()
             #Now we walk through the sweeps looking for action potentials
             temp_spike_df = pd.DataFrame()
-            temp_spike_df['filename'] = [abf.abfID]
+            temp_spike_df['a_filename'] = [abf.abfID]
             for sweepNumber in range(0, sweepcount): 
                 
                 spikext = feature_extractor.SpikeFeatureExtractor(filter=0, dv_cutoff=15)
@@ -119,9 +119,10 @@ for filename in fileList:
                 spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
                 spike_count = spike_in_sweep.shape[0]
                 temp_spike_df["Sweep " + str(sweepNumber +1) + " spike count"] = [spike_count]
-                temp_spike_df["Sweep " + str(sweepNumber +1)+ " current injection"] = [spike_in_sweep['peak_i'].to_numpy()[0]]
+                temp_spike_df["Current_Sweep " + str(sweepNumber +1)+ " current injection"] = [dataI[20613]]
                 
                 if spike_count > 0:
+                    temp_spike_df["isi_Sweep " + str(sweepNumber +1)+ " isi"] = [spike_train['first_isi']]
                     spike_train_df = pd.DataFrame(spike_train, index=[0])
                     nan_series = pd.DataFrame(np.full(abs(spike_count-1), np.nan))
                     #spike_train_df = spike_train_df.append(nan_series)
@@ -130,6 +131,8 @@ for filename in fileList:
                     spike_in_sweep = spike_in_sweep.join(spike_train_df)
                     print("Processed Sweep " + str(sweepNumber+1) + " with " + str(spike_count) + " aps")
                     df = df.append(spike_in_sweep, ignore_index=True, sort=True)
+                else:
+                    temp_spike_df["isi_Sweep " + str(sweepNumber +1)+ " isi"] = [np.nan]
             df = df.assign(file_name=np.full(len(df.index),abf.abfID))
             temp_spike_df["rheobase_current"] = [df['peak_i'].to_numpy()[0]]
             temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
