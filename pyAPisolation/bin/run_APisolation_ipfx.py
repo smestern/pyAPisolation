@@ -102,10 +102,10 @@ for root,dir,fileList in os.walk(files):
             temp_spike_df['a_filename'] = [abf.abfID]
             for sweepNumber in range(0, sweepcount): 
                 real_sweep_length = abf.sweepLengthSec - 0.1
-                if sweepnumber < 9:
+                if sweepNumber < 9:
                     real_sweep_number = '0' + str(sweepNumber + 1)
                 else:
-                    real_sweep_number = + str(sweepNumber + 1)
+                    real_sweep_number = str(sweepNumber + 1)
                 if lowerlim == 0 and upperlim == 0:
                     spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut)
                     upperlim = real_sweep_length
@@ -128,7 +128,7 @@ for root,dir,fileList in os.walk(files):
                 temp_spike_df["Sweep " + real_sweep_number + " spike count"] = [spike_count]
                 current_str = np.array2string(np.unique(dataI))
                 current_str = current_str.replace('[', '')
-                current_str = current_str.replace('0,', '')
+                current_str = current_str.replace('0.', '')
                 current_str = current_str.replace(']', '')
                 temp_spike_df["Current_Sweep " + real_sweep_number + " current injection"] = [current_str]
                 if dataI[uindex] < 0:
