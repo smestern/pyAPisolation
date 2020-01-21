@@ -17,7 +17,7 @@ root.withdraw()
 files = filedialog.askdirectory(
                                    title='Select dir File'
                                    )
-root_fold = root.tk.splitlist(files)[0]
+root_fold = files
 
 ##Declare our options at default
 filter = input("Filter (recommended to be set to 0): ")
@@ -122,7 +122,11 @@ for root,dir,fileList in os.walk(files):
                 spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
                 spike_count = spike_in_sweep.shape[0]
                 temp_spike_df["Sweep " + str(sweepNumber +1) + " spike count"] = [spike_count]
-                temp_spike_df["Current_Sweep " + str(sweepNumber +1)+ " current injection"] = [dataI[6052]]
+                current_str = np.array2string(np.unique(dataI))
+                current_str = current_str.replace('[', '')
+                current_str = current_str.replace('0,', '')
+                current_str = current_str.replace(']', '')
+                temp_spike_df["Current_Sweep " + str(sweepNumber +1)+ " current injection"] = [current_str]
                 if dataI[uindex] < 0:
                     try:
                         if lowerlim < 0.1:
