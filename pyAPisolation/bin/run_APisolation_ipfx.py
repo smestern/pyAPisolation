@@ -155,7 +155,7 @@ for root,dir,fileList in os.walk(files):
                 current_str = current_str.replace(' 0.', '')
                 current_str = current_str.replace(']', '')
                 temp_spike_df["Current_Sweep " + real_sweep_number + " current injection"] = [current_str]
-                if dataI[uindex] < 0:
+                if dataI[np.argmin(dataI)] < 0:
                     try:
                         if lowerlim < 0.1:
                             b_lowerlim = 0.1
@@ -185,8 +185,9 @@ for root,dir,fileList in os.walk(files):
             if df.empty:
                 print('no spikes found')
             else:
-                
-                temp_spike_df["rheobase_current"] = [df['peak_i'].to_numpy()[0]]
+                abf.setSweep(int(df['sweep Number'].to_numpy()[0] - 1))
+                rheobase_current = abf.sweepC[np.argmax(abf.sweepC)]
+                temp_spike_df["rheobase_current"] = [rheobase_current]
                 temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
                 temp_spike_df["rheobase_thres"] = [df['threshold_v'].to_numpy()[0]]
                 temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]]
