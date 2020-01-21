@@ -1,5 +1,6 @@
 
-
+print("Loading...")
+import sys
 import numpy as np
 from numpy import genfromtxt
 import pyabf
@@ -7,17 +8,17 @@ import tkinter as tk
 from tkinter import filedialog
 import os
 import pandas as pd
-import pyAPisolation as apis
+#import pyAPisolation as apis
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
+print("Load finished")
 root = tk.Tk()
 root.withdraw()
-files = filedialog.askopenfilenames(filetypes=(('ABF Files', '*.abf'),
-                                   ('All files', '*.*')),
-                                   title='Select Input File'
+files = filedialog.askdirectory(
+                                   title='Select dir File'
                                    )
-fileList = root.tk.splitlist(files)
-root_fold = os.path.dirname(files[0])
+root_fold = root.tk.splitlist(files)[0]
+
 ##Declare our options at default
 filter = input("Filter (recommended to be set to 0): ")
 braw = False
@@ -49,16 +50,8 @@ except:
     lowerlim = 0
 
 
-feat = input("save feature arrays for each file? (y/n): ")
-try: 
-    feat = str(featcon)
-except:
-    feat = "n"
-if feat == "n" or feat =="N":
-    bfeatcon = False
-else: 
-    bfeatcon = True
-    bfeat = False
+bfeatcon = True
+bfeat = False
 
 
 if bfeatcon == True:
@@ -88,13 +81,15 @@ debugplot = 0
 
 dfs = pd.DataFrame()
 df_spike_count = pd.DataFrame()
-for filename in fileList:
+for root,dir,fileList in os.walk(files):
+ for filename in fileList:
     if filename.endswith(".abf"):
-        file_path = filename
+        file_path = os.path.join(root,filename)
         abf = pyabf.ABF(file_path)
         
         if abf.sweepLabelY != 'Clamp Current (pA)':
             print(filename + ' import')
+           
             np.nan_to_num(abf.data, nan=-9999, copy=False)
              #If there is more than one sweep, we need to ensure we dont iterate out of range
             if abf.sweepCount > 1:
@@ -120,16 +115,26 @@ for filename in fileList:
                     spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim)
                     spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
                 abf.setSweep(sweepNumber)
+               
                 dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+                uindex = np.nonzero(dataI)[0][0]
                 spike_in_sweep = spikext.process(dataT, dataV, dataI)
                 spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
                 spike_count = spike_in_sweep.shape[0]
                 temp_spike_df["Sweep " + str(sweepNumber +1) + " spike count"] = [spike_count]
-                temp_spike_df["Current_Sweep " + str(sweepNumber +1)+ " current injection"] = [dataI[20613]]
-                if dataI[20613] < 0:
-                    temp_spike_df['baseline voltage'] = subt.baseline_voltage(dataT, dataV)
-                    temp_spike_df['sag'] = subt.sag(datat,dataV,dataI, start=0.55, end=1.6)
-
+                temp_spike_df["Current_Sweep " + str(sweepNumber +1)+ " current injection"] = [dataI[6052]]
+                if dataI[uindex] < 0:
+                    try:
+                        if lowerlim < 0.1:
+                            b_lowerlim = 0.1
+                        else:
+                            b_lowerlim = lowerlim
+                        temp_spike_df['baseline voltage' + str(sweepNumber +1)] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
+                        temp_spike_df['sag' + str(sweepNumber +1)] = subt.sag(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                        temp_spike_df['time_constant' + str(sweepNumber +1)] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                        #temp_spike_df['voltage_deflection' + str(sweepNumber +1)] = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                    except:
+                        print("Subthreshold Processing Error with " + str(abf.abfID))
 
                 if spike_count > 0:
                     temp_spike_df["isi_Sweep " + str(sweepNumber +1)+ " isi"] = [spike_train['first_isi']]
@@ -144,6 +149,7 @@ for filename in fileList:
                 else:
                     temp_spike_df["isi_Sweep " + str(sweepNumber +1)+ " isi"] = [np.nan]
             df = df.assign(file_name=np.full(len(df.index),abf.abfID))
+            temp_spike_df['protocol'] = [abf.protocol]
             temp_spike_df["rheobase_current"] = [df['peak_i'].to_numpy()[0]]
             temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
             temp_spike_df["rheobase_thres"] = [df['threshold_v'].to_numpy()[0]]
@@ -169,6 +175,8 @@ for filename in fileList:
             if bfeatcon == True:
                df_spike_count = df_spike_count.append(temp_spike_df, sort=True)
                dfs = dfs.append(df, sort=True)
+           
+
         else:
             print('Not Current CLamp')
    
@@ -180,11 +188,11 @@ if featfile == True:
 
 
     tempframe = dfs.groupby('file_name').mean().reset_index()
-    tempframe.to_csv(root_fold + '/allAVG' + tag + '.csv')
+    tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
 
 if featrheo == True:
     tempframe = dfs.drop_duplicates(subset='file_name')
-    tempframe.to_csv(root_fold + '/allRheo' + tag + '.csv')
+    tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
 
         
 
@@ -193,7 +201,7 @@ if featrheo == True:
 
 if bfeatcon == True:
     df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
-    dfs.to_csv(root_fold + '/allfeat' + tag + '.csv')
+    dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
     
 
 print("==== SUCCESS ====")
