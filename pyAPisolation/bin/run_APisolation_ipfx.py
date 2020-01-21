@@ -1,5 +1,5 @@
 
-import matplotlib.pyplot as plt
+
 import numpy as np
 from numpy import genfromtxt
 import pyabf
@@ -7,8 +7,7 @@ import tkinter as tk
 from tkinter import filedialog
 import os
 import pandas as pd
-#import pyAPisolation as apis
-from sklearn.ensemble import IsolationForest
+import pyAPisolation as apis
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 root = tk.Tk()
@@ -18,7 +17,7 @@ files = filedialog.askopenfilenames(filetypes=(('ABF Files', '*.abf'),
                                    title='Select Input File'
                                    )
 fileList = root.tk.splitlist(files)
-
+root_fold = os.path.dirname(files[0])
 ##Declare our options at default
 filter = input("Filter (recommended to be set to 0): ")
 braw = False
@@ -33,7 +32,24 @@ try:
 except:
     tag = ""
 
-featcon = "y"
+dv_cut = input("Enter the threshold cut off for the derivative (Allen defaults 20mv/s): ")
+try: 
+    dv_cut = int(dv_cut)
+except:
+    dv_cut = 20
+
+lowerlim = input("Enter the time to start looking for spikes [in s] (enter 0 to start search at beginning): ")
+upperlim = input("Enter the time to stop looking for spikes [in s] (enter 0 to search the full sweep): ")
+
+try: 
+    lowerlim = float(lowerlim)
+    upperlim = float(upperlim)
+except:
+    upperlim = 0
+    lowerlim = 0
+
+
+feat = input("save feature arrays for each file? (y/n): ")
 try: 
     feat = str(featcon)
 except:
@@ -65,17 +81,6 @@ if bfeatcon == True:
         featrheo = False
     else: 
         featrheo = True
-
-
-    boutlier = input("Perform Outlier Elim? (y/n): ")
-    try: 
-        boutlier = str(boutlier)
-    except:
-        boutlier = "n"
-    if boutlier == "n" or boutlier =="N":
-        boutlier = False
-    else: 
-        boutlier = True
         
 
 
@@ -101,9 +106,19 @@ for filename in fileList:
             temp_spike_df = pd.DataFrame()
             temp_spike_df['a_filename'] = [abf.abfID]
             for sweepNumber in range(0, sweepcount): 
-                
-                spikext = feature_extractor.SpikeFeatureExtractor(filter=0, dv_cutoff=15)
-                spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=0.55, end=1.6)
+                real_sweep_length = abf.sweepLengthSec - 0.1
+                if lowerlim == 0 and upperlim == 0:
+                    spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut)
+                    upperlim = real_sweep_length
+                    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=0, end=upperlim)
+                elif upperlim > real_sweep_length:
+                    spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim)
+                    upperlim = real_sweep_length
+                    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
+                    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
+                else:
+                    spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim)
+                    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
                 abf.setSweep(sweepNumber)
                 dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
                 spike_in_sweep = spikext.process(dataT, dataV, dataI)
@@ -157,16 +172,7 @@ for filename in fileList:
         else:
             print('Not Current CLamp')
    
-if boutlier == True:
-    od = IsolationForest(contamination=0.01)
-    d_out = dfs.iloc[:,2:].to_numpy()
-    d_out = np.nan_to_num(d_out, False, 0.0)
-    f_outliers = od.fit_predict(d_out)
-    drop_o = np.nonzero(np.where(f_outliers==-1, 1, 0))[0]         
 
-    outliers = dfs.iloc[drop_o].copy(deep=True)
-    dfs = dfs.drop(dfs.index[drop_o], axis=0)
-    outliers.to_csv('output/outliers_' + tag + '.csv')
 
 if featfile == True:
     ids = dfs['file_name'].unique()
@@ -174,11 +180,11 @@ if featfile == True:
 
 
     tempframe = dfs.groupby('file_name').mean().reset_index()
-    tempframe.to_csv('output/allAVG' + tag + '.csv')
+    tempframe.to_csv(root_fold + '/allAVG' + tag + '.csv')
 
 if featrheo == True:
     tempframe = dfs.drop_duplicates(subset='file_name')
-    tempframe.to_csv('output/allRheo' + tag + '.csv')
+    tempframe.to_csv(root_fold + '/allRheo' + tag + '.csv')
 
         
 
@@ -186,10 +192,9 @@ if featrheo == True:
 
 
 if bfeatcon == True:
-    df_spike_count.to_csv('output/spike_count_' + tag + '.csv')
-    dfs.to_csv('output/allfeat' + tag + '.csv')
+    df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
+    dfs.to_csv(root_fold + '/allfeat' + tag + '.csv')
     
 
-
-
-plt.show()
+print("==== SUCCESS ====")
+input('Press ENTER to exit')
