@@ -33,6 +33,12 @@ try:
 except:
     tag = ""
 
+proto = input("Type Protocol to analyze: ")
+try: 
+    proto = str(proto)
+except:
+    proto = 'IC1'
+
 dv_cut = input("Enter the threshold cut off for the derivative (Allen defaults 20mv/s): ")
 try: 
     dv_cut = int(dv_cut)
@@ -87,10 +93,14 @@ for root,dir,fileList in os.walk(files):
         file_path = os.path.join(root,filename)
         abf = pyabf.ABF(file_path)
         
-        if abf.sweepLabelY != 'Clamp Current (pA)':
+        if abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and abf.protocol == proto:
           print(filename + ' import')
           try:
             np.nan_to_num(abf.data, nan=-9999, copy=False)
+            try:
+                del spikext
+            except:
+                 _ = 1
              #If there is more than one sweep, we need to ensure we dont iterate out of range
             if abf.sweepCount > 1:
                 sweepcount = (abf.sweepCount)
@@ -101,38 +111,48 @@ for root,dir,fileList in os.walk(files):
             temp_spike_df = pd.DataFrame()
             temp_spike_df['__a_filename'] = [abf.abfID]
             for sweepNumber in range(0, sweepcount): 
-                real_sweep_length = abf.sweepLengthSec - 0.1
+                real_sweep_length = abf.sweepLengthSec - 0.0001
                 if sweepNumber < 9:
+                    real_sweep_number = '00' + str(sweepNumber + 1)
+                elif sweepNumber > 9 and sweepNumber < 99:
                     real_sweep_number = '0' + str(sweepNumber + 1)
-                else:
-                    real_sweep_number = str(sweepNumber + 1)
+
+                
                 if lowerlim == 0 and upperlim == 0:
-                    spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut)
+                    
                     upperlim = real_sweep_length
+                    spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, end=upperlim)
                     spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=0, end=upperlim)
                 elif upperlim > real_sweep_length:
-                    spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim)
+                    
                     upperlim = real_sweep_length
-                    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
-                    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
-                else:
                     spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim)
                     spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
+                    #spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
+                else:
+                    #upperlim = real_sweep_length
+                    spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim)
+
+                    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
+
                 abf.setSweep(sweepNumber)
                
                 dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+                if dataI.shape[0] < dataV.shape[0]:
+                    dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
+                
                 try:
-                    uindex = np.nonzero(dataI)[0][0]
-                    unidex = abf.epochPoints[1] + 1
+               
+                    uindex = abf.epochPoints[1] + 1
                 except:
-                    unidex = 0
+                    uindex = 0
                 spike_in_sweep = spikext.process(dataT, dataV, dataI)
                 spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
                 spike_count = spike_in_sweep.shape[0]
                 temp_spike_df["Sweep " + real_sweep_number + " spike count"] = [spike_count]
                 current_str = np.array2string(np.unique(dataI))
                 current_str = current_str.replace('[', '')
-                current_str = current_str.replace('0,', '')
+                current_str = current_str.replace(' 0.', '')
                 current_str = current_str.replace(']', '')
                 temp_spike_df["Current_Sweep " + real_sweep_number + " current injection"] = [current_str]
                 if dataI[uindex] < 0:
@@ -162,36 +182,41 @@ for root,dir,fileList in os.walk(files):
                     temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [np.nan]
             df = df.assign(__file_name=np.full(len(df.index),abf.abfID))
             temp_spike_df['protocol'] = [abf.protocol]
-            temp_spike_df["rheobase_current"] = [df['peak_i'].to_numpy()[0]]
-            temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
-            temp_spike_df["rheobase_thres"] = [df['threshold_v'].to_numpy()[0]]
-            temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]]
-            temp_spike_df["rheobase_heightPT"] = [abs(df['peak_v'].to_numpy()[0] - df['fast_trough_v'].to_numpy()[0])]
-            temp_spike_df["rheobase_heightTP"] = [abs(df['threshold_v'].to_numpy()[0] - df['peak_v'].to_numpy()[0])]
-            temp_spike_df["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
-            temp_spike_df["rheobase_downstroke"] = [df['upstroke'].to_numpy()[0]]
-            temp_spike_df["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
-            temp_spike_df["mean_current"] = [np.mean(df['peak_i'].to_numpy())]
-            temp_spike_df["mean_latency"] = [np.mean(df['latency'].to_numpy())]
-            temp_spike_df["mean_thres"] = [np.mean(df['threshold_v'].to_numpy())]
-            temp_spike_df["mean_width"] = [np.mean(df['width'].to_numpy())]
-            temp_spike_df["mean_heightPT"] = [np.mean(abs(df['peak_v'].to_numpy() - df['fast_trough_v'].to_numpy()))]
-            temp_spike_df["mean_heightTP"] = [np.mean(abs(df['threshold_v'].to_numpy() - df['peak_v'].to_numpy()))]
-            temp_spike_df["mean_upstroke"] = [np.mean(df['upstroke'].to_numpy())]
-            temp_spike_df["mean_downstroke"] = [np.mean(df['upstroke'].to_numpy())]
-            temp_spike_df["mean_fast_trough"] = [np.mean(df['fast_trough_v'].to_numpy())]
+            if df.empty:
+                print('no spikes found')
+            else:
+                
+                temp_spike_df["rheobase_current"] = [df['peak_i'].to_numpy()[0]]
+                temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
+                temp_spike_df["rheobase_thres"] = [df['threshold_v'].to_numpy()[0]]
+                temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]]
+                temp_spike_df["rheobase_heightPT"] = [abs(df['peak_v'].to_numpy()[0] - df['fast_trough_v'].to_numpy()[0])]
+                temp_spike_df["rheobase_heightTP"] = [abs(df['threshold_v'].to_numpy()[0] - df['peak_v'].to_numpy()[0])]
+                temp_spike_df["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
+                temp_spike_df["rheobase_downstroke"] = [df['upstroke'].to_numpy()[0]]
+                temp_spike_df["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
+                temp_spike_df["mean_current"] = [np.mean(df['peak_i'].to_numpy())]
+                temp_spike_df["mean_latency"] = [np.mean(df['latency'].to_numpy())]
+                temp_spike_df["mean_thres"] = [np.mean(df['threshold_v'].to_numpy())]
+                temp_spike_df["mean_width"] = [np.mean(df['width'].to_numpy())]
+                temp_spike_df["mean_heightPT"] = [np.mean(abs(df['peak_v'].to_numpy() - df['fast_trough_v'].to_numpy()))]
+                temp_spike_df["mean_heightTP"] = [np.mean(abs(df['threshold_v'].to_numpy() - df['peak_v'].to_numpy()))]
+                temp_spike_df["mean_upstroke"] = [np.mean(df['upstroke'].to_numpy())]
+                temp_spike_df["mean_downstroke"] = [np.mean(df['upstroke'].to_numpy())]
+                temp_spike_df["mean_fast_trough"] = [np.mean(df['fast_trough_v'].to_numpy())]
             cols = df.columns.tolist()
             cols = cols[-1:] + cols[:-1]
             df = df[cols]
             df = df[cols]
+            
             if bfeatcon == True:
                df_spike_count = df_spike_count.append(temp_spike_df, sort=True)
                dfs = dfs.append(df, sort=True)
           except:
-              print('Issue Processing ' + filename)
+            print('Issue Processing ' + filename)
 
         else:
-            print('Not Current CLamp')
+            print('Not correct protocol: ' + abf.protocol)
    
 
 
