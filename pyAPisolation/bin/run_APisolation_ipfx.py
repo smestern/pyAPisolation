@@ -7,9 +7,10 @@ import tkinter as tk
 from tkinter import filedialog
 import os
 import pandas as pd
-import pyAPisolation as apis
+#import pyAPisolation as apis
 from sklearn.ensemble import IsolationForest
 from ipfx import feature_extractor
+from ipfx import subthresh_features as subt
 root = tk.Tk()
 root.withdraw()
 files = filedialog.askopenfilenames(filetypes=(('ABF Files', '*.abf'),
@@ -32,17 +33,7 @@ try:
 except:
     tag = ""
 
-feat = input("save feature arrays for each file? (y/n): ")
-try: 
-    feat = str(feat)
-except:
-    feat = "n"
-if feat == "n" or feat =="N":
-    bfeat = False
-else: 
-    bfeat = True
-
-featcon = input("save feature arrays all-in-one file? (y/n): ")
+featcon = "y"
 try: 
     feat = str(featcon)
 except:
@@ -55,7 +46,7 @@ else:
 
 
 if bfeatcon == True:
-    featfile = input("save feature arrays all-in-one file averaging per input file? (y/n): ")
+    featfile = "y"
     try: 
         featfile = str(featfile)
     except:
@@ -65,7 +56,7 @@ if bfeatcon == True:
     else: 
         featfile = True
 
-    featrheo = input("save feature arrays all-in-one file rheobase only? (y/n): ")
+    featrheo = "y"
     try: 
         featrheo = str(featrheo)
     except:
@@ -120,7 +111,11 @@ for filename in fileList:
                 spike_count = spike_in_sweep.shape[0]
                 temp_spike_df["Sweep " + str(sweepNumber +1) + " spike count"] = [spike_count]
                 temp_spike_df["Current_Sweep " + str(sweepNumber +1)+ " current injection"] = [dataI[20613]]
-                
+                if dataI[20613] < 0:
+                    temp_spike_df['baseline voltage'] = subt.baseline_voltage(dataT, dataV)
+                    temp_spike_df['sag'] = subt.sag(datat,dataV,dataI, start=0.55, end=1.6)
+
+
                 if spike_count > 0:
                     temp_spike_df["isi_Sweep " + str(sweepNumber +1)+ " isi"] = [spike_train['first_isi']]
                     spike_train_df = pd.DataFrame(spike_train, index=[0])
