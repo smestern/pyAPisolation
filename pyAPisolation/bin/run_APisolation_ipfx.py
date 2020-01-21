@@ -88,8 +88,8 @@ for root,dir,fileList in os.walk(files):
         abf = pyabf.ABF(file_path)
         
         if abf.sweepLabelY != 'Clamp Current (pA)':
-            print(filename + ' import')
-           
+          print(filename + ' import')
+          try:
             np.nan_to_num(abf.data, nan=-9999, copy=False)
              #If there is more than one sweep, we need to ensure we dont iterate out of range
             if abf.sweepCount > 1:
@@ -99,13 +99,13 @@ for root,dir,fileList in os.walk(files):
             df = pd.DataFrame()
             #Now we walk through the sweeps looking for action potentials
             temp_spike_df = pd.DataFrame()
-            temp_spike_df['a_filename'] = [abf.abfID]
+            temp_spike_df['__a_filename'] = [abf.abfID]
             for sweepNumber in range(0, sweepcount): 
                 real_sweep_length = abf.sweepLengthSec - 0.1
-                if sweepnumber < 9:
+                if sweepNumber < 9:
                     real_sweep_number = '0' + str(sweepNumber + 1)
                 else:
-                    real_sweep_number = + str(sweepNumber + 1)
+                    real_sweep_number = str(sweepNumber + 1)
                 if lowerlim == 0 and upperlim == 0:
                     spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut)
                     upperlim = real_sweep_length
@@ -121,7 +121,11 @@ for root,dir,fileList in os.walk(files):
                 abf.setSweep(sweepNumber)
                
                 dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
-                uindex = np.nonzero(dataI)[0][0]
+                try:
+                    uindex = np.nonzero(dataI)[0][0]
+                    unidex = abf.epochPoints[1] + 1
+                except:
+                    unidex = 0
                 spike_in_sweep = spikext.process(dataT, dataV, dataI)
                 spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
                 spike_count = spike_in_sweep.shape[0]
@@ -156,7 +160,7 @@ for root,dir,fileList in os.walk(files):
                     df = df.append(spike_in_sweep, ignore_index=True, sort=True)
                 else:
                     temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [np.nan]
-            df = df.assign(file_name=np.full(len(df.index),abf.abfID))
+            df = df.assign(__file_name=np.full(len(df.index),abf.abfID))
             temp_spike_df['protocol'] = [abf.protocol]
             temp_spike_df["rheobase_current"] = [df['peak_i'].to_numpy()[0]]
             temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
@@ -183,7 +187,8 @@ for root,dir,fileList in os.walk(files):
             if bfeatcon == True:
                df_spike_count = df_spike_count.append(temp_spike_df, sort=True)
                dfs = dfs.append(df, sort=True)
-           
+          except:
+              print('Issue Processing ' + filename)
 
         else:
             print('Not Current CLamp')
@@ -191,15 +196,15 @@ for root,dir,fileList in os.walk(files):
 
 
 if featfile == True:
-    ids = dfs['file_name'].unique()
+    ids = dfs['__file_name'].unique()
     
 
 
-    tempframe = dfs.groupby('file_name').mean().reset_index()
+    tempframe = dfs.groupby('__file_name').mean().reset_index()
     tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
 
 if featrheo == True:
-    tempframe = dfs.drop_duplicates(subset='file_name')
+    tempframe = dfs.drop_duplicates(subset='__file_name')
     tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
 
         
