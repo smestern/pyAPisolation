@@ -102,6 +102,10 @@ for root,dir,fileList in os.walk(files):
             temp_spike_df['a_filename'] = [abf.abfID]
             for sweepNumber in range(0, sweepcount): 
                 real_sweep_length = abf.sweepLengthSec - 0.1
+                if sweepnumber < 9:
+                    real_sweep_number = '0' + str(sweepNumber + 1)
+                else:
+                    real_sweep_number = + str(sweepNumber + 1)
                 if lowerlim == 0 and upperlim == 0:
                     spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut)
                     upperlim = real_sweep_length
@@ -121,27 +125,27 @@ for root,dir,fileList in os.walk(files):
                 spike_in_sweep = spikext.process(dataT, dataV, dataI)
                 spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
                 spike_count = spike_in_sweep.shape[0]
-                temp_spike_df["Sweep " + str(sweepNumber +1) + " spike count"] = [spike_count]
+                temp_spike_df["Sweep " + real_sweep_number + " spike count"] = [spike_count]
                 current_str = np.array2string(np.unique(dataI))
                 current_str = current_str.replace('[', '')
                 current_str = current_str.replace('0,', '')
                 current_str = current_str.replace(']', '')
-                temp_spike_df["Current_Sweep " + str(sweepNumber +1)+ " current injection"] = [current_str]
+                temp_spike_df["Current_Sweep " + real_sweep_number + " current injection"] = [current_str]
                 if dataI[uindex] < 0:
                     try:
                         if lowerlim < 0.1:
                             b_lowerlim = 0.1
                         else:
                             b_lowerlim = lowerlim
-                        temp_spike_df['baseline voltage' + str(sweepNumber +1)] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
-                        temp_spike_df['sag' + str(sweepNumber +1)] = subt.sag(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
-                        temp_spike_df['time_constant' + str(sweepNumber +1)] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                        temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
+                        temp_spike_df['sag' + real_sweep_number] = subt.sag(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                        temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
                         #temp_spike_df['voltage_deflection' + str(sweepNumber +1)] = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
                     except:
                         print("Subthreshold Processing Error with " + str(abf.abfID))
 
                 if spike_count > 0:
-                    temp_spike_df["isi_Sweep " + str(sweepNumber +1)+ " isi"] = [spike_train['first_isi']]
+                    temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [spike_train['first_isi']]
                     spike_train_df = pd.DataFrame(spike_train, index=[0])
                     nan_series = pd.DataFrame(np.full(abs(spike_count-1), np.nan))
                     #spike_train_df = spike_train_df.append(nan_series)
@@ -151,7 +155,7 @@ for root,dir,fileList in os.walk(files):
                     print("Processed Sweep " + str(sweepNumber+1) + " with " + str(spike_count) + " aps")
                     df = df.append(spike_in_sweep, ignore_index=True, sort=True)
                 else:
-                    temp_spike_df["isi_Sweep " + str(sweepNumber +1)+ " isi"] = [np.nan]
+                    temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [np.nan]
             df = df.assign(file_name=np.full(len(df.index),abf.abfID))
             temp_spike_df['protocol'] = [abf.protocol]
             temp_spike_df["rheobase_current"] = [df['peak_i'].to_numpy()[0]]
