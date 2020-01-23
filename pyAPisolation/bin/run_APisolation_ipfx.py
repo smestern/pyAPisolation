@@ -193,11 +193,13 @@ for root,dir,fileList in os.walk(files):
                     df = df.append(spike_in_sweep, ignore_index=True, sort=True)
                 else:
                     temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [np.nan]
-            df = df.assign(__file_name=np.full(len(df.index),abf.abfID))
+            
             temp_spike_df['protocol'] = [abf.protocol]
             if df.empty:
+                df = df.assign(__file_name=np.full(1,abf.abfID))
                 print('no spikes found')
             else:
+                df = df.assign(__file_name=np.full(len(df.index),abf.abfID))
                 abf.setSweep(int(df['sweep Number'].to_numpy()[0] - 1))
                 rheobase_current = abf.sweepC[np.argmax(abf.sweepC)]
                 temp_spike_df["rheobase_current"] = [rheobase_current]
