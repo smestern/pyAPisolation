@@ -20,6 +20,16 @@ files = filedialog.askdirectory(
 root_fold = files
 
 ##Declare our options at default
+
+print('loading protocols...')
+protocol = []
+for root,dir,fileList in os.walk(files):
+ for filename in fileList:
+    if filename.endswith(".abf"):
+        file_path = os.path.join(root,filename)
+        abf = pyabf.ABF(file_path)
+        protocol = np.hstack((protocol, abf.protocol))
+protocol_n = np.unique(protocol)
 filter = input("Filter (recommended to be set to 0): ")
 braw = False
 bfeat = True
@@ -33,11 +43,14 @@ try:
 except:
     tag = ""
 
-proto = input("Type Protocol to analyze: ")
+print("protocols")
+for i, x in enumerate(protocol_n):
+    print(str(i) + '. '+ str(x))
+proto = input("enter Protocol to analyze: ")
 try: 
-    proto = str(proto)
+    proto = int(proto)
 except:
-    proto = 'IC1'
+    proto = 0
 
 dv_cut = input("Enter the threshold cut off for the derivative (Allen defaults 20mv/s): ")
 try: 
@@ -93,7 +106,7 @@ for root,dir,fileList in os.walk(files):
         file_path = os.path.join(root,filename)
         abf = pyabf.ABF(file_path)
         
-        if abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and abf.protocol == proto:
+        if abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and abf.protocol == protocol_n[proto]:
           print(filename + ' import')
           try:
             np.nan_to_num(abf.data, nan=-9999, copy=False)
@@ -114,7 +127,7 @@ for root,dir,fileList in os.walk(files):
                 real_sweep_length = abf.sweepLengthSec - 0.0001
                 if sweepNumber < 9:
                     real_sweep_number = '00' + str(sweepNumber + 1)
-                elif sweepNumber > 9 and sweepNumber < 99:
+                elif sweepNumber > 8 and sweepNumber < 99:
                     real_sweep_number = '0' + str(sweepNumber + 1)
 
                 
