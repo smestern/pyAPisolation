@@ -26,9 +26,12 @@ protocol = []
 for root,dir,fileList in os.walk(files):
  for filename in fileList:
     if filename.endswith(".abf"):
-        file_path = os.path.join(root,filename)
-        abf = pyabf.ABF(file_path)
-        protocol = np.hstack((protocol, abf.protocol))
+        try:
+            file_path = os.path.join(root,filename)
+            abf = pyabf.ABF(file_path)
+            protocol = np.hstack((protocol, abf.protocol))
+        except:
+            print('error processing file ' + file_path)
 protocol_n = np.unique(protocol)
 filter = input("Filter (recommended to be set to 0): ")
 braw = False
@@ -52,6 +55,7 @@ try:
 except:
     proto = 0
 
+protocol_name = protocol_n[proto]
 dv_cut = input("Enter the threshold cut off for the derivative (Allen defaults 20mv/s): ")
 try: 
     dv_cut = int(dv_cut)
@@ -103,10 +107,11 @@ df_spike_count = pd.DataFrame()
 for root,dir,fileList in os.walk(files):
  for filename in fileList:
     if filename.endswith(".abf"):
-        file_path = os.path.join(root,filename)
+     file_path = os.path.join(root,filename)
+     try:
         abf = pyabf.ABF(file_path)
         
-        if abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and abf.protocol == protocol_n[proto]:
+        if abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and protocol_name in abf.protocol:
           print(filename + ' import')
           try:
             np.nan_to_num(abf.data, nan=-9999, copy=False)
@@ -188,11 +193,21 @@ for root,dir,fileList in os.walk(files):
                     #spike_train_df = spike_train_df.append(nan_series)
                     spike_in_sweep['spike count'] = np.hstack((spike_count, np.full(abs(spike_count-1), np.nan)))
                     spike_in_sweep['sweep Number'] = np.hstack(((sweepNumber+1), np.full(abs(spike_count-1), np.nan)))
+                    
+                    if spike_count > 2:
+                        f_isi = spike_in_sweep['peak_t'].to_numpy()[-1]
+                        l_isi = spike_in_sweep['peak_t'].to_numpy()[-2]
+                        temp_spike_df["last_isi" + real_sweep_number + " isi"] = [abs( f_isi- l_isi )]
+                        spike_in_sweep['isi_'] = np.hstack((np.diff(spike_in_sweep['peak_t'].to_numpy()), np.nan))
+                    else:
+                        temp_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
+                        spike_in_sweep['isi_'] = np.hstack((np.full(abs(spike_count), np.nan)))
                     spike_in_sweep = spike_in_sweep.join(spike_train_df)
                     print("Processed Sweep " + str(sweepNumber+1) + " with " + str(spike_count) + " aps")
                     df = df.append(spike_in_sweep, ignore_index=True, sort=True)
                 else:
                     temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [np.nan]
+                    temp_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
             
             temp_spike_df['protocol'] = [abf.protocol]
             if df.empty:
@@ -208,6 +223,7 @@ for root,dir,fileList in os.walk(files):
                 temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]]
                 temp_spike_df["rheobase_heightPT"] = [abs(df['peak_v'].to_numpy()[0] - df['fast_trough_v'].to_numpy()[0])]
                 temp_spike_df["rheobase_heightTP"] = [abs(df['threshold_v'].to_numpy()[0] - df['peak_v'].to_numpy()[0])]
+                
                 temp_spike_df["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
                 temp_spike_df["rheobase_downstroke"] = [df['upstroke'].to_numpy()[0]]
                 temp_spike_df["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
@@ -220,6 +236,7 @@ for root,dir,fileList in os.walk(files):
                 temp_spike_df["mean_upstroke"] = [np.mean(df['upstroke'].to_numpy())]
                 temp_spike_df["mean_downstroke"] = [np.mean(df['upstroke'].to_numpy())]
                 temp_spike_df["mean_fast_trough"] = [np.mean(df['fast_trough_v'].to_numpy())]
+                
             cols = df.columns.tolist()
             cols = cols[-1:] + cols[:-1]
             df = df[cols]
@@ -233,10 +250,12 @@ for root,dir,fileList in os.walk(files):
 
         else:
             print('Not correct protocol: ' + abf.protocol)
+     except:
+         print('Issue Processing ' + filename)
    
 
-
-if featfile == True:
+try:
+ if featfile == True:
     ids = dfs['__file_name'].unique()
     
 
@@ -244,7 +263,7 @@ if featfile == True:
     tempframe = dfs.groupby('__file_name').mean().reset_index()
     tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
 
-if featrheo == True:
+ if featrheo == True:
     tempframe = dfs.drop_duplicates(subset='__file_name')
     tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
 
@@ -252,11 +271,11 @@ if featrheo == True:
 
 
 
-
-if bfeatcon == True:
+ if bfeatcon == True:
     df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
     dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
-    
+except: 
+    print('error saving')
 
 print("==== SUCCESS ====")
 input('Press ENTER to exit')
