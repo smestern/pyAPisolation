@@ -13,7 +13,7 @@
 *.csv
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
-
+*.png
 # Build results
 dist/
 build/
@@ -36,7 +36,8 @@ bld/
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/
-
+!ISI_series.csv
+!TIME_series.csv
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
