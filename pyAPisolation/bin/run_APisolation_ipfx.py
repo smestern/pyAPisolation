@@ -45,7 +45,7 @@ def exp_growth_factor(dataT,dataV,dataI, end_index=300):
 
 
 
-def exp_decay_factor(dataT,dataV,dataI, end_index=3000):
+def exp_decay_factor(dataT,dataV,dataI, end_index=3000, abf_id='abf'):
      try:
         
         diff_I = np.diff(dataI)
@@ -56,22 +56,32 @@ def exp_decay_factor(dataT,dataV,dataI, end_index=3000):
         lowerC = np.amin(dataV[downwardinfl:end_index])
         diff = np.abs(upperC - lowerC)
         t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
-        curve = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=([-np.inf,  -np.inf, -np.inf,  -np.inf, -np.inf], [np.inf, np.inf, np.inf, np.inf, np.inf]))[0]
-        curve2 = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=(-np.inf, np.inf))[0]
-        plt.plot(t1, dataV[downwardinfl:end_index], label='Data')
-        plt.plot(t1, exp_decay_2p(t1, *curve), label='2 phase fit')
-        plt.plot(t1, exp_decay_1p(t1, curve[0], curve[1], curve[2]) + np.abs(upperC - np.amax(exp_decay_1p(t1, curve[0], curve[1], curve[2]))), label='Phase 1')
-        plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3], curve[4]) + np.abs(upperC - np.amax(exp_decay_1p(t1, curve[0], curve[3], curve[4]))), label='Phase 2')
+        SpanFast=(upperC-lowerC)*1*.01
+        curve, pcov_2p = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=([-np.inf,  0, 100,  0, 0], [np.inf, np.inf, 500, np.inf, np.inf]))
+        curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=(-np.inf, np.inf))
+        residuals_2p = dataV[downwardinfl:end_index]- exp_decay_2p(t1, *curve)
+        residuals_1p = dataV[downwardinfl:end_index]- exp_decay_1p(t1, *curve2)
+        ss_res_2p = np.sum(residuals_2p**2)
+        ss_res_1p = np.sum(residuals_1p**2)
+        ss_tot = np.sum((dataV[downwardinfl:end_index]-np.mean(dataV[downwardinfl:end_index]))**2)
+        r_squared_2p = 1 - (ss_res_2p / ss_tot)
+        r_squared_1p = 1 - (ss_res_1p / ss_tot)
+        #plt.clf()
+        #plt.plot(t1, dataV[downwardinfl:end_index], label='Data')
+        #plt.plot(t1, exp_decay_2p(t1, *curve), label='2 phase fit')
+        #plt.plot(t1, exp_decay_1p(t1, curve[0], curve[1], curve[2]) + np.abs(upperC - np.amax(exp_decay_1p(t1, curve[0], curve[1], curve[2]))), label='Phase 1')
+        #plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3], curve[4]) + np.abs(upperC - np.amax(exp_decay_1p(t1, curve[0], curve[3], curve[4]))), label='Phase 2')
         #plt.legend()
-       # plt.show()
-        
+        ##plt.pause(0.05)
+        #plt.savefig(abf_id+'.png')
+        #plt.close() 
         tau1 = 1/curve[2]
         tau2 = 1/curve[4]
         fast = np.min([tau1, tau2])
         slow = np.max([tau1, tau2])
-        return fast, slow
+        return tau1, tau2, curve, r_squared_2p, r_squared_1p
      except:
-        return np.nan, np.nan
+        return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan])
 
 
 
@@ -115,6 +125,11 @@ try:
     dv_cut = int(dv_cut)
 except:
     dv_cut = 20
+tp_cut = input("Enter the threshold cut off for threshold-to-peak (Allen defaults 5ms)[in ms]: ")
+try: 
+    tp_cut = float(tp_cut/1000)
+except:
+    tp_cut = 0.005
 
 lowerlim = input("Enter the time to start looking for spikes [in s] (enter 0 to start search at beginning): ")
 upperlim = input("Enter the time to stop looking for spikes [in s] (enter 0 to search the full sweep): ")
@@ -163,7 +178,7 @@ def plotabf(abf, spiketimes, lowerlim, upperlim):
     plt.ylabel(abf.sweepLabelY)
 
 
-    for sweepNumber in range(0, abf.sweepCount):
+    for sweepNumber in range(abf.sweepCount - 2, abf.sweepCount):
         abf.setSweep(sweepNumber)
         i1, i2 = int(abf.dataRate * lowerlim), int(abf.dataRate * upperlim) # plot part of the sweep
         dataX = abf.sweepX[i1:i2]
@@ -203,6 +218,8 @@ for root,dir,fileList in os.walk(files):
                 #Now we walk through the sweeps looking for action potentials
                 temp_spike_df = pd.DataFrame()
                 temp_spike_df['__a_filename'] = [abf.abfID]
+                full_dataI = []
+                full_dataV = []
                 for sweepNumber in range(0, sweepcount): 
                     real_sweep_length = abf.sweepLengthSec - 0.0001
                     if sweepNumber < 9:
@@ -214,23 +231,25 @@ for root,dir,fileList in os.walk(files):
                     if lowerlim == 0 and upperlim == 0:
                     
                         upperlim = real_sweep_length
-                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, end=upperlim)
+                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, end=upperlim, max_interval=tp_cut)
                         spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=0, end=upperlim)
                     elif upperlim > real_sweep_length:
                     
                         upperlim = real_sweep_length
-                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim)
+                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim, max_interval=tp_cut)
                         spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
                         #spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
                     else:
                         #upperlim = real_sweep_length
-                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim)
+                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim, max_interval=tp_cut)
 
                         spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
 
                     abf.setSweep(sweepNumber)
                
                     dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+                    full_dataI.append(dataI)
+                    full_dataV.append(dataV)
                     if dataI.shape[0] < dataV.shape[0]:
                         dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
                 
@@ -248,9 +267,9 @@ for root,dir,fileList in os.walk(files):
                     current_str = current_str.replace(' 0.', '')
                     current_str = current_str.replace(']', '')
                     temp_spike_df["Current_Sweep " + real_sweep_number + " current injection"] = [current_str]
-                    decay_fast, decay_slow = exp_decay_factor(dataT, dataV, dataI, 3000)
-                    temp_spike_df["fast decay" + real_sweep_number] = [decay_fast]
-                    temp_spike_df["slow decay" + real_sweep_number] = [decay_slow]
+                    #decay_fast, decay_slow = exp_decay_factor(dataT, dataV, dataI, 3000)
+                    #temp_spike_df["fast decay" + real_sweep_number] = [decay_fast]
+                    #temp_spike_df["slow decay" + real_sweep_number] = [decay_slow]
                     if dataI[np.argmin(dataI)] < 0:
                         try:
                             if lowerlim < 0.1:
@@ -350,8 +369,22 @@ for root,dir,fileList in os.walk(files):
                     temp_spike_df["mean_downstroke"] = [np.mean(df['upstroke'].to_numpy())]
                     temp_spike_df["mean_fast_trough"] = [np.mean(df['fast_trough_v'].to_numpy())]
                     spiketimes = np.ravel(df['peak_t'].to_numpy())
-                    #plotabf(abf, spiketimes, lowerlim, upperlim)
+                    plotabf(abf, spiketimes, lowerlim, upperlim)
+                full_dataI = np.vstack(full_dataI) 
+                full_dataV = np.vstack(full_dataV) 
+                decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p = exp_decay_factor(dataT, np.mean(full_dataV,axis=0), np.mean(full_dataI,axis=0), 3000, abf_id=abf.abfID)
                 
+                temp_spike_df["fast decay avg"] = [decay_fast]
+                temp_spike_df["slow decay avg"] = [decay_slow]
+                temp_spike_df["Curve fit A"] = [curve[0]]
+                temp_spike_df["Curve fit b1"] = [curve[1]]
+                temp_spike_df["Curve fit b2"] = [curve[3]]
+                temp_spike_df["R squared 2 phase"] = [r_squared_2p]
+                temp_spike_df["R squared 1 phase"] = [r_squared_1p]
+                if r_squared_2p > r_squared_1p:
+                    temp_spike_df["Best Fit"] = [2]
+                else:
+                    temp_spike_df["Best Fit"] = [1]
                 cols = df.columns.tolist()
                 cols = cols[-1:] + cols[:-1]
                 df = df[cols]
