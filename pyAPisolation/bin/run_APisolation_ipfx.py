@@ -3,17 +3,21 @@ print("Loading...")
 import sys
 import numpy as np
 from numpy import genfromtxt
-import pyabf
 import tkinter as tk
 from tkinter import filedialog
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import scipy.signal as signal
+from scipy import interpolate
 from scipy.optimize import curve_fit
-#import pyAPisolation as apis
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
+import pyabf
+import logging
+import scipy.ndimage as ndimage
 print("Load finished")
+logging.basicConfig(level=logging.DEBUG)
 root = tk.Tk()
 root.withdraw()
 files = filedialog.askdirectory(
@@ -81,7 +85,7 @@ def exp_decay_factor(dataT,dataV,dataI, end_index=3000, abf_id='abf'):
         slow = np.max([tau1, tau2])
         return tau1, tau2, curve, r_squared_2p, r_squared_1p
      except:
-        return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan])
+        return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan
 
 
 
@@ -97,18 +101,34 @@ for root,dir,fileList in os.walk(files):
         except:
             print('error processing file ' + file_path)
 protocol_n = np.unique(protocol)
-filter = input("Filter (recommended to be set to 0): ")
+filter = input("Allen's Gaussian Filter (recommended to be set to 0): ")
 braw = False
 bfeat = True
 try: 
     filter = int(filter)
 except:
     filter = 0
+
+savfilter = input("Savitzky-Golay Filter (recommended to be set in 0): ")
+braw = False
+bfeat = True
+try: 
+    savfilter = int(savfilter)
+except:
+    savfilter = 0
+
 tag = input("tag to apply output to files: ")
 try: 
     tag = str(tag)
 except:
     tag = ""
+plot_sweeps = input("Enter the sweep Numbers to plot [seperated by a comma] (0 to plot all sweeps, -1 to plot no sweeps): ")
+try:
+    plot_sweeps = np.fromstring(plot_sweeps, dtype=int, sep=',')
+    if plot_sweeps.shape[0] < 1:
+        plot_sweeps = np.array([-1])
+except:
+    plot_sweeps = -1
 
 print("protocols")
 for i, x in enumerate(protocol_n):
@@ -125,11 +145,30 @@ try:
     dv_cut = int(dv_cut)
 except:
     dv_cut = 20
-tp_cut = input("Enter the threshold cut off for threshold-to-peak (Allen defaults 5ms)[in ms]: ")
+tp_cut = input("Enter the threshold cut off for max threshold-to-peak time (Allen defaults 5ms)[in ms]: ")
 try: 
-    tp_cut = float(tp_cut/1000)
+    tp_cut = (np.float64(tp_cut)/1000)
 except:
     tp_cut = 0.005
+
+min_cut = input("Enter the minimum cut off for threshold-to-peak voltage (Allen defaults 2mV)[in mV]: ")
+try: 
+    min_cut = np.float64(min_cut)
+except:
+    min_cut = 2
+
+
+min_peak = input("Enter the mininum cut off for peak voltage (Allen defaults -30mV)[in mV]: ")
+try: 
+    min_peak = np.float64(min_peak)
+except:
+    min_peak = -30
+
+percent = input("Enter the percent of max DvDt used to calculate refined threshold (does not effect spike detection)(Allen defaults 5%)[in %]: ")
+try: 
+    percent = percent /100
+except:
+    percent = 5/100
 
 lowerlim = input("Enter the time to start looking for spikes [in s] (enter 0 to start search at beginning): ")
 upperlim = input("Enter the time to stop looking for spikes [in s] (enter 0 to search the full sweep): ")
@@ -144,7 +183,7 @@ except:
 
 bfeatcon = True
 bfeat = False
-
+print(f"Running analysis with, dVdt thresh: {dv_cut}mV/s, thresh to peak max: {tp_cut}s, thresh to peak min height: {min_cut}mV, and min peak voltage: {min_peak}mV")
 
 if bfeatcon == True:
     featfile = "y"
@@ -167,44 +206,98 @@ if bfeatcon == True:
     else: 
         featrheo = True
         
-def plotabf(abf, spiketimes, lowerlim, upperlim):
-    cm = plt.get_cmap("Dark2") #Changes colour based on sweep number
-    colors = [cm(x/abf.sweepCount * 0.75) for x in abf.sweepList]
-    plt.figure(figsize=(16,6))
-    plt.autoscale(True)
-    plt.grid(alpha=0)
+def plotabf(abf, spiketimes, lowerlim, upperlim, sweep_plots):
+   try:
+    if sweep_plots[0] == -1:
+        pass
+    else:
+        plt.figure(num=2, figsize=(16,6))
+        plt.clf()
+        cm = plt.get_cmap("Set1") #Changes colour based on sweep number
+        if sweep_plots[0] == 0:
+            sweepList = abf.sweepList
+        else:
+            sweepList = sweep_plots - 1
+        colors = [cm(x/np.asarray(sweepList).shape[0]) for x,_ in enumerate(sweepList)]
+        
+        plt.autoscale(True)
+        plt.grid(alpha=0)
 
-    plt.xlabel(abf.sweepLabelX)
-    plt.ylabel(abf.sweepLabelY)
+        plt.xlabel(abf.sweepLabelX)
+        plt.ylabel(abf.sweepLabelY)
+        plt.title(abf.abfID)
 
-
-    for sweepNumber in range(abf.sweepCount - 2, abf.sweepCount):
-        abf.setSweep(sweepNumber)
-        i1, i2 = int(abf.dataRate * lowerlim), int(abf.dataRate * upperlim) # plot part of the sweep
-        dataX = abf.sweepX[i1:i2]
-        dataY = abf.sweepY[i1:i2]
-        colour = colors[sweepNumber]
-        plt.plot(dataX, dataY, color=colour, alpha=1, lw=1)
+        for c, sweepNumber in enumerate(sweepList):
+            abf.setSweep(sweepNumber)
+            
+            spike_in_sweep = (spiketimes[spiketimes[:,1]==int(sweepNumber+1)])[:,0]
+            i1, i2 = int(abf.dataRate * lowerlim), int(abf.dataRate * upperlim) # plot part of the sweep
+            dataX = abf.sweepX
+            dataY = abf.sweepY
+            colour = colors[c]
+            sweepname = 'Sweep ' + str(sweepNumber)
+            plt.plot(dataX, dataY, color=colour, alpha=1, lw=1, label=sweepname)
+            
+            plt.scatter(dataX[spike_in_sweep[:]], dataY[spike_in_sweep[:]], color=colour, marker='x')
+           
         
 
-    plt.vlines(spiketimes, 20, 30, linestyles='dashed', zorder=99)
-    plt.savefig(abf.abfID +'.png', dpi=600)
-    plt.close(fig='all')
-debugplot = 0
+        plt.xlim(abf.sweepX[i1], abf.sweepX[i2])
+        plt.legend()
+        
+        plt.savefig(abf.abfID +'.png', dpi=600)
+        plt.pause(0.05)
+   except:
+        print('plot failed')
 
+def build_running_bin(array, time, start, end, bin=20, time_units='s', kind='nearest'):
+    if time_units == 's':
+        start = start * 1000
+        end = end* 1000
+
+        time = time*1000
+    time_bins = np.arange(start, end, bin)
+    binned_ = np.full(time_bins.shape[0], np.nan, dtype=np.float64)
+    index_ = np.digitize(time, time_bins)
+    uni_index_ = np.unique(index_)
+    for time_ind in uni_index_:
+        data = np.asarray(array[index_==time_ind])
+        data = np.nanmean(data)
+        binned_[time_ind] = data
+    nans = np.isnan(binned_)
+    if np.any(nans):
+        if time.shape[0] > 1:
+            f = interpolate.interp1d(time, array, kind=kind, fill_value="extrapolate")
+            new_data = f(time_bins)
+            binned_[nans] = new_data[nans]
+        else:
+            binned_[nans] = np.nanmean(array)
+    return binned_, time_bins
+
+
+
+
+    
+  # except:
+    #    print('plot_failed')
+debugplot = 0
+running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
 dfs = pd.DataFrame()
 df_spike_count = pd.DataFrame()
+df_running_avg_count = pd.DataFrame()
 for root,dir,fileList in os.walk(files):
  for filename in fileList:
     if filename.endswith(".abf"):
-            file_path = os.path.join(root,filename)
-        #try:
+        file_path = os.path.join(root,filename)
+        try:
             abf = pyabf.ABF(file_path)
         
             if abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and protocol_name in abf.protocol:
                 print(filename + ' import')
               #try:
                 np.nan_to_num(abf.data, nan=-9999, copy=False)
+                if savfilter >0:
+                    abf.data = signal.savgol_filter(abf.data, savfilter, polyorder=3)
                 try:
                     del spikext
                 except:
@@ -218,6 +311,9 @@ for root,dir,fileList in os.walk(files):
                 #Now we walk through the sweeps looking for action potentials
                 temp_spike_df = pd.DataFrame()
                 temp_spike_df['__a_filename'] = [abf.abfID]
+                temp_spike_df['__a_foldername'] = [os.path.dirname(file_path)]
+                temp_running_bin = pd.DataFrame()
+                
                 full_dataI = []
                 full_dataV = []
                 for sweepNumber in range(0, sweepcount): 
@@ -231,17 +327,17 @@ for root,dir,fileList in os.walk(files):
                     if lowerlim == 0 and upperlim == 0:
                     
                         upperlim = real_sweep_length
-                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, end=upperlim, max_interval=tp_cut)
+                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, end=upperlim, max_interval=tp_cut, min_height=min_cut, min_peak=min_peak, thresh_frac=percent)
                         spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=0, end=upperlim)
                     elif upperlim > real_sweep_length:
                     
                         upperlim = real_sweep_length
-                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim, max_interval=tp_cut)
+                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim, max_interval=tp_cut,min_height=min_cut, min_peak=min_peak, thresh_frac=percent)
                         spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
                         #spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
                     else:
                         #upperlim = real_sweep_length
-                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim, max_interval=tp_cut)
+                        spikext = feature_extractor.SpikeFeatureExtractor(filter=filter, dv_cutoff=dv_cut, start=lowerlim, end=upperlim, max_interval=tp_cut, min_height=min_cut, min_peak=min_peak, thresh_frac=percent)
 
                         spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=lowerlim, end=upperlim)
 
@@ -266,7 +362,17 @@ for root,dir,fileList in os.walk(files):
                     current_str = current_str.replace('[', '')
                     current_str = current_str.replace(' 0.', '')
                     current_str = current_str.replace(']', '')
+                    sweep_running_bin = pd.DataFrame()
                     temp_spike_df["Current_Sweep " + real_sweep_number + " current injection"] = [current_str]
+                    time_bins = np.arange(lowerlim*1000, upperlim*1000, 20)
+                    _run_labels = []
+                    for p in running_lab:
+                            temp_lab = []
+                            for x in time_bins :
+                                temp_lab = np.hstack((temp_lab, f'{p} {x} bin AVG'))
+                            _run_labels.append(temp_lab)
+                    _run_labels = np.hstack(_run_labels).tolist()
+                    nan_row_run = np.ravel(np.full((5, time_bins.shape[0]), np.nan)).reshape(1,-1)
                     #decay_fast, decay_slow = exp_decay_factor(dataT, dataV, dataI, 3000)
                     #temp_spike_df["fast decay" + real_sweep_number] = [decay_fast]
                     #temp_spike_df["slow decay" + real_sweep_number] = [decay_slow]
@@ -275,7 +381,7 @@ for root,dir,fileList in os.walk(files):
                             if lowerlim < 0.1:
                                 b_lowerlim = 0.1
                             else:
-                                b_lowerlim = lowerlim
+                                b_lowerlim = 0.1
                             temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
                             temp_spike_df['sag' + real_sweep_number] = subt.sag(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
                             temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
@@ -286,19 +392,25 @@ for root,dir,fileList in os.walk(files):
 
                     if spike_count > 0:
                         temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [spike_train['first_isi']]
+                        trough_averge,_  = build_running_bin(spike_in_sweep['fast_trough_v'].to_numpy(), spike_in_sweep['peak_t'].to_numpy(), start=lowerlim, end=upperlim)
+                        peak_average = build_running_bin(spike_in_sweep['peak_v'].to_numpy(), spike_in_sweep['peak_t'].to_numpy(), start=lowerlim, end=upperlim)[0]
+                        peak_max_rise = build_running_bin(spike_in_sweep['upstroke'].to_numpy(), spike_in_sweep['peak_t'].to_numpy(), start=lowerlim, end=upperlim)[0]
+                        peak_max_down = build_running_bin(spike_in_sweep['downstroke'].to_numpy(), spike_in_sweep['peak_t'].to_numpy(), start=lowerlim, end=upperlim)[0]
+                        peak_width = build_running_bin(spike_in_sweep['width'].to_numpy(), spike_in_sweep['peak_t'].to_numpy(), start=lowerlim, end=upperlim)[0]
                         
+                        sweep_running_bin = pd.DataFrame(data=np.hstack((trough_averge, peak_average, peak_max_rise, peak_max_down, peak_width)).reshape(1,-1), columns=_run_labels, index=[real_sweep_number])
                         spike_train_df = pd.DataFrame(spike_train, index=[0])
                         nan_series = pd.DataFrame(np.full(abs(spike_count-1), np.nan))
                         #spike_train_df = spike_train_df.append(nan_series)
                         spike_in_sweep['spike count'] = np.hstack((spike_count, np.full(abs(spike_count-1), np.nan)))
-                        spike_in_sweep['sweep Number'] = np.hstack(((sweepNumber+1), np.full(abs(spike_count-1), np.nan)))
+                        spike_in_sweep['sweep Number'] = np.full(abs(spike_count), (sweepNumber+1))
                         temp_spike_df["spike_" + real_sweep_number + " 1"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['threshold_v'].to_numpy()[0])
                         temp_spike_df["spike_" + real_sweep_number + "AHP 1"] = spike_in_sweep['fast_trough_v'].to_numpy()[0]
                         temp_spike_df["spike_" + real_sweep_number + "AHP height 1"] = abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['fast_trough_v'].to_numpy()[0])
                         temp_spike_df["latency_" + real_sweep_number + "latency"] = spike_train['latency']
                         temp_spike_df["width_spike" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
                         
-                        temp_spike_df["exp growth" + real_sweep_number] = [exp_growth_factor(dataT, dataV, dataI, spike_in_sweep['threshold_index'].to_numpy()[0])]
+                        #temp_spike_df["exp growth" + real_sweep_number] = [exp_growth_factor(dataT, dataV, dataI, spike_in_sweep['threshold_index'].to_numpy()[0])]
                         
                         if spike_count > 2:
                             f_isi = spike_in_sweep['peak_t'].to_numpy()[-1]
@@ -306,14 +418,14 @@ for root,dir,fileList in os.walk(files):
                             temp_spike_df["last_isi" + real_sweep_number + " isi"] = [abs( f_isi- l_isi )]
                             spike_in_sweep['isi_'] = np.hstack((np.diff(spike_in_sweep['peak_t'].to_numpy()), np.nan))
                             temp_spike_df["min_isi" + real_sweep_number + " isi"] = np.nanmin(np.hstack((np.diff(spike_in_sweep['peak_t'].to_numpy()), np.nan)))
-                            temp_spike_df["spike_" + real_sweep_number + " 2"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[1] - spike_in_sweep['threshold_v'].to_numpy()[1])
-                            temp_spike_df["spike_" + real_sweep_number + " 3"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[-1] - spike_in_sweep['threshold_v'].to_numpy()[-1])
-                            temp_spike_df["spike_" + real_sweep_number + "AHP 2"] = spike_in_sweep['fast_trough_v'].to_numpy()[1]
-                            temp_spike_df["spike_" + real_sweep_number + "AHP 3"] = spike_in_sweep['fast_trough_v'].to_numpy()[-1]
-                            temp_spike_df["spike_" + real_sweep_number + "AHP height 2"] = abs(spike_in_sweep['peak_v'].to_numpy()[1] - spike_in_sweep['fast_trough_v'].to_numpy()[1])
-                            temp_spike_df["spike_" + real_sweep_number + "AHP height 3"] = abs(spike_in_sweep['peak_v'].to_numpy()[-1] - spike_in_sweep['fast_trough_v'].to_numpy()[-1])
-                            temp_spike_df["width_spike" + real_sweep_number + "2"] = spike_in_sweep['width'].to_numpy()[1]
-                            temp_spike_df["width_spike" + real_sweep_number + "3"] = spike_in_sweep['width'].to_numpy()[-1]
+                            #temp_spike_df["spike_" + real_sweep_number + " 2"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[1] - spike_in_sweep['threshold_v'].to_numpy()[1])
+                            #temp_spike_df["spike_" + real_sweep_number + " 3"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[-1] - spike_in_sweep['threshold_v'].to_numpy()[-1])
+                            #temp_spike_df["spike_" + real_sweep_number + "AHP 2"] = spike_in_sweep['fast_trough_v'].to_numpy()[1]
+                            #temp_spike_df["spike_" + real_sweep_number + "AHP 3"] = spike_in_sweep['fast_trough_v'].to_numpy()[-1]
+                            #temp_spike_df["spike_" + real_sweep_number + "AHP height 2"] = abs(spike_in_sweep['peak_v'].to_numpy()[1] - spike_in_sweep['fast_trough_v'].to_numpy()[1])
+                            #temp_spike_df["spike_" + real_sweep_number + "AHP height 3"] = abs(spike_in_sweep['peak_v'].to_numpy()[-1] - spike_in_sweep['fast_trough_v'].to_numpy()[-1])
+                            #temp_spike_df["width_spike" + real_sweep_number + "2"] = spike_in_sweep['width'].to_numpy()[1]
+                            #temp_spike_df["width_spike" + real_sweep_number + "3"] = spike_in_sweep['width'].to_numpy()[-1]
                         else:
                             temp_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
                             spike_in_sweep['isi_'] = np.hstack((np.full(abs(spike_count), np.nan)))
@@ -326,30 +438,37 @@ for root,dir,fileList in os.walk(files):
                         temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [np.nan]
                         temp_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
                         temp_spike_df["spike_" + real_sweep_number + " 1"] = [np.nan]
-                        temp_spike_df["spike_" + real_sweep_number + " 2"] = [np.nan]
-                        temp_spike_df["spike_" + real_sweep_number + " 3"] = [np.nan]
+                        #temp_spike_df["spike_" + real_sweep_number + " 2"] = [np.nan]
+                        #temp_spike_df["spike_" + real_sweep_number + " 3"] = [np.nan]
                         temp_spike_df["spike_" + real_sweep_number + "AHP 1"] = [np.nan]
                         temp_spike_df["spike_" + real_sweep_number + "AHP height 1"] = [np.nan]
-                        temp_spike_df["spike_" + real_sweep_number + "AHP 2"] = [np.nan]
-                        temp_spike_df["spike_" + real_sweep_number + "AHP 3"] = [np.nan]
-                        temp_spike_df["spike_" + real_sweep_number + "AHP height 2"] = [np.nan]
-                        temp_spike_df["spike_" + real_sweep_number + "AHP height 3"] = [np.nan]
+                        #temp_spike_df["spike_" + real_sweep_number + "AHP 2"] = [np.nan]
+                        #temp_spike_df["spike_" + real_sweep_number + "AHP 3"] = [np.nan]
+                        #temp_spike_df["spike_" + real_sweep_number + "AHP height 2"] = [np.nan]
+                        #temp_spike_df["spike_" + real_sweep_number + "AHP height 3"] = [np.nan]
                         temp_spike_df["latency_" + real_sweep_number + "latency"] = [np.nan]
                         temp_spike_df["width_spike" + real_sweep_number + "1"] = [np.nan]
-                        temp_spike_df["width_spike" + real_sweep_number + "2"] = [np.nan]
-                        temp_spike_df["width_spike" + real_sweep_number + "3"] = [np.nan]
+                        #temp_spike_df["width_spike" + real_sweep_number + "2"] = [np.nan]
+                        #temp_spike_df["width_spike" + real_sweep_number + "3"] = [np.nan]
                         temp_spike_df["min_isi" + real_sweep_number + " isi"] = [np.nan]
-                        temp_spike_df["exp growth" + real_sweep_number] = [np.nan]
+                        sweep_running_bin = pd.DataFrame(data=nan_row_run, columns=_run_labels, index=[real_sweep_number])
+                        #temp_spike_df["exp growth" + real_sweep_number] = [np.nan]
+                    sweep_running_bin['Sweep Number'] = [real_sweep_number]
+                    sweep_running_bin['__a_filename'] = [abf.abfID]
+                    sweep_running_bin['__a_foldername'] = [os.path.dirname(file_path)]
+                    temp_running_bin = temp_running_bin.append(sweep_running_bin)
                 temp_spike_df['protocol'] = [abf.protocol]
                 if df.empty:
                     df = df.assign(__file_name=np.full(1,abf.abfID))
+                    df = df.assign(__fold_name=np.full(1,os.path.dirname(file_path)))
                     print('no spikes found')
                 else:
                     df = df.assign(__file_name=np.full(len(df.index),abf.abfID))
+                    df = df.assign(__fold_name=np.full(len(df.index),os.path.dirname(file_path)))
                     abf.setSweep(int(df['sweep Number'].to_numpy()[0] - 1))
                     rheobase_current = abf.sweepC[np.argmax(abf.sweepC)]
                     temp_spike_df["rheobase_current"] = [rheobase_current]
-                   
+                    
                     temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
                     temp_spike_df["rheobase_thres"] = [df['threshold_v'].to_numpy()[0]]
                     temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]]
@@ -368,8 +487,8 @@ for root,dir,fileList in os.walk(files):
                     temp_spike_df["mean_upstroke"] = [np.mean(df['upstroke'].to_numpy())]
                     temp_spike_df["mean_downstroke"] = [np.mean(df['upstroke'].to_numpy())]
                     temp_spike_df["mean_fast_trough"] = [np.mean(df['fast_trough_v'].to_numpy())]
-                    spiketimes = np.ravel(df['peak_t'].to_numpy())
-                    plotabf(abf, spiketimes, lowerlim, upperlim)
+                    spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
+                    plotabf(abf, spiketimes, lowerlim, upperlim, plot_sweeps)
                 full_dataI = np.vstack(full_dataI) 
                 full_dataV = np.vstack(full_dataV) 
                 decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p = exp_decay_factor(dataT, np.mean(full_dataV,axis=0), np.mean(full_dataI,axis=0), 3000, abf_id=abf.abfID)
@@ -389,40 +508,49 @@ for root,dir,fileList in os.walk(files):
                 cols = cols[-1:] + cols[:-1]
                 df = df[cols]
                 df = df[cols]
-            
+               
             
                 if bfeatcon == True:
+
+                   df_running_avg_count = df_running_avg_count.append(temp_running_bin)
                    df_spike_count = df_spike_count.append(temp_spike_df, sort=True)
+
                    dfs = dfs.append(df, sort=True)
               #except:
                # print('Issue Processing ' + filename)
 
             else:
                 print('Not correct protocol: ' + abf.protocol)
-        #except:
-          # print('Issue Processing ' + filename)
-
+        except:
+            print('Issue Processing ' + filename)
 
 try:
- if featfile == True:
+ 
     ids = dfs['__file_name'].unique()
-    
+    print(f"Ran analysis with, dVdt thresh: {dv_cut}mV/s, thresh to peak max: {tp_cut}s, thresh to peak min height: {min_cut}mV, and min peak voltage: {min_peak}mV")
 
-
+    settings_col = ['dvdt Threshold', 'threshold to peak max time','threshold to peak min height', 'min peak voltage', 'allen filter', 'sav filter', 'protocol_name']
+    setdata = [dv_cut, tp_cut, min_cut, min_peak, filter, savfilter, protocol_name]
+    settings_df =  pd.DataFrame(data=[setdata], columns=settings_col, index=[0])
+    settings_df.to_csv(root_fold + '/analysis_settings_' + tag + '.csv')
     tempframe = dfs.groupby('__file_name').mean().reset_index()
     tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
 
- if featrheo == True:
+ 
     tempframe = dfs.drop_duplicates(subset='__file_name')
     tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
 
-        
-
-
-
- if bfeatcon == True:
+ 
     df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
     dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
+    with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
+        cols = df_running_avg_count.columns.values
+        df_ind = df_running_avg_count.loc[:,cols[[-1,-2,-3]]]
+        index = pd.MultiIndex.from_frame(df_ind)
+        for p in running_lab:
+            temp_ind = [p in col for col in cols]
+            temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
+            temp_df.to_excel(runf, sheet_name=p)
 except: 
     print('error saving')
 
