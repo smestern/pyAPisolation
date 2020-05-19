@@ -256,7 +256,7 @@ def build_running_bin(array, time, start, end, bin=20, time_units='s', kind='nea
         end = end* 1000
 
         time = time*1000
-    time_bins = np.arange(start, end, bin)
+    time_bins = np.arange(start, end+bin, bin)
     binned_ = np.full(time_bins.shape[0], np.nan, dtype=np.float64)
     index_ = np.digitize(time, time_bins)
     uni_index_ = np.unique(index_)
@@ -364,7 +364,7 @@ for root,dir,fileList in os.walk(files):
                     current_str = current_str.replace(']', '')
                     sweep_running_bin = pd.DataFrame()
                     temp_spike_df["Current_Sweep " + real_sweep_number + " current injection"] = [current_str]
-                    time_bins = np.arange(lowerlim*1000, upperlim*1000, 20)
+                    time_bins = np.arange(lowerlim*1000, upperlim*1000+20, 20)
                     _run_labels = []
                     for p in running_lab:
                             temp_lab = []
@@ -404,10 +404,11 @@ for root,dir,fileList in os.walk(files):
                         #spike_train_df = spike_train_df.append(nan_series)
                         spike_in_sweep['spike count'] = np.hstack((spike_count, np.full(abs(spike_count-1), np.nan)))
                         spike_in_sweep['sweep Number'] = np.full(abs(spike_count), (sweepNumber+1))
-                        temp_spike_df["spike_" + real_sweep_number + " 1"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['threshold_v'].to_numpy()[0])
-                        temp_spike_df["spike_" + real_sweep_number + "AHP 1"] = spike_in_sweep['fast_trough_v'].to_numpy()[0]
-                        temp_spike_df["spike_" + real_sweep_number + "AHP height 1"] = abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['fast_trough_v'].to_numpy()[0])
-                        temp_spike_df["latency_" + real_sweep_number + "latency"] = spike_train['latency']
+                        temp_spike_df["spike_amp" + real_sweep_number + " 1"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['threshold_v'].to_numpy()[0])
+                        temp_spike_df["spike_peak" + real_sweep_number + " 1"] = spike_in_sweep['peak_v'].to_numpy()[0]
+                        temp_spike_df["spike_AHP 1" + real_sweep_number + " "] = spike_in_sweep['fast_trough_v'].to_numpy()[0]
+                        temp_spike_df["spike_AHP height 1" + real_sweep_number + " "] = abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['fast_trough_v'].to_numpy()[0])
+                        temp_spike_df["latency_" + real_sweep_number + " latency"] = spike_train['latency']
                         temp_spike_df["width_spike" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
                         
                         #temp_spike_df["exp growth" + real_sweep_number] = [exp_growth_factor(dataT, dataV, dataI, spike_in_sweep['threshold_index'].to_numpy()[0])]
@@ -437,11 +438,12 @@ for root,dir,fileList in os.walk(files):
                         temp_spike_df["latency_" + real_sweep_number + "latency"] = [np.nan]
                         temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [np.nan]
                         temp_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
-                        temp_spike_df["spike_" + real_sweep_number + " 1"] = [np.nan]
+                        temp_spike_df["spike_amp" + real_sweep_number + " 1"] = [np.nan]
                         #temp_spike_df["spike_" + real_sweep_number + " 2"] = [np.nan]
                         #temp_spike_df["spike_" + real_sweep_number + " 3"] = [np.nan]
-                        temp_spike_df["spike_" + real_sweep_number + "AHP 1"] = [np.nan]
-                        temp_spike_df["spike_" + real_sweep_number + "AHP height 1"] = [np.nan]
+                        temp_spike_df["spike_AHP 1" + real_sweep_number + " "] = [np.nan]
+                        temp_spike_df["spike_peak" + real_sweep_number + " 1"] = [np.nan]
+                        temp_spike_df["spike_AHP height 1" + real_sweep_number + " "] = [np.nan]
                         #temp_spike_df["spike_" + real_sweep_number + "AHP 2"] = [np.nan]
                         #temp_spike_df["spike_" + real_sweep_number + "AHP 3"] = [np.nan]
                         #temp_spike_df["spike_" + real_sweep_number + "AHP height 2"] = [np.nan]
