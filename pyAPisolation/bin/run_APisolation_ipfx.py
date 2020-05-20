@@ -373,6 +373,10 @@ for root,dir,fileList in os.walk(files):
                             _run_labels.append(temp_lab)
                     _run_labels = np.hstack(_run_labels).tolist()
                     nan_row_run = np.ravel(np.full((5, time_bins.shape[0]), np.nan)).reshape(1,-1)
+                    try:
+                        temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=0.1, filter_frequency=filter)
+                    except:
+                        print('Fail to find baseline voltage')
                     #decay_fast, decay_slow = exp_decay_factor(dataT, dataV, dataI, 3000)
                     #temp_spike_df["fast decay" + real_sweep_number] = [decay_fast]
                     #temp_spike_df["slow decay" + real_sweep_number] = [decay_slow]
@@ -382,7 +386,7 @@ for root,dir,fileList in os.walk(files):
                                 b_lowerlim = 0.1
                             else:
                                 b_lowerlim = 0.1
-                            temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
+                            #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
                             temp_spike_df['sag' + real_sweep_number] = subt.sag(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
                             temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
                             
@@ -405,7 +409,10 @@ for root,dir,fileList in os.walk(files):
                         spike_in_sweep['spike count'] = np.hstack((spike_count, np.full(abs(spike_count-1), np.nan)))
                         spike_in_sweep['sweep Number'] = np.full(abs(spike_count), (sweepNumber+1))
                         temp_spike_df["spike_amp" + real_sweep_number + " 1"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['threshold_v'].to_numpy()[0])
+                        temp_spike_df["spike_thres" + real_sweep_number + " 1"] = spike_in_sweep['threshold_v'].to_numpy()[0]
                         temp_spike_df["spike_peak" + real_sweep_number + " 1"] = spike_in_sweep['peak_v'].to_numpy()[0]
+                        temp_spike_df["spike_rise" + real_sweep_number + " 1"] = spike_in_sweep['upstroke'].to_numpy()[0]
+                        temp_spike_df["spike_decay" + real_sweep_number + " 1"] = spike_in_sweep['downstroke'].to_numpy()[0]
                         temp_spike_df["spike_AHP 1" + real_sweep_number + " "] = spike_in_sweep['fast_trough_v'].to_numpy()[0]
                         temp_spike_df["spike_AHP height 1" + real_sweep_number + " "] = abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['fast_trough_v'].to_numpy()[0])
                         temp_spike_df["latency_" + real_sweep_number + " latency"] = spike_train['latency']
@@ -435,10 +442,13 @@ for root,dir,fileList in os.walk(files):
                         print("Processed Sweep " + str(sweepNumber+1) + " with " + str(spike_count) + " aps")
                         df = df.append(spike_in_sweep, ignore_index=True, sort=True)
                     else:
-                        temp_spike_df["latency_" + real_sweep_number + "latency"] = [np.nan]
+                        temp_spike_df["latency_" + real_sweep_number + " latency"] = [np.nan]
                         temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [np.nan]
                         temp_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
                         temp_spike_df["spike_amp" + real_sweep_number + " 1"] = [np.nan]
+                        temp_spike_df["spike_thres" + real_sweep_number + " 1"] = [np.nan]
+                        temp_spike_df["spike_rise" + real_sweep_number + " 1"] = [np.nan]
+                        temp_spike_df["spike_decay" + real_sweep_number + " 1"] = [np.nan]
                         #temp_spike_df["spike_" + real_sweep_number + " 2"] = [np.nan]
                         #temp_spike_df["spike_" + real_sweep_number + " 3"] = [np.nan]
                         temp_spike_df["spike_AHP 1" + real_sweep_number + " "] = [np.nan]
@@ -448,7 +458,7 @@ for root,dir,fileList in os.walk(files):
                         #temp_spike_df["spike_" + real_sweep_number + "AHP 3"] = [np.nan]
                         #temp_spike_df["spike_" + real_sweep_number + "AHP height 2"] = [np.nan]
                         #temp_spike_df["spike_" + real_sweep_number + "AHP height 3"] = [np.nan]
-                        temp_spike_df["latency_" + real_sweep_number + "latency"] = [np.nan]
+                        temp_spike_df["latency_" + real_sweep_number + " latency"] = [np.nan]
                         temp_spike_df["width_spike" + real_sweep_number + "1"] = [np.nan]
                         #temp_spike_df["width_spike" + real_sweep_number + "2"] = [np.nan]
                         #temp_spike_df["width_spike" + real_sweep_number + "3"] = [np.nan]
@@ -480,20 +490,20 @@ for root,dir,fileList in os.walk(files):
                     temp_spike_df["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
                     temp_spike_df["rheobase_downstroke"] = [df['upstroke'].to_numpy()[0]]
                     temp_spike_df["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
-                    temp_spike_df["mean_current"] = [np.mean(df['peak_i'].to_numpy())]
-                    temp_spike_df["mean_latency"] = [np.mean(df['latency'].to_numpy())]
-                    temp_spike_df["mean_thres"] = [np.mean(df['threshold_v'].to_numpy())]
-                    temp_spike_df["mean_width"] = [np.mean(df['width'].to_numpy())]
-                    temp_spike_df["mean_heightPT"] = [np.mean(abs(df['peak_v'].to_numpy() - df['fast_trough_v'].to_numpy()))]
-                    temp_spike_df["mean_heightTP"] = [np.mean(abs(df['threshold_v'].to_numpy() - df['peak_v'].to_numpy()))]
-                    temp_spike_df["mean_upstroke"] = [np.mean(df['upstroke'].to_numpy())]
-                    temp_spike_df["mean_downstroke"] = [np.mean(df['upstroke'].to_numpy())]
-                    temp_spike_df["mean_fast_trough"] = [np.mean(df['fast_trough_v'].to_numpy())]
+                    temp_spike_df["mean_current"] = [np.nanmean(df['peak_i'].to_numpy())]
+                    temp_spike_df["mean_latency"] = [np.nanmean(df['latency'].to_numpy())]
+                    temp_spike_df["mean_thres"] = [np.nanmean(df['threshold_v'].to_numpy())]
+                    temp_spike_df["mean_width"] = [np.nanmean(df['width'].to_numpy())]
+                    temp_spike_df["mean_heightPT"] = [np.nanmean(abs(df['peak_v'].to_numpy() - df['fast_trough_v'].to_numpy()))]
+                    temp_spike_df["mean_heightTP"] = [np.nanmean(abs(df['threshold_v'].to_numpy() - df['peak_v'].to_numpy()))]
+                    temp_spike_df["mean_upstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
+                    temp_spike_df["mean_downstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
+                    temp_spike_df["mean_fast_trough"] = [np.nanmean(df['fast_trough_v'].to_numpy())]
                     spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
                     plotabf(abf, spiketimes, lowerlim, upperlim, plot_sweeps)
                 full_dataI = np.vstack(full_dataI) 
                 full_dataV = np.vstack(full_dataV) 
-                decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p = exp_decay_factor(dataT, np.mean(full_dataV,axis=0), np.mean(full_dataI,axis=0), 3000, abf_id=abf.abfID)
+                decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p = exp_decay_factor(dataT, np.nanmean(full_dataV,axis=0), np.nanmean(full_dataI,axis=0), 3000, abf_id=abf.abfID)
                 
                 temp_spike_df["fast decay avg"] = [decay_fast]
                 temp_spike_df["slow decay avg"] = [decay_slow]
