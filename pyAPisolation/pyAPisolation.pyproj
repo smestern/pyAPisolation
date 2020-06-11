@@ -91,6 +91,15 @@
     <Compile Include="ipfx\x_to_nwb\__init__.py" />
     <Compile Include="ipfx\_schemas.py" />
     <Compile Include="ipfx\__init__.py" />
+    <Compile Include="module1.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="subthres.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="utils.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="nuactionpotential.py" />
     <Compile Include="__init__.py">
       <SubType>Code</SubType>
