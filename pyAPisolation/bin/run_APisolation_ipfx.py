@@ -70,15 +70,7 @@ def exp_decay_factor(dataT,dataV,dataI, end_index=3000, abf_id='abf'):
         ss_tot = np.sum((dataV[downwardinfl:end_index]-np.mean(dataV[downwardinfl:end_index]))**2)
         r_squared_2p = 1 - (ss_res_2p / ss_tot)
         r_squared_1p = 1 - (ss_res_1p / ss_tot)
-        #plt.clf()
-        #plt.plot(t1, dataV[downwardinfl:end_index], label='Data')
-        #plt.plot(t1, exp_decay_2p(t1, *curve), label='2 phase fit')
-        #plt.plot(t1, exp_decay_1p(t1, curve[0], curve[1], curve[2]) + np.abs(upperC - np.amax(exp_decay_1p(t1, curve[0], curve[1], curve[2]))), label='Phase 1')
-        #plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3], curve[4]) + np.abs(upperC - np.amax(exp_decay_1p(t1, curve[0], curve[3], curve[4]))), label='Phase 2')
-        #plt.legend()
-        ##plt.pause(0.05)
-        #plt.savefig(abf_id+'.png')
-        #plt.close() 
+        
         tau1 = 1/curve[2]
         tau2 = 1/curve[4]
         fast = np.min([tau1, tau2])
@@ -96,7 +88,7 @@ for root,dir,fileList in os.walk(files):
     if filename.endswith(".abf"):
         try:
             file_path = os.path.join(root,filename)
-            abf = pyabf.ABF(file_path)
+            abf = pyabf.ABF(file_path, loadData=False)
             protocol = np.hstack((protocol, abf.protocol))
         except:
             print('error processing file ' + file_path)

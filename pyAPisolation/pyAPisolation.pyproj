@@ -23,6 +23,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="abfderivative.py" />
+    <Compile Include="bin\run_CM_CALC.py" />
     <Compile Include="bin\run_APisolation_ipfx.py" />
     <Compile Include="bin\run_APisolation_dir.py" />
     <Compile Include="ipfx\aibs_data_set.py" />
