@@ -1,8 +1,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import pyabf
+from scipy import interpolate
+from scipy.optimize import curve_fit
 
-
-
+def load_protocols(path):
+    protocol = []
+    for root,dir,fileList in os.walk(path):
+        for filename in fileList:
+            if filename.endswith(".abf"):
+                try:
+                    file_path = os.path.join(root,filename)
+                    abf = pyabf.ABF(file_path, loadData=False)
+                    protocol = np.hstack((protocol, abf.protocol))
+                except:
+                    print('error processing file ' + file_path)
+    return np.unique(protocol)
 
 
 
@@ -73,3 +87,7 @@ def build_running_bin(array, time, start, end, bin=20, time_units='s', kind='nea
         else:
             binned_[nans] = np.nanmean(array)
     return binned_, time_bins
+
+
+#def find_subthres_component(sweepC):
+    

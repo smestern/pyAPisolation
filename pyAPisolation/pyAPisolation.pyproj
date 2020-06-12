@@ -25,7 +25,8 @@
     <Compile Include="abfderivative.py" />
     <Compile Include="bin\run_CM_CALC.py" />
     <Compile Include="bin\run_APisolation_ipfx.py" />
-    <Compile Include="bin\run_APisolation_dir.py" />
+    <Compile Include="bin\__init__.py" />
+    <Compile Include="deprecated\run_APisolation_dir.py" />
     <Compile Include="ipfx\aibs_data_set.py" />
     <Compile Include="ipfx\bin\generate_fx_input.py" />
     <Compile Include="ipfx\bin\generate_pipeline_input.py" />
@@ -91,20 +92,20 @@
     <Compile Include="ipfx\x_to_nwb\__init__.py" />
     <Compile Include="ipfx\_schemas.py" />
     <Compile Include="ipfx\__init__.py" />
-    <Compile Include="module1.py">
+    <Compile Include="abf_ipfx_dataframes.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="subthres.py">
+    <Compile Include="abf_subthres.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="utils.py">
+    <Compile Include="abf_utils.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="nuactionpotential.py" />
+    <Compile Include="deprecated\nuactionpotential.py" />
     <Compile Include="__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="bin\run_APisolation.py" />
+    <Compile Include="deprecated\run_APisolation.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="bin\" />
@@ -115,6 +116,7 @@
     <Folder Include="ipfx\x_to_nwb\" />
     <Folder Include="ipfx\x_to_nwb\__pycache__\" />
     <Folder Include="ipfx\__pycache__\" />
+    <Folder Include="deprecated\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ipfx\bin\mcc-output.json" />

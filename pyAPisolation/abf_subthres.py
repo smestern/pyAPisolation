@@ -1,7 +1,6 @@
 import sys
 import numpy as np
 from numpy import genfromtxt
-
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
