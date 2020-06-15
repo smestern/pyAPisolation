@@ -23,6 +23,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="abfderivative.py" />
+    <Compile Include="abf_chirp.py" />
+    <Compile Include="abf_dataset.py" />
+    <Compile Include="abf_featureextractor.py" />
     <Compile Include="bin\run_CM_CALC.py" />
     <Compile Include="bin\run_APisolation_ipfx.py" />
     <Compile Include="bin\__init__.py" />
@@ -95,13 +98,10 @@
     <Compile Include="abf_ipfx_dataframes.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="abf_subthres.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="abf_utils.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="deprecated\nuactionpotential.py" />
+    <Compile Include="patch_subthres.py" />
+    <Compile Include="patch_utils.py" />
+    <Compile Include="QC.py" />
     <Compile Include="__init__.py">
       <SubType>Code</SubType>
     </Compile>
