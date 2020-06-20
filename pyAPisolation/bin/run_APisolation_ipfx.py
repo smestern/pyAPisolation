@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 from scipy import interpolate
 from scipy.optimize import curve_fit
+from scipy import stats
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 import pyabf
@@ -267,7 +268,46 @@ def build_running_bin(array, time, start, end, bin=20, time_units='s', kind='nea
     return binned_, time_bins
 
 
+def find_zero(realC):
+    #expects 1d array
+    zero_ind = np.where(realC == 0)[0]
+    ##Account for time constant?
+    diff = np.diff(zero_ind)
+    diff_jump = np.where(diff>2)[0][0]
+    if diff_jump + 3000 > realC.shape[0]:
+        _hop = diff_jump
+    else:
+        _hop = diff_jump + 3000
 
+    zero_ind_crop = np.hstack((zero_ind[:diff_jump], zero_ind[_hop:]))
+    return zero_ind_crop
+
+def compute_vm_drift(realY, zero_ind):
+    sweep_wise_mean = np.mean(realY[:,zero_ind], axis=1)
+    mean_drift = np.abs(np.amax(sweep_wise_mean) - np.amin(sweep_wise_mean))
+    abs_drift = np.abs(np.amax(realY[:,zero_ind], axis=1) - np.amin(realY[:,zero_ind], axis=1))
+
+    return mean_drift, abs_drift
+
+
+def compute_rms(realY, zero_ind):
+    mean = np.mean(realY[:,zero_ind], axis=1)
+    rms = []
+    for x in np.arange(mean.shape[0]):
+        temp = np.sqrt(np.mean(np.square(realY[x,zero_ind] - mean[x])))
+        rms = np.hstack((rms, temp))
+    full_mean = np.mean(rms)
+    return full_mean, np.amax(rms)
+
+def run_qc(realY, realC):
+    try:
+        zero_ind = find_zero(realC[0,:])
+        mean_rms, max_rms = compute_rms(realY, zero_ind)
+        mean_drift, max_drift = compute_vm_drift(realY, zero_ind)
+        return [mean_rms, max_rms, mean_drift, max_drift]
+    except:
+        print("Failed to run QC on cell")
+        return [np.nan, np.nan, np.nan, np.nan]
 
     
   # except:
@@ -284,7 +324,7 @@ for root,dir,fileList in os.walk(files):
         try:
             abf = pyabf.ABF(file_path)
         
-            if abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and protocol_name in abf.protocol:
+            if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
                 print(filename + ' import')
               #try:
                 np.nan_to_num(abf.data, nan=-9999, copy=False)
@@ -495,8 +535,14 @@ for root,dir,fileList in os.walk(files):
                     plotabf(abf, spiketimes, lowerlim, upperlim, plot_sweeps)
                 full_dataI = np.vstack(full_dataI) 
                 full_dataV = np.vstack(full_dataV) 
+                print("Fitting Decay")
                 decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p = exp_decay_factor(dataT, np.nanmean(full_dataV,axis=0), np.nanmean(full_dataI,axis=0), 3000, abf_id=abf.abfID)
-                
+                print("Calculating QC")
+                QC_Vars = run_qc(full_dataV, full_dataI)
+                temp_spike_df["QC - MEAN RMS"] = [QC_Vars[0]]
+                temp_spike_df["QC - MAX RMS"] = [QC_Vars[1]]
+                temp_spike_df["QC - MEAN VM DRIFT"] = [QC_Vars[2]]
+                temp_spike_df["QC - MAX VM DRIFT"] = [QC_Vars[2]]
                 temp_spike_df["fast decay avg"] = [decay_fast]
                 temp_spike_df["slow decay avg"] = [decay_slow]
                 temp_spike_df["Curve fit A"] = [curve[0]]

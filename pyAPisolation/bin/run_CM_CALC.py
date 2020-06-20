@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 from scipy import interpolate
 from scipy.optimize import curve_fit
+from scipy.stats import mode
+from ipfx import subthresh_features as subt
 import pyabf
 import logging
 import scipy.ndimage as ndimage
@@ -45,6 +47,10 @@ def exp_growth_factor(dataT,dataV,dataI, end_index=300):
     except:
         return np.nan
 
+def find_downward(dataI):
+    diff_I = np.diff(dataI)
+    downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+    return downwardinfl
 
 def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold=''):
      try:
@@ -92,7 +98,24 @@ def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root
      except:
         return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
 
-
+def compute_sag(dataT,dataV,dataI, time_aft):
+     time_aft = time_aft / 100
+     if time_aft > 1:
+            time_aft = 1   
+     diff_I = np.diff(dataI)
+     upwardinfl = np.nonzero(np.where(diff_I>0, diff_I, 0))[0][0]
+     test = dataT[upwardinfl]
+     diff_I = np.diff(dataI)
+     downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+     end_index = upwardinfl - int((upwardinfl - downwardinfl) * time_aft)
+     vm = mode(dataV[end_index:upwardinfl])[0][0]
+     min_point = downwardinfl + np.argmin(dataV[downwardinfl:end_index])
+     test = dataT[downwardinfl]
+     test2 = dataT[end_index]
+     avg_min = np.nanmean(dataV[int(min_point - 3):int(min_point + 3)])
+     sag_diff = np.abs(vm - avg_min)
+     return sag_diff
+        
 
 def membrane_resistance(dataT,dataV,dataI):
     diff_I = np.diff(dataI)
@@ -183,30 +206,13 @@ try:
 except:
     time_after = 50
 
-bfeatcon = True
-bfeat = False
-
-
-if bfeatcon == True:
-    featfile = "y"
-    try: 
-        featfile = str(featfile)
-    except:
-        featfile = "n"
-    if featfile == "n" or featfile =="N":
-        featfile = False
-    else: 
-        featfile = True
-
-    featrheo = "y"
-    try: 
-        featrheo = str(featrheo)
-    except:
-        featrheo = "n"
-    if featrheo == "n" or featrheo =="N":
-        featrheo = False
-    else: 
-        featrheo = True
+subt_sweeps = input("Enter subthreshold sweeps (seperated by comma), if None program will try to guess: ")
+try: 
+    subt_sweeps = np.fromstring(subt_sweeps, dtype=int, sep=',')
+    if subt_sweeps.shape[0] < 1:
+        subt_sweeps = None
+except:
+    subt_sweeps = None
         
 def plotabf(abf, spiketimes, lowerlim, upperlim, sweep_plots):
    try:
@@ -281,6 +287,23 @@ def mem_cap_alt(resist, tau, b2, deflection):
     cm = tau / rm2
     return cm
 
+def determine_subt(abf):
+    def nonzero_1d(a):
+        non = np.nonzero(a)
+        return a[non]
+    dataC =[]
+    for sweep in abf.sweepList:
+        abf.setSweep(sweep)
+        sweepdiff = np.diff(abf.sweepC)
+        dataC.append(sweepdiff)
+    dataC = np.vstack(dataC)
+    deflections = np.unique(np.where(dataC<0)[0])
+    return deflections
+
+
+
+
+
 
 
 debugplot = 0
@@ -296,6 +319,7 @@ for root,dir,fileList in os.walk(files):
         
             if abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and protocol_name in abf.protocol:
                 print(filename + ' import')
+                
               #try:
                 np.nan_to_num(abf.data, nan=-9999, copy=False)
                 if savfilter >0:
@@ -307,9 +331,13 @@ for root,dir,fileList in os.walk(files):
                  #If there is more than one sweep, we need to ensure we dont iterate out of range
                 if abf.sweepCount > 1:
                     sweepcount = (abf.sweepCount)
+                    sweepList = abf.sweepList
                 else:
                     sweepcount = 1
-                
+                    sweepList = [0]
+                if subt_sweeps is None:
+                    sweepList = determine_subt(abf)
+                    sweepcount = len(sweepList)
                 #Now we walk through the sweeps looking for action potentials
                 temp_df = pd.DataFrame()
                 temp_df['1Afilename'] = [abf.abfID]
@@ -320,7 +348,7 @@ for root,dir,fileList in os.walk(files):
                 
                 full_dataI = []
                 full_dataV = []
-                for sweepNumber in range(0, sweepcount): 
+                for sweepNumber in sweepList: 
                     real_sweep_length = abf.sweepLengthSec - 0.0001
                     if sweepNumber < 9:
                         real_sweep_number = '00' + str(sweepNumber + 1)
@@ -348,7 +376,11 @@ for root,dir,fileList in os.walk(files):
                     temp_df[f"_2 phase Cm {real_sweep_number}"] =  Cm2 * 1000000000000#to pf farad
                     temp_df[f"_ALT_2 phase Cm {real_sweep_number}"] =  Cm3 * 1000000000000
                     temp_df[f"_1 phase Cm {real_sweep_number}"] =  Cm1 * 1000000000000
-
+                    temp_df[f"Voltage sag {real_sweep_number}"] = compute_sag(dataT,dataV,dataI, time_after)
+                    #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
+                    #
+                    #temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                    #temp_spike_df['voltage_deflection' + real_sweep_number] = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
 
 
 
@@ -368,8 +400,10 @@ for root,dir,fileList in os.walk(files):
                 if bplot == True:
                     if not os.path.exists(root_fold+'//cm_plots//'):
                             os.mkdir(root_fold+'//cm_plots//')   
-                decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.abfID, plot=True, root_fold=root_fold)
-                
+                print("Fitting Decay")
+                decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=root_fold)
+                print("Computing Sag")
+                temp_avg[f"Voltage sag {real_sweep_number}"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after)
                 temp_avg["Averaged 1 phase decay "] = [p_decay]           
                 temp_avg["Averaged 2 phase fast decay "] = [decay_fast]
                 temp_avg["Averaged 2 phase slow decay "] = [decay_slow]
@@ -399,7 +433,7 @@ for root,dir,fileList in os.walk(files):
             else:
                 print('Not correct protocol: ' + abf.protocol)
         except:
-            print('Issue Processing ' + filename)
+           print('Issue Processing ' + filename)
 
 
 if True:
