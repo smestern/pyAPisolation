@@ -127,7 +127,7 @@ try:
     proto = int(proto)
 except:
     proto = 0
-
+protocol_name = protocol_n[proto]
 lowerlim = input("Enter the time to analyze rmp (eg. first and last 10s)[in s]: ")
 
 try: 
@@ -154,11 +154,12 @@ for root,dirs,fileList in os.walk(root_fold):
         if '.abf' in x:
             try:
                 abf = pyabf.ABF(fp)
-                temp_df = rmp_abf(abf, lowerlim, bcrop)
-                if temp_df.empty == False:
-                    full_df = full_df.append(temp_df)
+                if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
+                    temp_df = rmp_abf(abf, lowerlim, bcrop)
+                    if temp_df.empty == False:
+                        full_df = full_df.append(temp_df)
             except:
-                print('error processing file ' + file_path)
+                print('error processing file ' + fp)
 
 
 with pd.ExcelWriter(root_fold + '/RMP_' + tag + '.xlsx') as runf:

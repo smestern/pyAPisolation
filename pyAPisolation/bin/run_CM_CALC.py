@@ -99,41 +99,56 @@ def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root
         return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
 
 def compute_sag(dataT,dataV,dataI, time_aft):
-     time_aft = time_aft / 100
-     if time_aft > 1:
-            time_aft = 1   
-     diff_I = np.diff(dataI)
-     upwardinfl = np.nonzero(np.where(diff_I>0, diff_I, 0))[0][0]
-     test = dataT[upwardinfl]
-     diff_I = np.diff(dataI)
-     downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
-     end_index = upwardinfl - int((upwardinfl - downwardinfl) * time_aft)
-     vm = mode(dataV[end_index:upwardinfl])[0][0]
-     min_point = downwardinfl + np.argmin(dataV[downwardinfl:end_index])
-     test = dataT[downwardinfl]
-     test2 = dataT[end_index]
-     avg_min = np.nanmean(dataV[int(min_point - 3):int(min_point + 3)])
-     sag_diff = np.abs(vm - avg_min)
-     return sag_diff
+    try:
+         time_aft = time_aft / 100
+         if time_aft > 1:
+                time_aft = 1   
+         diff_I = np.diff(dataI)
+         upwardinfl = np.nonzero(np.where(diff_I>0, diff_I, 0))[0][0]
+         test = dataT[upwardinfl]
+         diff_I = np.diff(dataI)
+         downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+         dt = dataT[1] - dataT[0] #in s
+         end_index = upwardinfl - int(0.100/dt)
+         #end_index = upwardinfl - int((upwardinfl - downwardinfl) * time_aft)
+         if end_index<downwardinfl:
+             end_index = upwardinfl - 5
+         vm = mode(dataV[end_index:upwardinfl])[0][0]
+         plt.figure(num=99)
+         plt.clf()
+         plt.plot(dataT[end_index:upwardinfl], dataV[end_index:upwardinfl])
+         plt.pause(0.05)
+         min_point = downwardinfl + np.argmin(dataV[downwardinfl:end_index])
+         test = dataT[downwardinfl]
+         test2 = dataT[end_index]
+         avg_min = np.nanmean(dataV[int(min_point - 3):int(min_point + 3)])
+         sag_diff = np.abs(vm - avg_min)
+         return sag_diff
+    except:
+         return np.nan
         
+
 
 def membrane_resistance(dataT,dataV,dataI):
-    diff_I = np.diff(dataI)
-    downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
-    end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl)/2)
+    try:
+        diff_I = np.diff(dataI)
+        downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+        end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl)/2)
         
-    upperC = np.mean(dataV[:downwardinfl-100])
-    lowerC = np.mean(dataV[downwardinfl+100:end_index-100])
-    diff = -1 * np.abs(upperC - lowerC)
-    I_lower = dataI[downwardinfl+1]
-    t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
-    #v = IR
-    #r = v/I
-    v_ = diff / 1000 # in mv -> V
-    I_ = I_lower / 1000000000000 #in pA -> A
-    r = v_/I_
+        upperC = np.mean(dataV[:downwardinfl-100])
+        lowerC = np.mean(dataV[downwardinfl+100:end_index-100])
+        diff = -1 * np.abs(upperC - lowerC)
+        I_lower = dataI[downwardinfl+1]
+        t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
+        #v = IR
+        #r = v/I
+        v_ = diff / 1000 # in mv -> V
+        I_ = I_lower / 1000000000000 #in pA -> A
+        r = v_/I_
 
-    return r #in ohms
+        return r #in ohms
+    except: 
+        return np.nan
 
 def mem_cap(resist, tau_2p, tau_1p =np.nan):
     #tau = RC
@@ -330,14 +345,18 @@ for root,dir,fileList in os.walk(files):
                      _ = 1
                  #If there is more than one sweep, we need to ensure we dont iterate out of range
                 if abf.sweepCount > 1:
-                    sweepcount = (abf.sweepCount)
-                    sweepList = abf.sweepList
+                    if subt_sweeps is None:
+                        sweepList = determine_subt(abf)
+                        sweepcount = len(sweepList)
+                    else:
+                        subt_sweeps_temp = subt_sweeps - 1
+                        sweep_union = np.intersect1d(abf.sweepList, subt_sweeps_temp)
+                        sweepList = sweep_union
+                        sweepcount = 1
                 else:
                     sweepcount = 1
                     sweepList = [0]
-                if subt_sweeps is None:
-                    sweepList = determine_subt(abf)
-                    sweepcount = len(sweepList)
+                
                 #Now we walk through the sweeps looking for action potentials
                 temp_df = pd.DataFrame()
                 temp_df['1Afilename'] = [abf.abfID]
@@ -403,7 +422,7 @@ for root,dir,fileList in os.walk(files):
                 print("Fitting Decay")
                 decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=root_fold)
                 print("Computing Sag")
-                temp_avg[f"Voltage sag {real_sweep_number}"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after)
+                temp_avg[f"Voltage sag mean"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after)
                 temp_avg["Averaged 1 phase decay "] = [p_decay]           
                 temp_avg["Averaged 2 phase fast decay "] = [decay_fast]
                 temp_avg["Averaged 2 phase slow decay "] = [decay_slow]
@@ -433,7 +452,7 @@ for root,dir,fileList in os.walk(files):
             else:
                 print('Not correct protocol: ' + abf.protocol)
         except:
-           print('Issue Processing ' + filename)
+          print('Issue Processing ' + filename)
 
 
 if True:
