@@ -98,8 +98,8 @@ def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root
      except:
         return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
 
-def compute_sag(dataT,dataV,dataI, time_aft):
-    try:
+def compute_sag(dataT,dataV,dataI, time_aft, plot=False):
+   try:
          time_aft = time_aft / 100
          if time_aft > 1:
                 time_aft = 1   
@@ -110,23 +110,35 @@ def compute_sag(dataT,dataV,dataI, time_aft):
          downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
          dt = dataT[1] - dataT[0] #in s
          end_index = upwardinfl - int(0.100/dt)
-         #end_index = upwardinfl - int((upwardinfl - downwardinfl) * time_aft)
+         end_index2 = upwardinfl - int((upwardinfl - downwardinfl) * time_aft)
          if end_index<downwardinfl:
              end_index = upwardinfl - 5
          vm = mode(dataV[end_index:upwardinfl])[0][0]
-         plt.figure(num=99)
-         plt.clf()
-         plt.plot(dataT[end_index:upwardinfl], dataV[end_index:upwardinfl])
-         plt.pause(0.05)
-         min_point = downwardinfl + np.argmin(dataV[downwardinfl:end_index])
+         
+         min_point = downwardinfl + np.argmin(dataV[downwardinfl:end_index2])
          test = dataT[downwardinfl]
          test2 = dataT[end_index]
          avg_min = np.nanmean(dataV[int(min_point - 3):int(min_point + 3)])
-         sag_diff = np.abs(vm - avg_min)
+         sag_diff = avg_min - vm
+         sag_diff_plot = np.arange(avg_min, vm, 1)
+         if plot==True:
+             try:
+                 plt.figure(num=99)
+                 plt.clf()
+                 plt.plot(dataT[downwardinfl:int(upwardinfl+1000)], dataV[downwardinfl:int(upwardinfl + 1000)], label="Data")
+                 plt.scatter(dataT[min_point], dataV[min_point], c='r', marker='x', zorder=99, label="Min Point")
+                 plt.scatter(dataT[end_index:upwardinfl], dataV[end_index:upwardinfl], c='g', zorder=99, label="Mode Vm Measured")
+                 plt.plot(dataT[np.full(sag_diff_plot.shape[0], min_point, dtype=np.int64)], sag_diff_plot, label=f"Sag of {sag_diff} / abs: {np.abs(sag_diff)}")
+                 plt.legend()
+                 plt.pause(0.05)
+             except:
+                 print("plot fail")
+         
          return sag_diff
-    except:
+   except:
          return np.nan
         
+
 
 
 def membrane_resistance(dataT,dataV,dataI):
@@ -422,7 +434,11 @@ for root,dir,fileList in os.walk(files):
                 print("Fitting Decay")
                 decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=root_fold)
                 print("Computing Sag")
-                temp_avg[f"Voltage sag mean"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after)
+                
+                temp_avg[f"Voltage sag mean"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, plot=bplot)
+                if bplot == True:
+                    plt.title(abf.abfID)
+                    plt.savefig(root_fold+'//cm_plots//sagfit'+abf.abfID)
                 temp_avg["Averaged 1 phase decay "] = [p_decay]           
                 temp_avg["Averaged 2 phase fast decay "] = [decay_fast]
                 temp_avg["Averaged 2 phase slow decay "] = [decay_slow]
@@ -431,6 +447,7 @@ for root,dir,fileList in os.walk(files):
                 temp_avg["Averaged Curve fit b2"] = [curve[3]]
                 temp_avg["Averaged R squared 2 phase"] = [r_squared_2p]
                 temp_avg["Averaged R squared 1 phase"] = [r_squared_1p]
+                temp_avg["SweepCount Measured"] = [sweepcount]
                 if r_squared_2p > r_squared_1p:
                    temp_avg["Averaged Best Fit"] = [2]
                 else:
@@ -452,7 +469,7 @@ for root,dir,fileList in os.walk(files):
             else:
                 print('Not correct protocol: ' + abf.protocol)
         except:
-          print('Issue Processing ' + filename)
+         print('Issue Processing ' + filename)
 
 
 if True:
