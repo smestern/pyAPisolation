@@ -196,10 +196,10 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
         end_index = downwardinfl + int(.95 * minpoint)
         downwardinfl = downwardinfl + int(.10 * minpoint)
 
-        diff = np.abs(upperC - lowerC) + 5
+        diff = np.abs(upperC - lowerC)
         t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
         SpanFast=(upperC-lowerC)*1*.01
-        curve, pcov_2p = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=([-np.inf,  0, 100,  0, 0], [np.inf, np.inf, 500, np.inf, np.inf]), xtol=None)
+        curve, pcov_2p = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=([-np.inf,  0, 100,  0, 0], [np.inf, np.inf, np.inf, np.inf, np.inf]), xtol=None)
         curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=(-np.inf, np.inf))
         residuals_2p = dataV[downwardinfl:end_index]- exp_decay_2p(t1, *curve)
         residuals_1p = dataV[downwardinfl:end_index]- exp_decay_1p(t1, *curve2)
@@ -593,7 +593,7 @@ for root,dir,fileList in os.walk(files):
                     temp_avg["AverageD Best Fit"] = [1]
                 print(f"fitting Membrane resist")
                 resist = membrane_resistance(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0))
-                resist_alt = exp_rm_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, decay_slow, abf_id=abf.abfID,  root_fold=root_fold)
+                resist_alt = exp_rm_factor(dataT, dataV, dataI, time_after, decay_slow, abf_id=abf.abfID,  root_fold=root_fold)
                 Cm2, Cm1 = mem_cap(resist, decay_slow, p_decay)
                 Cm3 = mem_cap_alt(resist, decay_slow, curve[3], np.amin(np.nanmean(full_dataI[indices_of_same,:],axis=0)))
                 rm_alt = mem_resist_alt(Cm3, decay_slow)

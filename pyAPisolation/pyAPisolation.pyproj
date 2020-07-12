@@ -5,7 +5,7 @@
     <ProjectGuid>309e1fdf-ac34-46f7-ad12-a763af3594f1</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>bin\run_QC.py</StartupFile>
+    <StartupFile>bin\run_CM_CALC.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -23,6 +23,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="abfderivative.py" />
+    <Compile Include="bin\run_CM_CALC_lm.py" />
     <Compile Include="bin\run_QC.py" />
     <Compile Include="bin\run_rmp.py">
       <SubType>Code</SubType>
@@ -72,6 +73,7 @@
     <Compile Include="ipfx\qc_features.py" />
     <Compile Include="ipfx\qc_feature_evaluator.py" />
     <Compile Include="ipfx\qc_feature_extractor.py" />
+    <Compile Include="ipfx\run_CM_CALC.py" />
     <Compile Include="ipfx\spike_detector.py" />
     <Compile Include="ipfx\spike_features.py" />
     <Compile Include="ipfx\spike_train_features.py" />

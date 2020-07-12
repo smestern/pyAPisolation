@@ -13,6 +13,7 @@ from scipy import interpolate
 from scipy.optimize import curve_fit
 from scipy.stats import mode
 from ipfx import subthresh_features as subt
+from lmfit import minimize, Parameters
 import pyabf
 import logging
 import scipy.ndimage as ndimage
@@ -108,6 +109,7 @@ def exp_rm_factor(dataT,dataV,dataI, time_aft, decay_slow, abf_id='abf', plot=Fa
         Iinj_real = dataI[int(downwardinfl + 5)] / 1000000000000 #in pA -> A
         t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
         SpanFast=(upperC-lowerC)*1*.01
+
         curve, pcov_2p = curve_fit(lambda t1, Rm, alphaFast, Re, alphaSlow, a: rm_decay_2p(t1, Iinj_real, Rm, alphaFast, Re, alphaSlow, a), t1, dataV[downwardinfl:end_index], maxfev=50000, bounds=([100000000, 0, 0, 0, (upperC /1000)-0.002], [np.inf, 1, 0.1, 0.01, (upperC /1000)+0.002]), verbose=1, xtol=None)
 
         #residuals_2p = dataV[downwardinfl:end_index]- exp_decay_2p(t1, *curve)
@@ -179,9 +181,15 @@ def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root
      except:
         return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
 
+def residual(params, x, data):
+    
+    model = exp_decay_2p(x, params['a'], params['b1'], params['tau1'], params['b2'], params['tau2'])
+    res = data-model
+    return np.nan_to_num(res, nan=200)
+
 
 def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold=''):
-     try:
+     #try:
         time_aft = time_aft / 100
         if time_aft > 1:
             time_aft = 1
@@ -196,11 +204,21 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
         end_index = downwardinfl + int(.95 * minpoint)
         downwardinfl = downwardinfl + int(.10 * minpoint)
 
-        diff = np.abs(upperC - lowerC) + 5
+        diff = np.abs(upperC - lowerC)
         t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
         SpanFast=(upperC-lowerC)*1*.01
-        curve, pcov_2p = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=([-np.inf,  0, 100,  0, 0], [np.inf, np.inf, 500, np.inf, np.inf]), xtol=None)
         curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=(-np.inf, np.inf))
+        params = Parameters()
+        params.add('a', value=10)
+        params.add('b2', min=0.1)
+        params.add('tau2', value=curve2[2])
+        params.add('b1', min=0.1)
+        params.add('tau1', value=curve2[2], min=100)
+       
+        
+
+        fit = minimize(residual, params, args=(t1, dataV[downwardinfl:end_index]), nan_policy='omit', **{'xtol':False})
+        curve = fit.params
         residuals_2p = dataV[downwardinfl:end_index]- exp_decay_2p(t1, *curve)
         residuals_1p = dataV[downwardinfl:end_index]- exp_decay_1p(t1, *curve2)
         ss_res_2p = np.sum(residuals_2p**2)
@@ -228,8 +246,8 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
         fast = np.min([tau1, tau2])
         slow = np.max([tau1, tau2])
         return tau1, tau2, curve, r_squared_2p, r_squared_1p, tau_1p
-     except:
-        return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
+     #except:
+        #return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
 
 def compute_sag(dataT,dataV,dataI, time_aft, plot=False):
    try:
@@ -593,7 +611,7 @@ for root,dir,fileList in os.walk(files):
                     temp_avg["AverageD Best Fit"] = [1]
                 print(f"fitting Membrane resist")
                 resist = membrane_resistance(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0))
-                resist_alt = exp_rm_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, decay_slow, abf_id=abf.abfID,  root_fold=root_fold)
+                resist_alt = exp_rm_factor(dataT, dataV, dataI, time_after, decay_slow, abf_id=abf.abfID,  root_fold=root_fold)
                 Cm2, Cm1 = mem_cap(resist, decay_slow, p_decay)
                 Cm3 = mem_cap_alt(resist, decay_slow, curve[3], np.amin(np.nanmean(full_dataI[indices_of_same,:],axis=0)))
                 rm_alt = mem_resist_alt(Cm3, decay_slow)
