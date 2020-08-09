@@ -152,15 +152,15 @@ for root,dirs,fileList in os.walk(root_fold):
     for x in fileList:
         fp = os.path.join(root, x)
         if '.abf' in x:
-           # try:
+            try:
                 abf = pyabf.ABF(fp)
                 if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
                     print(abf.abfID + ' import')
                     temp_df = rmp_abf(abf, lowerlim, bcrop)
                     if temp_df.empty == False:
                         full_df = full_df.append(temp_df)
-          #  except:
-             #   print('error processing file ' + fp)
+            except:
+              print('error processing file ' + fp)
 
 
 with pd.ExcelWriter(root_fold + '/RMP_' + tag + '.xlsx') as runf:
