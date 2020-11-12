@@ -3,11 +3,11 @@
 block_cipher = None
 
 
-a = Analysis(['pyABF_APisolation.py'],
-             pathex=['C:\\Users\\SMest\\source\\repos\\smestern\\pyAPisolation\\pyAPisolation\\bin'],
+a = Analysis(['run_CM_CALC.py'],
+             pathex=['C:\\Users\\smestern\\source\\repos\\smestern\\pyAPisolation\\pyAPisolation\\bin'],
              binaries=[],
              datas=[],
-             hiddenimports=[],
+             hiddenimports=['pyabf'],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
@@ -21,7 +21,7 @@ exe = EXE(pyz,
           a.scripts,
           [],
           exclude_binaries=True,
-          name='pyABF_APisolation',
+          name='run_CM_CALC',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -34,4 +34,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='pyABF_APisolation')
+               name='run_CM_CALC')

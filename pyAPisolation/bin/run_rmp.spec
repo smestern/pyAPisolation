@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['run_apisolation_ipfx.py'],
+a = Analysis(['run_rmp.py'],
              pathex=['C:\\Users\\smestern\\source\\repos\\smestern\\pyAPisolation\\pyAPisolation\\bin'],
              binaries=[],
              datas=[],
@@ -21,7 +21,7 @@ exe = EXE(pyz,
           a.scripts,
           [],
           exclude_binaries=True,
-          name='run_apisolation_ipfx',
+          name='run_rmp',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -34,4 +34,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='run_apisolation_ipfx')
+               name='run_rmp')
