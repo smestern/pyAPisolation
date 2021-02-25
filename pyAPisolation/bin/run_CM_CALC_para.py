@@ -14,10 +14,12 @@ from scipy import interpolate
 from scipy.optimize import curve_fit
 from scipy.stats import mode
 from ipfx import subthresh_features as subt
-from ipfx import feature_extractor
 import pyabf
 import logging
 import scipy.ndimage as ndimage
+import multiprocessing
+import logging
+import glob
 print("Load finished")
 logging.basicConfig(level=logging.DEBUG)
 root = tk.Tk()
@@ -53,19 +55,12 @@ def exp_growth_factor(dataT,dataV,dataI, alpha, end_index=1, plot=False):
         downwardinfl = np.argmin(diff_I[upwardinfl:])
         end_index = upwardinfl + int(downwardinfl * 0.95)
         #end_index += upwardinfl
-        try:
-            spikext = feature_extractor.SpikeFeatureExtractor(filter=0)
-            spikes = spikext.process(dataT,dataV,dataI)
-            first_spike_index = spikes['threshold_index'].to_numpy()[0]
-            end_index = first_spike_index
-        except:
-            print("no spikes")
         upperC = np.amax(dataV[upwardinfl:end_index])
         lowerC = np.amin(dataV[upwardinfl:end_index])
         t1 = dataT[upwardinfl:end_index] - dataT[upwardinfl]
         _height = (upperC - lowerC) * 0.90
-        curve2 = curve_fit(exp_grow, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, _height - 5, 0], [np.inf, _height + 5, 0.1]), xtol=None)[0]
-        curve = curve_fit(exp_grow_2p, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, (_height - 5), 0, 0, 0], [0, _height*2, curve2[2], _height*2, 5]), xtol=None)[0]
+        curve2 = curve_fit(exp_grow, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, _height, 0], [np.inf, _height +(_height *0.05), 0.1]), xtol=None)[0]
+        curve = curve_fit(exp_grow_2p, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, (_height//2), 0, 2, 0], [0, _height*2, np.inf, np.inf, 0.5]), xtol=None)[0]
         tau = curve[2]
         x_deriv, deriv_ar = deriv(t1, exp_grow(t1, *curve2))
         diff = np.abs(deriv_ar - 2)
@@ -75,11 +70,11 @@ def exp_growth_factor(dataT,dataV,dataI, alpha, end_index=1, plot=False):
             plt.figure(2)
             plt.clf()
             plt.plot(t1, dataV[upwardinfl:end_index], label='Data')
-            plt.scatter(t1[minpoint], exp_grow(t1, *curve2)[minpoint], label='min')
+            plt.scatter(t1[minpoint], exp_grow(t1, *curve)[minpoint], label='min')
             plt.plot(t1, exp_grow(t1, *curve2), label='1 phase fit')
             plt.plot(t1, exp_grow_2p(t1, *curve), label='2 phase fit')
             plt.legend()
-            plt.title(abf_id)
+            #plt.title(abf_id)
             plt.pause(2)
             #plt.savefig(root_fold+ '//cm_plots//' + abf_id+'.png')
             #plt.close()
@@ -283,7 +278,7 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
      except:
         return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
 
-def compute_sag(dataT,dataV,dataI, time_aft, plot=True):
+def compute_sag(dataT,dataV,dataI, time_aft, plot=False):
    try:
          time_aft = time_aft / 100
          if time_aft > 1:
@@ -523,11 +518,17 @@ debugplot = 0
 running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
 dfs = pd.DataFrame()
 averages = pd.DataFrame()
-for root,dir,fileList in os.walk(files):
- for filename in fileList:
-    if filename.endswith(".abf"):
-            file_path = os.path.join(root,filename)
-        #try:
+
+
+abf_files = glob.glob(files + "\\*.abf")
+log = multiprocessing.log_to_stderr()
+log.setLevel(logging.DEBUG)
+pool = multiprocessing.Pool(multiprocessing.cpu_count())
+
+
+def abf_curve_fit(file_path, protocol_name, savfilter):
+        #file_path = os.path.join(root,filename)
+        try:
             abf = pyabf.ABF(file_path)
         
             if abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and protocol_name in abf.protocol:
@@ -644,7 +645,7 @@ for root,dir,fileList in os.walk(files):
                 temp_avg["Averaged R squared 1 phase"] = [r_squared_1p]
                 temp_df[f"Averaged RMP"] = [rmp_mode(np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0))]
                 temp_avg["SweepCount Measured"] = [sweepcount]
-                temp_avg["Averaged Grow Fast tau"] = [grow[2]]
+                temp_avg["Averaged Grow Fast tau"] = [grow[1]]
                 temp_avg["Averaged Grow slow tau"] = [grow[4]]
                 if r_squared_2p > r_squared_1p:
                    temp_avg["Averaged Best Fit"] = [2]
@@ -664,16 +665,22 @@ for root,dir,fileList in os.walk(files):
                 temp_avg["Averaged 2 phase Cm Alt"] =  Cm3 * 1000000000000
                 temp_avg["Averaged 1 phase Cm"] =  Cm1 * 1000000000000
                 print(f"Computed a membrane resistance of {(resist  / 1000000000)} giga ohms, and a capatiance of {Cm2 * 1000000000000} pF, and tau of {decay_slow*1000} ms")
-                dfs = dfs.append(temp_df, sort=True)
-                averages = averages.append(temp_avg, sort=True)
+                #dfs = dfs.append(temp_df, sort=True)
+                #averages = averages.append(temp_avg, sort=True)
+                return temp_df, temp_avg
               #except:
                # print('Issue Processing ' + filename)
 
             else:
                 print('Not correct protocol: ' + abf.protocol)
-        #except:
-        #   print('Issue Processing ' + filename)
+                return np.nan, np.nan
+        except:
+                print('Issue Processing ' + filename)
+results = [pool.apply(abf_curve_fit, args=(file, protocol_name, savfilter)) for file in abf_files]
 
+pool.close()
+
+print("re")
 
 if True:
     #try:

@@ -23,6 +23,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="abfderivative.py" />
+    <Compile Include="bin\run_APisolation_ipfx_fv_ic1.py" />
+    <Compile Include="bin\run_output_to_web.py" />
+    <Compile Include="bin\run_web_gui.py" />
+    <Compile Include="bin\run_CM_CALC_para.py" />
     <Compile Include="bin\run_CM_CALC_lm.py" />
     <Compile Include="bin\run_QC.py" />
     <Compile Include="bin\run_rmp.py">
