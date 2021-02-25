@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.DEBUG)
 root = tk.Tk()
 root.withdraw()
 files = filedialog.askdirectory(
-                                   title='Select dir File'
+                                   title='Select Dir'
                                    )
 root_fold = files
 

@@ -5,7 +5,7 @@
     <ProjectGuid>309e1fdf-ac34-46f7-ad12-a763af3594f1</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>bin\run_CM_CALC.py</StartupFile>
+    <StartupFile>bin\run_APisolation_ipfx.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -23,18 +23,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="abfderivative.py" />
-    <Compile Include="bin\run_APisolation_ipfx_fv_ic1.py" />
-    <Compile Include="bin\run_output_to_web.py" />
-    <Compile Include="bin\run_web_gui.py" />
-    <Compile Include="bin\run_CM_CALC_para.py" />
-    <Compile Include="bin\run_CM_CALC_lm.py" />
-    <Compile Include="bin\run_QC.py" />
-    <Compile Include="bin\run_rmp.py">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="abf_chirp.py" />
+    <Compile Include="abf_dataset.py" />
+    <Compile Include="abf_featureextractor.py" />
     <Compile Include="bin\run_CM_CALC.py" />
     <Compile Include="bin\run_APisolation_ipfx.py" />
-    <Compile Include="bin\run_APisolation_dir.py" />
+    <Compile Include="bin\__init__.py" />
+    <Compile Include="deprecated\run_APisolation_dir.py" />
     <Compile Include="ipfx\aibs_data_set.py" />
     <Compile Include="ipfx\bin\generate_fx_input.py" />
     <Compile Include="ipfx\bin\generate_pipeline_input.py" />
@@ -77,7 +72,6 @@
     <Compile Include="ipfx\qc_features.py" />
     <Compile Include="ipfx\qc_feature_evaluator.py" />
     <Compile Include="ipfx\qc_feature_extractor.py" />
-    <Compile Include="ipfx\run_CM_CALC.py" />
     <Compile Include="ipfx\spike_detector.py" />
     <Compile Include="ipfx\spike_features.py" />
     <Compile Include="ipfx\spike_train_features.py" />
@@ -101,11 +95,17 @@
     <Compile Include="ipfx\x_to_nwb\__init__.py" />
     <Compile Include="ipfx\_schemas.py" />
     <Compile Include="ipfx\__init__.py" />
-    <Compile Include="nuactionpotential.py" />
+    <Compile Include="abf_ipfx_dataframes.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="deprecated\nuactionpotential.py" />
+    <Compile Include="patch_subthres.py" />
+    <Compile Include="patch_utils.py" />
+    <Compile Include="QC.py" />
     <Compile Include="__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="bin\run_APisolation.py" />
+    <Compile Include="deprecated\run_APisolation.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="bin\" />
@@ -116,6 +116,7 @@
     <Folder Include="ipfx\x_to_nwb\" />
     <Folder Include="ipfx\x_to_nwb\__pycache__\" />
     <Folder Include="ipfx\__pycache__\" />
+    <Folder Include="deprecated\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ipfx\bin\mcc-output.json" />
