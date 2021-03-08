@@ -9,6 +9,4 @@ import numpy as np
 import glob
 from ipfx import feature_extractor
 import pyabf
-file_path = os.path.dirname(os.path.abspath(__file__))
-
-subprocess.run(['voila', file_path+".\\abfanalysis_local.ipynb"])
+import chart_studio.plotly

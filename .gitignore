@@ -346,3 +346,5 @@ healthchecksdb
 /pyAPisolation/bin/dist/pyABF_APisolation
 /pyAPisolation/bin/output
 /pyAPisolation/bin/dist.zip
+pyAPisolation/web_viz/output.html
+/pyAPisolation/web_viz/out.json

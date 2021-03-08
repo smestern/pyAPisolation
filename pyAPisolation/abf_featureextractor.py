@@ -9,10 +9,56 @@ from scipy.optimize import curve_fit
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 import pyabf
-from abf_utils import *
-from abf_subthres import *
+from patch_utils import *
+from patch_subthres import *
+from abf_ipfx_dataframes import *
+
+def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1'):
+    debugplot = 0
+    running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
+    dfs = pd.DataFrame()
+    df_spike_count = pd.DataFrame()
+    df_running_avg_count = pd.DataFrame()
+    for root,dir_,fileList in os.walk(files):
+        for filename in fileList:
+            if filename.endswith(".abf"):
+                file_path = os.path.join(root,filename)
+                try:
+                    abf = pyabf.ABF(file_path)
+                
+                    if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
+                        print(filename + ' import')
+                        temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
+                        df_running_avg_count = df_running_avg_count.append(temp_running_bin)
+                        df_spike_count = df_spike_count.append(temp_spike_df, sort=True)
+                        dfs = dfs.append(df, sort=True)
+                    else:
+                        print('Not correct protocol: ' + abf.protocol)
+                except:
+
+                    print('Issue Processing ' + filename)
+    return dfs, df_spike_count, df_running_avg_count
 
 
+def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag=''):
+    try:
+        ids = dfs['__file_name'].unique()
+        tempframe = dfs.groupby('__file_name').mean().reset_index()
+        tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
+        tempframe = dfs.drop_duplicates(subset='__file_name')
+        tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
+        df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
+        dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
+        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
+            cols = df_running_avg_count.columns.values
+            df_ind = df_running_avg_count.loc[:,cols[[-1,-2,-3]]]
+            index = pd.MultiIndex.from_frame(df_ind)
+            for p in running_lab:
+                temp_ind = [p in col for col in cols]
+                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
+                temp_df.to_excel(runf, sheet_name=p)
+    except: 
+        print('error saving')
 
 class abfFeatExtractor(object):
     """ """

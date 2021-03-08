@@ -88,6 +88,22 @@ def build_running_bin(array, time, start, end, bin=20, time_units='s', kind='nea
             binned_[nans] = np.nanmean(array)
     return binned_, time_bins
 
+def create_dir(fp):
+    if os.path.exists(fp):
+        pass
+    else:
+        os.makedirs(fp)
+    return fp
+
+
+def df_select_by_col(df, string_to_find):
+    columns = df.columns.values
+    out = []
+    for col in columns:
+        string_found = [x in col for x in string_to_find]
+        if np.any(string_found):
+            out.append(col)
+    return df[out]
 
 #def find_subthres_component(sweepC):
     

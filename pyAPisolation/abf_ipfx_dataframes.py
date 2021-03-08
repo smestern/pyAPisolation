@@ -1,3 +1,6 @@
+
+
+
 import sys
 import numpy as np
 import os
@@ -9,8 +12,8 @@ from scipy.optimize import curve_fit
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 import pyabf
-from abf_utils import *
-from abf_subthres import *
+from patch_utils import *
+from patch_subthres import *
 
 
 running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
