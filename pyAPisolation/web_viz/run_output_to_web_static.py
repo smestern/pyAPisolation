@@ -92,6 +92,7 @@ def main():
     full_dataframe = full_dataframe.drop(labels=['Unnamed: 0'], axis=1)
     full_dataframe['ID'] = full_dataframe[index_col]
     pred_col = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]))
+    
     plot_data = generate_plots(full_dataframe)
     json_df = full_dataframe.to_json(orient='records')
     parsed = json.loads(json_df)
