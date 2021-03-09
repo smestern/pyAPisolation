@@ -107,7 +107,7 @@ def main():
         outf.write(str(soup))
     print("=== Running Server ===")
     # Create server object listening the port 80
-    server_object = HTTPServer(server_address=('', 80), RequestHandlerClass=CGIHTTPRequestHandler)
+    #server_object = HTTPServer(server_address=('', 80), RequestHandlerClass=CGIHTTPRequestHandler)
     # Start the web server
-    server_object.serve_forever()
+    #server_object.serve_forever()
 main()

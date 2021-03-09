@@ -4,7 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.ensemble import RandomForestClassifier
-import umap
+#import umap
 
 def dense_umap(df):
     dens_map = umap.UMAP(densmap=True).fit_transform(df)
