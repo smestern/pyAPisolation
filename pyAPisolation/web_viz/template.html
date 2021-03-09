@@ -48,8 +48,8 @@
 		  type: 'parcoords',
 		  pad: [80,80,80,80],
 		  line: {
-			colorscale: 'Bluered',
-			color: unpack(data_tb, 'rheobase_latency')
+			colorscale: 'Plotly',
+			color: unpack(data_tb, 'label')
 		  },
 		
 		  dimensions: [{
@@ -207,7 +207,9 @@
 			el.rheobase_width <= ranges[1][1] &&
 			el.rheobase_width >= ranges[1][0] &&
 			el.rheobase_latency <= ranges[2][1] &&
-			el.rheobase_latency >= ranges[2][0];	
+			el.rheobase_latency >= ranges[2][0] &&
+			el.label <= ranges[3][1] &&
+			el.label >= ranges[3][0];	
     
 			});
 		let result = newArray.map(function(a) { return a.ID; });

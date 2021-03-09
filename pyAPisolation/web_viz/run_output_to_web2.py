@@ -75,7 +75,7 @@ def main():
     new_names = []
     for name in full_dataframe['__a_foldername'].to_numpy():
         temp = name.split("\\")[-3:]
-        temp = os.path.join(*temp)
+        temp = temp[0] + "_" + temp[1] + "_" + temp[2]
         new_names.append(temp)
     full_dataframe['__a_foldername'] = new_names
 
@@ -98,7 +98,7 @@ def main():
 
     #column tags
     table_head= soup.find('th')
-    pred_col = np.hstack((pred_col[:5], '__a_foldername'))
+    pred_col = np.hstack((pred_col[:10], '__a_foldername'))
     for col in pred_col:
         test = gen_table_head_str_(col, soup)
         table_head.insert_after(test)
