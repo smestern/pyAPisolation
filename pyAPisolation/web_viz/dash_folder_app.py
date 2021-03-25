@@ -60,7 +60,7 @@ def _df_select_by_col(df, string_to_find):
 
 class live_data_viz():
     def __init__(self):
-        df = pd.read_csv('C:\\Users\\SMest\\Downloads\\Data for Seminar (cluster)\\Marm-Parvo\\spike_count_.csv')
+        df = pd.read_csv('C:\\Users\\SMest\\Downloads\\Data for Seminar (cluster)\\spike_count__Full.csv')
         self.df_raw = df
         df = _df_select_by_col(df, ["rheo", "__a_filename", "__a_foldername", "QC"])
         df['id'] = df["__a_filename"]
