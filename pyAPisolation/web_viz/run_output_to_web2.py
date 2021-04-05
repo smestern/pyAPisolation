@@ -35,8 +35,8 @@ def gen_table_head_str_(col, soup, dict_args=None):
     return tag #f"<th data-field=\"{col}\">{col}</th> "
 
 def generate_plots(df):
-    ids = df['__a_filename'].to_numpy()
-    folders = df['__a_foldername'].to_numpy()
+    ids = df['filename'].to_numpy()
+    folders = df['foldername'].to_numpy()
     full_y = []     
     for f, fp in zip(ids, folders):
         x, y, z = loadABF(os.path.join(fp,f+'.abf')) 
@@ -67,21 +67,21 @@ def main():
     #full_dataframe = full_dataframe.set_index(index_col)
     #full_dataframe = full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"])
     full_dataframe = full_dataframe.drop(labels=['Unnamed: 0'], axis=1)
-    full_dataframe = df_select_by_col(full_dataframe, ['rheo', '__a_filename', '__a_foldername'])
+    full_dataframe = df_select_by_col(full_dataframe, ['rheo', 'filename', 'foldername'])
 
 
 
-    full_dataframe['ID'] = full_dataframe['__a_filename']
+    full_dataframe['ID'] = full_dataframe['filename']
     pred_col, labels = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]), ret_labels=True)
     plot_data = generate_plots(full_dataframe)
     full_dataframe['label'] = labels
     #Fix foldernames by truncating
     new_names = []
-    for name in full_dataframe['__a_foldername'].to_numpy():
+    for name in full_dataframe['foldername'].to_numpy():
         temp = name.split("\\")[-3:]
         temp = temp[0] + "_" + temp[1] + "_" + temp[2]
         new_names.append(temp)
-    full_dataframe['__a_foldername'] = new_names
+    full_dataframe['foldername'] = new_names
 
     json_df = full_dataframe.to_json(orient='records')
     parsed = json.loads(json_df)
@@ -102,7 +102,7 @@ def main():
 
     #column tags
     table_head= soup.find('th')
-    pred_col = np.hstack((pred_col[:10], '__a_foldername'))
+    pred_col = np.hstack((pred_col[:10], 'foldername'))
     for col in pred_col:
         test = gen_table_head_str_(col, soup)
         table_head.insert_after(test)

@@ -3,11 +3,11 @@
 block_cipher = None
 
 
-a = Analysis(['run_apisolation_ipfx.py'],
-             pathex=['C:\\Users\\smestern\\source\\repos\\smestern\\pyAPisolation\\pyAPisolation\\bin'],
+a = Analysis(['run_APisolation_ipfx.py'],
+             pathex=['C:\\Users\\SMest\\source\\repos\\smestern\\pyABF-APisolation\\pyAPisolation\\bin'],
              binaries=[],
              datas=[],
-             hiddenimports=['pyabf'],
+             hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
@@ -21,7 +21,7 @@ exe = EXE(pyz,
           a.scripts,
           [],
           exclude_binaries=True,
-          name='run_apisolation_ipfx',
+          name='run_APisolation_ipfx',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -34,4 +34,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='run_apisolation_ipfx')
+               name='run_APisolation_ipfx')

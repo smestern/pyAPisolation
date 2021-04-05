@@ -29,8 +29,8 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         df = pd.DataFrame()
         #Now we walk through the sweeps looking for action potentials
         temp_spike_df = pd.DataFrame()
-        temp_spike_df['__a_filename'] = [abf.abfID]
-        temp_spike_df['__a_foldername'] = [os.path.dirname(abf.abfFilePath)]
+        temp_spike_df['filename'] = [abf.abfID]
+        temp_spike_df['foldername'] = [os.path.dirname(abf.abfFilePath)]
         temp_running_bin = pd.DataFrame()
                 
         for sweepNumber in sweepcount: 
@@ -117,7 +117,7 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 temp_spike_df["spike_AHP 1" + real_sweep_number + " "] = spike_in_sweep['fast_trough_v'].to_numpy()[0]
                 temp_spike_df["spike_AHP height 1" + real_sweep_number + " "] = abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['fast_trough_v'].to_numpy()[0])
                 temp_spike_df["latency_" + real_sweep_number + " latency"] = spike_train['latency']
-                temp_spike_df["width_spike" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
+                temp_spike_df["spike_width" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
                         
                 #temp_spike_df["exp growth" + real_sweep_number] = [exp_growth_factor(dataT, dataV, dataI, spike_in_sweep['threshold_index'].to_numpy()[0])]
                         
@@ -133,8 +133,8 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                     #temp_spike_df["spike_" + real_sweep_number + "AHP 3"] = spike_in_sweep['fast_trough_v'].to_numpy()[-1]
                     #temp_spike_df["spike_" + real_sweep_number + "AHP height 2"] = abs(spike_in_sweep['peak_v'].to_numpy()[1] - spike_in_sweep['fast_trough_v'].to_numpy()[1])
                     #temp_spike_df["spike_" + real_sweep_number + "AHP height 3"] = abs(spike_in_sweep['peak_v'].to_numpy()[-1] - spike_in_sweep['fast_trough_v'].to_numpy()[-1])
-                    #temp_spike_df["width_spike" + real_sweep_number + "2"] = spike_in_sweep['width'].to_numpy()[1]
-                    #temp_spike_df["width_spike" + real_sweep_number + "3"] = spike_in_sweep['width'].to_numpy()[-1]
+                    #temp_spike_df["spike_width" + real_sweep_number + "2"] = spike_in_sweep['width'].to_numpy()[1]
+                    #temp_spike_df["spike_width" + real_sweep_number + "3"] = spike_in_sweep['width'].to_numpy()[-1]
                 else:
                     temp_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
                     spike_in_sweep['isi_'] = np.hstack((np.full(abs(spike_count), np.nan)))
@@ -160,15 +160,15 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 #temp_spike_df["spike_" + real_sweep_number + "AHP height 2"] = [np.nan]
                 #temp_spike_df["spike_" + real_sweep_number + "AHP height 3"] = [np.nan]
                 temp_spike_df["latency_" + real_sweep_number + " latency"] = [np.nan]
-                temp_spike_df["width_spike" + real_sweep_number + "1"] = [np.nan]
-                #temp_spike_df["width_spike" + real_sweep_number + "2"] = [np.nan]
-                #temp_spike_df["width_spike" + real_sweep_number + "3"] = [np.nan]
+                temp_spike_df["spike_width" + real_sweep_number + "1"] = [np.nan]
+                #temp_spike_df["spike_width" + real_sweep_number + "2"] = [np.nan]
+                #temp_spike_df["spike_width" + real_sweep_number + "3"] = [np.nan]
                 temp_spike_df["min_isi" + real_sweep_number + " isi"] = [np.nan]
                 sweep_running_bin = pd.DataFrame(data=nan_row_run, columns=_run_labels, index=[real_sweep_number])
                 #temp_spike_df["exp growth" + real_sweep_number] = [np.nan]
             sweep_running_bin['Sweep Number'] = [real_sweep_number]
-            sweep_running_bin['__a_filename'] = [abf.abfID]
-            sweep_running_bin['__a_foldername'] = [os.path.dirname(abf.abfFilePath)]
+            sweep_running_bin['filename'] = [abf.abfID]
+            sweep_running_bin['foldername'] = [os.path.dirname(abf.abfFilePath)]
             temp_running_bin = temp_running_bin.append(sweep_running_bin)
             return temp_spike_df, df, temp_running_bin
 

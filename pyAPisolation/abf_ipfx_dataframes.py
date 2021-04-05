@@ -17,53 +17,38 @@ from patch_subthres import *
 
 
 running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
-
-def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
-        np.nan_to_num(abf.data, nan=-9999, copy=False)
-        #If there is more than one sweep, we need to ensure we dont iterate out of range
-        if sweeplist == None:
-            if abf.sweepCount > 1:
-                sweepcount = abf.sweepList
-            else:
-                sweepcount = [0]
-        df = pd.DataFrame()
-        #Now we walk through the sweeps looking for action potentials
-        temp_spike_df = pd.DataFrame()
-        temp_spike_df['__a_filename'] = [abf.abfID]
-        temp_spike_df['__a_foldername'] = [os.path.dirname(abf.abfFilePath)]
-        temp_running_bin = pd.DataFrame()
-                
-        for sweepNumber in sweepcount: 
-            real_sweep_length = abf.sweepLengthSec - 0.0001
-            if sweepNumber < 9:
-                real_sweep_number = '00' + str(sweepNumber + 1)
-            elif sweepNumber > 8 and sweepNumber < 99:
-                real_sweep_number = '0' + str(sweepNumber + 1)
-            if param_dict['start'] == 0 and param_dict['end'] == 0: 
-                param_dict['end']= real_sweep_length
-            elif param_dict['end'] > real_sweep_length:
-                param_dict['end'] = real_sweep_length
-            ##Look for a subthreshold component
-            spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict) ### Returns the default Dataframe Returned by 
-            temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
-        temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
-        spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
-        plotabf(abf, spiketimes, param_dict['start'], param_dict['end'], plot)
-        return temp_spike_df, df, temp_running_bin
-
-                
-
-
-def analyze_spike_sweep(abf, sweepNumber, param_dict):
-    abf.setSweep(sweepNumber)
-    spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
-    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])
-    dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
-    if dataI.shape[0] < dataV.shape[0]:
-                dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
-    spike_in_sweep = spikext.process(dataT, dataV, dataI)
-    spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
-    return spike_in_sweep, spike_train
+subsheets_spike = {'spike count':['spike count'], 'rheobase features':['rheobase'], 
+                    'mean':['mean'], 'isi':['isi'], 'latency': ['latency_'], 'current':['current'],'QC':['QC'], 
+                    'spike features':['spike_'], 'subthres features':['baseline voltage', 'sag']}
+def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag=''):
+    #try:
+        ids = dfs['__file_name'].unique()
+        tempframe = dfs.groupby('__file_name').mean().reset_index()
+        tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
+        tempframe = dfs.drop_duplicates(subset='__file_name')
+        tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
+        dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
+        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
+            cols = df_running_avg_count.columns.values
+            df_ind = df_running_avg_count.loc[:,cols[[-1,-2,-3]]]
+            index = pd.MultiIndex.from_frame(df_ind)
+            for p in running_lab:
+                temp_ind = [p in col for col in cols]
+                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
+                temp_df.to_excel(runf, sheet_name=p)
+        df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
+        with pd.ExcelWriter(root_fold + '/spike_count_' + tag + '.xlsx') as runf:
+            cols = df_spike_count.columns.values
+            df_ind = df_select_by_col(df_spike_count, ['foldername', 'filename'])
+            df_ind = df_ind.loc[:,['foldername', 'filename']]
+            index = pd.MultiIndex.from_frame(df_ind)
+            for key, p in subsheets_spike.items():
+                temp_ind = df_select_by_col(df_spike_count, p)
+                temp_df = temp_ind.set_index(index)
+                temp_df.to_excel(runf, sheet_name=key)
+            #print(df_ind)
+    #except: 
+        #print('error saving')
 
 def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict):
             try:
@@ -96,7 +81,7 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                     
 
             if spike_count > 0:
-                temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [spike_train['first_isi']]
+                temp_spike_df["first_isi " + real_sweep_number + " isi"] = [spike_train['first_isi']]
                 trough_averge,_  = build_running_bin(spike_in_sweep['fast_trough_v'].to_numpy(), spike_in_sweep['peak_t'].to_numpy(), start=param_dict['start'], end=param_dict['end'])
                 peak_average = build_running_bin(spike_in_sweep['peak_v'].to_numpy(), spike_in_sweep['peak_t'].to_numpy(), start=param_dict['start'], end=param_dict['end'])[0]
                 peak_max_rise = build_running_bin(spike_in_sweep['upstroke'].to_numpy(), spike_in_sweep['peak_t'].to_numpy(), start=param_dict['start'], end=param_dict['end'])[0]
@@ -117,7 +102,7 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 temp_spike_df["spike_AHP 1" + real_sweep_number + " "] = spike_in_sweep['fast_trough_v'].to_numpy()[0]
                 temp_spike_df["spike_AHP height 1" + real_sweep_number + " "] = abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['fast_trough_v'].to_numpy()[0])
                 temp_spike_df["latency_" + real_sweep_number + " latency"] = spike_train['latency']
-                temp_spike_df["width_spike" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
+                temp_spike_df["spike_width" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
                         
                 #temp_spike_df["exp growth" + real_sweep_number] = [exp_growth_factor(dataT, dataV, dataI, spike_in_sweep['threshold_index'].to_numpy()[0])]
                         
@@ -133,8 +118,8 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                     #temp_spike_df["spike_" + real_sweep_number + "AHP 3"] = spike_in_sweep['fast_trough_v'].to_numpy()[-1]
                     #temp_spike_df["spike_" + real_sweep_number + "AHP height 2"] = abs(spike_in_sweep['peak_v'].to_numpy()[1] - spike_in_sweep['fast_trough_v'].to_numpy()[1])
                     #temp_spike_df["spike_" + real_sweep_number + "AHP height 3"] = abs(spike_in_sweep['peak_v'].to_numpy()[-1] - spike_in_sweep['fast_trough_v'].to_numpy()[-1])
-                    #temp_spike_df["width_spike" + real_sweep_number + "2"] = spike_in_sweep['width'].to_numpy()[1]
-                    #temp_spike_df["width_spike" + real_sweep_number + "3"] = spike_in_sweep['width'].to_numpy()[-1]
+                    #temp_spike_df["spike_width" + real_sweep_number + "2"] = spike_in_sweep['width'].to_numpy()[1]
+                    #temp_spike_df["spike_width" + real_sweep_number + "3"] = spike_in_sweep['width'].to_numpy()[-1]
                 else:
                     temp_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
                     spike_in_sweep['isi_'] = np.hstack((np.full(abs(spike_count), np.nan)))
@@ -144,7 +129,7 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 df = df.append(spike_in_sweep, ignore_index=True, sort=True)
             else:
                 temp_spike_df["latency_" + real_sweep_number + " latency"] = [np.nan]
-                temp_spike_df["isi_Sweep " + real_sweep_number + " isi"] = [np.nan]
+                temp_spike_df["first_isi " + real_sweep_number + " isi"] = [np.nan]
                 temp_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
                 temp_spike_df["spike_amp" + real_sweep_number + " 1"] = [np.nan]
                 temp_spike_df["spike_thres" + real_sweep_number + " 1"] = [np.nan]
@@ -160,15 +145,15 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 #temp_spike_df["spike_" + real_sweep_number + "AHP height 2"] = [np.nan]
                 #temp_spike_df["spike_" + real_sweep_number + "AHP height 3"] = [np.nan]
                 temp_spike_df["latency_" + real_sweep_number + " latency"] = [np.nan]
-                temp_spike_df["width_spike" + real_sweep_number + "1"] = [np.nan]
-                #temp_spike_df["width_spike" + real_sweep_number + "2"] = [np.nan]
-                #temp_spike_df["width_spike" + real_sweep_number + "3"] = [np.nan]
+                temp_spike_df["spike_width" + real_sweep_number + "1"] = [np.nan]
+                #temp_spike_df["spike_width" + real_sweep_number + "2"] = [np.nan]
+                #temp_spike_df["spike_width" + real_sweep_number + "3"] = [np.nan]
                 temp_spike_df["min_isi" + real_sweep_number + " isi"] = [np.nan]
                 sweep_running_bin = pd.DataFrame(data=nan_row_run, columns=_run_labels, index=[real_sweep_number])
                 #temp_spike_df["exp growth" + real_sweep_number] = [np.nan]
             sweep_running_bin['Sweep Number'] = [real_sweep_number]
-            sweep_running_bin['__a_filename'] = [abf.abfID]
-            sweep_running_bin['__a_foldername'] = [os.path.dirname(abf.abfFilePath)]
+            sweep_running_bin['filename'] = [abf.abfID]
+            sweep_running_bin['foldername'] = [os.path.dirname(abf.abfFilePath)]
             temp_running_bin = temp_running_bin.append(sweep_running_bin)
             return temp_spike_df, df, temp_running_bin
 
