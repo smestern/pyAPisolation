@@ -3,8 +3,8 @@
 block_cipher = None
 
 
-a = Analysis(['run_APisolation_ipfx.py'],
-             pathex=['C:\\Users\\SMest\\source\\repos\\smestern\\pyABF-APisolation\\pyAPisolation\\bin'],
+a = Analysis(['run_APisolation_ipfx'],
+             pathex=['C:\\Users\\SMest\\source\\repos\\smestern\\pyABF-APisolation'],
              binaries=[],
              datas=[],
              hiddenimports=[],

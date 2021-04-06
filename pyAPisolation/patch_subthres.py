@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 from scipy import interpolate
 from scipy.optimize import curve_fit
+from ipfx import subthresh_features as subt
 import pyabf
-
+#from brian2.units import ohm, Gohm, amp, volt, mV, second, pA
 
 
 
@@ -33,18 +34,29 @@ def exp_growth_factor(dataT,dataV,dataI, end_index=300):
         return np.nan
 
 
-def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold=''):
+def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold='', sag=True):
      try:
         time_aft = time_aft / 100
         if time_aft > 1:
             time_aft = 1
 
-        diff_I = np.diff(dataI)
-        downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
-        end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
-        
-        upperC = np.amax(dataV[downwardinfl:end_index])
-        lowerC = np.amin(dataV[downwardinfl:end_index])
+        if sag:
+            diff_I = np.diff(dataI)
+            downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+            
+            end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
+            upperC = np.amax(dataV[downwardinfl:end_index])
+            lowerC = np.amin(dataV[downwardinfl:end_index])
+            minpoint = np.argmin(dataV[downwardinfl:end_index])
+            end_index = downwardinfl + int(.95 * minpoint)
+            downwardinfl = downwardinfl #+ int(.10 * minpoint)
+        else:
+            diff_I = np.diff(dataI)
+            downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+            end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
+            
+            upperC = np.amax(dataV[downwardinfl:end_index])
+            lowerC = np.amin(dataV[downwardinfl:end_index])
         diff = np.abs(upperC - lowerC)
         t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
         SpanFast=(upperC-lowerC)*1*.01
@@ -98,6 +110,21 @@ def membrane_resistance(dataT,dataV,dataI):
 
     return r #in ohms
 
+def membrane_resistance_subt(dataT, dataV,dataI):
+    resp_data = []
+    stim_data = []
+    for i, sweep in enumerate(dataV):
+        abs_min, resp = compute_sag(dataT[i,:], sweep, dataI[i,:])
+        ind =find_stim_changes(dataI[i, :])
+        stim = dataI[i,ind[0] + 1]
+        stim_data.append(stim)
+        resp_data.append(resp+abs_min)
+    resp_data = np.array(resp_data) * mV
+    stim_data = np.array(stim_data) * pA
+    res = linregress(stim_data / amp, resp_data / volt)
+    resist = res.slope * ohm
+    return resist / Gohm
+
 def mem_cap(resist, tau_2p, tau_1p =np.nan):
     #tau = RC
     #C = R/tau
@@ -110,3 +137,51 @@ def mem_cap_alt(resist, tau, b2, deflection):
     rm2 = np.abs((b2/1000)/(deflection /1000000000000))#in pA -> A)
     cm = tau / rm2
     return cm
+
+def compute_sag(dataT,dataV,dataI, time_aft=50):
+         min_max = [np.argmin, np.argmax]
+         find = 0
+         time_aft = time_aft / 100
+         if time_aft > 1:
+                time_aft = 1   
+         diff_I = np.diff(dataI)
+         upwardinfl = np.nonzero(np.where(diff_I>0, diff_I, 0))[0][0]
+         downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+         if upwardinfl < downwardinfl: #if its depolarizing then swap them
+            temp = downwardinfl
+            find = 1
+            downwardinfl = upwardinfl
+            upwardinfl = temp
+         dt = dataT[1] - dataT[0] #in s
+         end_index = upwardinfl - int(0.100/dt)
+         end_index2 = upwardinfl - int((upwardinfl - downwardinfl) * time_aft)
+         
+         if end_index<downwardinfl:
+             end_index = upwardinfl - 5
+         vm = np.nanmean(dataV[end_index:upwardinfl])
+         
+         min_point = downwardinfl + min_max[find](dataV[downwardinfl:end_index2])
+         test = dataT[downwardinfl]
+         test2 = dataT[end_index]
+         avg_min = np.nanmean(dataV[min_point])
+         sag_diff = avg_min - vm
+
+         return sag_diff, vm
+
+def subthres_a(dataT, dataV, dataI, lowerlim, upperlim):
+    if dataI[np.argmin(dataI)] < 0:
+                        try:
+                            if lowerlim < 0.1:
+                                b_lowerlim = 0.1
+                            else:
+                                b_lowerlim = 0.1
+                            #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
+                            sag = subt.sag(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                            taum = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                            
+                            voltage_deflection = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                            return sag, taum, voltage_deflection
+                        except Exception as e:
+                            print("Subthreshold Processing Error ")
+                            print(e.args)
+                            return np.nan, np.nan, np.nan

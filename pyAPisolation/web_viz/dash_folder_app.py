@@ -60,10 +60,10 @@ def _df_select_by_col(df, string_to_find):
 
 class live_data_viz():
     def __init__(self):
-        df = pd.read_csv('C:\\Users\\SMest\\Downloads\\Data for Seminar (cluster)\\Marm-Parvo\\spike_count_.csv')
+        df = pd.read_csv('C:\\Users\\SMest\\Downloads\\Data for Seminar (cluster)\\spike_count__Full.csv')
         self.df_raw = df
-        df = _df_select_by_col(df, ["rheo", "__a_filename", "__a_foldername", "QC"])
-        df['id'] = df["__a_filename"]
+        df = _df_select_by_col(df, ["rheo", "filename", "foldername", "QC"])
+        df['id'] = df["filename"]
         df.set_index('id', inplace=True, drop=False)
         self.df = df
         app = dash.Dash("abf")
@@ -145,7 +145,7 @@ class live_data_viz():
         if active_row_id is None:
             active_row_id = self.df.iloc[0]['id']
         if active_row_id is not None:
-            file_path = os.path.join(self.df.loc[active_row_id][ "__a_foldername"], active_row_id+ ".abf")
+            file_path = os.path.join(self.df.loc[active_row_id][ "foldername"], active_row_id+ ".abf")
             x, y, c = loadABF(file_path)
             
             cutoff = np.argmin(np.abs(x-2.50))

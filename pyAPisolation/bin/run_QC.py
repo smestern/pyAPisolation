@@ -170,8 +170,8 @@ for root,dirs,fileList in os.walk(root_fold):
                 print(f"opening {abf.abfID}")
                 if abf.sweepLabelY != 'Clamp Current (pA)':
                     temp_spike_df = pd.DataFrame()
-                    temp_spike_df['__a_filename'] = [abf.abfID]
-                    temp_spike_df['__a_foldername'] = [os.path.dirname(fp)]
+                    temp_spike_df['filename'] = [abf.abfID]
+                    temp_spike_df['foldername'] = [os.path.dirname(fp)]
                     temp_spike_df['__a_protocol'] = [abf.protocol]
                     abf.setSweep(0)
                     full_dataV = abf.sweepY
@@ -199,7 +199,7 @@ with pd.ExcelWriter(root_fold + '/QC_' + tag + '.xlsx') as runf:
         df_ind = full_df.loc[:,cols[[1,0]]]
         index = pd.MultiIndex.from_frame(df_ind)
         full_df.set_index(index).to_excel(runf, sheet_name='Full QC')
-        folder = full_df['__a_foldername'].to_numpy()
+        folder = full_df['foldername'].to_numpy()
         full_df = full_df.iloc[:,3:]
         cell_wise = full_df.groupby(folder, as_index=True)
         cell_wise_diff = cell_wise

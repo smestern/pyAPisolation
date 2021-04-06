@@ -1,24 +1,23 @@
 
 print("Loading...")
 import sys
-
-
-import logging
-import os
+sys.path.append('..')
+sys.path.append('')
+import numpy as np
+from numpy import genfromtxt
 import tkinter as tk
 from tkinter import filedialog
-
-import matplotlib.pyplot as plt
-import numpy as np
+import os
 import pandas as pd
-import pyabf
+import matplotlib.pyplot as plt
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
-from numpy import genfromtxt
-
-from pyAPisolation.abf_featureextractor import *
-from pyAPisolation.abf_ipfx_dataframes import *
-
+import pyabf
+import logging
+import scipy.ndimage as ndimage
+os.chdir(".\\pyAPisolation\\")
+dir = os.getcwd()
+from abf_featureextractor import *
 print("Load finished")
 
 

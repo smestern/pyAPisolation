@@ -9,10 +9,9 @@ from scipy.optimize import curve_fit
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 import pyabf
-from .patch_utils import *
-from .patch_subthres import *
-from .abf_ipfx_dataframes import *
-from .abf_ipfx_dataframes import _build_sweepwise_dataframe, _build_full_df
+from patch_utils import *
+from patch_subthres import *
+from abf_ipfx_dataframes import *
 
 def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1'):
     debugplot = 0
@@ -23,8 +22,8 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     for root,dir_,fileList in os.walk(files):
         for filename in fileList:
             if filename.endswith(".abf"):
-                    file_path = os.path.join(root,filename)
-                #try:
+                file_path = os.path.join(root,filename)
+                try:
                     abf = pyabf.ABF(file_path)
                 
                     if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
@@ -35,55 +34,31 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
                         dfs = dfs.append(df, sort=True)
                     else:
                         print('Not correct protocol: ' + abf.protocol)
-                #except:
+                except:
 
-                        print('Issue Processing ' + filename)
+                    print('Issue Processing ' + filename)
     return dfs, df_spike_count, df_running_avg_count
 
 
-def analyze_spike_sweep(abf, sweepNumber, param_dict):
-    abf.setSweep(sweepNumber)
-    spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
-    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])
-    dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
-    if dataI.shape[0] < dataV.shape[0]:
-                dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
-    spike_in_sweep = spikext.process(dataT, dataV, dataI)
-    spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
-    return spike_in_sweep, spike_train
-
-def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
-        np.nan_to_num(abf.data, nan=-9999, copy=False)
-        #If there is more than one sweep, we need to ensure we dont iterate out of range
-        if sweeplist == None:
-            if abf.sweepCount > 1:
-                sweepcount = abf.sweepList
-            else:
-                sweepcount = [0]
-        df = pd.DataFrame()
-        #Now we walk through the sweeps looking for action potentials
-        temp_spike_df = pd.DataFrame()
-        temp_spike_df['filename'] = [abf.abfID]
-        temp_spike_df['foldername'] = [os.path.dirname(abf.abfFilePath)]
-        temp_running_bin = pd.DataFrame()
-                
-        for sweepNumber in sweepcount: 
-            real_sweep_length = abf.sweepLengthSec - 0.0001
-            if sweepNumber < 9:
-                real_sweep_number = '00' + str(sweepNumber + 1)
-            elif sweepNumber > 8 and sweepNumber < 99:
-                real_sweep_number = '0' + str(sweepNumber + 1)
-            if param_dict['start'] == 0 and param_dict['end'] == 0: 
-                param_dict['end']= real_sweep_length
-            elif param_dict['end'] > real_sweep_length:
-                param_dict['end'] = real_sweep_length
-            spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict) ### Returns the default Dataframe Returned by 
-            temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
-        temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
-        spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
-        plotabf(abf, spiketimes, param_dict['start'], param_dict['end'], plot)
-        return temp_spike_df, df, temp_running_bin
-
+def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag=''):
+    #try:
+        ids = dfs['file_name'].unique()
+        tempframe = dfs.groupby('file_name').mean().reset_index()
+        tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
+        tempframe = dfs.drop_duplicates(subset='file_name')
+        tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
+        df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
+        dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
+        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
+            cols = df_running_avg_count.columns.values
+            df_ind = df_running_avg_count.loc[:,cols[[-1,-2,-3]]]
+            index = pd.MultiIndex.from_frame(df_ind)
+            for p in running_lab:
+                temp_ind = [p in col for col in cols]
+                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
+                temp_df.to_excel(runf, sheet_name=p)
+    #except: 
+        #print('error saving')
 
 class abfFeatExtractor(object):
     """ """

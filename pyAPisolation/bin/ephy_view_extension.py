@@ -66,12 +66,17 @@ class abfAnalyze():
         self.sweepX = np.vstack(self.sweepX)
         self.sweepY = np.vstack(self.sweepY)
         self.dvdt = np.diff(self.sweepY) / ((1/self.abf.dataRate)*1000)
-        
+        try:
+            self.view1.closeEvent()
+        except:
+            pass
         self.view1 = TraceViewer.from_numpy(self.sweepY.T, self.abf.dataRate, 0, item.text())
         self.view2 = TraceViewer.from_numpy(self.dvdt.T, self.abf.dataRate, 0, item.text() + "dvdt")
         self.win.add_view(self.view1)
         self.win.add_view(self.view2)
-        #self.win.viewers = clean_dicts(self.win.viewers, [item.text()])
+        self.view1.auto_scale()
+        self.view2.auto_scale()
+        self.win.viewers = clean_dicts(self.win.viewers, [item.text()])
         self.view1.refresh()
         print(item.text())
 

@@ -17,7 +17,7 @@ import pyabf
 os.chdir(".\\web_viz")
 from http.server import HTTPServer, CGIHTTPRequestHandler
 
-index_col = "__a_filename"
+index_col = "filename"
 
 def loadABF(file_path, return_obj=False):
     '''
@@ -59,8 +59,8 @@ def gen_table_head_str_(col, soup):
     return tag #f"<th data-field=\"{col}\">{col}</th> "
 
 def generate_plots(df):
-    ids = df['__a_filename'].to_numpy()
-    folders = df['__a_foldername'].to_numpy()
+    ids = df['filename'].to_numpy()
+    folders = df['foldername'].to_numpy()
     full_y = []
     for f, fp in zip(ids, folders):
         x, y, z = loadABF(os.path.join(fp,f+'.abf'))
