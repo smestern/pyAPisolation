@@ -12,22 +12,22 @@ from scipy.optimize import curve_fit
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 import pyabf
-from patch_utils import *
-from patch_subthres import *
-
+from .patch_utils import *
+from .patch_subthres import *
+from .abf_featureextractor import *
 
 running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
 subsheets_spike = {'spike count':['spike count'], 'rheobase features':['rheobase'], 
                     'mean':['mean'], 'isi':['isi'], 'latency': ['latency_'], 'current':['current'],'QC':['QC'], 
-                    'spike features':['spike_'], 'subthres features':['baseline voltage', 'sag']}
+                    'spike features':['spike_'], 'subthres features':['baseline voltage', 'Sag', 'Taum'], 'full sheet': ['']}
 def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag=''):
     #try:
-        ids = dfs['__file_name'].unique()
-        tempframe = dfs.groupby('__file_name').mean().reset_index()
-        tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
-        tempframe = dfs.drop_duplicates(subset='__file_name')
-        tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
-        dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
+        #ids = dfs['file_name'].unique()
+        #tempframe = dfs.groupby('file_name').mean().reset_index()
+        #tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
+        #tempframe = dfs.drop_duplicates(subset='file_name')
+        #tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
+        #dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
         with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
             cols = df_running_avg_count.columns.values
             df_ind = df_running_avg_count.loc[:,cols[[-1,-2,-3]]]
@@ -36,7 +36,7 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
                 temp_ind = [p in col for col in cols]
                 temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
                 temp_df.to_excel(runf, sheet_name=p)
-        df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
+        #df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
         with pd.ExcelWriter(root_fold + '/spike_count_' + tag + '.xlsx') as runf:
             cols = df_spike_count.columns.values
             df_ind = df_select_by_col(df_spike_count, ['foldername', 'filename'])
@@ -154,6 +154,9 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
             sweep_running_bin['Sweep Number'] = [real_sweep_number]
             sweep_running_bin['filename'] = [abf.abfID]
             sweep_running_bin['foldername'] = [os.path.dirname(abf.abfFilePath)]
+            sag, taum, voltage = subthres_a(abf.sweepX, abf.sweepY, abf.sweepC, param_dict['start'], param_dict['end'])
+            temp_spike_df["Sag Ratio " + real_sweep_number + ""] = sag
+            temp_spike_df["Taum " + real_sweep_number + ""] = taum
             temp_running_bin = temp_running_bin.append(sweep_running_bin)
             return temp_spike_df, df, temp_running_bin
 
@@ -161,11 +164,11 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
 def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
         temp_spike_df['protocol'] = [abf.protocol]
         if df.empty:
-            df = df.assign(__file_name=np.full(1,abf.abfID))
-            df = df.assign(__fold_name=np.full(1,os.path.dirname(file_path)))
+            df = df.assign(file_name=np.full(1,abf.abfID))
+            df = df.assign(__fold_name=np.full(1,os.path.dirname(abf.abfFilePath)))
             print('no spikes found')
         else:
-            df = df.assign(__file_name=np.full(len(df.index),abf.abfID))
+            df = df.assign(file_name=np.full(len(df.index),abf.abfID))
             df = df.assign(__fold_name=np.full(len(df.index),os.path.dirname(abf.abfFilePath)))
             rheo_sweep = df['sweep Number'].to_numpy()[0]
             abf.setSweep(int(rheo_sweep - 1))
@@ -195,6 +198,7 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
 
         full_dataI = []
         full_dataV = []
+        full_subt = []
         for x in sweepList:
             abf.setSweep(x)
             full_dataI.append(abf.sweepC)
@@ -202,9 +206,8 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
         full_dataI = np.vstack(full_dataI) 
         full_dataV = np.vstack(full_dataV) 
         decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, _ = exp_decay_factor(abf.sweepX, np.nanmean(full_dataV,axis=0), np.nanmean(full_dataI,axis=0), 3000, abf_id=abf.abfID)
-                
-        temp_spike_df["fast decay avg"] = [decay_fast]
-        temp_spike_df["slow decay avg"] = [decay_slow]
+        temp_spike_df["Taum (Fast)"] = [decay_fast]
+        temp_spike_df["Taum (Slow)"] = [decay_slow]
         temp_spike_df["Curve fit A"] = [curve[0]]
         temp_spike_df["Curve fit b1"] = [curve[1]]
         temp_spike_df["Curve fit b2"] = [curve[3]]
@@ -216,17 +219,3 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
             temp_spike_df["Best Fit"] = [1]
         return  temp_spike_df, df, temp_running_bin
                 
-def subthres_a():
-    if dataI[np.argmin(dataI)] < 0:
-                        try:
-                            if lowerlim < 0.1:
-                                b_lowerlim = 0.1
-                            else:
-                                b_lowerlim = 0.1
-                            #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
-                            temp_spike_df['sag' + real_sweep_number] = subt.sag(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
-                            temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
-                            
-                            #temp_spike_df['voltage_deflection' + real_sweep_number] = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
-                        except:
-                            print("Subthreshold Processing Error with " + str(abf.abfID))

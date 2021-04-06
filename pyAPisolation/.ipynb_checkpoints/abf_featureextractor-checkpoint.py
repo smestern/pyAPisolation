@@ -42,10 +42,10 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
 
 def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag=''):
     #try:
-        ids = dfs['__file_name'].unique()
-        tempframe = dfs.groupby('__file_name').mean().reset_index()
+        ids = dfs['file_name'].unique()
+        tempframe = dfs.groupby('file_name').mean().reset_index()
         tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
-        tempframe = dfs.drop_duplicates(subset='__file_name')
+        tempframe = dfs.drop_duplicates(subset='file_name')
         tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
         df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
         dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')

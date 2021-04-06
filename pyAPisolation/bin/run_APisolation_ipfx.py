@@ -2,8 +2,7 @@
 print("Loading...")
 import sys
 
-sys.path.append('..')
-sys.path.append('')
+
 import logging
 import os
 import tkinter as tk
@@ -17,10 +16,6 @@ from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 from numpy import genfromtxt
 
-os.chdir(".\\pyAPisolation\\")
-sys.path.append('..')
-sys.path.append('')
-dir = os.getcwd()
 from pyAPisolation.abf_featureextractor import *
 from pyAPisolation.abf_ipfx_dataframes import *
 

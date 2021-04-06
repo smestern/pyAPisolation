@@ -9,10 +9,10 @@ from scipy.optimize import curve_fit
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 import pyabf
-from patch_utils import *
-from patch_subthres import *
-from abf_ipfx_dataframes import *
-from abf_ipfx_dataframes import _build_sweepwise_dataframe, _build_full_df
+from .patch_utils import *
+from .patch_subthres import *
+from .abf_ipfx_dataframes import *
+from .abf_ipfx_dataframes import _build_sweepwise_dataframe, _build_full_df
 
 def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1'):
     debugplot = 0
@@ -77,7 +77,6 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
                 param_dict['end']= real_sweep_length
             elif param_dict['end'] > real_sweep_length:
                 param_dict['end'] = real_sweep_length
-            ##Look for a subthreshold component
             spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict) ### Returns the default Dataframe Returned by 
             temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
         temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)

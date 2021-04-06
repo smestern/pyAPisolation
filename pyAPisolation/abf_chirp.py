@@ -4,7 +4,7 @@ import logging
 import pyabf
 from ipfx.sweep import Sweep,SweepSet
 import ipfx.chirp as chirp
-import abf_dataset
+import .abf_dataset
 import ipfx.feature_vectors as fv
 import ipfx.time_series_utils as tsu
 
