@@ -38,6 +38,16 @@ def main():
 
     print('loading protocols...')
     protocol_n = load_protocols(files)
+    print("protocols")
+    for i, x in enumerate(protocol_n):
+        print(str(i) + '. '+ str(x))
+    proto = input("enter Protocol to analyze: ")
+    try: 
+        proto = int(proto)
+    except:
+        proto = 0
+
+
 
     filter = input("Allen's Gaussian Filter (recommended to be set to 0): ")
     try: 
@@ -64,14 +74,7 @@ def main():
     except:
         plot_sweeps = -1
 
-    print("protocols")
-    for i, x in enumerate(protocol_n):
-        print(str(i) + '. '+ str(x))
-    proto = input("enter Protocol to analyze: ")
-    try: 
-        proto = int(proto)
-    except:
-        proto = 0
+    
 
     protocol_name = protocol_n[proto]
     dv_cut = input("Enter the threshold cut off for the derivative (Allen defaults 20mv/s): ")
