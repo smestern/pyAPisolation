@@ -164,7 +164,7 @@ class live_data_viz():
         pass
 
     def _run_analysis(self, dir):
-        _, df, _ = folder_feature_extract(os.path.abspath(dir), default_dict, protocol_name='long')
+        _, df, _ = folder_feature_extract(os.path.abspath(dir), default_dict, protocol_name='1000')
         self.df_raw = df
         df = _df_select_by_col(df, ["rheo", "filename", "foldername", "QC"])
         df['id'] = df["filename"]
