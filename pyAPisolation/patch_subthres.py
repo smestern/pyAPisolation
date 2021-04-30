@@ -185,3 +185,5 @@ def subthres_a(dataT, dataV, dataI, lowerlim, upperlim):
                             print("Subthreshold Processing Error ")
                             print(e.args)
                             return np.nan, np.nan, np.nan
+    else:
+        return np.nan, np.nan, np.nan
