@@ -2,8 +2,11 @@ import dash
 from dash.dependencies import Input, Output
 import dash_table
 import dash_core_components as dcc
+import dash_bootstrap_components as dbc
 import dash_html_components as html
+import dash_ui as dui
 import plotly.graph_objs as go
+import plotly.express as px
 import pandas as pd
 import numpy as np
 import pyabf
@@ -63,23 +66,34 @@ class live_data_viz():
     def __init__(self):
         self.df_raw = None
         self.df = None
-        self.data_table = None
+        self.para_df =None
         self._run_analysis(os.getcwd()+'/bin/')
         
-        app = dash.Dash("abf")
+        app = dash.Dash("abf", external_stylesheets=[dbc.themes.BOOTSTRAP])
+        
+
         #Umap
         umap_fig = self.gen_umap_plots()
 
-        app.layout = html.Div([
-            dcc.Input(
-                id='dir-input',
-                placeholder='Enter a dir',
-                type='text',
-                value='/../bin'
-            ),  
-            dcc.Graph(id='UMAP-graph',
-                figure=umap_fig),
-            dash_table.DataTable(
+
+        #Make grid ui
+        
+        
+        col2 = dbc.Col([dcc.Loading(
+                    id="loading-2",
+                    children=[html.Div(id='datatable-plot-cell', style={
+                    "flex-wrap": "nowrap" })])], width='auto')
+        col1 = dbc.Col([dcc.Graph(id='UMAP-graph',
+                figure=umap_fig, style={
+                    "width": "100%",
+                    "height": "100%"
+                }
+               )], width='auto') # config=dict(
+                 #   autosizable=True,
+                  #  fillFrame=False
+                #),
+                #responsive=True
+        col3 = dbc.Col([dash_table.DataTable(
                 id='datatable-row-ids',
                 columns=[
                     {'name': i, 'id': i, 'deletable': True} for i in self.df.columns
@@ -100,10 +114,26 @@ class live_data_viz():
                     'textOverflow': 'ellipsis',
                     'maxWidth': 0
                 }
-            ),
-            html.Div(id='datatable-plot-cell'),
-            html.Div(id='datatable-row-ids-container')
-        ])
+                
+            )])
+
+         
+        app.layout = html.Div([dcc.Input(
+                id='dir-input',
+                placeholder='Enter a dir',
+                type='text',
+                value='/../bin'
+                ),
+                dbc.Card([dbc.CardBody([
+                 dbc.Row([col1, col2], style={"flex-wrap":"nowrap"}),
+                 dbc.Row([col3])
+                 ])]),
+                dcc.Interval(
+                    id='interval-component',
+                    interval=60*1000, # in milliseconds
+                    n_intervals=0
+                )
+                ])
         self.app = app
         #Define Callbacks
         #app.callback(
@@ -112,19 +142,26 @@ class live_data_viz():
         #Input('datatable-row-ids', 'selected_row_ids'),
         #Input('datatable-row-ids', 'active_cell'))(self.update_graphs)
         app.callback(
-        Output('datatable-plot-cell', 'children'),
+        Output('loading-2', 'children'),
         Input('datatable-row-ids', 'derived_virtual_row_ids'),
         Input('datatable-row-ids', 'selected_row_ids'),
         Input('datatable-row-ids', 'active_cell'))(self.update_cell_plot)
 
 
-        app.callback(Output('datatable-row-ids', 'data'), 
-                    Input('UMAP-graph', 'selectedData'))(self.filter_datatable)
+        #app.callback(Output('datatable-row-ids', 'data'), 
+         #           Input('UMAP-graph', 'restyleData'),
+          #          Input('UMAP-graph', 'figure')
+           #         )(self.filter_datatable)
 
         app.callback(Output('datatable-row-ids', 'data'),
-        Input('dir-input', 'value'))(self._run_analysis)
+            Output('UMAP-graph', 'figure'),
+            Input('dir-input', 'value'))(self._run_analysis)
+
+        app.callback(Output('dir-input', 'children'),
+                    Input('interval-component', 'n_intervals'))(self._gen_abf_list)
 
     def _gen_abf_list(self, dir):
+        #os.path.abspath(dir)
         pass
 
     def _run_analysis(self, dir):
@@ -134,24 +171,31 @@ class live_data_viz():
         df['id'] = df["filename"]
         df.set_index('id', inplace=True, drop=False)
         self.df = df
-        return self.df.to_dict('records')
+        return self.df.to_dict('records'), self.gen_umap_plots()
 
     def gen_umap_plots(self):
         pre_df = preprocess_df(self.df)
-        data = dense_umap(pre_df)
-        labels = cluster_df(pre_df)
-        fig = go.Figure(data=go.Scatter(x=data[:,0], y=data[:,1], mode='markers', marker=dict(color=labels), ids=self.df['id'].to_numpy()))
+        #data = dense_umap(pre_df)
+        #labels = cluster_df(pre_df)
+        df = _df_select_by_col(self.df, ["rheo", "filename"])
+        #fig = go.Figure(data=go.Scatter(x=data[:,0], y=data[:,1], mode='markers', marker=dict(color=labels), ids=self.df['id'].to_numpy()))
+        fig = px.parallel_coordinates(df, color="rheobase_width",
+                             color_continuous_scale=px.colors.diverging.Tealrose)
+        self.para_df = df
+        fig.layout.autosize = True
         return fig
 
-    def filter_datatable(self, selectedData):
+    def filter_datatable(self, selectedData, fig):
         if selectedData is None:
             out_data = self.df.to_dict('records')
         else:
-            selected_ids = [x['id'] for x in selectedData['points']]
-            filtered_df = self.df.loc[selected_ids]
-            out_data = filtered_df.to_dict('records')
+            #selected_ids = [x['id'] for x in selectedData['points']]
+            constraints = []
+            for row in fig['data'][0]['dimensions']:
+                pass
+            #filtered_df = self.df.loc[selected_ids]
+            out_data = self.df.to_dict('records')
         return out_data
-
 
     def update_cell_plot(self, row_ids, selected_row_ids, active_cell):
         selected_id_set = set(selected_row_ids or [])
@@ -167,9 +211,9 @@ class live_data_viz():
         if active_row_id is None:
             active_row_id = self.df.iloc[0]['id']
         if active_row_id is not None:
-            fold = self.df.loc[active_row_id][ "foldername"].to_numpy()
-            if len(fold)>1:
-                fold = fold[0]
+            fold = self.df.loc[active_row_id][ "foldername"]
+            if isinstance(fold, (list,tuple, np.ndarray, pd.Series)):
+                fold = fold.to_numpy()[0]
             file_path = os.path.join(fold, active_row_id+ ".abf")
             x, y, c = loadABF(file_path)
             
@@ -180,12 +224,21 @@ class live_data_viz():
                 traces.append(go.Scattergl(x=sweep_x, y=sweep_y, mode='lines'))
             fig =  go.Figure(data=traces)
 
+            fig.layout.autosize = True
 
 
             return [
                 dcc.Graph(
                     id="file_plot",
                     figure=fig,
+                   style={
+                    "width": "100%",
+                    "height": "100%"
+                    },
+                    config=dict(
+                        autosizable=True,
+                    ),
+                    responsive=True
                 )
             ]
 
@@ -224,11 +277,16 @@ class live_data_viz():
                         'yaxis': {
                             'automargin': True,
                             'title': {'text': column}
-                        },
-                        'height': 250,
-                        'margin': {'t': 10, 'l': 10, 'r': 10},
+                        }
                     },
                 },
+                style={
+                    "width": "50%",
+                    "height": "100%"
+                },
+                config=dict(
+                    autosizable=False
+                )
             )
             # check if column exists - user may have deleted it
             # If `column.deletable=False`, then you don't
@@ -242,4 +300,4 @@ if __name__ == '__main__':
     app = live_data_viz()
 
 
-    app.app.run_server(debug=False)
+    app.app.run_server(host= '0.0.0.0',debug=False)
