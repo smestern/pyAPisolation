@@ -16,7 +16,7 @@ from .loadABF import loadABF
 from .abf_ipfx_dataframes import *
 from .abf_ipfx_dataframes import _build_sweepwise_dataframe, _build_full_df
 
-default_dict = {'start': 0, 'end': 0}
+default_dict = {'start': 0, 'end': 0, 'filter': 0}
 
 def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1'):
     debugplot = 0
