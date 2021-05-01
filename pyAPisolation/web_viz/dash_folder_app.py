@@ -129,7 +129,7 @@ class live_data_viz():
                  ])]),
                 dcc.Interval(
                     id='interval-component',
-                    interval=60*1000, # in milliseconds
+                    interval=240*1000, # in milliseconds
                     n_intervals=0
                 )
                 ])

@@ -28,7 +28,7 @@ def compute_rms(realY, zero_ind):
     return full_mean, np.amax(rms)
 
 def run_qc(realY, realC):
-    zero_ind = find_zero(realC[5,:])
+    zero_ind = find_zero(realC[0,:])
     mean_rms, max_rms = compute_rms(realY, zero_ind)
     mean_drift, max_drift = compute_vm_drift(realY, zero_ind)
     return [mean_rms, max_rms, mean_drift, max_drift]
