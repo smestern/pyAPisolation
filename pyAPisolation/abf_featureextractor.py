@@ -30,9 +30,9 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
                     if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
                         print(filename + ' import')
                         temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
-                        df_running_avg_count = df_running_avg_count.append(temp_running_bin)
+                        #df_running_avg_count = df_running_avg_count.append(temp_running_bin)
                         df_spike_count = df_spike_count.append(temp_spike_df, sort=True)
-                        dfs = dfs.append(df, sort=True)
+                        #dfs = dfs.append(df, sort=True)
                     else:
                         print('Not correct protocol: ' + abf.protocol)
                 #except:
