@@ -11,8 +11,12 @@ from ipfx import subthresh_features as subt
 import pyabf
 from .patch_utils import *
 from .patch_subthres import *
+from .QC import run_qc
+from .loadABF import loadABF
 from .abf_ipfx_dataframes import *
 from .abf_ipfx_dataframes import _build_sweepwise_dataframe, _build_full_df
+
+default_dict = {'start': 0, 'end': 0, 'filter': 0}
 
 def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1'):
     debugplot = 0
@@ -80,6 +84,10 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
             spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict) ### Returns the default Dataframe Returned by 
             temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
         temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
+        x, y ,c = loadABF(abf.abfFilePath)
+        _qc_data = run_qc(y, c)
+        temp_spike_df['QC Mean RMS'] = _qc_data[0]
+        temp_spike_df['QC Mean Sweep Drift'] = _qc_data[2]
         try:
             spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
             plotabf(abf, spiketimes, param_dict['start'], param_dict['end'], plot)
