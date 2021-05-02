@@ -3,11 +3,13 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.cluster import AgglomerativeClustering
-from sklearn.ensemble import RandomForestClassifier
-import umap
+from sklearn.ensemble import RandomForestClassifier, IsolationForest
+
+#import umap
+from sklearn.manifold import TSNE
 
 def dense_umap(df):
-    dens_map = umap.UMAP(densmap=True).fit_transform(df)
+    dens_map = TSNE().fit_transform(df)
     return dens_map
 
 def preprocess_df(df):
@@ -17,6 +19,11 @@ def preprocess_df(df):
     out = impute.fit_transform(df)
     out = scaler.fit_transform(out)
     return out
+
+def drop_outliers(df):
+    od = IsolationForest(contamination=0.05)
+    f_outliers = od.fit_predict(arr)
+    drop_o = np.nonzero(np.where(f_outliers==-1, 1, 0))[0]
 
 def cluster_df(df, n=5):
     clust = AgglomerativeClustering(n_clusters=n)

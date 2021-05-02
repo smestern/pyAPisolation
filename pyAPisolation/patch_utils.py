@@ -105,5 +105,24 @@ def df_select_by_col(df, string_to_find):
             out.append(col)
     return df[out]
 
-#def find_subthres_component(sweepC):
+def time_to_idx(dataX, time):
+    if dataX.nDim > 1:
+        dataX = dataX[0, :]
     
+    idx = np.argmin(np.abs(time-dataX))
+    return idx
+
+def idx_to_time(dataX, idx):
+    pass
+
+def find_stim_changes(dataI):
+    diff_I = np.diff(dataI)
+    infl = np.nonzero(diff_I)[0]
+    
+    return infl
+
+
+def find_downward(dataI):
+    diff_I = np.diff(dataI)
+    downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+    return downwardinfl

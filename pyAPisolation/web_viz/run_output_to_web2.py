@@ -11,10 +11,10 @@ sys.path.append('..')
 sys.path.append('')
 os.chdir(".\\pyAPisolation\\")
 print(os.getcwd())
-from patch_ml import *
-from patch_utils import *
-from abf_featureextractor import *
-from loadABF import loadABF
+from pyAPisolation.patch_ml import *
+from pyAPisolation.patch_utils import *
+from pyAPisolation.abf_featureextractor import *
+from pyAPisolation.loadABF import loadABF
 import pyabf
 os.chdir(".\\web_viz")
 from http.server import HTTPServer, CGIHTTPRequestHandler
@@ -66,7 +66,7 @@ def main():
         full_dataframe = full_dataframe.append(temp)
     #full_dataframe = full_dataframe.set_index(index_col)
     #full_dataframe = full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"])
-    full_dataframe = full_dataframe.drop(labels=['Unnamed: 0'], axis=1)
+    #full_dataframe = full_dataframe.drop(labels=['Unnamed: 0'], axis=1)
     full_dataframe = df_select_by_col(full_dataframe, ['rheo', 'filename', 'foldername'])
 
 
