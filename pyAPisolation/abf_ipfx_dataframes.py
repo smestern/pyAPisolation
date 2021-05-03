@@ -177,7 +177,7 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
                     
             temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
             temp_spike_df["rheobase_thres"] = [df['threshold_v'].to_numpy()[0]]
-            temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]] *1000
+            temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]] 
             temp_spike_df["rheobase_heightPT"] = [abs(df['peak_v'].to_numpy()[0] - df['fast_trough_v'].to_numpy()[0])]
             temp_spike_df["rheobase_heightTP"] = [abs(df['threshold_v'].to_numpy()[0] - df['peak_v'].to_numpy()[0])]
                 

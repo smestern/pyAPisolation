@@ -152,7 +152,7 @@ class live_data_viz():
           #          Input('UMAP-graph', 'figure')
            #         )(self.filter_datatable)
 
-        app.callback(Output('datatable-row-ids', 'data'),
+        app.callback(
             Output('UMAP-graph', 'figure'),
             Input('dir-input', 'value'))(self._run_analysis)
 
@@ -164,7 +164,7 @@ class live_data_viz():
         pass
 
     def _run_analysis(self, dir):
-        _, df, _ = folder_feature_extract(os.path.abspath(dir), default_dict, protocol_name='1000')
+        _, df, _ = folder_feature_extract(os.path.abspath(dir), default_dict, protocol_name='IC1')
         self.df_raw = df
         df = _df_select_by_col(df, ["rheo", "filename", "foldername", "QC"])
         df['id'] = df["filename"]
