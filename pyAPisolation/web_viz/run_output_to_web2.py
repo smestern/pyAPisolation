@@ -103,6 +103,7 @@ def main():
     #column tags
     table_head= soup.find('th')
     pred_col = np.hstack((pred_col[:10], 'foldername'))
+    print(pred_col)
     for col in pred_col:
         test = gen_table_head_str_(col, soup)
         table_head.insert_after(test)
