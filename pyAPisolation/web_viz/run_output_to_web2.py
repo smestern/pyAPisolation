@@ -67,12 +67,19 @@ def main():
     #full_dataframe = full_dataframe.set_index(index_col)
     #full_dataframe = full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"])
     #full_dataframe = full_dataframe.drop(labels=['Unnamed: 0'], axis=1)
-    full_dataframe = df_select_by_col(full_dataframe, ['rheo', 'filename', 'foldername'])
+    full_dataframe = df_select_by_col(full_dataframe, ['rheo', 'latency', 'filename', 'foldername'])
 
 
 
     full_dataframe['ID'] = full_dataframe['filename']
-    pred_col, labels = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]), ret_labels=True)
+    #find label
+    bool_l = [x=='label' for x in full_dataframe.columns.values]
+    if np.any(bool_l):
+        labels = full_dataframe['label'].to_numpy()
+    else:
+        labels = None
+
+    pred_col, labels = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]), ret_labels=True, labels=labels)
     plot_data = generate_plots(full_dataframe)
     full_dataframe['label'] = labels
     #Fix foldernames by truncating
