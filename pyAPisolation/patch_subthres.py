@@ -15,24 +15,44 @@ import pyabf
 
 def exp_grow(t, a, b, alpha):
     return a - b * np.exp(-alpha * t)
+def exp_grow_2p(t, a, b1, alphaFast, b2, alphaSlow):
+    return a - b1 * np.exp(-alphaFast * t) - b2*np.exp(-alphaSlow*t) 
+
+
 def exp_decay_2p(t, a, b1, alphaFast, b2, alphaSlow):
     return a + b1*np.exp(-alphaFast*t) + b2*np.exp(-alphaSlow*t)
 def exp_decay_1p(t, a, b1, alphaFast):
     return a + b1*np.exp(-alphaFast*t)
+
+
 def exp_growth_factor(dataT,dataV,dataI, end_index=300):
-    try:
+    #try:
         
         diff_I = np.diff(dataI)
         upwardinfl = np.argmax(diff_I)
+
+        #Compute out -50 ms from threshold
+        dt = dataT[1] - dataT[0]
+        offset = 0.05/ dt 
+
+        end_index = int(end_index - offset)
+
+
         
         upperC = np.amax(dataV[upwardinfl:end_index])
+        lowerC  = np.amin(dataV[upwardinfl:end_index])
+        diffC = np.abs(lowerC - upperC) + 5
         t1 = dataT[upwardinfl:end_index] - dataT[upwardinfl]
         curve = curve_fit(exp_grow, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, -np.inf, -np.inf], [np.inf, np.inf, np.inf]))[0]
+        curve2 = curve_fit(exp_grow_2p, t1, dataV[upwardinfl:end_index], maxfev=50000,   bounds=([-np.inf,  0, -np.inf,  0, -np.inf], [upperC + 5, diffC, np.inf, np.inf, np.inf]), xtol=None, method='trf')[0]
         tau = curve[2]
-        return 1/tau
-    except:
+        plt.plot(t1, dataV[upwardinfl:end_index])
+        plt.plot(t1, exp_grow_2p(t1, *curve2))
+        plt.title(f" CELL will tau1 {1/curve2[2]} and tau2 {1/curve2[4]}, a {curve2[0]} and b1 {curve2[1]}, b2 {curve2[3]}")
+        plt.pause(5)
+        return curve2
+    #except:
         return np.nan
-
 
 def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold='', sag=True):
      try:

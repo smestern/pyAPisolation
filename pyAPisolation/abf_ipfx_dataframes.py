@@ -103,8 +103,8 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 temp_spike_df["spike_AHP height 1" + real_sweep_number + " "] = abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['fast_trough_v'].to_numpy()[0])
                 temp_spike_df["latency_" + real_sweep_number + " latency"] = spike_train['latency']
                 temp_spike_df["spike_width" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
-                        
-                #temp_spike_df["exp growth" + real_sweep_number] = [exp_growth_factor(dataT, dataV, dataI, spike_in_sweep['threshold_index'].to_numpy()[0])]
+                curve = exp_growth_factor(dataT, dataV, dataI, spike_in_sweep['threshold_index'].to_numpy()[0])
+                temp_spike_df["exp growth tau1" + real_sweep_number] = curve[2]
                         
                 if spike_count > 2:
                     f_isi = spike_in_sweep['peak_t'].to_numpy()[-1]
