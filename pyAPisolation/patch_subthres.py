@@ -26,7 +26,7 @@ def exp_decay_1p(t, a, b1, alphaFast):
 
 
 def exp_growth_factor(dataT,dataV,dataI, end_index=300):
-    #try:
+    try:
         
         diff_I = np.diff(dataI)
         upwardinfl = np.argmax(diff_I)
@@ -46,13 +46,13 @@ def exp_growth_factor(dataT,dataV,dataI, end_index=300):
         curve = curve_fit(exp_grow, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, -np.inf, -np.inf], [np.inf, np.inf, np.inf]))[0]
         curve2 = curve_fit(exp_grow_2p, t1, dataV[upwardinfl:end_index], maxfev=50000,   bounds=([-np.inf,  0, -np.inf,  0, -np.inf], [upperC + 5, diffC, np.inf, np.inf, np.inf]), xtol=None, method='trf')[0]
         tau = curve[2]
-        plt.plot(t1, dataV[upwardinfl:end_index])
-        plt.plot(t1, exp_grow_2p(t1, *curve2))
-        plt.title(f" CELL will tau1 {1/curve2[2]} and tau2 {1/curve2[4]}, a {curve2[0]} and b1 {curve2[1]}, b2 {curve2[3]}")
-        plt.pause(5)
+        #plt.plot(t1, dataV[upwardinfl:end_index])
+        #plt.plot(t1, exp_grow_2p(t1, *curve2))
+        #plt.title(f" CELL will tau1 {1/curve2[2]} and tau2 {1/curve2[4]}, a {curve2[0]} and b1 {curve2[1]}, b2 {curve2[3]}")
+        #plt.pause(5)
         return curve2
-    #except:
-        return np.nan
+    except:
+        return [np.nan, np.nan, np.nan, np.nan, np.nan]
 
 def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold='', sag=True):
      try:

@@ -28,14 +28,14 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
         #tempframe = dfs.drop_duplicates(subset='file_name')
         #tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
         #dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
-        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
-            cols = df_running_avg_count.columns.values
-            df_ind = df_running_avg_count.loc[:,cols[[-1,-2,-3]]]
-            index = pd.MultiIndex.from_frame(df_ind)
-            for p in running_lab:
-                temp_ind = [p in col for col in cols]
-                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
-                temp_df.to_excel(runf, sheet_name=p)
+        #with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
+            #cols = df_running_avg_count.columns.values
+            #df_ind = df_running_avg_count.loc[:,cols[[-1,-2,-3]]]
+            #index = pd.MultiIndex.from_frame(df_ind)
+           # for p in running_lab:
+          #      temp_ind = [p in col for col in cols]
+         #       temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
+        #        temp_df.to_excel(runf, sheet_name=p)
         #df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
         with pd.ExcelWriter(root_fold + '/spike_count_' + tag + '.xlsx') as runf:
             cols = df_spike_count.columns.values
@@ -103,7 +103,7 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 temp_spike_df["spike_AHP height 1" + real_sweep_number + " "] = abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['fast_trough_v'].to_numpy()[0])
                 temp_spike_df["latency_" + real_sweep_number + " latency"] = spike_train['latency']
                 temp_spike_df["spike_width" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
-                curve = exp_growth_factor(dataT, dataV, dataI, int(spike_in_sweep['threshold_index'].to_numpy()[0]))
+                curve = exp_growth_factor(abf.sweepX, abf.sweepY, abf.sweepC, int(spike_in_sweep['threshold_index'].to_numpy()[0]))
                 temp_spike_df["exp growth tau1" + real_sweep_number] = curve[2]
                 temp_spike_df["exp growth tau2" + real_sweep_number] = curve[4]
                         
