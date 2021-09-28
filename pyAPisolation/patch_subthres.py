@@ -7,9 +7,11 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 from scipy import interpolate
 from scipy.optimize import curve_fit
+import scipy.stats
 from ipfx import subthresh_features as subt
+from . import patch_utils
 import pyabf
-#from brian2.units import ohm, Gohm, amp, volt, mV, second, pA
+from brian2.units import ohm, Gohm, amp, volt, mV, second, pA
 
 
 
@@ -135,13 +137,13 @@ def membrane_resistance_subt(dataT, dataV,dataI):
     stim_data = []
     for i, sweep in enumerate(dataV):
         abs_min, resp = compute_sag(dataT[i,:], sweep, dataI[i,:])
-        ind =find_stim_changes(dataI[i, :])
+        ind = patch_utils.find_stim_changes(dataI[i, :])
         stim = dataI[i,ind[0] + 1]
         stim_data.append(stim)
         resp_data.append(resp+abs_min)
     resp_data = np.array(resp_data) * mV
     stim_data = np.array(stim_data) * pA
-    res = linregress(stim_data / amp, resp_data / volt)
+    res = scipy.stats.linregress(stim_data / amp, resp_data / volt)
     resist = res.slope * ohm
     return resist / Gohm
 

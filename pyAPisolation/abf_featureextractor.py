@@ -23,6 +23,7 @@ from .QC import run_qc
 default_dict = {'start': 0, 'end': 0, 'filter': 0}
 
 def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1', para=1):
+
     debugplot = 0
     running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
     dfs = pd.DataFrame()
