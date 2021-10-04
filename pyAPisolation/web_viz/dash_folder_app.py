@@ -153,7 +153,7 @@ class live_data_viz():
            #         )(self.filter_datatable)
 
         app.callback(
-            Output('UMAP-graph', 'figure'),
+            Output('datatable-row-ids', 'data'),
             Input('dir-input', 'value'))(self._run_analysis)
 
         app.callback(Output('dir-input', 'children'),
@@ -170,7 +170,7 @@ class live_data_viz():
         df['id'] = df["filename"]
         df.set_index('id', inplace=True, drop=False)
         self.df = df
-        return self.df.to_dict('records'), self.gen_umap_plots()
+        return self.df.to_dict('records')
 
     def gen_umap_plots(self):
         pre_df = preprocess_df(self.df)
