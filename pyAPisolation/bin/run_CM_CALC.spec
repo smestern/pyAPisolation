@@ -4,10 +4,10 @@ block_cipher = None
 
 
 a = Analysis(['run_CM_CALC.py'],
-             pathex=['C:\\Users\\smestern\\source\\repos\\smestern\\pyAPisolation\\pyAPisolation\\bin'],
+             pathex=['C:\\Users\\SMest\\source\\repos\\smestern\\pyABF-APisolation\\pyAPisolation\\bin'],
              binaries=[],
              datas=[],
-             hiddenimports=['pyabf'],
+             hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
