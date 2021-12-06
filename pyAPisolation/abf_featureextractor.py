@@ -1,49 +1,55 @@
-import sys
-import numpy as np
+import glob
 import os
-import pandas as pd
+import sys
+
+from joblib import Parallel, delayed
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import pyabf
 import scipy.signal as signal
-from scipy import interpolate
-from scipy.optimize import curve_fit
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
-import pyabf
-from .patch_utils import *
-from .patch_subthres import *
-from .QC import run_qc
-from .loadABF import loadABF
+from scipy import interpolate
+from scipy.optimize import curve_fit
+
 from .abf_ipfx_dataframes import *
-from .abf_ipfx_dataframes import _build_sweepwise_dataframe, _build_full_df
+from .abf_ipfx_dataframes import _build_full_df, _build_sweepwise_dataframe
+from .loadABF import loadABF
+from .patch_subthres import *
+from .patch_utils import *
+from .QC import run_qc
 
 default_dict = {'start': 0, 'end': 0, 'filter': 0}
 
-def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1'):
+def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1', para=1):
+
     debugplot = 0
     running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
     dfs = pd.DataFrame()
     df_spike_count = pd.DataFrame()
     df_running_avg_count = pd.DataFrame()
-    for root,dir_,fileList in os.walk(files):
-        for filename in fileList:
-            if filename.endswith(".abf"):
-                    file_path = os.path.join(root,filename)
-                #try:
-                    abf = pyabf.ABF(file_path)
-                
-                    if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
-                        print(filename + ' import')
-                        temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
-                        #df_running_avg_count = df_running_avg_count.append(temp_running_bin)
-                        df_spike_count = df_spike_count.append(temp_spike_df, sort=True)
-                        #dfs = dfs.append(df, sort=True)
-                    else:
-                        print('Not correct protocol: ' + abf.protocol)
-                #except:
-
-                        print('Issue Processing ' + filename)
+    filelist = glob.glob(files + "\\**\\*.abf", recursive=True)
+    temp_df_spike_count = Parallel(n_jobs= para)(delayed(preprocess_abf)(f, param_dict, plot_sweeps, protocol_name) for f in filelist)
+    df_spike_count = pd.concat(temp_df_spike_count, sort=True)
+    
+     
     return dfs, df_spike_count, df_running_avg_count
 
+def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
+    
+    try:
+        abf = pyabf.ABF(file_path)
+                    
+        if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
+            print(file_path + ' import')
+            temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
+            return temp_spike_df
+        else:
+            print('Not correct protocol: ' + abf.protocol)
+            return pd.DataFrame()
+    except:
+        return pd.DataFrame()
 
 def analyze_spike_sweep(abf, sweepNumber, param_dict):
     abf.setSweep(sweepNumber)

@@ -41,9 +41,10 @@ def feature_importance(df, labels):
     feat_import = rf.feature_importances_
     return np.argsort(feat_import)[::-1]
 
-def extract_features(df, ret_labels):
-    pre_df, outliers = preprocess_df(df)
-    labels = cluster_df(pre_df)
+def extract_features(df, ret_labels, labels=None):
+    pre_df = preprocess_df(df)
+    if labels is None:
+        labels = cluster_df(pre_df)
     idx_feat = feature_importance(pre_df, labels)
     col = df.columns.values
 

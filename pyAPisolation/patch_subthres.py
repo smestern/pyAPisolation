@@ -7,32 +7,54 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 from scipy import interpolate
 from scipy.optimize import curve_fit
+import scipy.stats
 from ipfx import subthresh_features as subt
+from . import patch_utils
 import pyabf
-#from brian2.units import ohm, Gohm, amp, volt, mV, second, pA
+from brian2.units import ohm, Gohm, amp, volt, mV, second, pA
 
 
 
 def exp_grow(t, a, b, alpha):
     return a - b * np.exp(-alpha * t)
+def exp_grow_2p(t, a, b1, alphaFast, b2, alphaSlow):
+    return a - b1 * np.exp(-alphaFast * t) - b2*np.exp(-alphaSlow*t) 
+
+
 def exp_decay_2p(t, a, b1, alphaFast, b2, alphaSlow):
     return a + b1*np.exp(-alphaFast*t) + b2*np.exp(-alphaSlow*t)
 def exp_decay_1p(t, a, b1, alphaFast):
     return a + b1*np.exp(-alphaFast*t)
+
+
 def exp_growth_factor(dataT,dataV,dataI, end_index=300):
     try:
         
         diff_I = np.diff(dataI)
         upwardinfl = np.argmax(diff_I)
+
+        #Compute out -50 ms from threshold
+        dt = dataT[1] - dataT[0]
+        offset = 0.05/ dt 
+
+        end_index = int(end_index - offset)
+
+
         
         upperC = np.amax(dataV[upwardinfl:end_index])
+        lowerC  = np.amin(dataV[upwardinfl:end_index])
+        diffC = np.abs(lowerC - upperC) + 5
         t1 = dataT[upwardinfl:end_index] - dataT[upwardinfl]
         curve = curve_fit(exp_grow, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, -np.inf, -np.inf], [np.inf, np.inf, np.inf]))[0]
+        curve2 = curve_fit(exp_grow_2p, t1, dataV[upwardinfl:end_index], maxfev=50000,   bounds=([-np.inf,  0, -np.inf,  0, -np.inf], [upperC + 5, diffC, np.inf, np.inf, np.inf]), xtol=None, method='trf')[0]
         tau = curve[2]
-        return 1/tau
+        #plt.plot(t1, dataV[upwardinfl:end_index])
+        #plt.plot(t1, exp_grow_2p(t1, *curve2))
+        #plt.title(f" CELL will tau1 {1/curve2[2]} and tau2 {1/curve2[4]}, a {curve2[0]} and b1 {curve2[1]}, b2 {curve2[3]}")
+        #plt.pause(5)
+        return curve2
     except:
-        return np.nan
-
+        return [np.nan, np.nan, np.nan, np.nan, np.nan]
 
 def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold='', sag=True):
      try:
@@ -115,13 +137,13 @@ def membrane_resistance_subt(dataT, dataV,dataI):
     stim_data = []
     for i, sweep in enumerate(dataV):
         abs_min, resp = compute_sag(dataT[i,:], sweep, dataI[i,:])
-        ind =find_stim_changes(dataI[i, :])
+        ind = patch_utils.find_stim_changes(dataI[i, :])
         stim = dataI[i,ind[0] + 1]
         stim_data.append(stim)
         resp_data.append(resp+abs_min)
     resp_data = np.array(resp_data) * mV
     stim_data = np.array(stim_data) * pA
-    res = linregress(stim_data / amp, resp_data / volt)
+    res = scipy.stats.linregress(stim_data / amp, resp_data / volt)
     resist = res.slope * ohm
     return resist / Gohm
 

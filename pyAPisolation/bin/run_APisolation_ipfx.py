@@ -1,7 +1,8 @@
 
 print("Loading...")
 import sys
-
+import warnings
+warnings.filterwarnings("ignore")
 
 import logging
 import os
@@ -41,11 +42,11 @@ def main():
     print("protocols")
     for i, x in enumerate(protocol_n):
         print(str(i) + '. '+ str(x))
-    proto = input("enter Protocol to analyze: ")
+    proto = input("enter Protocol to analyze (enter -1 to not filter to any protocol): ")
     try: 
         proto = int(proto)
     except:
-        proto = 0
+        proto = -1
 
 
 
@@ -75,31 +76,33 @@ def main():
         plot_sweeps = -1
 
     
-
-    protocol_name = protocol_n[proto]
-    dv_cut = input("Enter the threshold cut off for the derivative (Allen defaults 20mv/s): ")
+    if proto == -1:
+        protocol_name = ''
+    else:
+        protocol_name = protocol_n[proto]
+    dv_cut = input("Enter the threshold cut off for the derivative (defaults to 7mv/s): ")
     try: 
         dv_cut = int(dv_cut)
     except:
-        dv_cut = 20
-    tp_cut = input("Enter the threshold cut off for max threshold-to-peak time (Allen defaults 5ms)[in ms]: ")
+        dv_cut = 7
+    tp_cut = input("Enter the threshold cut off for max threshold-to-peak time (defaults to 10ms)[in ms]: ")
     try: 
         tp_cut = (np.float64(tp_cut)/1000)
     except:
-        tp_cut = 0.005
+        tp_cut = 0.010
 
-    min_cut = input("Enter the minimum cut off for threshold-to-peak voltage (Allen defaults 2mV)[in mV]: ")
+    min_cut = input("Enter the minimum cut off for threshold-to-peak voltage (defaults to 2mV)[in mV]: ")
     try: 
         min_cut = np.float64(min_cut)
     except:
         min_cut = 2
 
 
-    min_peak = input("Enter the mininum cut off for peak voltage (Allen defaults -30mV)[in mV]: ")
+    min_peak = input("Enter the mininum cut off for peak voltage (defaults to -10)[in mV]: ")
     try: 
         min_peak = np.float64(min_peak)
     except:
-        min_peak = -30
+        min_peak = -10
 
     percent = input("Enter the percent of max DvDt used to calculate refined threshold (does not effect spike detection)(Allen defaults 5%)[in %]: ")
     try: 

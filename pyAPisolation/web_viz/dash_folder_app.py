@@ -72,7 +72,7 @@ class live_data_viz():
         
 
         #Umap
-        umap_fig = self.gen_umap_plots()
+        umap_fig = self.gen_umap_plots(1,2)
 
 
         #Make grid ui
@@ -82,12 +82,14 @@ class live_data_viz():
                     id="loading-2",
                     children=[html.Div(id='datatable-plot-cell', style={
                     "flex-wrap": "nowrap" })])], width='auto')
-        col1 = dbc.Col([dcc.Graph(id='UMAP-graph',
-                figure=umap_fig, style={
-                    "width": "100%",
-                    "height": "100%"
-                }
-               )], width='auto') # config=dict(
+        col1 = dbc.Col([dcc.Loading(
+                    id="loading-3",
+                    children=[dcc.Graph(id='UMAP-graph',
+                        figure=umap_fig, style={
+                            "width": "100%",
+                            "height": "100%"
+                        }
+                    )])], width='auto') # config=dict(
                  #   autosizable=True,
                   #  fillFrame=False
                 #),
@@ -114,7 +116,7 @@ class live_data_viz():
                     'maxWidth': 0
                 }
                 
-            )])
+            )], id='data-table-col')
 
          
         app.layout = html.Div([dcc.Input(
@@ -135,11 +137,9 @@ class live_data_viz():
                 ])
         self.app = app
         #Define Callbacks
-        #app.callback(
-        #Output('datatable-row-ids-container', 'children'),
-        #Input('datatable-row-ids', 'derived_virtual_row_ids'),
-        #Input('datatable-row-ids', 'selected_row_ids'),
-        #Input('datatable-row-ids', 'active_cell'))(self.update_graphs)
+        app.callback(
+        Output('loading-3', 'children'),
+        Input('loading-2', 'children'))(self.gen_umap_plots)
         app.callback(
         Output('loading-2', 'children'),
         Input('datatable-row-ids', 'derived_virtual_row_ids'),
@@ -147,16 +147,16 @@ class live_data_viz():
         Input('datatable-row-ids', 'active_cell'))(self.update_cell_plot)
 
 
-        #app.callback(Output('datatable-row-ids', 'data'), 
-         #           Input('UMAP-graph', 'restyleData'),
-          #          Input('UMAP-graph', 'figure')
-           #         )(self.filter_datatable)
+        app.callback(Output('datatable-row-ids', 'data'), 
+                   Input('UMAP-graph', 'restyleData'),
+                    Input('UMAP-graph', 'figure')
+                    )(self.filter_datatable)
 
-        app.callback(Output('datatable-row-ids', 'data'),
-            Output('UMAP-graph', 'figure'),
+        app.callback(
+            Output('data-table-col', 'children'),
             Input('dir-input', 'value'))(self._run_analysis)
-
-        app.callback(Output('dir-input', 'children'),
+ 
+        app.callback(Output('dir-input', 'value'),
                     Input('interval-component', 'n_intervals'))(self._gen_abf_list)
 
     def _gen_abf_list(self, dir):
@@ -164,15 +164,37 @@ class live_data_viz():
         pass
 
     def _run_analysis(self, dir):
-        _, df, _ = folder_feature_extract(os.path.abspath(dir), default_dict, protocol_name='1000')
+        _, df, _ = folder_feature_extract(os.path.abspath(dir), default_dict, protocol_name='IC1')
         self.df_raw = df
         df = _df_select_by_col(df, ["rheo", "filename", "foldername", "QC"])
         df['id'] = df["filename"]
         df.set_index('id', inplace=True, drop=False)
         self.df = df
-        return self.df.to_dict('records'), self.gen_umap_plots()
+        return [dash_table.DataTable(
+                id='datatable-row-ids',
+                columns=[
+                    {'name': i, 'id': i, 'deletable': True} for i in self.df.columns
+                    # omit the id column
+                    if i != 'id'
+                ],
+                data=self.df.to_dict('records'),
+                filter_action="native",
+                sort_action="native",
+                sort_mode='multi',
+                row_selectable='multi',
+                selected_rows=[],
+                page_action='native',
+                page_current= 0,
+                page_size= 10,
+                style_cell={
+                    'overflow': 'hidden',
+                    'textOverflow': 'ellipsis',
+                    'maxWidth': 0
+                }
+                
+            )]
 
-    def gen_umap_plots(self):
+    def gen_umap_plots(self,dir,_):
         pre_df = preprocess_df(self.df)
         #data = dense_umap(pre_df)
         #labels = cluster_df(pre_df)
@@ -182,7 +204,17 @@ class live_data_viz():
                              color_continuous_scale=px.colors.diverging.Tealrose)
         self.para_df = df
         fig.layout.autosize = True
-        return fig
+        return [
+                dcc.Graph(
+                    id='UMAP-graph',
+                    figure=fig,
+                   style={
+                    "width": "100%",
+                    "height": "100%"
+                    },
+                    
+                )
+            ]
 
     def filter_datatable(self, selectedData, fig):
         if selectedData is None:

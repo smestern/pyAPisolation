@@ -14,6 +14,8 @@ from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 import pyabf
 
+from pyAPisolation.patch_utils import build_running_bin
+
 print("Load finished")
 
 root = tk.Tk()
@@ -24,6 +26,7 @@ files = filedialog.askdirectory(
 root_fold = files
 
 def crop_ap(abf):
+    print("Finding Spikes to be Removed")
     spikext = feature_extractor.SpikeFeatureExtractor(filter=0, dv_cutoff=20)
     dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
     spike_in_sweep = spikext.process(dataT, dataV, dataI)
@@ -46,15 +49,24 @@ def crop_ap(abf):
         
     return sweep_data
 
+def running_bin(x, y, bin_time):
+    bin_x = np.arange(x[0], x[-1]+bin_time, step=bin_time)
+    binned_indices  = np.digitize(x, bin_x)
+    dict_running = {}
+    for ind in np.unique(binned_indices):
+        bool_true = (binned_indices==ind)
+        dict_running[bin_x[ind]] = np.nanmean(y[bool_true])
+    return pd.DataFrame.from_dict(dict_running, orient='index')
 
 
-def rmp_abf(abf, time=30, crop=True):
+def rmp_abf(abf, time=30, crop=True, bin_time=100):
  #try:
     
     sweepsdata = []
     
             
     for sweepNumber in abf.sweepList:
+        print(f"Processing sweep number {sweepNumber}")
         #f10 = int((abf.sweepLengthSec * .10) * 1000)
         f10 = int((time) * 1000)
         t1 = abf.dataPointsPerMs * f10
@@ -71,6 +83,12 @@ def rmp_abf(abf, time=30, crop=True):
         e_vm = np.nanmean(data[-t1:])
         median_vm = np.nanmedian(data[:t1])
         mode_vm = mode(data[:t1], nan_policy='omit')[0][0]
+
+        #Compute the running bin
+        df_raw = pd.DataFrame(data=data, index=abf.sweepX)
+        df_running = running_bin(abf.sweepX, data, bin_time/1000)
+        
+
         delta_vm = f_vm - e_vm
         sweep_time = abf.sweepLengthSec
         if abf.sweepLengthSec >= time:
@@ -86,9 +104,9 @@ def rmp_abf(abf, time=30, crop=True):
     sweep_full = np.vstack(sweepsdata)
     df = pd.DataFrame(data=sweep_full, columns=[f'Overall Mean vm','Overall STD vm', f'first {time}s Mean Vm', f'first {time}s Median Vm',f'first {time}s Mode Vm',  f'End {time}s Mean Vm', f'End {time}s median Vm', f'End {time}s mode Vm', 'Delta Vm', 'Length(s)'])
     df['fold_name'] = np.full(sweep_full.shape[0], abf.abfFolderPath)
-    df['sweep number'] = abf.sweepList
+    df['sweep number'] = abf.sweepList[:sweep_full.shape[0]]
     df['cell_name'] = np.full(sweep_full.shape[0], abf.abfID)
-    return df
+    return df, df_running
  
  #except:
      #return pd.DataFrame
@@ -106,34 +124,37 @@ for root,dir,fileList in os.walk(files):
 protocol_n = np.unique(protocol)
 
 
-filter = input("Filter (recommended to be set to 0): ")
-braw = False
-bfeat = True
-try: 
-    filter = int(filter)
-except:
-    filter = 0
-tag = input("tag to apply output to files: ")
-try: 
-    tag = str(tag)
-except:
-    tag = ""
+
 
 print("protocols")
 for i, x in enumerate(protocol_n):
     print(str(i) + '. '+ str(x))
-proto = input("enter Protocol to analyze: ")
+proto = input("enter Protocol to analyze (enter -1 to not filter any protocol): ")
 try: 
     proto = int(proto)
 except:
-    proto = 0
-protocol_name = protocol_n[proto]
+    proto = -1
+if proto == -1:
+    protocol_name = ''
+else:
+    protocol_name = protocol_n[proto]
+
+
 lowerlim = input("Enter the time to analyze rmp (eg. first and last 10s)[in s]: ")
 
 try: 
-    lowerlim = np.float(lowerlim)
+    lowerlim = np.float32(lowerlim)
 except:
     lowerlim  = 10
+
+bin_time = input("Enter the bin size for building a running bin [in ms]: ")
+
+try: 
+    bin_time = np.float32(bin_time)
+except:
+    bin_time  = 100
+
+
 
 
 crop = input("[Experimental] Try to 'crop' out action potentials when analyzing RMP? (y/n): ")
@@ -147,18 +168,39 @@ try:
 except:
     bcrop = False
 
+
+filter = input("Filter (recommended to be set to 0): ")
+braw = False
+bfeat = True
+try: 
+    filter = int(filter)
+except:
+    filter = 0
+tag = input("tag to apply output to files: ")
+try: 
+    tag = str(tag)
+except:
+    tag = ""
+
+
+
+
 full_df = pd.DataFrame()
+full_df_running = pd.DataFrame()
 for root,dirs,fileList in os.walk(root_fold): 
+    
     for x in fileList:
         fp = os.path.join(root, x)
         if '.abf' in x:
+            
             try:
                 abf = pyabf.ABF(fp)
-                if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
+                if proto == -1 or protocol_name in abf.protocol:
                     print(abf.abfID + ' import')
-                    temp_df = rmp_abf(abf, lowerlim, bcrop)
+                    temp_df, temp_df_running = rmp_abf(abf, lowerlim, bcrop, bin_time)
                     if temp_df.empty == False:
                         full_df = full_df.append(temp_df)
+                        full_df_running = full_df_running.join(temp_df_running.rename({0: temp_df['cell_name'].to_numpy()[0]}, axis='columns'), how='outer')
             except:
               print('error processing file ' + fp)
 
@@ -166,6 +208,7 @@ for root,dirs,fileList in os.walk(root_fold):
 with pd.ExcelWriter(root_fold + '/RMP_' + tag + '.xlsx') as runf:
         full_df.to_excel(runf, sheet_name="sweepwise RMP")
         full_df.groupby(['cell_name']).mean().to_excel(runf, sheet_name="Mean RMP")
+        full_df_running.to_excel(runf, sheet_name="running bin RMP")
 
 print("==== SUCCESS ====")
 input('Press ENTER to exit')

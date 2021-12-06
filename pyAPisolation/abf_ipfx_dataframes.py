@@ -28,14 +28,14 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
         #tempframe = dfs.drop_duplicates(subset='file_name')
         #tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
         #dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
-        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
-            cols = df_running_avg_count.columns.values
-            df_ind = df_running_avg_count.loc[:,cols[[-1,-2,-3]]]
-            index = pd.MultiIndex.from_frame(df_ind)
-            for p in running_lab:
-                temp_ind = [p in col for col in cols]
-                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
-                temp_df.to_excel(runf, sheet_name=p)
+        #with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
+            #cols = df_running_avg_count.columns.values
+            #df_ind = df_running_avg_count.loc[:,cols[[-1,-2,-3]]]
+            #index = pd.MultiIndex.from_frame(df_ind)
+           # for p in running_lab:
+          #      temp_ind = [p in col for col in cols]
+         #       temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
+        #        temp_df.to_excel(runf, sheet_name=p)
         #df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
         with pd.ExcelWriter(root_fold + '/spike_count_' + tag + '.xlsx') as runf:
             cols = df_spike_count.columns.values
@@ -103,8 +103,9 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 temp_spike_df["spike_AHP height 1" + real_sweep_number + " "] = abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['fast_trough_v'].to_numpy()[0])
                 temp_spike_df["latency_" + real_sweep_number + " latency"] = spike_train['latency']
                 temp_spike_df["spike_width" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
-                        
-                #temp_spike_df["exp growth" + real_sweep_number] = [exp_growth_factor(dataT, dataV, dataI, spike_in_sweep['threshold_index'].to_numpy()[0])]
+                curve = exp_growth_factor(abf.sweepX, abf.sweepY, abf.sweepC, int(spike_in_sweep['threshold_index'].to_numpy()[0]))
+                temp_spike_df["exp growth tau1" + real_sweep_number] = curve[2]
+                temp_spike_df["exp growth tau2" + real_sweep_number] = curve[4]
                         
                 if spike_count > 2:
                     f_isi = spike_in_sweep['peak_t'].to_numpy()[-1]
@@ -150,7 +151,8 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 #temp_spike_df["spike_width" + real_sweep_number + "3"] = [np.nan]
                 temp_spike_df["min_isi" + real_sweep_number + " isi"] = [np.nan]
                 sweep_running_bin = pd.DataFrame(data=nan_row_run, columns=_run_labels, index=[real_sweep_number])
-                #temp_spike_df["exp growth" + real_sweep_number] = [np.nan]
+                temp_spike_df["exp growth tau1" + real_sweep_number] = [np.nan]
+                temp_spike_df["exp growth tau2" + real_sweep_number] = [np.nan]
             sweep_running_bin['Sweep Number'] = [real_sweep_number]
             sweep_running_bin['filename'] = [abf.abfID]
             sweep_running_bin['foldername'] = [os.path.dirname(abf.abfFilePath)]
@@ -177,7 +179,7 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
                     
             temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
             temp_spike_df["rheobase_thres"] = [df['threshold_v'].to_numpy()[0]]
-            temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]] *1000
+            temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]] 
             temp_spike_df["rheobase_heightPT"] = [abs(df['peak_v'].to_numpy()[0] - df['fast_trough_v'].to_numpy()[0])]
             temp_spike_df["rheobase_heightTP"] = [abs(df['threshold_v'].to_numpy()[0] - df['peak_v'].to_numpy()[0])]
                 
