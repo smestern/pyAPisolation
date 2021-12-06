@@ -16,14 +16,19 @@ def preprocess_df(df):
     df = df.select_dtypes(["float32", "float64", "int32", "int64"])
     scaler = StandardScaler()
     impute = SimpleImputer()
+    
     out = impute.fit_transform(df)
+    out, outliers = drop_outliers(out)
     out = scaler.fit_transform(out)
-    return out
+    return out, outliers
 
 def drop_outliers(df):
-    od = IsolationForest(contamination=0.05)
-    f_outliers = od.fit_predict(arr)
+    od = IsolationForest(contamination=0.01)
+    f_outliers = od.fit_predict(df)
     drop_o = np.nonzero(np.where(f_outliers==-1, 1, 0))[0]
+    out = np.delete(df, drop_o, axis=0)
+    #return outliers
+    return out, drop_o
 
 def cluster_df(df, n=5):
     clust = AgglomerativeClustering(n_clusters=n)
@@ -42,6 +47,12 @@ def extract_features(df, ret_labels, labels=None):
         labels = cluster_df(pre_df)
     idx_feat = feature_importance(pre_df, labels)
     col = df.columns.values
+
+    if outliers is not None:
+        labels = np.insert(labels, outliers, np.full(outliers.shape[0], -1))
+
+
+
     if ret_labels:
         return col[idx_feat], labels
     else:
