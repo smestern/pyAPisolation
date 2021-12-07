@@ -231,7 +231,17 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
      except:
         return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
 
-def compute_sag(dataT,dataV,dataI, time_aft, plot=False):
+def df_select_by_col(df, string_to_find):
+    columns = df.columns.values
+    out = []
+    for col in columns:
+        string_found = [x in col for x in string_to_find]
+        if np.any(string_found):
+            out.append(col)
+    return df[out]
+
+
+def compute_sag(dataT,dataV,dataI, time_aft, plot=False, clear=True):
    try:
          time_aft = time_aft / 100
          if time_aft > 1:
@@ -257,12 +267,13 @@ def compute_sag(dataT,dataV,dataI, time_aft, plot=False):
          if plot==True:
              try:
                  plt.figure(num=99)
-                 plt.clf()
+                 if clear:
+                    plt.clf()
                  plt.plot(dataT[downwardinfl:int(upwardinfl+1000)], dataV[downwardinfl:int(upwardinfl + 1000)], label="Data")
                  plt.scatter(dataT[min_point], dataV[min_point], c='r', marker='x', zorder=99, label="Min Point")
                  plt.scatter(dataT[end_index:upwardinfl], dataV[end_index:upwardinfl], c='g', zorder=99, label="Mean Vm Measured")
                  plt.plot(dataT[np.full(sag_diff_plot.shape[0], min_point, dtype=np.int64)], sag_diff_plot, label=f"Sag of {sag_diff}")
-                 plt.legend()
+                 #plt.legend()
                  plt.pause(0.05)
              except:
                  print("plot fail")
@@ -375,6 +386,23 @@ try:
 except:
     subt_sweeps = None
         
+    time_after = 50
+
+start_sear = input("Enter the time to begin analyzing in the protocol: ")
+try: 
+    start_sear = float(start_sear)
+except:
+    start_sear = None
+
+end_sear = input("Enter the time to stop analyzing in the protocol: ")
+try: 
+    end_sear = float(end_sear)
+except:
+    end_sear = None    
+        
+
+
+
 def plotabf(abf, spiketimes, lowerlim, upperlim, sweep_plots):
    try:
     if sweep_plots[0] == -1:
@@ -448,14 +476,14 @@ def mem_cap_alt(resist, tau, b2, deflection):
     cm = tau / rm2
     return cm
 
-def determine_subt(abf):
+def determine_subt(abf, idx_bounds):
     def nonzero_1d(a):
         non = np.nonzero(a)
         return a[non]
     dataC =[]
     for sweep in abf.sweepList:
         abf.setSweep(sweep)
-        sweepdiff = np.diff(abf.sweepC)
+        sweepdiff = abf.sweepC[idx_bounds[0]:idx_bounds[1]]
         dataC.append(sweepdiff)
     dataC = np.vstack(dataC)
     deflections = np.unique(np.where(dataC<0)[0])
@@ -477,7 +505,7 @@ for root,dir,fileList in os.walk(files):
         file_path = os.path.join(root,filename)
         try:
             abf = pyabf.ABF(file_path)
-        
+            plt.close('all')
             if (proto==-1) or (abf.sweepLabelY != 'Clamp Current (pA)'and abf.protocol != 'Gap free' and protocol_name in abf.protocol):
                 print(filename + ' import')
                 
@@ -485,14 +513,26 @@ for root,dir,fileList in os.walk(files):
                 np.nan_to_num(abf.data, nan=-9999, copy=False)
                 if savfilter >0:
                     abf.data = signal.savgol_filter(abf.data, savfilter, polyorder=3)
-                try:
-                    del spikext
-                except:
-                     _ = 1
-                 #If there is more than one sweep, we need to ensure we dont iterate out of range
+                
+                #determine the search area
+                dataT = abf.sweepX #sweeps will need to be the same length
+                if start_sear != None:
+                    idx_start = np.argmin(np.abs(dataT - start_sear))
+                else:
+                    idx_start = 0
+                    
+                if end_sear != None:
+                    idx_end = np.argmin(np.abs(dataT - end_sear))
+                    
+                else:
+                    idx_end = -1
+
+
+
+                #If there is more than one sweep, we need to ensure we dont iterate out of range
                 if abf.sweepCount > 1:
                     if subt_sweeps is None:
-                        sweepList = determine_subt(abf)
+                        sweepList = determine_subt(abf, (idx_start, idx_end))
                         sweepcount = len(sweepList)
                     else:
                         subt_sweeps_temp = subt_sweeps - 1
@@ -525,6 +565,10 @@ for root,dir,fileList in os.walk(files):
                     abf.setSweep(sweepNumber)
                
                     dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+                    dataT, dataV, dataI = dataT[idx_start:idx_end], dataV[idx_start:idx_end], dataI[idx_start:idx_end]
+                    dataT = dataT - dataT[0]
+                    
+
                     decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.abfID)
                     
                     resist = membrane_resistance(dataT, dataV, dataI)
@@ -543,7 +587,8 @@ for root,dir,fileList in os.walk(files):
                     temp_df[f"_2 phase Cm {real_sweep_number}"] =  Cm2 * 1000000000000#to pf farad
                     temp_df[f"_ALT_2 phase Cm {real_sweep_number}"] =  Cm3 * 1000000000000
                     temp_df[f"_1 phase Cm {real_sweep_number}"] =  Cm1 * 1000000000000
-                    temp_df[f"Voltage sag {real_sweep_number}"],_ = compute_sag(dataT,dataV,dataI, time_after)
+                    temp_df[f"Voltage sag {real_sweep_number}"],temp_df[f"Voltage min {real_sweep_number}"] = compute_sag(dataT,dataV,dataI, time_after, plot=bplot, clear=False)
+                    
                     #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
                     #
                     #temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
@@ -556,7 +601,12 @@ for root,dir,fileList in os.walk(files):
                     if dataI.shape[0] < dataV.shape[0]:
                         dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
                 
-
+                if bplot == True:
+                        plt.title(abf.abfID)
+                        plt.ylim(top=-40)
+                        plt.xlim(right=0.6)
+                        #plt.legend()
+                        plt.savefig(root_fold+'//cm_plots//sagfit'+abf.abfID+'sweep'+real_sweep_number+'.png')
                 
                 full_dataI = np.vstack(full_dataI) 
                 #indices_of_same = np.any(full_dataI, axis=1)
@@ -572,6 +622,7 @@ for root,dir,fileList in os.walk(files):
                 print("Computing Sag")
                 grow = exp_growth_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), 1/decay_slow)
                 temp_avg[f"Voltage sag mean"], temp_avg["Voltage Min point"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, plot=bplot)
+                temp_avg[f"Sweepwise Voltage sag mean"], temp_avg["Sweepwise Voltage Min point"] = np.nanmean(df_select_by_col(temp_df, ['Voltage sag'])), np.nanmean(df_select_by_col(temp_df, ['Voltage min']))
                 if bplot == True:
                     plt.title(abf.abfID)
                     plt.savefig(root_fold+'//cm_plots//sagfit'+abf.abfID)
