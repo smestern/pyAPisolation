@@ -15,9 +15,9 @@ import pyabf
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 from numpy import genfromtxt
-
-from pyAPisolation.abf_featureextractor import *
-from pyAPisolation.abf_ipfx_dataframes import *
+print("Loaded external libraries")
+from pyAPisolation.abf_featureextractor import folder_feature_extract, load_protocols
+from pyAPisolation.abf_ipfx_dataframes import save_data_frames
 
 print("Load finished")
 
