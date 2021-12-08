@@ -14,7 +14,7 @@ from ipfx import subthresh_features as subt
 import pyabf
 from .patch_utils import *
 from .patch_subthres import *
-from .abf_featureextractor import *
+
 
 running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
 subsheets_spike = {'spike count':['spike count'], 'rheobase features':['rheobase'], 

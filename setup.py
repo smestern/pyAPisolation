@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(
@@ -6,7 +6,6 @@ setup(
     version='0.1.3',
     author='Sam Mestern',
     author_email='SMESTERN@UWO.CA',
-    packages=['pyAPisolation'],
     url='https://github.com/smestern/pyAPisolation',
     license='MIT License',
     platforms='any',
@@ -16,5 +15,6 @@ setup(
        'matplotlib>=2.1.0',
        'numpy>=1.17',
        'pyabf==2.1.9'
-	]
+	],
+    packages=find_packages(include=['pyAPisolation'], exclude=["dev", "tests", "web_viz", "build", "dist", 'run_APisolation_ipfx.py']),
 )

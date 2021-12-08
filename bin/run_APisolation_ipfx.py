@@ -4,6 +4,7 @@ import sys
 
 
 import logging
+logging.getLogger().setLevel(logging.DEBUG)
 import os
 import tkinter as tk
 from tkinter import filedialog
@@ -12,12 +13,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pyabf
-from ipfx import feature_extractor
-from ipfx import subthresh_features as subt
+
 from numpy import genfromtxt
 print("Loaded external libraries")
-from pyAPisolation.abf_featureextractor import folder_feature_extract, load_protocols
-from pyAPisolation.abf_ipfx_dataframes import save_data_frames
+from pyAPisolation.abf_featureextractor import folder_feature_extract, load_protocols, save_data_frames
+
 
 print("Load finished")
 
