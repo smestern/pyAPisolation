@@ -351,3 +351,5 @@ pyAPisolation/web_viz/output.html
 pyAPisolation/web_viz/table.html
 *.xlsx
 *.html
+.vscode/settings.json
+.vscode/settings.json
