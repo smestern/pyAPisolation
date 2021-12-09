@@ -156,7 +156,7 @@ class live_data_viz():
             Output('data-table-col', 'children'),
             Input('dir-input', 'value'))(self._run_analysis)
  
-        app.callback(Output('dir-input', 'children'),
+        app.callback(Output('dir-input', 'value'),
                     Input('interval-component', 'n_intervals'))(self._gen_abf_list)
 
     def _gen_abf_list(self, dir):

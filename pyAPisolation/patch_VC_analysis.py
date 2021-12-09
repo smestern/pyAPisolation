@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 from numpy import genfromtxt
-import os'
+import os
 import glob
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -13,7 +13,7 @@ from ipfx import subthresh_features as subt
 from patch_utils import find_stim_changes, time_to_idx
 import pyabf
 
-def _x_inter(res):
+#def _x_inter(res):
 
 
 def vc_sweepwise_linregress(dataX, dataY, dataC, tstart=None, tend=None):

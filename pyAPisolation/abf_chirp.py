@@ -4,7 +4,6 @@ import logging
 import pyabf
 from ipfx.sweep import Sweep,SweepSet
 import ipfx.chirp as chirp
-import .abf_dataset
 import ipfx.feature_vectors as fv
 import ipfx.time_series_utils as tsu
 
@@ -90,4 +89,3 @@ def chirp_amp_phase(v,i, t, start=0.0, end=19.9, down_rate=20000.0,
 
 feat = np.vstack(chirp_amp_phase(v,i,t))
 np.savetxt('CHIRP.csv', feat, delimiter=",", fmt='%12.5f')
-print(abf_set)

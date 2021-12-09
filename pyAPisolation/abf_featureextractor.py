@@ -7,17 +7,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pyabf
-import scipy.signal as signal
+
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
-from scipy import interpolate
-from scipy.optimize import curve_fit
+print("feature extractor loaded")
 
-from .abf_ipfx_dataframes import *
-from .abf_ipfx_dataframes import _build_full_df, _build_sweepwise_dataframe
+from .abf_ipfx_dataframes import _build_full_df, _build_sweepwise_dataframe, save_data_frames
 from .loadABF import loadABF
-from .patch_subthres import *
-from .patch_utils import *
+from .patch_utils import plotabf
 from .QC import run_qc
 
 default_dict = {'start': 0, 'end': 0, 'filter': 0}
