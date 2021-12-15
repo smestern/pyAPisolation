@@ -19,7 +19,6 @@ def load_protocols(path):
     return np.unique(protocol)
 
 
-
 def plotabf(abf, spiketimes, lowerlim, upperlim, sweep_plots):
    try:
     if sweep_plots[0] == -1:
@@ -121,8 +120,11 @@ def find_stim_changes(dataI):
     
     return infl
 
-
 def find_downward(dataI):
     diff_I = np.diff(dataI)
     downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
     return downwardinfl
+
+def find_non_zero_range(dataT, dataI):
+    non_zero_points = np.nonzero(dataI)[0]
+    return (dataT[non_zero_points[0]], dataT[non_zero_points[-1]])

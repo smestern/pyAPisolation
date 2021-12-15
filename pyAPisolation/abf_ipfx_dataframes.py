@@ -15,13 +15,14 @@ import pyabf
 from .patch_utils import *
 from .patch_subthres import *
 
-
+ipfx_train_feature_labels =['adapt', 'latency', 'isi_cv', 'mean_isi', 'median_isi', 'first_isi',
+       'avg_rate']
 running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
 subsheets_spike = {'spike count':['spike count'], 'rheobase features':['rheobase'], 
                     'mean':['mean'], 'isi':['isi'], 'latency': ['latency_'], 'current':['current'],'QC':['QC'], 
                     'spike features':['spike_'], 'subthres features':['baseline voltage', 'Sag', 'Taum'], 'full sheet': ['']}
 def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag=''):
-    #try:
+    #try:  
         #ids = dfs['file_name'].unique()
         #tempframe = dfs.groupby('file_name').mean().reset_index()
         #tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
@@ -52,7 +53,6 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
 
 def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict):
             try:
-               
                 uindex = abf.epochPoints[1] + 1
             except:
                 uindex = 0
@@ -121,10 +121,18 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                     #temp_spike_df["spike_" + real_sweep_number + "AHP height 3"] = abs(spike_in_sweep['peak_v'].to_numpy()[-1] - spike_in_sweep['fast_trough_v'].to_numpy()[-1])
                     #temp_spike_df["spike_width" + real_sweep_number + "2"] = spike_in_sweep['width'].to_numpy()[1]
                     #temp_spike_df["spike_width" + real_sweep_number + "3"] = spike_in_sweep['width'].to_numpy()[-1]
+                    for label in ipfx_train_feature_labels:
+                        try:
+                            temp_spike_df[label + real_sweep_number] = spike_train[label]
+                        except:
+                            temp_spike_df[label + real_sweep_number] = np.nan
+                    
                 else:
                     temp_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
                     spike_in_sweep['isi_'] = np.hstack((np.full(abs(spike_count), np.nan)))
                     temp_spike_df["min_isi" + real_sweep_number + " isi"] = [spike_train['first_isi']]
+                    for label in ipfx_train_feature_labels:
+                        temp_spike_df[label + real_sweep_number] = [np.nan]
                 spike_in_sweep = spike_in_sweep.join(spike_train_df)
                 print("Processed Sweep " + str(real_sweep_number) + " with " + str(spike_count) + " aps")
                 df = df.append(spike_in_sweep, ignore_index=True, sort=True)
@@ -153,6 +161,9 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 sweep_running_bin = pd.DataFrame(data=nan_row_run, columns=_run_labels, index=[real_sweep_number])
                 temp_spike_df["exp growth tau1" + real_sweep_number] = [np.nan]
                 temp_spike_df["exp growth tau2" + real_sweep_number] = [np.nan]
+                for label in ipfx_train_feature_labels:
+                    temp_spike_df[label + real_sweep_number] = [np.nan]
+            #temp_spike_df = temp_spike_df.join(spike_train_df)
             sweep_running_bin['Sweep Number'] = [real_sweep_number]
             sweep_running_bin['filename'] = [abf.abfID]
             sweep_running_bin['foldername'] = [os.path.dirname(abf.abfFilePath)]
@@ -186,6 +197,8 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
             temp_spike_df["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
             temp_spike_df["rheobase_downstroke"] = [df['upstroke'].to_numpy()[0]]
             temp_spike_df["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
+            for key in ipfx_train_feature_labels:
+                temp_spike_df[f"mean_{key}"] = [np.nanmean(df[key].to_numpy())]
             temp_spike_df["mean_current"] = [np.nanmean(df['peak_i'].to_numpy())]
             temp_spike_df["mean_latency"] = [np.nanmean(df['latency'].to_numpy())]
             temp_spike_df["mean_thres"] = [np.nanmean(df['threshold_v'].to_numpy())]

@@ -16,7 +16,8 @@ import pyabf
 
 from numpy import genfromtxt
 print("Loaded external libraries")
-from pyAPisolation.abf_featureextractor import folder_feature_extract, load_protocols, save_data_frames
+from pyAPisolation.abf_featureextractor import folder_feature_extract, save_data_frames
+from pyAPisolation.patch_utils import load_protocols
 
 
 print("Load finished")
@@ -108,20 +109,37 @@ def main():
         percent = percent /100
     except:
         percent = 5/100
-
-    lowerlim = input("Enter the time to start looking for spikes [in s] (enter 0 to start search at beginning): ")
-    upperlim = input("Enter the time to stop looking for spikes [in s] (enter 0 to search the full sweep): ")
+    stim_find = input("Search for spikes based on applied Stimulus? (y/n): ")
+    
 
     try: 
-        lowerlim = float(lowerlim)
-        upperlim = float(upperlim)
+        if stim_find == 'y' or stim_find =='Y':
+            bstim_find = True
+        else:
+            bstim_find = False
     except:
+        bstim_find = False
+
+
+    if bstim_find:
         upperlim = 0
         lowerlim = 0
+    else:
+        lowerlim = input("Enter the time to start looking for spikes [in s] (enter 0 to start search at beginning): ")
+        upperlim = input("Enter the time to stop looking for spikes [in s] (enter 0 to search the full sweep): ")
+
+        try: 
+            lowerlim = float(lowerlim)
+            upperlim = float(upperlim)
+        except:
+            upperlim = 0
+            lowerlim = 0
+
 
 
     print(f"Running analysis with, dVdt thresh: {dv_cut}mV/s, thresh to peak max: {tp_cut}s, thresh to peak min height: {min_cut}mV, and min peak voltage: {min_peak}mV")
-    param_dict = {'filter': filter, 'dv_cutoff':dv_cut, 'start': lowerlim, 'end': upperlim, 'max_interval': tp_cut, 'min_height': min_cut, 'min_peak': min_peak, 'thresh_frac': percent}
+    param_dict = {'filter': filter, 'dv_cutoff':dv_cut, 'start': lowerlim, 'end': upperlim, 'max_interval': tp_cut, 'min_height': min_cut, 'min_peak': min_peak, 'thresh_frac': percent, 
+    'stim_find': bstim_find}
     df = folder_feature_extract(files, param_dict, plot_sweeps, protocol_name)
     print(f"Ran analysis with, dVdt thresh: {dv_cut}mV/s, thresh to peak max: {tp_cut}s, thresh to peak min height: {min_cut}mV, and min peak voltage: {min_peak}mV")
     save_data_frames(df[0], df[1], df[2], root_fold, tag)
