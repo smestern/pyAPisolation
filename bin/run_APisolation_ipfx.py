@@ -25,10 +25,12 @@ print("Load finished")
 
 
 
+
 def main():
     logging.basicConfig(level=logging.DEBUG)
     root = tk.Tk()
     root.withdraw()
+
     files = filedialog.askdirectory(
                                     title='Select Dir'
                                     )
