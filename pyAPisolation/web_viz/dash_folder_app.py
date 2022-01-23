@@ -139,7 +139,7 @@ class live_data_viz():
         #Define Callbacks
         app.callback(
         Output('loading-3', 'children'),
-        Input('loading-2', 'children'))(self.gen_umap_plots)
+        Input('dir-input', 'children'))(self.gen_umap_plots)
         app.callback(
         Output('loading-2', 'children'),
         Input('datatable-row-ids', 'derived_virtual_row_ids'),
@@ -194,7 +194,7 @@ class live_data_viz():
                 
             )]
 
-    def gen_umap_plots(self,dir,_):
+    def gen_umap_plots(self,*args):
         pre_df = preprocess_df(self.df)
         #data = dense_umap(pre_df)
         #labels = cluster_df(pre_df)
@@ -217,15 +217,22 @@ class live_data_viz():
             ]
 
     def filter_datatable(self, selectedData, fig):
+        def bool_multi_filter(df, kwargs):
+            return ' & '.join([f'{key} >= {i[0]} & {key} <= {i[1]}' for key, i in kwargs.items()])
+
         if selectedData is None:
             out_data = self.df.to_dict('records')
         else:
             #selected_ids = [x['id'] for x in selectedData['points']]
-            constraints = []
+            constraints = {}
             for row in fig['data'][0]['dimensions']:
-                pass
-            #filtered_df = self.df.loc[selected_ids]
-            out_data = self.df.to_dict('records')
+                try:
+                    constraints[row['label']] = row['constraintrange']
+                except:
+                    constraints[row['label']] = [-9999, 9999]
+            out = bool_multi_filter(self.df, constraints)
+            filtered_df = self.df.query(out)
+            out_data = filtered_df.to_dict('records')
         return out_data
 
     def update_cell_plot(self, row_ids, selected_row_ids, active_cell):

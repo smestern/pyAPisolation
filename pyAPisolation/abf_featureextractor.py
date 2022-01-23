@@ -1,7 +1,6 @@
 import glob
 import os
 import sys
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -13,7 +12,7 @@ print("feature extractor loaded")
 
 from .abf_ipfx_dataframes import _build_full_df, _build_sweepwise_dataframe, save_data_frames
 from .loadABF import loadABF
-from .patch_utils import plotabf
+from .patch_utils import plotabf, load_protocols, find_non_zero_range
 from .QC import run_qc
 
 default_dict = {'start': 0, 'end': 0, 'filter': 0}
@@ -72,7 +71,15 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         temp_spike_df['filename'] = [abf.abfID]
         temp_spike_df['foldername'] = [os.path.dirname(abf.abfFilePath)]
         temp_running_bin = pd.DataFrame()
-                
+        stim_find = param_dict.pop('stim_find')
+        #for now if user wants to filter by stim time we will just use the first sweep
+        if stim_find:
+            abf.setSweep(abf.sweepList[-1])
+            start, end = find_non_zero_range(abf.sweepX, abf.sweepC)
+            param_dict['end'] = end
+            param_dict['start'] = start
+            print('Stimulation time found: ' + str(start) + ' to ' + str(end))
+
         for sweepNumber in sweepcount: 
             real_sweep_length = abf.sweepLengthSec - 0.0001
             if sweepNumber < 9:

@@ -66,33 +66,32 @@ def exp_growth_factor(dataT,dataV,dataI, end_index=300):
         diffC = np.abs(lowerC - upperC)
         t1 = dataT[upwardinfl:end_index] - dataT[upwardinfl]
         curve = curve_fit(exp_grow, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, -np.inf, -np.inf], [np.inf, np.inf, np.inf]))[0]
-        #curve2 = curve_fit(exp_grow_2p, t1, dataV[upwardinfl:end_index], maxfev=50000,method='trf', bounds=([upperC-5,  0, 10,  0,  -np.inf], [upperC+5, diffC, np.inf, diffC,np.inf]), #xtol=None, gtol=None, ftol=1e-12)[0]
-        curve2 = curve_fit(exp_grow_gp, t1, dataV[upwardinfl:end_index], maxfev=50000,method='trf', bounds=([lowerC-5,  upperC-5, 50,  -np.inf,  -np.inf], [lowerC+5, upperC+5, 100,np.inf,np.inf]),  xtol=None, gtol=None, ftol=1e-12)[0]
+        curve2 = curve_fit(exp_grow_2p, t1, dataV[upwardinfl:end_index], maxfev=50000,method='trf', bounds=([upperC-5,  0, 10,  0,  -np.inf], [upperC+5, diffC, np.inf, diffC,np.inf]), xtol=None, gtol=None, ftol=1e-12, jac='3-point')[0]
         tau = curve[2]
-        tau1 = 1/curve2[3]
+        tau1 = 1/curve2[2]
         tau2 = 1/curve2[4]
-        tau_idx = [3, 4]
+        tau_idx = [2, 4]
         fast = tau_idx[np.argmin([tau1, tau2])]
         slow = tau_idx[np.argmax([tau1, tau2])]
         
-        curve_out = [curve2[0], curve2[2], curve2[fast], 100-curve2[2], curve2[slow]]
+        curve_out = [curve2[0], curve2[fast-1], curve2[fast], curve2[slow-1], curve2[slow]]
 
 
         #plt.subplot(1,2,1)
-        #plt.plot(t1, dataV[upwardinfl:end_index], c='k', alpha=0.5)
-        #plt.plot(t1, exp_grow_gp(t1, *curve2), label=f'2 phase fit', c='r', alpha=0.5)
-        #plt.plot(t1, exp_grow(t1, *curve_out[:3]), label=f'Fast phase', c='g', alpha=0.5)
-        #plt.plot(t1, exp_grow(t1, curve_out[0], *curve_out[3:]), label=f'slow phase', c='b', alpha=0.5)
-        #plt.title(f" CELL will tau1 {1/curve2[fast]} and tau2 {1/curve2[slow]}")
+        plt.plot(t1, dataV[upwardinfl:end_index], c='k', alpha=0.5)
+        plt.plot(t1, exp_grow_2p(t1, *curve2), label=f'2 phase fit', c='r', alpha=0.5)
+        plt.plot(t1, exp_grow(t1, *curve_out[:3]), label=f'Fast phase', c='g', alpha=0.5)
+        plt.plot(t1, exp_grow(t1, curve_out[0], *curve_out[3:]), label=f'slow phase', c='b', alpha=0.5)
+        plt.title(f" CELL will tau1 {1/curve2[fast]} and tau2 {1/curve2[slow]}")
         #plt.subplot(1,2,2)
-        #plt.legend()
+        plt.legend()
         #plt.twinx()
         #plt.subplot(1,2,2)
         dy = curve_detrend(t1, dataV[upwardinfl:end_index], curve2)
          #signal.savgol_filter(nt1p.diff(dataV[upwardinfl:end_index])/np.diff(t1), 71, 2, mode='mirror')
         #plt.plot(t1,dy)
         
-        curve_out = [curve2[0], curve2[2], curve2[fast], 100-curve2[2], curve2[slow]]
+        curve_out = [curve2[0], curve2[fast-1], 1/curve2[fast], curve2[slow-1], 1/curve2[slow]]
         return curve_out, np.amax(dy)
     #except:
         return [np.nan, np.nan, np.nan, np.nan, np.nan]
@@ -165,9 +164,9 @@ def curve_detrend(x,y, curve2):
 
 
 # %%
-files = glob.glob('C:\\Users\\SMest\\Documents\\clustering-data\\\All IC1s\\*.abf', recursive=True)
+files = glob.glob('/media/smestern/Expansion/PVN_MARM_PROJECT/IC1 Files_211117/*.abf', recursive=True)
 
-cell_type_df = pd.read_csv("C:\\Users\\SMest\\Documents\\clustering-data\\MARM_PVN_IC1\\spike_count_sort_out.csv")
+cell_type_df = pd.read_csv("/media/smestern/Expansion/PVN_MARM_PROJECT/dataframe/main_sheet_filtered2.csv")
 print(cell_type_df.head)
 file_names = cell_type_df['filename'].to_numpy()
 cell_type_label = cell_type_df['cell_label'].to_numpy()
@@ -192,7 +191,7 @@ for i, f in enumerate(files[:]):
             for sweepX, sweepY, sweepC in zip(x,y,c):
                 spikext = feature_extractor.SpikeFeatureExtractor(filter=0, end=1.25)
                 res = spikext.process(sweepX, sweepY, sweepC)
-                if res.empty==False and iterd < 1:
+                if res.empty==False and iterd < 3:
                     iterd += 1
                     spike_time = res['threshold_index'].to_numpy()[0]
                     #plt.figure(num=2)
@@ -216,18 +215,19 @@ for i, f in enumerate(files[:]):
             label.append(cell_type_label[label_idx])
             
             ids.append(base)
-            #plt.savefig(f+".png")
+            plt.savefig(f+".png")
+            #plt.show()
             
-            #plt.close()
+            plt.close()
     except:
         print("fail")
-curves = np.vstack(curves)
 
 
 
 # %%
 #lab = sklearn.preprocessing.LabelEncoder()
 #int_lab = lab.fit_transform(label)
+curves = np.vstack(curves)
 print(curves)
 label = np.ravel(label).reshape(-1,1)
 div = np.ravel((curves[:,2]) / (curves[:,4])).reshape(-1,1)
@@ -245,12 +245,12 @@ curves_out = np.hstack([curves, div, ratio, label, np.array(ids).reshape(-1,1)])
 df_out = pd.DataFrame(data=curves_out, columns=['Plateau', 'perfast', 'taufast', 'perslow', 'tauslow', 'div_', 'ratio_s', 'div_f', 'ratio_f', 'label_c', 'filename'], index=ids)
 
 # %%
-cell_type_df = pd.read_csv("C:\\Users\\SMest\\Documents\\clustering-data\\MARM_PVN_IC1\\fv_SPCA.csv")
+cell_type_df = pd.read_csv("/media/smestern/Expansion/PVN_MARM_PROJECT/dataframe/main_sheet_filtered2.csv")
 file_names = cell_type_df['filename'].to_numpy()
 cell_type_df = cell_type_df.set_index('filename')
 #cell_type_label = cell_type_df['cell_label'].to_numpy()
 df_out2 = df_out.join(cell_type_df, on='filename', how='right', lsuffix='_left', rsuffix='_right')
-df_out2.to_csv('gp_SPCA.csv')
+df_out2.to_csv("/media/smestern/Expansion/PVN_MARM_PROJECT/dataframe/main_sheet_filtered3.csv")
 # %%
 means = []
 plt.figure(figsize=(10,10))
@@ -258,7 +258,7 @@ plt.clf()
 for x in np.unique(label).astype(np.int64):
     idx = np.argwhere(label[:,0]==int(x)).astype(np.int32)
     mcur = curves[idx]
-    plt.scatter(np.full(len(idx),  x),  ratio[idx], label=label[x])
+    plt.scatter(np.full(len(idx),  x), div[idx], label=label[x])
     means.append(np.nanmean((curves[idx,2]) / (curves[idx,4])))
 plt.legend()
 plt.yscale('log')
@@ -269,3 +269,5 @@ plt.yscale('log')
 print(means)
 
 
+
+# %%
