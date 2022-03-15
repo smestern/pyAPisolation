@@ -3,11 +3,11 @@
 block_cipher = None
 
 
-a = Analysis(['run_pyAPisolation_ipfx'],
-             pathex=['C:\\Users\\SMest\\source\\repos\\smestern\\pyABF-APisolation\\bin'],
+a = Analysis(['pyAPisolation.py'],
+             pathex=['C:\\Users\\SMest\\source\\repos\\smestern\\pyABF-APisolation\\pyAPisolation\\bin'],
              binaries=[],
              datas=[],
-             hiddenimports=[],
+             hiddenimports=["scipy.spatial.transform.rotation", "scipy.special"],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
@@ -21,7 +21,7 @@ exe = EXE(pyz,
           a.scripts,
           [],
           exclude_binaries=True,
-          name='run_pyAPisolation_ipfx',
+          name='pyAPisolation',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -34,4 +34,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='run_pyAPisolation_ipfx')
+               name='pyAPisolation')

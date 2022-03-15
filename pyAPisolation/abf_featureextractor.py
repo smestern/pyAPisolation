@@ -1,8 +1,6 @@
 import glob
 import os
 import sys
-import copy
-from joblib import Parallel, delayed
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -26,8 +24,8 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     dfs = pd.DataFrame()
     df_spike_count = pd.DataFrame()
     df_running_avg_count = pd.DataFrame()
-    filelist = glob.glob(files + "/**/*.abf", recursive=True)
-    temp_df_spike_count = Parallel(n_jobs= para)(delayed(preprocess_abf)(f, copy.deepcopy(param_dict), plot_sweeps, protocol_name) for f in filelist)
+    filelist = glob.glob(files + "\\**\\*.abf", recursive=True)
+    temp_df_spike_count = [preprocess_abf(f, param_dict, plot_sweeps, protocol_name) for f in filelist]
     df_spike_count = pd.concat(temp_df_spike_count, sort=True)
     
      

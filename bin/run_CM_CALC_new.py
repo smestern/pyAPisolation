@@ -213,8 +213,8 @@ def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root
         tau1 = 1/curve[2]
         tau2 = 1/curve[4]
         tau_1p = 1/curve2[2]
-        fast = np.amin([tau1, tau2])
-        slow = np.amax([tau1, tau2])
+        fast = np.argmin([tau1, tau2])
+        slow = np.argmax([tau1, tau2])
         curve_ordered = []
         return [tau1, tau2][fast], [tau1, tau2][slow], curve, r_squared_2p, r_squared_1p, tau_1p
      except:
@@ -256,18 +256,21 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
         r_squared_2p = 1 - (ss_res_2p / ss_tot)
         r_squared_1p = 1 - (ss_res_1p / ss_tot)
         if plot == True:
-            end_index2 = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
-            t1 = dataT[downwardinfl:end_index2] - dataT[downwardinfl]
-            plt.figure(2)
-            plt.clf()
-            plt.plot(t1, dataV[downwardinfl:end_index2], label='Data')
-            plt.plot(t1, exp_decay_2p(t1, *curve), label='2 phase fit')
-            plt.plot(t1, exp_decay_1p(t1, curve[0], curve[1], curve[2]), label='Phase 1', zorder=9999)
-            plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3], curve[4]), label='Phase 2')
-            plt.legend()
-            plt.title(abf_id)
-            plt.pause(3)
-            plt.savefig(root_fold+ '//cm_plots//' + abf_id+'.png')
+            try:
+                end_index2 = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
+                t1 = dataT[downwardinfl:end_index2] - dataT[downwardinfl]
+                plt.figure(2)
+                plt.clf()
+                plt.plot(t1, dataV[downwardinfl:end_index2], label='Data')
+                plt.plot(t1, exp_decay_2p(t1, *curve), label='2 phase fit')
+                plt.plot(t1, exp_decay_1p(t1, curve[0], curve[1], curve[2]), label='Phase 1', zorder=9999)
+                plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3], curve[4]), label='Phase 2')
+                plt.legend()
+                plt.title(abf_id)
+                plt.pause(3)
+                plt.savefig(root_fold+ '//cm_plots//' + abf_id+'.png')
+            except:
+                pass
             #plt.close() 
         tau1 = curve[2]
         tau2 = curve[4]
@@ -576,7 +579,7 @@ for root,dir,fileList in os.walk(files):
                     abf.setSweep(sweepNumber)
                     
                     dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
-                    decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.abfID)
+                    decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.abfID, plot=False)
                     phase2_amp = min(curve[1],curve[3])
                     resist = membrane_resistance(dataT, dataV, dataI)
                     Cm2, Cm1 = mem_cap(resist, decay_slow, p_decay)
@@ -624,7 +627,7 @@ for root,dir,fileList in os.walk(files):
                     if not os.path.exists(root_fold+'//cm_plots//'):
                             os.mkdir(root_fold+'//cm_plots//')   
                 print("Fitting Decay")
-                decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=root_fold)
+                decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=root_fold)
                 print("Computing Sag")
                 grow = exp_growth_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), decay_slow)
                 
