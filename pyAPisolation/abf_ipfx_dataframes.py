@@ -1,6 +1,4 @@
 
-
-
 import sys
 import numpy as np
 import os
@@ -52,11 +50,6 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
         #print('error saving')
 
 def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict):
-            try:
-                uindex = abf.epochPoints[1] + 1
-            except:
-                uindex = 0
-            
             spike_count = spike_in_sweep.shape[0]
             temp_spike_df["Sweep " + real_sweep_number + " spike count"] = [spike_count]
             current_str = np.array2string(np.unique(abf.sweepC))

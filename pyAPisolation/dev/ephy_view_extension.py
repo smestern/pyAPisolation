@@ -10,7 +10,7 @@ fileLlist = glob.glob(folder_loc + "\\*.abf")
 ephyviewer.traceviewer.default_params[7]['value'] = 'w'
 ephyviewer.traceviewer.default_by_channel_params[0]['value'] = 'k'
 
-class fileListWidget(ephyviewer.QtGui.QListWidget):
+class fileListWidget(ephyviewer.QtWidgets.QListWidget):
     def __init__(self):
         super().__init__()
     def genList(self, fileList):
