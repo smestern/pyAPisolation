@@ -112,8 +112,13 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         return temp_spike_df, df, temp_running_bin
 
 
+
+
+
+
+
 class abfFeatExtractor(object):
-    """ """
+    """TODO """
     def __init__(self, abf, start=None, end=None, filter=10.,
                  dv_cutoff=20., max_interval=0.005, min_height=2., min_peak=-30.,
                  thresh_frac=0.05, reject_at_stim_start_interval=0):

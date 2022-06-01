@@ -9,6 +9,7 @@ from tkinter import filedialog
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+from parso import parse
 import scipy.signal as signal
 from scipy import interpolate
 from scipy.optimize import curve_fit
@@ -77,7 +78,7 @@ def exp_growth_factor(dataT,dataV,dataI, end_index=300):
         curve_out = [curve2[0], curve2[fast-1], curve2[fast], curve2[slow-1], curve2[slow]]
 
 
-        #plt.subplot(1,2,1)
+        plt.subplot(1,2,1)
         plt.plot(t1, dataV[upwardinfl:end_index], c='k', alpha=0.5)
         plt.plot(t1, exp_grow_2p(t1, *curve2), label=f'2 phase fit', c='r', alpha=0.5)
         plt.plot(t1, exp_grow(t1, *curve_out[:3]), label=f'Fast phase', c='g', alpha=0.5)
@@ -85,14 +86,14 @@ def exp_growth_factor(dataT,dataV,dataI, end_index=300):
         plt.title(f" CELL will tau1 {1/curve2[fast]} and tau2 {1/curve2[slow]}")
         #plt.subplot(1,2,2)
         plt.legend()
-        #plt.twinx()
-        #plt.subplot(1,2,2)
-        dy = curve_detrend(t1, dataV[upwardinfl:end_index], curve2)
-         #signal.savgol_filter(nt1p.diff(dataV[upwardinfl:end_index])/np.diff(t1), 71, 2, mode='mirror')
-        #plt.plot(t1,dy)
+        plt.twinx()
+        plt.subplot(1,2,2)
+        #dy = curve_detrend(t1, dataV[upwardinfl:end_index], curve2)
+        dy = signal.savgol_filter(np.diff(dataV[upwardinfl:end_index])/np.diff(t1*1000), 713, 2, mode='mirror')
+        plt.plot(t1[:-1],dy)
         
         curve_out = [curve2[0], curve2[fast-1], 1/curve2[fast], curve2[slow-1], 1/curve2[slow]]
-        return curve_out, np.amax(dy)
+        return curve_out, np.amin(dy)
     #except:
         return [np.nan, np.nan, np.nan, np.nan, np.nan]
 
@@ -162,112 +163,118 @@ def curve_detrend(x,y, curve2):
     detrended_data = cy - trend
     return detrended_data
 
+def process_upwards_growth(in_file_path, out_file_path, IC1_file_path='/media/smestern/Expansion/PVN_MARM_PROJECT/IC1 Files_211117/'):
+    files = glob.glob(IC1_file_path+'*.abf', recursive=True)
 
-# %%
-files = glob.glob('/media/smestern/Expansion/PVN_MARM_PROJECT/IC1 Files_211117/*.abf', recursive=True)
+    cell_type_df = pd.read_csv(in_file_path)
+    print(cell_type_df.head)
+    file_names = cell_type_df['filename'].to_numpy()
+    cell_type_label = cell_type_df['cell_label'].to_numpy()
 
-cell_type_df = pd.read_csv("/media/smestern/Expansion/PVN_MARM_PROJECT/dataframe/main_sheet_filtered2.csv")
-print(cell_type_df.head)
-file_names = cell_type_df['filename'].to_numpy()
-cell_type_label = cell_type_df['cell_label'].to_numpy()
+    curves = []
+    label = []
+    ids = []
+    max_curve = []
+    for i, f in enumerate(files[:]):
+        #print(i)
+        try:
+            base = os.path.basename(f)
+            base = base.split(".")[0]
+            if base in file_names:
+                x, y, c = loadABF(f)
+                temp_min = []
+                temp_curves =[]
+                #plt.clf()
+                iterd = 0
+                for sweepX, sweepY, sweepC in zip(x,y,c):
+                    spikext = feature_extractor.SpikeFeatureExtractor(filter=0, end=1.25)
+                    res = spikext.process(sweepX, sweepY, sweepC)
+                    if res.empty==False and iterd < 5:
+                        iterd += 1
+                        spike_time = res['threshold_index'].to_numpy()[0]
+                        #plt.figure(num=2)
+                        curve, max_dy = exp_growth_factor(sweepX, sweepY, sweepC, spike_time)
+                        temp_min.append(max_dy)
+                        temp_curves.append(curve)
+                temp_curves = np.vstack(temp_curves)
+                div = np.ravel((temp_curves[:,2]) / (temp_curves[:,4])).reshape(-1,1)
+                
+                sum_height= (temp_curves[:,1] + temp_curves[:,3])
+                ratio = (temp_curves[:,2] / (temp_curves[:,1] / sum_height)) / (temp_curves[:,4] / (temp_curves[:,3] / sum_height))
+                ratio = np.ravel(ratio).reshape(-1,1)
+                temp_curves = np.hstack([temp_curves, div, ratio])
+                print(temp_curves)
+                meanC = np.nanmean(temp_curves, axis=0)
+                print(meanC.shape)
+                curves.append(meanC)
+                label_idx = np.argwhere(file_names==base)
+                
+                max_curve.append(np.nanmean(temp_min))
+                label.append(cell_type_label[label_idx])
+                
+                ids.append(base)
+                plt.savefig(f+".png")
+                plt.show()
+                
+                plt.close()
+        except:
+            print("fail")
 
+    curves = np.vstack(curves)
+    print(curves)
+    label = np.ravel(label).reshape(-1,1)
+    div = np.ravel((curves[:,2]) / (curves[:,4])).reshape(-1,1)
+    print(div)
+    sum_height= (curves[:,1] + curves[:,3])
+    ratio = (curves[:,2] / (curves[:,1]/sum_height)) / (curves[:,4] / (curves[:,3]/sum_height))
+    ratio = np.ravel(ratio).reshape(-1,1)
+    curves_out = np.hstack([curves, div, ratio, label])
+    np.savetxt('curves.csv', curves_out, fmt='%.8f', delimiter=',')
+    np.savetxt('curves_id.csv', ids, fmt='%s', delimiter=',')
+    print(curves)
 
-# %%
-curves = []
-label = []
-ids = []
-max_curve = []
-for i, f in enumerate(files[:]):
-    print(i)
-    try:
-        base = os.path.basename(f)
-        base = base.split(".")[0]
-        if base in file_names:
-            x, y, c = loadABF(f)
-            
-            temp_curves =[]
-            #plt.clf()
-            iterd = 0
-            for sweepX, sweepY, sweepC in zip(x,y,c):
-                spikext = feature_extractor.SpikeFeatureExtractor(filter=0, end=1.25)
-                res = spikext.process(sweepX, sweepY, sweepC)
-                if res.empty==False and iterd < 3:
-                    iterd += 1
-                    spike_time = res['threshold_index'].to_numpy()[0]
-                    #plt.figure(num=2)
-                    curve, max_dy = exp_growth_factor(sweepX, sweepY, sweepC, spike_time)
-                    max_curve.append(max_dy)
-                    temp_curves.append(curve)
-            temp_curves = np.vstack(temp_curves)
-            div = np.ravel((temp_curves[:,2]) / (temp_curves[:,4])).reshape(-1,1)
-            
-            sum_height= (temp_curves[:,1] + temp_curves[:,3])
-            ratio = (temp_curves[:,2] / (temp_curves[:,1] / sum_height)) / (temp_curves[:,4] / (temp_curves[:,3] / sum_height))
-            ratio = np.ravel(ratio).reshape(-1,1)
-            temp_curves = np.hstack([temp_curves, div, ratio])
-            print(temp_curves)
-            meanC = np.nanmean(temp_curves, axis=0)
-            print(meanC.shape)
-            curves.append(meanC)
-            label_idx = np.argwhere(file_names==base)
-            
+    
+    curves_out = np.hstack([curves, div, ratio, label, np.array(ids).reshape(-1,1), np.array(max_curve).reshape(-1,1)])
+    df_out = pd.DataFrame(data=curves_out, columns=['Plateau', 'perfast', 'taufast', 'perslow', 'tauslow', 'div_', 'ratio_s', 'div_f', 'ratio_f', 'label_c', 'filename', 'max_dydt'], index=ids)
 
-            label.append(cell_type_label[label_idx])
-            
-            ids.append(base)
-            plt.savefig(f+".png")
-            #plt.show()
-            
-            plt.close()
-    except:
-        print("fail")
+    cell_type_df = pd.read_csv(in_file_path)
+    file_names = cell_type_df['filename'].to_numpy()
+    cell_type_df = cell_type_df.set_index('filename')
+    #cell_type_label = cell_type_df['cell_label'].to_numpy()
+    df_out2 = df_out.join(cell_type_df, on='filename', how='right', lsuffix='_left', rsuffix='_right')
+    df_out2.to_csv(out_file_path)
 
+def plot_means(curves, labels, label, div, max_curve):
+    means = np.nanmean(curves, axis=0)
+    stds = np.nanstd(curves, axis=0)
+    plt.figure(figsize=(8,5))
+    plt.errorbar(range(len(means)), means, yerr=stds, fmt='o')
+    plt.xticks(range(len(means)), labels)
+    plt.show()
+    means = []
+    plt.figure(figsize=(10,10))
+    plt.clf()
+    for x in np.unique(label).astype(np.int64):
+        idx = np.argwhere(label[:,0]==int(x)).astype(np.int32)
+        mcur = curves[idx]
+        plt.scatter(np.full(len(idx),  x), div[idx], label=label[x])
+        means.append(np.nanmean((curves[idx,2]) / (curves[idx,4])))
+    plt.legend()
+    plt.yscale('log')
+    #plt.ylim(0,1)
 
+    print(means)
+    means = []
+    plt.figure(figsize=(10,10))
+    plt.clf()
+    for x in np.unique(label).astype(np.int64):
+        idx = np.argwhere(label[:,0]==int(x)).astype(np.int32)
+        mcur = curves[idx]
+        plt.scatter(np.full(len(idx),  x), np.array(max_curve)[idx], label=label[x])
+        means.append(np.nanmean((curves[idx,2]) / (curves[idx,4])))
+    plt.legend()
 
-# %%
-#lab = sklearn.preprocessing.LabelEncoder()
-#int_lab = lab.fit_transform(label)
-curves = np.vstack(curves)
-print(curves)
-label = np.ravel(label).reshape(-1,1)
-div = np.ravel((curves[:,2]) / (curves[:,4])).reshape(-1,1)
-print(div)
-sum_height= (curves[:,1] + curves[:,3])
-ratio = (curves[:,2] / (curves[:,1]/sum_height)) / (curves[:,4] / (curves[:,3]/sum_height))
-ratio = np.ravel(ratio).reshape(-1,1)
-curves_out = np.hstack([curves, div, ratio, label])
-np.savetxt('curves.csv', curves_out, fmt='%.8f', delimiter=',')
-np.savetxt('curves_id.csv', ids, fmt='%s', delimiter=',')
-print(curves)
+    #plt.ylim(0,1)
 
-# %%
-curves_out = np.hstack([curves, div, ratio, label, np.array(ids).reshape(-1,1)])
-df_out = pd.DataFrame(data=curves_out, columns=['Plateau', 'perfast', 'taufast', 'perslow', 'tauslow', 'div_', 'ratio_s', 'div_f', 'ratio_f', 'label_c', 'filename'], index=ids)
-
-# %%
-cell_type_df = pd.read_csv("/media/smestern/Expansion/PVN_MARM_PROJECT/dataframe/main_sheet_filtered2.csv")
-file_names = cell_type_df['filename'].to_numpy()
-cell_type_df = cell_type_df.set_index('filename')
-#cell_type_label = cell_type_df['cell_label'].to_numpy()
-df_out2 = df_out.join(cell_type_df, on='filename', how='right', lsuffix='_left', rsuffix='_right')
-df_out2.to_csv("/media/smestern/Expansion/PVN_MARM_PROJECT/dataframe/main_sheet_filtered3.csv")
-# %%
-means = []
-plt.figure(figsize=(10,10))
-plt.clf()
-for x in np.unique(label).astype(np.int64):
-    idx = np.argwhere(label[:,0]==int(x)).astype(np.int32)
-    mcur = curves[idx]
-    plt.scatter(np.full(len(idx),  x), div[idx], label=label[x])
-    means.append(np.nanmean((curves[idx,2]) / (curves[idx,4])))
-plt.legend()
-plt.yscale('log')
-#plt.ylim(0,1)
-
-
-# %%
-print(means)
-
-
-
-# %%
+if __name__ == "__main__":
+    process_upwards_growth()
