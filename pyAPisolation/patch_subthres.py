@@ -11,7 +11,7 @@ from scipy.stats import mode
 from ipfx import subthresh_features as subt
 from . import patch_utils
 import pyabf
-from brian2.units import ohm, Gohm, amp, volt, mV, second, pA
+#from brian2.units import ohm, Gohm, amp, volt, mV, second, pA
 
 
 ##Declare our options at default

@@ -5,16 +5,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pyabf
-
+import copy
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
-print("feature extractor loaded")
+
 
 from .abf_ipfx_dataframes import _build_full_df, _build_sweepwise_dataframe, save_data_frames
 from .loadABF import loadABF
 from .patch_utils import plotabf, load_protocols, find_non_zero_range
 from .QC import run_qc
-
+print("feature extractor loaded")
 default_dict = {'start': 0, 'end': 0, 'filter': 0}
 
 def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1', para=1):
@@ -25,10 +25,17 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     df_spike_count = pd.DataFrame()
     df_running_avg_count = pd.DataFrame()
     filelist = glob.glob(files + "\\**\\*.abf", recursive=True)
-    temp_df_spike_count = [preprocess_abf(f, param_dict, plot_sweeps, protocol_name) for f in filelist]
-    df_spike_count = pd.concat(temp_df_spike_count, sort=True)
-    
-     
+    spike_count = []
+    df_full = []
+    df_running_avg = []
+    for f in filelist:
+        temp_df_spike_count, temp_full_df, temp_running_bin = preprocess_abf(f, copy.deepcopy(param_dict), plot_sweeps, protocol_name)
+        spike_count.append(temp_df_spike_count)
+        df_full.append(temp_full_df)
+        df_running_avg.append(temp_running_bin)
+    df_spike_count = pd.concat(spike_count, sort=True)
+    dfs = pd.concat(df_full, sort=True)
+    df_running_avg_count = pd.concat(df_running_avg, sort=False)
     return dfs, df_spike_count, df_running_avg_count
 
 def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
@@ -39,12 +46,12 @@ def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
         if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
             print(file_path + ' import')
             temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
-            return temp_spike_df
+            return temp_spike_df, df, temp_running_bin
         else:
             print('Not correct protocol: ' + abf.protocol)
-            return pd.DataFrame()
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     except:
-        return pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 def analyze_spike_sweep(abf, sweepNumber, param_dict):
     abf.setSweep(sweepNumber)

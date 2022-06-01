@@ -4,7 +4,7 @@
 block_cipher = None
 
 
-a = Analysis(['run_APisolation_ipfx.py'],
+a = Analysis(['run_organize_file_list.py'],
              pathex=[],
              binaries=[],
              datas=[],
@@ -24,7 +24,7 @@ exe = EXE(pyz,
           a.scripts, 
           [],
           exclude_binaries=True,
-          name='run_APisolation_ipfx',
+          name='run_organize_file_list',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
@@ -41,4 +41,4 @@ coll = COLLECT(exe,
                strip=False,
                upx=True,
                upx_exclude=[],
-               name='run_APisolation_ipfx')
+               name='run_organize_file_list')

@@ -17,7 +17,7 @@ from .patch_subthres import *
 
 ipfx_train_feature_labels =['adapt', 'latency', 'isi_cv', 'mean_isi', 'median_isi', 'first_isi',
        'avg_rate']
-running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
+running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width', 'isi']
 subsheets_spike = {'spike count':['spike count'], 'rheobase features':['rheobase'], 
                     'mean':['mean'], 'isi':['isi'], 'latency': ['latency_'], 'current':['current'],'QC':['QC'], 
                     'spike features':['spike_'], 'subthres features':['baseline voltage', 'Sag', 'Taum'], 'full sheet': ['']}
@@ -28,15 +28,15 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
         #tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
         #tempframe = dfs.drop_duplicates(subset='file_name')
         #tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
-        #dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
-        #with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
-            #cols = df_running_avg_count.columns.values
-            #df_ind = df_running_avg_count.loc[:,cols[[-1,-2,-3]]]
-            #index = pd.MultiIndex.from_frame(df_ind)
-           # for p in running_lab:
-          #      temp_ind = [p in col for col in cols]
-         #       temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
-        #        temp_df.to_excel(runf, sheet_name=p)
+        dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
+        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
+            cols = df_running_avg_count.columns.values
+            df_ind = df_running_avg_count.loc[:,['foldername', 'filename', 'Sweep Number']]
+            index = pd.MultiIndex.from_frame(df_ind)
+            for p in running_lab:
+                temp_ind = [p in col for col in cols]
+                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
+                temp_df.to_excel(runf, sheet_name=p)
         #df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
         with pd.ExcelWriter(root_fold + '/spike_count_' + tag + '.xlsx') as runf:
             cols = df_spike_count.columns.values
@@ -73,7 +73,7 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                         temp_lab = np.hstack((temp_lab, f'{p} {x} bin AVG'))
                     _run_labels.append(temp_lab)
             _run_labels = np.hstack(_run_labels).tolist()
-            nan_row_run = np.ravel(np.full((5, time_bins.shape[0]), np.nan)).reshape(1,-1)
+            nan_row_run = np.ravel(np.full((len(running_lab), time_bins.shape[0]), np.nan)).reshape(1,-1)
             try:
                 temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(abf.sweepX, abf.sweepY, start=0.1, filter_frequency=param_dict['filter'])
             except:
@@ -87,8 +87,8 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 peak_max_rise = build_running_bin(spike_in_sweep['upstroke'].to_numpy(), spike_in_sweep['peak_t'].to_numpy(), start=param_dict['start'], end=param_dict['end'])[0]
                 peak_max_down = build_running_bin(spike_in_sweep['downstroke'].to_numpy(), spike_in_sweep['peak_t'].to_numpy(), start=param_dict['start'], end=param_dict['end'])[0]
                 peak_width = build_running_bin(spike_in_sweep['width'].to_numpy(), spike_in_sweep['peak_t'].to_numpy(), start=param_dict['start'], end=param_dict['end'])[0]
-                        
-                sweep_running_bin = pd.DataFrame(data=np.hstack((trough_averge, peak_average, peak_max_rise, peak_max_down, peak_width)).reshape(1,-1), columns=_run_labels, index=[real_sweep_number])
+                isi_bin = build_running_bin(np.diff(spike_in_sweep['peak_t'].to_numpy()), spike_in_sweep['peak_t'].to_numpy()[:-1], start=param_dict['start'], end=param_dict['end'])[0]        
+                sweep_running_bin = pd.DataFrame(data=np.hstack((trough_averge, peak_average, peak_max_rise, peak_max_down, peak_width, isi_bin)).reshape(1,-1), columns=_run_labels, index=[real_sweep_number])
                 spike_train_df = pd.DataFrame(spike_train, index=[0])
                 nan_series = pd.DataFrame(np.full(abs(spike_count-1), np.nan))
                 #spike_train_df = spike_train_df.append(nan_series)
@@ -105,7 +105,7 @@ def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_tra
                 temp_spike_df["spike_width" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
                 curve = exp_growth_factor(abf.sweepX, abf.sweepY, abf.sweepC, int(spike_in_sweep['threshold_index'].to_numpy()[0]))
                 temp_spike_df["exp growth tau1" + real_sweep_number] = curve[2]
-                temp_spike_df["exp growth tau2" + real_sweep_number] = curve[4]
+                temp_spike_df["exp growth tau2" + real_sweep_number] = curve[-1]
                         
                 if spike_count > 2:
                     f_isi = spike_in_sweep['peak_t'].to_numpy()[-1]
