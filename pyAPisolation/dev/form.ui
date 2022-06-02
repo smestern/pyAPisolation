@@ -79,7 +79,7 @@
    <widget class="QPushButton" name="run_analysis">
     <property name="geometry">
      <rect>
-      <x>130</x>
+      <x>140</x>
       <y>240</y>
       <width>141</width>
       <height>21</height>
@@ -93,9 +93,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>20</y>
+      <y>0</y>
       <width>401</width>
-      <height>201</height>
+      <height>241</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -132,7 +132,7 @@
           <double>0.500000000000000</double>
          </property>
          <property name="value">
-          <double>20.000000000000000</double>
+          <double>7.000000000000000</double>
          </property>
         </widget>
        </item>
@@ -165,7 +165,7 @@
        <item>
         <widget class="QDoubleSpinBox" name="t_to_p_time">
          <property name="value">
-          <double>5.000000000000000</double>
+          <double>10.000000000000000</double>
          </property>
         </widget>
        </item>
@@ -309,6 +309,48 @@
           <widget class="QDoubleSpinBox" name="end_time"/>
          </item>
         </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_10">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetMaximumSize</enum>
+       </property>
+       <item>
+        <widget class="QLabel" name="label_2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>150</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>155</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Bessel Filter (Hz)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QDoubleSpinBox" name="bessel_filt">
+         <property name="minimum">
+          <double>0.000000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>9000000.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>500.000000000000000</double>
+         </property>
+         <property name="value">
+          <double>5000.000000000000000</double>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
