@@ -4,10 +4,15 @@ import os
 import glob
 import pyabf
 import numpy as np
+import pandas as pd
+
+
+
+import scipy.signal as signal
 from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout
 from PySide2.QtCore import QFile
 from PySide2.QtUiTools import QUiLoader
-import pandas as pd
+
 from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.backends.backend_qtagg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
@@ -30,6 +35,7 @@ class analysis_gui(QWidget):
     def load_ui(self):
         loader = QUiLoader()
         path = os.path.join(os.path.dirname(__file__), "form.ui")
+        print(path)
         ui_file = QFile(path)
         ui_file.open(QFile.ReadOnly)
         loader.load(ui_file, self)
@@ -133,7 +139,7 @@ class analysis_gui(QWidget):
                     checkbox.setChecked(False)
             else:
                 checkbox.setChecked(True)
-            checkbox.stateChanged.connect(self.plot_abf)
+            checkbox.stateChanged.connect(self.analysis_changed)
             layout.addWidget(checkbox)
             self.checkbox_list.append(checkbox)
 
@@ -170,7 +176,7 @@ class analysis_gui(QWidget):
         self.main_view.figure.set_facecolor('#F0F0F0')
         
         #plot the main abf
-        self.abf = pyabf.ABF(self.selected_abf)
+        self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
 
         self.get_selected_sweeps()
         #for the chosen sweeps
@@ -198,22 +204,29 @@ class analysis_gui(QWidget):
 
         self.main_view.draw()
         
+
+    def filter_abf(self, abf):
+        #filter the abf with 5 khz lowpass
+        b, a = signal.bessel(4, 5000, 'low', norm='phase', fs=abf.dataRate)
+        abf.data = signal.filtfilt(b, a, abf.data)
+        return abf
+
     def run_indiv_analysis(self):
         #get the current abf
-        self.abf = pyabf.ABF(self.selected_abf)
+        self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
         #get the current sweep(s)
         self.get_selected_sweeps()
+        self.get_analysis_params()
         if self.selected_sweeps is None:
             self.selected_sweeps = self.abf.sweepList
-        #get the dvdt threshold
-        self.dvdt_thres_value = float(self.dvdt_thres.text())
         #create the spike extractor
-        self.spike_extractor = SpikeFeatureExtractor(filter=0,  dv_cutoff=self.dvdt_thres_value)
+        self.spike_extractor = SpikeFeatureExtractor(filter=0,  dv_cutoff=self.param_dict['dv_cutoff'],
+         max_interval=self.param_dict['max_interval'], min_height=self.param_dict['min_height'], min_peak=self.param_dict['min_peak'])
         #extract the spikes and make a dataframe for each sweep
-        self.spike_df = []
+        self.spike_df = {}
         for sweep in self.selected_sweeps:
             self.abf.setSweep(sweep)
-            self.spike_df.append(self.spike_extractor.process(self.abf.sweepX,self.abf.sweepY, self.abf.sweepC))
+            self.spike_df[sweep] = self.spike_extractor.process(self.abf.sweepX,self.abf.sweepY, self.abf.sweepC)
         #self.spike_df = pd.concat(self.spike_df)
     
     def run_analysis(self):
@@ -234,7 +247,10 @@ class analysis_gui(QWidget):
         self.param_dict = {'filter': 0, 'dv_cutoff':dv_cut, 'start': lowerlim, 'end': upperlim, 'max_interval': tp_cut, 'min_height': min_cut, 'min_peak': min_peak, 
         'stim_find': bstim_find}
         return self.param_dict
+
     def analysis_changed(self):
+        self.get_analysis_params()
+        self.run_indiv_analysis( )
         self.plot_abf()
 
     def get_selected_protocol(self):
