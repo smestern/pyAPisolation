@@ -83,7 +83,8 @@ class analysis_gui(QWidget):
         self.protocol_select.currentIndexChanged.connect(self.analysis_changed)
         self.bstim = self.main_widget.findChild(QWidget, "bstim"
         )
-
+        self.bessel = self.main_widget.findChild(QWidget, "bessel_filt")
+        self.protocol_select.currentIndexChanged.connect(self.analysis_changed)
         run_analysis = self.main_widget.findChild(QWidget, "run_analysis")
         run_analysis.clicked.connect(self.run_analysis)
     
@@ -207,7 +208,7 @@ class analysis_gui(QWidget):
 
     def filter_abf(self, abf):
         #filter the abf with 5 khz lowpass
-        b, a = signal.bessel(4, 5000, 'low', norm='phase', fs=abf.dataRate)
+        b, a = signal.bessel(4, float(self.bessel.text()), 'low', norm='phase', fs=abf.dataRate)
         abf.data = signal.filtfilt(b, a, abf.data)
         return abf
 
@@ -244,8 +245,9 @@ class analysis_gui(QWidget):
         min_cut = float(self.thres_to_peak_height.text())
         min_peak = float(self.min_peak_height.text())
         bstim_find = self.bstim.isChecked()
+        bessel_filter = float(self.bessel.text())
         self.param_dict = {'filter': 0, 'dv_cutoff':dv_cut, 'start': lowerlim, 'end': upperlim, 'max_interval': tp_cut, 'min_height': min_cut, 'min_peak': min_peak, 
-        'stim_find': bstim_find, 'bessel_filter': 5000}
+        'stim_find': bstim_find, 'bessel_filter': bessel_filter}
         return self.param_dict
 
     def analysis_changed(self):
