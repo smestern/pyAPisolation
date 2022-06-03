@@ -20,15 +20,21 @@ from matplotlib.figure import Figure
 print("Loaded external libraries")
 from pyAPisolation.abf_featureextractor import folder_feature_extract, save_data_frames
 from pyAPisolation.patch_utils import load_protocols
-import pyqtgraph as pg
+
+#import pyqtgraph as pg
 
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
+
+PLOT_BACKEND = 'matplotlib'
+
+
 class analysis_gui(QWidget):
     def __init__(self):
         super(analysis_gui, self).__init__()
         self.load_ui()
         self.main_widget = self.children()[0]
+        self.abf = None
         self.bind_ui()
 
 
@@ -55,14 +61,16 @@ class analysis_gui(QWidget):
                 child.itemClicked.connect(self.abf_select)
             elif child.objectName() == "frame":
                 self.frame = child
-                self.main_view = FigureCanvas(Figure(figsize=(15, 5)))
                 layout =  QVBoxLayout()
-                #layout.addWidget(self.main_view)
-                #self.toolbar = NavigationToolbar(self.main_view, self.frame)
-                #layout.addWidget(self.toolbar)
-                plot_widget = pg.GraphicsLayoutWidget()
-                layout.addWidget(plot_widget)
-                self.main_view = plot_widget
+                if PLOT_BACKEND == "pyqtgraph":
+                    plot_widget = pg.GraphicsLayoutWidget()
+                    layout.addWidget(plot_widget)
+                    self.main_view = plot_widget
+                elif PLOT_BACKEND == "matplotlib":
+                    self.main_view = FigureCanvas(Figure(figsize=(15, 5)))
+                    layout.addWidget(self.main_view)
+                    self.toolbar = NavigationToolbar(self.main_view, self.frame)
+                    layout.addWidget(self.toolbar)
                 self.frame.setLayout(layout)
             elif child.objectName() == "sweep_selector":
                 self.sweep_selector = child
@@ -85,8 +93,12 @@ class analysis_gui(QWidget):
         )
         self.bessel = self.main_widget.findChild(QWidget, "bessel_filt")
         self.protocol_select.currentIndexChanged.connect(self.analysis_changed)
+        self.bessel.textChanged.connect(self.analysis_changed)
         run_analysis = self.main_widget.findChild(QWidget, "run_analysis")
         run_analysis.clicked.connect(self.run_analysis)
+
+        self.refresh = self.main_widget.findChild(QWidget, "refresh_plot")
+        self.refresh.clicked.connect(self.analysis_changed_run)
     
     def file_select(self):
         self.selected_dir = QFileDialog.getExistingDirectory()
@@ -115,7 +127,7 @@ class analysis_gui(QWidget):
         self.selected_abf_name = self.abf_file[self.file_list.currentRow()][0]
         #self.selected_protocol = self.protocol_list[self.protocol_select.currentIndex()]
         #for the sweep selector make a checkbox for each sweep
-        self.abf = pyabf.ABF(self.selected_abf)
+        self.get_selected_abf()
 
         #delete the children of the old sweep selector
         if self.sweep_selector.layout() is not None:
@@ -166,46 +178,11 @@ class analysis_gui(QWidget):
                 self.clear_layout(child.layout())    
 
     def plot_abf(self):
-        self.main_view.clear()
-        #self.main_view.figure.canvas.setFixedWidth(900)
-        self.axe1 = self.main_view.addPlot(1,1)
-        self.axe2 = self.main_view.addPlot(2,1)
-        #self.main_view.figure.set_facecolor('#F0F0F0')
-        #self.main_view.figure.set_edgecolor('#F0F0F0')
-       # self.main_view.figure.set_dpi(100)
-        #s#elf.main_view.figure.set_tight_layout(True)
-        #self.main_view.figure.set_facecolor('#F0F0F0')
+        if PLOT_BACKEND == "pyqtgraph":
+            self._plot_pyqtgraph()
+        elif PLOT_BACKEND == "matplotlib":
+            self._plot_matplotlib()
         
-        #plot the main abf
-        self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
-
-        self.get_selected_sweeps()
-        #for the chosen sweeps
-        if self.selected_sweeps == None:
-            self.selected_sweeps = self.abf.sweepList
-
-        for sweep in self.selected_sweeps:
-            self.abf.setSweep(sweep)
-            self.axe1.plot(self.abf.sweepX, self.abf.sweepY, color='#000000')
-            #plot the dvdt
-            self.axe2.plot(self.abf.sweepX[:-1], (np.diff(self.abf.sweepY)/np.diff(self.abf.sweepX))/1000)
-        #self.axe1.set_title(self.selected_abf_name)
-
-        #draw the dvdt threshold
-        self.dvdt_thres_value = float(self.dvdt_thres.text())
-        self.axe2.axhline(y=self.dvdt_thres_value, color='#FF0000', ls='--')
-
-        #if the analysis has been run, plot the results
-        if self.spike_df is not None:
-            for sweep in self.selected_sweeps:
-                if self.spike_df[sweep].empty:
-                    continue
-                self.axe1.scatter(self.spike_df[sweep].loc[:, 'peak_t'], self.spike_df[sweep].loc[:,'peak_v'], color='#FF0000', s=10, zorder=99)
-
-
-        self.main_view.draw()
-        
-
     def filter_abf(self, abf):
         #filter the abf with 5 khz lowpass
         b, a = signal.bessel(4, float(self.bessel.text()), 'low', norm='phase', fs=abf.dataRate)
@@ -214,7 +191,7 @@ class analysis_gui(QWidget):
 
     def run_indiv_analysis(self):
         #get the current abf
-        self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
+        self.abf = self.get_selected_abf()
         #get the current sweep(s)
         self.get_selected_sweeps()
         self.get_analysis_params()
@@ -230,13 +207,7 @@ class analysis_gui(QWidget):
             self.spike_df[sweep] = self.spike_extractor.process(self.abf.sweepX,self.abf.sweepY, self.abf.sweepC)
         #self.spike_df = pd.concat(self.spike_df)
     
-    def run_analysis(self):
-        #run the folder analysis
-        self.get_analysis_params()
-        self.get_selected_protocol()
-        df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
-        save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time()))
-
+    
     def get_analysis_params(self):
         dv_cut = float(self.dvdt_thres.text())
         lowerlim = float(self.start_time.text())
@@ -252,8 +223,19 @@ class analysis_gui(QWidget):
 
     def analysis_changed(self):
         self.get_analysis_params()
-        self.run_indiv_analysis( )
-        self.plot_abf()
+        self.refresh
+        
+    def analysis_changed_run(self):
+        if self.abf is not None:
+            self.run_indiv_analysis( )
+            self.plot_abf()
+
+    def run_analysis(self):
+        #run the folder analysis
+        self.get_analysis_params()
+        self.get_selected_protocol()
+        df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
+        save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time()))
 
     def get_selected_protocol(self):
         proto = self.protocol_select.currentText()
@@ -271,14 +253,98 @@ class analysis_gui(QWidget):
                     self.selected_sweeps.append(int(sweep.text()))
         return self.selected_sweeps
     
+    def get_selected_abf(self):
+        #ensure the selected abf is loaded or reload and filter it
+        if self.abf is None:
+            self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
+        else:
+            if (os.path.abspath(self.abf.abfFilePath) == os.path.abspath(self.selected_abf)) and (self.param_dict['bessel_filter'] <0):
+                pass
+            else:
+                self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
+        return self.abf
+        
     def check_all(self):
         for sweep in self.checkbox_list:
             if isinstance(sweep, QtWidgets.QCheckBox):
+                sweep.blockSignals()
                 if sweep.isChecked():
                     sweep.setChecked(False)
                 else:
                     sweep.setChecked(True)
+                sweep.unblockSignals()
         self.plot_abf()
+
+    def _plot_matplotlib(self):
+        self.main_view.figure.clear()
+        #self.main_view.figure.canvas.setFixedWidth(900)
+        self.axe1 = self.main_view.figure.add_subplot(211)
+        self.axe2 = self.main_view.figure.add_subplot(212, sharex=self.axe1)
+        #self.main_view.figure.set_facecolor('#F0F0F0')
+        #self.main_view.figure.set_edgecolor('#F0F0F0')
+       # self.main_view.figure.set_dpi(100)
+        #self.main_view.figure.set_tight_layout(True)
+        #self.main_view.figure.set_facecolor('#F0F0F0')
+        self.get_selected_abf()
+        self.get_selected_sweeps()
+        #for the chosen sweeps
+        if self.selected_sweeps == None:
+            self.selected_sweeps = self.abf.sweepList
+
+        for sweep in self.selected_sweeps:
+            self.abf.setSweep(sweep)
+            self.axe1.plot(self.abf.sweepX, self.abf.sweepY, color='#000000')
+            #plot the dvdt
+            self.axe2.plot(self.abf.sweepX[:-1], (np.diff(self.abf.sweepY)/np.diff(self.abf.sweepX))/1000)
+        self.axe1.set_title(self.selected_abf_name)
+
+        #draw the dvdt threshold
+        self.dvdt_thres_value = float(self.dvdt_thres.text())
+        self.axe2.axhline(y=self.dvdt_thres_value, color='#FF0000', ls='--')
+
+        #if the analysis has been run, plot the results
+        if self.spike_df is not None:
+            for sweep in self.selected_sweeps:
+                if self.spike_df[sweep].empty:
+                    continue
+                    
+                self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99)
+
+        self.main_view.draw()
+
+    def _plot_pyqtgraph(self):
+        self.main_view.clear()
+        #self.main_view.figure.canvas.setFixedWidth(900)
+        self.axe1 = self.main_view.addPlot(1,1)
+        self.axe2 = self.main_view.addPlot(2,1)
+        #self.main_view.figure.set_facecolor('#F0F0F0')
+        #self.main_view.figure.set_edgecolor('#F0F0F0')
+       # self.main_view.figure.set_dpi(100)
+        #s#elf.main_view.figure.set_tight_layout(True)
+        #self.main_view.figure.set_facecolor('#F0F0F0')
+        self.get_selected_abf()
+        self.get_selected_sweeps()
+        #for the chosen sweeps
+        if self.selected_sweeps == None:
+            self.selected_sweeps = self.abf.sweepList
+
+        for sweep in self.selected_sweeps:
+            self.abf.setSweep(sweep)
+            self.axe1.plot(self.abf.sweepX, self.abf.sweepY, color='#000000')
+            #plot the dvdt
+            self.axe2.plot(self.abf.sweepX[:-1], (np.diff(self.abf.sweepY)/np.diff(self.abf.sweepX))/1000)
+        #self.axe1.set_title(self.selected_abf_name)
+
+        #draw the dvdt threshold
+        self.dvdt_thres_value = float(self.dvdt_thres.text())
+        #self.axe2.axhline(y=self.dvdt_thres_value, color='#FF0000', ls='--')
+
+        #if the analysis has been run, plot the results
+        if self.spike_df is not None:
+            for sweep in self.selected_sweeps:
+                if self.spike_df[sweep].empty:
+                    continue
+                #self.axe1.scatter(self.spike_df[sweep].loc[:, 'peak_t'], self.spike_df[sweep].loc[:,'peak_v'], color='#FF0000', s=10, zorder=99)
 
 
 
