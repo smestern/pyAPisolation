@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1116</width>
-    <height>630</height>
+    <width>1600</width>
+    <height>900</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,10 +16,10 @@
   <widget class="QWidget" name="frame" native="true">
    <property name="geometry">
     <rect>
-     <x>459</x>
-     <y>20</y>
-     <width>641</width>
-     <height>531</height>
+     <x>640</x>
+     <y>60</y>
+     <width>951</width>
+     <height>771</height>
     </rect>
    </property>
   </widget>
@@ -39,10 +39,10 @@
   <widget class="QListWidget" name="file_list">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>350</y>
-     <width>421</width>
-     <height>261</height>
+     <x>10</x>
+     <y>470</y>
+     <width>591</width>
+     <height>421</height>
     </rect>
    </property>
   </widget>
@@ -51,12 +51,12 @@
     <rect>
      <x>20</x>
      <y>60</y>
-     <width>421</width>
-     <height>271</height>
+     <width>600</width>
+     <height>391</height>
     </rect>
    </property>
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+    <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
@@ -69,7 +69,7 @@
    </property>
    <property name="maximumSize">
     <size>
-     <width>500</width>
+     <width>600</width>
      <height>16777215</height>
     </size>
    </property>
@@ -79,8 +79,8 @@
    <widget class="QPushButton" name="run_analysis">
     <property name="geometry">
      <rect>
-      <x>140</x>
-      <y>240</y>
+      <x>220</x>
+      <y>360</y>
       <width>141</width>
       <height>21</height>
      </rect>
@@ -93,9 +93,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>0</y>
-      <width>401</width>
-      <height>241</height>
+      <y>20</y>
+      <width>581</width>
+      <height>331</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -110,7 +110,7 @@
        <item>
         <widget class="QLabel" name="label">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+          <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -363,8 +363,8 @@
   <widget class="QWidget" name="sweep_selector" native="true">
    <property name="geometry">
     <rect>
-     <x>460</x>
-     <y>560</y>
+     <x>960</x>
+     <y>840</y>
      <width>631</width>
      <height>50</height>
     </rect>
