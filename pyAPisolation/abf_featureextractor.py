@@ -8,7 +8,7 @@ import pyabf
 import copy
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
-
+import scipy.signal as signal
 
 from .abf_ipfx_dataframes import _build_full_df, _build_sweepwise_dataframe, save_data_frames
 from .loadABF import loadABF
@@ -53,16 +53,30 @@ def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
     except:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-def analyze_spike_sweep(abf, sweepNumber, param_dict):
+def analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=None):
     abf.setSweep(sweepNumber)
+    
     spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
     spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])
+    
+            
     dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+    #if the user asks for a filter, apply it
+    if bessel_filter is not None:
+        if bessel_filter != -1:
+            dataV = filter_abf(dataV, abf, bessel_filter)
     if dataI.shape[0] < dataV.shape[0]:
                 dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
     spike_in_sweep = spikext.process(dataT, dataV, dataI)
     spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
     return spike_in_sweep, spike_train
+
+def filter_abf(data_V, abf, cutoff):
+    #filter the abf with 5 khz lowpass
+    b, a = signal.bessel(4, cutoff, 'low', norm='phase', fs=abf.dataRate)
+    dataV = signal.filtfilt(b, a, data_V)
+    return dataV
+
 
 def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         np.nan_to_num(abf.data, nan=-9999, copy=False)
@@ -87,6 +101,13 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
             param_dict['start'] = start
             print('Stimulation time found: ' + str(start) + ' to ' + str(end))
 
+        #if the user wants a bessel filter pop it out of the param_dict
+        if 'bessel_filter' in param_dict:
+            bessel_filter = param_dict.pop('bessel_filter')
+        else:
+            bessel_filter = None
+
+        #iterate through the sweeps
         for sweepNumber in sweepcount: 
             real_sweep_length = abf.sweepLengthSec - 0.0001
             if sweepNumber < 9:
@@ -97,7 +118,7 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
                 param_dict['end']= real_sweep_length
             elif param_dict['end'] > real_sweep_length:
                 param_dict['end'] = real_sweep_length
-            spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict) ### Returns the default Dataframe Returned by 
+            spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by 
             temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
         temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
         x, y ,c = loadABF(abf.abfFilePath)

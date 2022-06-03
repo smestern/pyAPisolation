@@ -245,7 +245,7 @@ class analysis_gui(QWidget):
         min_peak = float(self.min_peak_height.text())
         bstim_find = self.bstim.isChecked()
         self.param_dict = {'filter': 0, 'dv_cutoff':dv_cut, 'start': lowerlim, 'end': upperlim, 'max_interval': tp_cut, 'min_height': min_cut, 'min_peak': min_peak, 
-        'stim_find': bstim_find}
+        'stim_find': bstim_find, 'bessel_filter': 5000}
         return self.param_dict
 
     def analysis_changed(self):
