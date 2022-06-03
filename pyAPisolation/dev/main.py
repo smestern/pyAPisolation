@@ -20,7 +20,7 @@ from matplotlib.figure import Figure
 print("Loaded external libraries")
 from pyAPisolation.abf_featureextractor import folder_feature_extract, save_data_frames
 from pyAPisolation.patch_utils import load_protocols
-#import pyqtgraph as pg
+import pyqtgraph as pg
 
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
@@ -57,12 +57,12 @@ class analysis_gui(QWidget):
                 self.frame = child
                 self.main_view = FigureCanvas(Figure(figsize=(15, 5)))
                 layout =  QVBoxLayout()
-                layout.addWidget(self.main_view)
-                self.toolbar = NavigationToolbar(self.main_view, self.frame)
-                layout.addWidget(self.toolbar)
-                #plot_widget = pg.PlotWidget()
-                #layout.addWidget(plot_widget)
-                #self.main_plot =
+                #layout.addWidget(self.main_view)
+                #self.toolbar = NavigationToolbar(self.main_view, self.frame)
+                #layout.addWidget(self.toolbar)
+                plot_widget = pg.GraphicsLayoutWidget()
+                layout.addWidget(plot_widget)
+                self.main_view = plot_widget
                 self.frame.setLayout(layout)
             elif child.objectName() == "sweep_selector":
                 self.sweep_selector = child
@@ -166,15 +166,15 @@ class analysis_gui(QWidget):
                 self.clear_layout(child.layout())    
 
     def plot_abf(self):
-        self.main_view.figure.clear()
+        self.main_view.clear()
         #self.main_view.figure.canvas.setFixedWidth(900)
-        self.axe1 = self.main_view.figure.add_subplot(211)
-        self.axe2 = self.main_view.figure.add_subplot(212, sharex=self.axe1)
-        self.main_view.figure.set_facecolor('#F0F0F0')
-        self.main_view.figure.set_edgecolor('#F0F0F0')
-        self.main_view.figure.set_dpi(100)
-        self.main_view.figure.set_tight_layout(True)
-        self.main_view.figure.set_facecolor('#F0F0F0')
+        self.axe1 = self.main_view.addPlot(1,1)
+        self.axe2 = self.main_view.addPlot(2,1)
+        #self.main_view.figure.set_facecolor('#F0F0F0')
+        #self.main_view.figure.set_edgecolor('#F0F0F0')
+       # self.main_view.figure.set_dpi(100)
+        #s#elf.main_view.figure.set_tight_layout(True)
+        #self.main_view.figure.set_facecolor('#F0F0F0')
         
         #plot the main abf
         self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
@@ -189,7 +189,7 @@ class analysis_gui(QWidget):
             self.axe1.plot(self.abf.sweepX, self.abf.sweepY, color='#000000')
             #plot the dvdt
             self.axe2.plot(self.abf.sweepX[:-1], (np.diff(self.abf.sweepY)/np.diff(self.abf.sweepX))/1000)
-        self.axe1.set_title(self.selected_abf_name)
+        #self.axe1.set_title(self.selected_abf_name)
 
         #draw the dvdt threshold
         self.dvdt_thres_value = float(self.dvdt_thres.text())
