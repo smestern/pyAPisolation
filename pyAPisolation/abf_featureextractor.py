@@ -45,13 +45,14 @@ def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
                     
         if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
             print(file_path + ' import')
+
             temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
             return temp_spike_df, df, temp_running_bin
         else:
             print('Not correct protocol: ' + abf.protocol)
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     except:
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+       return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 def analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=None):
     abf.setSweep(sweepNumber)
@@ -73,8 +74,12 @@ def analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=None):
 
 def filter_abf(data_V, abf, cutoff):
     #filter the abf with 5 khz lowpass
-    b, a = signal.bessel(4, cutoff, 'low', norm='phase', fs=abf.dataRate)
-    dataV = signal.filtfilt(b, a, data_V)
+    #if the cutoff is lower than critical frequency, filter the data
+    try:
+        b, a = signal.bessel(4, cutoff, 'low', norm='phase', fs=abf.dataRate)
+        dataV = signal.filtfilt(b, a, data_V)
+    except:
+        dataV = data_V
     return dataV
 
 
@@ -131,8 +136,6 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         except:
             pass
         return temp_spike_df, df, temp_running_bin
-
-
 
 
 

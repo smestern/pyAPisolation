@@ -5,12 +5,16 @@ import glob
 import pyabf
 import numpy as np
 import pandas as pd
-
-
+from sklearn.svm import OneClassSVM
+from sklearn.impute import SimpleImputer
+import copy
 
 import scipy.signal as signal
-from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout
+from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog
 from PySide2.QtCore import QFile
+from PySide2 import QtGui
+import PySide2.QtCore as QtCore
+
 from PySide2.QtUiTools import QUiLoader
 
 from matplotlib.backends.qt_compat import QtWidgets
@@ -18,7 +22,7 @@ from matplotlib.backends.backend_qtagg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
 print("Loaded external libraries")
-from pyAPisolation.abf_featureextractor import folder_feature_extract, save_data_frames
+from pyAPisolation.abf_featureextractor import folder_feature_extract, save_data_frames, preprocess_abf
 from pyAPisolation.patch_utils import load_protocols
 
 #import pyqtgraph as pg
@@ -35,6 +39,7 @@ class analysis_gui(QWidget):
         self.load_ui()
         self.main_widget = self.children()[0]
         self.abf = None
+        self.current_filter = 0.
         self.bind_ui()
 
 
@@ -234,8 +239,10 @@ class analysis_gui(QWidget):
         #run the folder analysis
         self.get_analysis_params()
         self.get_selected_protocol()
-        df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
+        #df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
+        df = self._inner_analysis_loop(self.selected_dir, self.param_dict,  self.selected_protocol)     
         save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time()))
+        
 
     def get_selected_protocol(self):
         proto = self.protocol_select.currentText()
@@ -257,23 +264,68 @@ class analysis_gui(QWidget):
         #ensure the selected abf is loaded or reload and filter it
         if self.abf is None:
             self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
+            self.current_filter = self.param_dict['bessel_filter']
         else:
-            if (os.path.abspath(self.abf.abfFilePath) == os.path.abspath(self.selected_abf)) and (self.param_dict['bessel_filter'] <0):
+            if (os.path.abspath(self.abf.abfFilePath) == os.path.abspath(self.selected_abf)) and (self.param_dict['bessel_filter'] == self.current_filter):
                 pass
             else:
                 self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
+                self.current_filter = self.param_dict['bessel_filter']
         return self.abf
         
     def check_all(self):
         for sweep in self.checkbox_list:
             if isinstance(sweep, QtWidgets.QCheckBox):
-                sweep.blockSignals()
+                sweep.blockSignals(True)
                 if sweep.isChecked():
                     sweep.setChecked(False)
                 else:
                     sweep.setChecked(True)
-                sweep.unblockSignals()
+                sweep.blockSignals(False)
         self.plot_abf()
+
+    def _find_outliers(self, df):
+        outlier_dect = OneClassSVM(nu=0.1, kernel="rbf", gamma=0.1)
+        temp_df = SimpleImputer(missing_values=np.nan, strategy='mean').fit_transform(df.select_dtypes(include=['float']))
+        outlier_dect.fit(temp_df)
+        labels = outlier_dect.predict(temp_df)
+        return labels
+
+
+    def _inner_analysis_loop(self, folder, param_dict, protocol_name):
+        debugplot = 0
+        running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
+        dfs = pd.DataFrame()
+        df_spike_count = pd.DataFrame()
+        df_running_avg_count = pd.DataFrame()
+        filelist = glob.glob(folder + "\\**\\*.abf", recursive=True)
+        popup = QProgressDialog("Operation in progress.", "Cancel", 0, len(filelist), self)
+        popup.setWindowModality(QtCore.Qt.WindowModal)
+        popup.forceShow()
+        spike_count = []
+        df_full = []
+        df_running_avg = []
+        for i, f in enumerate(filelist):
+            popup.setValue(i)
+            temp_df_spike_count, temp_full_df, temp_running_bin = preprocess_abf(f, copy.deepcopy(param_dict), False, protocol_name)
+            spike_count.append(temp_df_spike_count)
+            df_full.append(temp_full_df)
+            df_running_avg.append(temp_running_bin)
+        df_spike_count = pd.concat(spike_count, sort=True)
+        dfs = pd.concat(df_full, sort=True)
+        df_running_avg_count = pd.concat(df_running_avg, sort=False)
+        popup.hide()
+        #detect outliers
+        #df_spike_count['outlier'] = self._find_outliers(df_spike_count)
+        #Highlight outliers in filelist
+        # for i in np.arange(self.file_list.count()):
+        #     f = self.file_list.item(i)
+        #     if df_spike_count['outlier'].to_numpy()[i] == 1:
+        #         f.setBackgroundColor(QtGui.QColor(255, 255, 255))
+        #     else:
+        #         f.setBackgroundColor(QtGui.QColor(255, 0, 0))
+
+        return dfs, df_spike_count, df_running_avg_count
 
     def _plot_matplotlib(self):
         self.main_view.figure.clear()
