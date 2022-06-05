@@ -74,7 +74,7 @@ class analysis_gui(QWidget):
                 self.frame.setLayout(layout)
             elif child.objectName() == "sweep_selector":
                 self.sweep_selector = child
-        #generate the analysis settings listener
+        #generate the analysis settings listener for spike finder
         self.dvdt_thres = self.main_widget.findChild(QWidget, "dvdt_thres")
         self.dvdt_thres.textChanged.connect(self.analysis_changed)
         self.thres_to_peak_time = self.main_widget.findChild(QWidget, "t_to_p_time")
@@ -89,16 +89,17 @@ class analysis_gui(QWidget):
         self.end_time.textChanged.connect(self.analysis_changed)
         self.protocol_select = self.main_widget.findChild(QWidget, "protocol_selector")
         self.protocol_select.currentIndexChanged.connect(self.analysis_changed)
-        self.bstim = self.main_widget.findChild(QWidget, "bstim"
-        )
+        self.bstim = self.main_widget.findChild(QWidget, "bstim")
         self.bessel = self.main_widget.findChild(QWidget, "bessel_filt")
         self.protocol_select.currentIndexChanged.connect(self.analysis_changed)
         self.bessel.textChanged.connect(self.analysis_changed)
         run_analysis = self.main_widget.findChild(QWidget, "run_analysis")
         run_analysis.clicked.connect(self.run_analysis)
-
         self.refresh = self.main_widget.findChild(QWidget, "refresh_plot")
         self.refresh.clicked.connect(self.analysis_changed_run)
+        #link the settings buttons for the cm calc analysis
+        
+
     
     def file_select(self):
         self.selected_dir = QFileDialog.getExistingDirectory()
@@ -303,13 +304,21 @@ class analysis_gui(QWidget):
         self.axe2.axhline(y=self.dvdt_thres_value, color='#FF0000', ls='--')
 
         #if the analysis has been run, plot the results
+        labeled_legend = False
         if self.spike_df is not None:
             for sweep in self.selected_sweeps:
                 if self.spike_df[sweep].empty:
                     continue
-                    
-                self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99)
-
+                
+                #plot with labels if its the first sweep
+                if labeled_legend == False:
+                    self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99, label='Spike Peak')
+                    self.axe1.scatter(self.spike_df[sweep]['threshold_t'], self.spike_df[sweep]['threshold_v'], color='#00FF00', s=10, zorder=99, label='Threshold')
+                    labeled_legend = True
+                else:
+                    self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99)
+                    self.axe1.scatter(self.spike_df[sweep]['threshold_t'], self.spike_df[sweep]['threshold_v'], color='#00FF00', s=10, zorder=99)
+        self.axe1.legend(loc='upper right')
         self.main_view.draw()
 
     def _plot_pyqtgraph(self):

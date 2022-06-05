@@ -18,7 +18,18 @@ print("feature extractor loaded")
 default_dict = {'start': 0, 'end': 0, 'filter': 0}
 
 def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1', para=1):
+    """runs the feature extractor on a folder of abfs.
 
+    Args:
+        files (list): _description_
+        param_dict (dict): _description_
+        plot_sweeps (int, bool, optional): _description_. Defaults to -1.
+        protocol_name (str, optional): _description_. Defaults to 'IC1'.
+        para (int, optional): _description_. Defaults to 1.
+
+    Returns:
+        _type_: _description_
+    """
     debugplot = 0
     running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
     dfs = pd.DataFrame()
@@ -39,10 +50,19 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     return dfs, df_spike_count, df_running_avg_count
 
 def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
-    
+    """_summary_
+
+    Args:
+        file_path (_type_): _description_
+        param_dict (_type_): _description_
+        plot_sweeps (_type_): _description_
+        protocol_name (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     try:
-        abf = pyabf.ABF(file_path)
-                    
+        abf = pyabf.ABF(file_path)           
         if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
             print(file_path + ' import')
             temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
@@ -54,6 +74,17 @@ def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 def analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=None):
+    """_summary_
+
+    Args:
+        abf (_type_): _description_
+        sweepNumber (_type_): _description_
+        param_dict (_type_): _description_
+        bessel_filter (_type_, optional): _description_. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """    """"""
     abf.setSweep(sweepNumber)
     
     spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
@@ -72,6 +103,16 @@ def analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=None):
     return spike_in_sweep, spike_train
 
 def filter_abf(data_V, abf, cutoff):
+    """_summary_
+
+    Args:
+        data_V (_type_): _description_
+        abf (_type_): _description_
+        cutoff (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     #filter the abf with 5 khz lowpass
     b, a = signal.bessel(4, cutoff, 'low', norm='phase', fs=abf.dataRate)
     dataV = signal.filtfilt(b, a, data_V)
@@ -79,64 +120,69 @@ def filter_abf(data_V, abf, cutoff):
 
 
 def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
-        np.nan_to_num(abf.data, nan=-9999, copy=False)
-        #If there is more than one sweep, we need to ensure we dont iterate out of range
-        if sweeplist == None:
-            if abf.sweepCount > 1:
-                sweepcount = abf.sweepList
-            else:
-                sweepcount = [0]
-        df = pd.DataFrame()
-        #Now we walk through the sweeps looking for action potentials
-        temp_spike_df = pd.DataFrame()
-        temp_spike_df['filename'] = [abf.abfID]
-        temp_spike_df['foldername'] = [os.path.dirname(abf.abfFilePath)]
-        temp_running_bin = pd.DataFrame()
-        stim_find = param_dict.pop('stim_find')
-        #for now if user wants to filter by stim time we will just use the first sweep
-        if stim_find:
-            abf.setSweep(abf.sweepList[-1])
-            start, end = find_non_zero_range(abf.sweepX, abf.sweepC)
-            param_dict['end'] = end
-            param_dict['start'] = start
-            print('Stimulation time found: ' + str(start) + ' to ' + str(end))
+    """_summary_
 
-        #if the user wants a bessel filter pop it out of the param_dict
-        if 'bessel_filter' in param_dict:
-            bessel_filter = param_dict.pop('bessel_filter')
+    Args:
+        abf (_type_): _description_
+        sweeplist (_type_, optional): _description_. Defaults to None.
+        plot (int, optional): _description_. Defaults to -1.
+        param_dict (_type_, optional): _description_. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """    
+    np.nan_to_num(abf.data, nan=-9999, copy=False)
+    #If there is more than one sweep, we need to ensure we dont iterate out of range
+    if sweeplist == None:
+        if abf.sweepCount > 1:
+            sweepcount = abf.sweepList
         else:
-            bessel_filter = None
+            sweepcount = [0]
+    df = pd.DataFrame()
+    #Now we walk through the sweeps looking for action potentials
+    temp_spike_df = pd.DataFrame()
+    temp_spike_df['filename'] = [abf.abfID]
+    temp_spike_df['foldername'] = [os.path.dirname(abf.abfFilePath)]
+    temp_running_bin = pd.DataFrame()
+    stim_find = param_dict.pop('stim_find')
+    #for now if user wants to filter by stim time we will just use the first sweep
+    if stim_find:
+        abf.setSweep(abf.sweepList[-1])
+        start, end = find_non_zero_range(abf.sweepX, abf.sweepC)
+        param_dict['end'] = end
+        param_dict['start'] = start
+        print('Stimulation time found: ' + str(start) + ' to ' + str(end))
 
-        #iterate through the sweeps
-        for sweepNumber in sweepcount: 
-            real_sweep_length = abf.sweepLengthSec - 0.0001
-            if sweepNumber < 9:
-                real_sweep_number = '00' + str(sweepNumber + 1)
-            elif sweepNumber > 8 and sweepNumber < 99:
-                real_sweep_number = '0' + str(sweepNumber + 1)
-            if param_dict['start'] == 0 and param_dict['end'] == 0: 
-                param_dict['end']= real_sweep_length
-            elif param_dict['end'] > real_sweep_length:
-                param_dict['end'] = real_sweep_length
-            spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by 
-            temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
-        temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
-        x, y ,c = loadABF(abf.abfFilePath)
-        _qc_data = run_qc(y, c)
-        temp_spike_df['QC Mean RMS'] = _qc_data[0]
-        temp_spike_df['QC Mean Sweep Drift'] = _qc_data[2]
-        try:
-            spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
-            plotabf(abf, spiketimes, param_dict['start'], param_dict['end'], plot)
-        except:
-            pass
-        return temp_spike_df, df, temp_running_bin
+    #if the user wants a bessel filter pop it out of the param_dict
+    if 'bessel_filter' in param_dict:
+        bessel_filter = param_dict.pop('bessel_filter')
+    else:
+        bessel_filter = None
 
-
-
-
-
-
+    #iterate through the sweeps
+    for sweepNumber in sweepcount: 
+        real_sweep_length = abf.sweepLengthSec - 0.0001
+        if sweepNumber < 9:
+            real_sweep_number = '00' + str(sweepNumber + 1)
+        elif sweepNumber > 8 and sweepNumber < 99:
+            real_sweep_number = '0' + str(sweepNumber + 1)
+        if param_dict['start'] == 0 and param_dict['end'] == 0: 
+            param_dict['end']= real_sweep_length
+        elif param_dict['end'] > real_sweep_length:
+            param_dict['end'] = real_sweep_length
+        spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by 
+        temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
+    temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
+    x, y ,c = loadABF(abf.abfFilePath)
+    _qc_data = run_qc(y, c)
+    temp_spike_df['QC Mean RMS'] = _qc_data[0]
+    temp_spike_df['QC Mean Sweep Drift'] = _qc_data[2]
+    try:
+        spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
+        plotabf(abf, spiketimes, param_dict['start'], param_dict['end'], plot)
+    except:
+        pass
+    return temp_spike_df, df, temp_running_bin
 
 class abfFeatExtractor(object):
     """TODO """
