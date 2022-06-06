@@ -12,7 +12,7 @@ import scipy.signal as signal
 
 from .abf_ipfx_dataframes import _build_full_df, _build_sweepwise_dataframe, save_data_frames
 from .loadABF import loadABF
-from .patch_utils import plotabf, load_protocols, find_non_zero_range
+from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_abf
 from .QC import run_qc
 print("feature extractor loaded")
 default_dict = {'start': 0, 'end': 0, 'filter': 0}
@@ -50,16 +50,16 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     return dfs, df_spike_count, df_running_avg_count
 
 def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
-    """_summary_
-
+    """Takes an abf file and runs the feature extractor on it. Filters the ABF by protocol etc.
+    Essentially a wrapper for the feature extractor. As when there is an error we dont want to stop the whole program, we just want to skip the abf.
     Args:
-        file_path (_type_): _description_
-        param_dict (_type_): _description_
-        plot_sweeps (_type_): _description_
-        protocol_name (_type_): _description_
+        file_path (str, os.path): _description_
+        param_dict (dict): _description_
+        plot_sweeps (bool): _description_
+        protocol_name (str): _description_
 
     Returns:
-        _type_: _description_
+        spike_dataframe, spikewise_dataframe, running_bin_data_frame : _description_
     """
     try:
         abf = pyabf.ABF(file_path)           
@@ -85,13 +85,10 @@ def analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=None):
 
     Returns:
         _type_: _description_
-    """    """"""
+    """
     abf.setSweep(sweepNumber)
-    
     spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
-    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])
-    
-            
+    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])  
     dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
     #if the user asks for a filter, apply it
     if bessel_filter is not None:
@@ -102,26 +99,6 @@ def analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=None):
     spike_in_sweep = spikext.process(dataT, dataV, dataI)
     spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
     return spike_in_sweep, spike_train
-
-def filter_abf(data_V, abf, cutoff):
-    """_summary_
-
-    Args:
-        data_V (_type_): _description_
-        abf (_type_): _description_
-        cutoff (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    #filter the abf with 5 khz lowpass
-    #if the cutoff is lower than critical frequency, filter the data
-    try:
-        b, a = signal.bessel(4, cutoff, 'low', norm='phase', fs=abf.dataRate)
-        dataV = signal.filtfilt(b, a, data_V)
-    except:
-        dataV = data_V
-    return dataV
 
 
 def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
