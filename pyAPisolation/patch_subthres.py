@@ -328,6 +328,8 @@ def subthres_a(dataT, dataV, dataI, lowerlim, upperlim):
                                 b_lowerlim = 0.1
                             else:
                                 b_lowerlim = 0.1
+                            #Recompute the upperlim based on 
+
                             #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
                             sag = subt.sag(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
                             taum = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
