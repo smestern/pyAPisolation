@@ -322,19 +322,35 @@ def determine_subt(abf, idx_bounds):
 
 
 def subthres_a(dataT, dataV, dataI, lowerlim, upperlim):
-    if dataI[np.argmin(dataI)] < 0:
+    """Analyze the subthreshold features of the current using allen institute's method.
+
+    Args:
+        dataT (_type_): _description_
+        dataV (_type_): _description_
+        dataI (_type_): _description_
+        lowerlim (_type_): _description_
+        upperlim (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    if dataI[np.argmin(dataI)] < 0: #if the current is negative check
                         try:
                             if lowerlim < 0.1:
                                 b_lowerlim = 0.1
                             else:
                                 b_lowerlim = 0.1
-                            #Recompute the upperlim based on 
+
+                            #get only the hyperpor segments
+                            dwninf, upinf = find_hyperpolarization_segment(dataT, dataI, lowerlim, upperlim)
+                            lowerlim_t = np.clip(dataT[dwninf]  - 0.1, 0, 1e9)
+                            upperlim_t = dataT[upinf]
 
                             #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
-                            sag = subt.sag(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
-                            taum = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                            sag = subt.sag(dataT,dataV,dataI, start=lowerlim_t, end=upperlim_t)
+                            taum = subt.time_constant(dataT,dataV,dataI, start=lowerlim_t, end=upperlim_t)
                             
-                            voltage_deflection = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                            voltage_deflection = subt.voltage_deflection(dataT,dataV,dataI, start=lowerlim_t, end=upperlim_t)
                             return sag, taum, voltage_deflection
                         except Exception as e:
                             print("Subthreshold Processing Error ")
@@ -342,3 +358,20 @@ def subthres_a(dataT, dataV, dataI, lowerlim, upperlim):
                             return np.nan, np.nan, np.nan
     else:
         return np.nan, np.nan, np.nan
+
+def find_hyperpolarization_segment(dataT, dataI, lowerlim, upperlim):
+    """Finds the hyperpolarization segment, assuming the current is a square pulse. Or the hyperpolarization is continuous.
+
+    Args:
+        dataT (_type_): _description_
+        dataI (_type_): _description_
+        lowerlim (_type_): _description_
+        upperlim (_type_): _description_
+    """
+    #clip greater than 0 to 0
+    dataI[dataI>0] = 0
+    #find the first point where the current is negative
+    downwardinfl = np.nonzero(np.where(dataI<0, dataI, 0))[0][0]
+    #find the last point where the current is negative
+    upwardinfl = np.nonzero(np.where(dataI<0, dataI, 0))[0][-1]
+    return downwardinfl, upwardinfl

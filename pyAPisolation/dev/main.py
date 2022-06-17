@@ -191,6 +191,8 @@ class analysis_gui(QWidget):
         
     def filter_abf(self, abf):
         #filter the abf with 5 khz lowpass
+        if self.bessel.text() == "" or float(self.bessel.text()) < 0:
+            return abf
         b, a = signal.bessel(4, float(self.bessel.text()), 'low', norm='phase', fs=abf.dataRate)
         abf.data = signal.filtfilt(b, a, abf.data)
         return abf
@@ -270,6 +272,7 @@ class analysis_gui(QWidget):
             if (os.path.abspath(self.abf.abfFilePath) == os.path.abspath(self.selected_abf)) and (self.param_dict['bessel_filter'] == self.current_filter):
                 pass
             else:
+                
                 self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
                 self.current_filter = self.param_dict['bessel_filter']
         return self.abf
@@ -346,7 +349,7 @@ class analysis_gui(QWidget):
 
         for sweep in self.selected_sweeps:
             self.abf.setSweep(sweep)
-            self.axe1.plot(self.abf.sweepX, self.abf.sweepY, color='#000000')
+            self.axe1.plot(self.abf.sweepX, self.abf.sweepY, label=str(sweep))
             #plot the dvdt
             self.axe2.plot(self.abf.sweepX[:-1], (np.diff(self.abf.sweepY)/np.diff(self.abf.sweepX))/1000)
         self.axe1.set_title(self.selected_abf_name)
