@@ -5,10 +5,11 @@ import glob
 import pyabf
 import numpy as np
 import pandas as pd
+import multiprocessing as mp
 from sklearn.svm import OneClassSVM
 from sklearn.impute import SimpleImputer
 import copy
-
+from functools import partial
 import scipy.signal as signal
 from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog
 from PySide2.QtCore import QFile
@@ -309,12 +310,36 @@ class analysis_gui(QWidget):
         spike_count = []
         df_full = []
         df_running_avg = []
-        for i, f in enumerate(filelist):
-            popup.setValue(i)
-            temp_df_spike_count, temp_full_df, temp_running_bin = preprocess_abf(f, copy.deepcopy(param_dict), False, protocol_name)
-            spike_count.append(temp_df_spike_count)
-            df_full.append(temp_full_df)
-            df_running_avg.append(temp_running_bin)
+        parallel_processing = True
+        i = 0
+
+        if parallel_processing:
+            def update_iteration(_, i):
+                
+                popup.setValue(i)
+                popup.setLabelText("Processing file " + str(i) + " of " + str(len(filelist)))
+            pool = mp.Pool(mp.cpu_count())
+
+            results = [pool.apply_async(preprocess_abf, args=(file, copy.deepcopy(param_dict), False, protocol_name), callback=partial(update_iteration, i=i)) for (i, file) in enumerate(filelist)]
+            
+            ##split out the results
+            pool.close()
+            #pool.join()
+            for result in results:
+                popup.setValue(popup.value())
+                result.wait()
+                temp_res = result.get()
+                df_full.append(temp_res[1])
+                df_running_avg.append(temp_res[2])
+                spike_count.append(temp_res[0])
+            pool.join()
+        else:
+            for i, f in enumerate(filelist):
+                popup.setValue(i)
+                temp_df_spike_count, temp_full_df, temp_running_bin = preprocess_abf(f, copy.deepcopy(param_dict), False, protocol_name)
+                spike_count.append(temp_df_spike_count)
+                df_full.append(temp_full_df)
+                df_running_avg.append(temp_running_bin)
         df_spike_count = pd.concat(spike_count, sort=True)
         dfs = pd.concat(df_full, sort=True)
         df_running_avg_count = pd.concat(df_running_avg, sort=False)
@@ -415,6 +440,7 @@ class analysis_gui(QWidget):
 
 
 if __name__ == "__main__":
+    mp.freeze_support()
     app = QApplication([])
     widget = analysis_gui()
     widget.show()

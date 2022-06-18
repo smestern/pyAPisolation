@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pyabf
 import copy
+import multiprocessing as mp
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 import scipy.signal as signal
@@ -16,6 +17,7 @@ from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_ab
 from .QC import run_qc
 print("feature extractor loaded")
 default_dict = {'start': 0, 'end': 0, 'filter': 0}
+parallel = True
 
 def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1', para=1):
     """runs the feature extractor on a folder of abfs.
@@ -39,11 +41,20 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     spike_count = []
     df_full = []
     df_running_avg = []
-    for f in filelist:
-        temp_df_spike_count, temp_full_df, temp_running_bin = preprocess_abf(f, copy.deepcopy(param_dict), plot_sweeps, protocol_name)
-        spike_count.append(temp_df_spike_count)
-        df_full.append(temp_full_df)
-        df_running_avg.append(temp_running_bin)
+    if parallel:
+        pool = mp.Pool()
+        results = [pool.apply(preprocess_abf, args=(file, param_dict, plot_sweeps, protocol_name)) for file in filelist]
+        pool.close()
+        ##split out the results
+        for result in results:
+            if result[0].empty:
+                print('Empty result')
+    else:
+        for f in filelist:
+            temp_df_spike_count, temp_full_df, temp_running_bin = preprocess_abf(f, copy.deepcopy(param_dict), plot_sweeps, protocol_name)
+            spike_count.append(temp_df_spike_count)
+            df_full.append(temp_full_df)
+            df_running_avg.append(temp_running_bin)
     df_spike_count = pd.concat(spike_count, sort=True)
     dfs = pd.concat(df_full, sort=True)
     df_running_avg_count = pd.concat(df_running_avg, sort=False)
@@ -203,5 +214,5 @@ class abfFeatExtractor(object):
         self.spikefeatureextractor = feature_extractor.SpikeFeatureExtractor(start=start, end=end, filter=filter, dv_cutoff=dv_cutoff, max_interval=max_interval, min_height=min_height, min_peak=min_peak, thresh_frac=thresh_frac, reject_at_stim_start_interval=reject_at_stim_start_interval)
         self.spiketrainextractor = feature_extractor.SpikeTrainFeatureExtractor(start=start, end=end)
 
-
-
+if __name__ == '__main__':
+    mp.freeze_support()
