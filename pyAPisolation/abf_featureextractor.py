@@ -16,8 +16,8 @@ from .loadABF import loadABF
 from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_abf
 from .QC import run_qc
 print("feature extractor loaded")
-default_dict = {'start': 0, 'end': 0, 'filter': 0}
 parallel = True
+default_dict = {'start': 0, 'end': 0, 'filter': 0, 'stim_find': True}
 
 def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1', para=1):
     """runs the feature extractor on a folder of abfs.
