@@ -23,8 +23,9 @@ from matplotlib.backends.backend_qtagg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
 print("Loaded external libraries")
-from pyAPisolation.abf_featureextractor import folder_feature_extract, save_data_frames, preprocess_abf
+from pyAPisolation.abf_featureextractor import folder_feature_extract, save_data_frames, preprocess_abf, analyze_subthres
 from pyAPisolation.patch_utils import load_protocols
+from pyAPisolation.patch_subthres import exp_decay_2p, exp_decay_1p, exp_decay_factor
 
 #import pyqtgraph as pg
 
@@ -32,7 +33,7 @@ import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
 
 PLOT_BACKEND = 'matplotlib'
-
+ANALYSIS_TABS = {0:'spike', 1:'subthres'}
 
 class analysis_gui(QWidget):
     def __init__(self):
@@ -103,8 +104,11 @@ class analysis_gui(QWidget):
         run_analysis.clicked.connect(self.run_analysis)
         self.refresh = self.main_widget.findChild(QWidget, "refresh_plot")
         self.refresh.clicked.connect(self.analysis_changed_run)
+        self.saveCur = self.main_widget.findChild(QWidget, "saveCur")
+        self.saveCur.clicked.connect(self._save_csv_for_current_file)
         #link the settings buttons for the cm calc analysis
-        
+        self.tabselect = self.main_widget.findChild(QWidget, "tabWidget")
+        self.tabselect.currentChanged.connect(self.analysis_changed_run)
 
     
     def file_select(self):
@@ -114,18 +118,25 @@ class analysis_gui(QWidget):
         self.pairs = [c for c in zip(self.abf_list_name, self.abf_list)]
         self.abf_file = self.pairs
         self.selected_sweeps = None
+        #create a popup about the scanning the files
+        self.scan_popup = QProgressDialog("Scanning files", "Cancel", 0, len(self.abf_list))
         #Generate the protocol list
         self.protocol_list = []
         for abf in self.abf_list:
             try:
+                self.scan_popup.setValue(self.scan_popup.value() + 1)
                 abf_obj = pyabf.ABF(abf, loadData=False)
                 self.protocol_list.append(abf_obj.protocol)
             except:
                 pass
         #we really only care about unique protocols
+        #close the popup
+        self.scan_popup.close()
         #filter down to unique ones
-
         self.protocol_list = np.hstack(("[No Filter]", np.unique(self.protocol_list)))
+        #clear the file list and protocol select
+        self.file_list.clear()
+        self.protocol_select.clear()
         self.protocol_select.addItems(self.protocol_list)
         self.file_list.addItems(self.abf_list_name)
 
@@ -199,23 +210,29 @@ class analysis_gui(QWidget):
         return abf
 
     def run_indiv_analysis(self):
+        
         #get the current abf
         self.abf = self.get_selected_abf()
         #get the current sweep(s)
         self.get_selected_sweeps()
         self.get_analysis_params()
-        if self.selected_sweeps is None:
-            self.selected_sweeps = self.abf.sweepList
-        #create the spike extractor
-        self.spike_extractor = SpikeFeatureExtractor(filter=0,  dv_cutoff=self.param_dict['dv_cutoff'],
-         max_interval=self.param_dict['max_interval'], min_height=self.param_dict['min_height'], min_peak=self.param_dict['min_peak'])
-        #extract the spikes and make a dataframe for each sweep
-        self.spike_df = {}
-        for sweep in self.selected_sweeps:
-            self.abf.setSweep(sweep)
-            self.spike_df[sweep] = self.spike_extractor.process(self.abf.sweepX,self.abf.sweepY, self.abf.sweepC)
-        #self.spike_df = pd.concat(self.spike_df)
-    
+        if self.get_current_analysis() is 'spike':
+            self.subthres_df = None
+            if self.selected_sweeps is None:
+                self.selected_sweeps = self.abf.sweepList
+            #create the spike extractor
+            self.spike_extractor = SpikeFeatureExtractor(filter=0,  dv_cutoff=self.param_dict['dv_cutoff'],
+                max_interval=self.param_dict['max_interval'], min_height=self.param_dict['min_height'], min_peak=self.param_dict['min_peak'])
+            #extract the spikes and make a dataframe for each sweep
+            self.spike_df = {}
+            for sweep in self.selected_sweeps:
+                self.abf.setSweep(sweep)
+                self.spike_df[sweep] = self.spike_extractor.process(self.abf.sweepX,self.abf.sweepY, self.abf.sweepC)
+            #self.spike_df = pd.concat(self.spike_df)
+        elif self.get_current_analysis() is 'subthres':
+            self.spike_df = None
+            self.subthres_df, _ = analyze_subthres(self.abf)
+            
     
     def get_analysis_params(self):
         dv_cut = float(self.dvdt_thres.text())
@@ -239,6 +256,7 @@ class analysis_gui(QWidget):
             self.run_indiv_analysis( )
             self.plot_abf()
 
+    
     def run_analysis(self):
         #run the folder analysis
         self.get_analysis_params()
@@ -246,6 +264,11 @@ class analysis_gui(QWidget):
         #df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
         df = self._inner_analysis_loop(self.selected_dir, self.param_dict,  self.selected_protocol)     
         save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time()))
+        
+    def get_current_analysis(self):
+        index = self.tabselect.currentIndex()
+        self.current_analysis = ANALYSIS_TABS[index]
+        return self.current_analysis
         
 
     def get_selected_protocol(self):
@@ -289,6 +312,14 @@ class analysis_gui(QWidget):
                 sweep.blockSignals(False)
         self.plot_abf()
 
+
+    def _save_csv_for_current_file(self):
+        #for the current abf run the analysis and save the csv
+        self.run_indiv_analysis()
+        if self.get_current_analysis() is 'spike':
+            dfs = preprocess_abf(self.abf.abfFilePath, copy.deepcopy(self.param_dict), False, '')
+            save_data_frames(dfs[1], dfs[0], dfs[2], self.selected_dir, str(time.time()))
+
     def _find_outliers(self, df):
         outlier_dect = OneClassSVM(nu=0.1, kernel="rbf", gamma=0.1)
         temp_df = SimpleImputer(missing_values=np.nan, strategy='mean').fit_transform(df.select_dtypes(include=['float']))
@@ -310,7 +341,7 @@ class analysis_gui(QWidget):
         spike_count = []
         df_full = []
         df_running_avg = []
-        parallel_processing = True
+        parallel_processing = False
         i = 0
 
         if parallel_processing:
@@ -398,10 +429,65 @@ class analysis_gui(QWidget):
                 else:
                     self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99)
                     self.axe1.scatter(self.spike_df[sweep]['threshold_t'], self.spike_df[sweep]['threshold_v'], color='#00FF00', s=10, zorder=99)
+
+        #if the analysis was subthreshold, we need to plot the results
+        if self.subthres_df is not None:
+            cols = self.subthres_df.columns
+            for sweep in self.selected_sweeps:
+                self.abf.setSweep(sweep)
+                if sweep < 9:
+                    real_sweep_number = '00' + str(sweep + 1)
+                elif sweep > 8 and sweep < 99:
+                    real_sweep_number = '0' + str(sweep + 1)
+                cols_for_sweep = [c for c in cols if real_sweep_number in c]
+                if len(cols_for_sweep) == 0:
+                    continue
+                temp_df = self.subthres_df[cols_for_sweep]
+                #decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.abfID)
+                #pull out the params, we want the decay, A1, b1, b2
+                decay_fast = 1/temp_df[f"fast 2 phase decay {real_sweep_number}"].to_numpy()[0]
+                decay_slow = 1/temp_df[f"slow 2 phase decay {real_sweep_number}"].to_numpy()[0]
+                a = temp_df[f"Curve fit A {real_sweep_number}"].to_numpy()[0]
+                b1 = temp_df[f"Curve fit b1 {real_sweep_number}"].to_numpy()[0]
+                b2 = temp_df[f"Curve fit b2 {real_sweep_number}"].to_numpy()[0]
+                #compute the curve fit
+                dataT, dataV, dataI = self.abf.sweepX, self.abf.sweepY, self.abf.sweepC
+                time_aft = 0.5
+                diff_I = np.diff(dataI)
+                downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+                end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
+
+                upperC = np.amax(dataV[downwardinfl:end_index])
+                lowerC = np.amin(dataV[downwardinfl:end_index])
+                diff = np.abs(upperC - lowerC)
+                t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
+                y = exp_decay_2p(t1, a,b1, decay_fast, b2, decay_slow)
+                self.axe1.plot(dataT[downwardinfl:end_index], y, color='#00FF00', zorder=99)
+                #also plot the sag
+                upwardinfl = np.nonzero(np.where(diff_I>0, diff_I, 0))[0][0]
+                
+                diff_I = np.diff(dataI)
+                downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+                end_index2 = upwardinfl - int((upwardinfl - downwardinfl) * time_aft)
+                dt = dataT[1] - dataT[0] #in s
+                vm = np.nanmean(dataV[end_index:upwardinfl])
+         
+                min_point = downwardinfl + np.argmin(dataV[downwardinfl:end_index2])
+                
+                avg_min = np.nanmean(dataV[min_point])
+                sag_diff = avg_min - vm
+                sag_diff_plot = np.arange(avg_min, vm, 1)
+                self.axe1.scatter(dataT[min_point], dataV[min_point], c='r', marker='x', zorder=99, label="Min Point")
+                self.axe1.scatter(dataT[end_index:upwardinfl], dataV[end_index:upwardinfl], c='g', zorder=99, label="Mean Vm Measured")
+                self.axe1.plot(dataT[np.full(sag_diff_plot.shape[0], min_point, dtype=np.int64)], sag_diff_plot, label=f"Sag of {sag_diff}")
+
+
+                
         self.axe1.legend(loc='upper right')
         self.main_view.draw()
 
     def _plot_pyqtgraph(self):
+        '''TODO'''
         self.main_view.clear()
         #self.main_view.figure.canvas.setFixedWidth(900)
         self.axe1 = self.main_view.addPlot(1,1)

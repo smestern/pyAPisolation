@@ -26,16 +26,9 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
         #tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
         #tempframe = dfs.drop_duplicates(subset='file_name')
         #tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
+        
+        #df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
         dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
-        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
-            cols = df_running_avg_count.columns.values
-            df_ind = df_running_avg_count.loc[:,['foldername', 'filename', 'Sweep Number']]
-            index = pd.MultiIndex.from_frame(df_ind)
-            for p in running_lab:
-                temp_ind = [p in col for col in cols]
-                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
-                temp_df.to_excel(runf, sheet_name=p)
-        df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
         with pd.ExcelWriter(root_fold + '/spike_count_' + tag + '.xlsx') as runf:
             cols = df_spike_count.columns.values
             df_ind = df_select_by_col(df_spike_count, ['foldername', 'filename'])
@@ -46,6 +39,15 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
                 temp_df = temp_ind.set_index(index)
                 temp_df.to_excel(runf, sheet_name=key)
             #print(df_ind)
+        
+        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
+            cols = df_running_avg_count.columns.values
+            df_ind = df_running_avg_count.loc[:,['foldername', 'filename', 'Sweep Number']]
+            index = pd.MultiIndex.from_frame(df_ind)
+            for p in running_lab:
+                temp_ind = [p in col for col in cols]
+                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
+                temp_df.to_excel(runf, sheet_name=p)
     #except: 
         #print('error saving')
 
