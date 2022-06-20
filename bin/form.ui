@@ -336,6 +336,16 @@
            </layout>
           </item>
           <item>
+           <widget class="QLineEdit" name="outputTag">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="placeholderText">
+             <string>output_tag</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="run_analysis">
             <property name="text">
              <string>Analyze Folder</string>

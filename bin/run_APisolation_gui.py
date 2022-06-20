@@ -95,7 +95,7 @@ class analysis_gui(QWidget):
         self.end_time = self.main_widget.findChild(QWidget, "end_time")
         self.end_time.textChanged.connect(self.analysis_changed)
         self.protocol_select = self.main_widget.findChild(QWidget, "protocol_selector")
-        self.protocol_select.currentIndexChanged.connect(self.analysis_changed)
+        self.protocol_select.currentIndexChanged.connect(self.change_protocol_select)
         self.bstim = self.main_widget.findChild(QWidget, "bstim")
         self.bessel = self.main_widget.findChild(QWidget, "bessel_filt")
         self.protocol_select.currentIndexChanged.connect(self.analysis_changed)
@@ -106,6 +106,7 @@ class analysis_gui(QWidget):
         self.refresh.clicked.connect(self.analysis_changed_run)
         self.saveCur = self.main_widget.findChild(QWidget, "saveCur")
         self.saveCur.clicked.connect(self._save_csv_for_current_file)
+        self.outputTag = self.main_widget.findChild(QWidget, "outputTag")
         #link the settings buttons for the cm calc analysis
         self.tabselect = self.main_widget.findChild(QWidget, "tabWidget")
         self.tabselect.currentChanged.connect(self.analysis_changed_run)
@@ -122,13 +123,15 @@ class analysis_gui(QWidget):
         self.scan_popup = QProgressDialog("Scanning files", "Cancel", 0, len(self.abf_list))
         #Generate the protocol list
         self.protocol_list = []
-        for abf in self.abf_list:
+        self.protocol_file_pair = {}
+        for name, abf in self.abf_file:
             try:
                 self.scan_popup.setValue(self.scan_popup.value() + 1)
                 abf_obj = pyabf.ABF(abf, loadData=False)
                 self.protocol_list.append(abf_obj.protocol)
+                self.protocol_file_pair[name] = abf_obj.protocol
             except:
-                pass
+                self.protocol_file_pair[name] = 'unknown'
         #we really only care about unique protocols
         #close the popup
         self.scan_popup.close()
@@ -139,6 +142,23 @@ class analysis_gui(QWidget):
         self.protocol_select.clear()
         self.protocol_select.addItems(self.protocol_list)
         self.file_list.addItems(self.abf_list_name)
+
+    def change_protocol_select(self):
+        self.get_selected_protocol()
+        #filter the file list by the protocol
+        if self.selected_protocol == "[No Filter]"  or self.selected_protocol == "":
+            for i in np.arange(self.file_list.count()):
+                item = self.file_list.item(i)
+                item.setHidden(False)
+        else:
+            for i in np.arange(self.file_list.count()):
+                item = self.file_list.item(i)
+                if self.protocol_file_pair[item.text()] != self.selected_protocol:
+                    item.setHidden(True)
+                else:
+                    item.setHidden(False)
+        self.analysis_changed()
+        
 
     def abf_select(self, item):
         self.selected_abf = self.abf_file[self.file_list.currentRow()][1]
@@ -249,12 +269,14 @@ class analysis_gui(QWidget):
 
     def analysis_changed(self):
         self.get_analysis_params()
-        self.refresh
+        #update the refresh button to reflect that the analysis has changed
+        self.refresh.setText("🔄 Refresh plot (Analysis Changed)")
         
     def analysis_changed_run(self):
         if self.abf is not None:
             self.run_indiv_analysis( )
             self.plot_abf()
+            self.refresh.setText("🔄 Refresh plot")
 
     
     def run_analysis(self):
@@ -263,7 +285,7 @@ class analysis_gui(QWidget):
         self.get_selected_protocol()
         #df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
         df = self._inner_analysis_loop(self.selected_dir, self.param_dict,  self.selected_protocol)     
-        save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time()))
+        save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time())+self.outputTag.text())
         
     def get_current_analysis(self):
         index = self.tabselect.currentIndex()
@@ -318,7 +340,7 @@ class analysis_gui(QWidget):
         self.run_indiv_analysis()
         if self.get_current_analysis() is 'spike':
             dfs = preprocess_abf(self.abf.abfFilePath, copy.deepcopy(self.param_dict), False, '')
-            save_data_frames(dfs[1], dfs[0], dfs[2], self.selected_dir, str(time.time()))
+            save_data_frames(dfs[1], dfs[0], dfs[2], self.selected_dir, str(time.time())+self.outputTag.text())
 
     def _find_outliers(self, df):
         outlier_dect = OneClassSVM(nu=0.1, kernel="rbf", gamma=0.1)
