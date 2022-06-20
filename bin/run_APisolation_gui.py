@@ -23,7 +23,7 @@ from matplotlib.backends.backend_qtagg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
 print("Loaded external libraries")
-from pyAPisolation.abf_featureextractor import folder_feature_extract, save_data_frames, preprocess_abf, analyze_subthres
+from pyAPisolation.abf_featureextractor import folder_feature_extract, save_data_frames, preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
 from pyAPisolation.patch_utils import load_protocols
 from pyAPisolation.patch_subthres import exp_decay_2p, exp_decay_1p, exp_decay_factor
 
@@ -110,6 +110,18 @@ class analysis_gui(QWidget):
         #link the settings buttons for the cm calc analysis
         self.tabselect = self.main_widget.findChild(QWidget, "tabWidget")
         self.tabselect.currentChanged.connect(self.analysis_changed_run)
+        self.subthresSweeps = self.main_widget.findChild(QWidget, "subthresSweeps")
+        self.subthresSweeps.textChanged.connect(self.analysis_changed)
+        self.stimPer = self.main_widget.findChild(QWidget, "stimPer")
+        self.stimPer.textChanged.connect(self.analysis_changed)
+        self.stimfind = self.main_widget.findChild(QWidget, "bstim_2")
+        self.stimfind.clicked.connect(self.analysis_changed)
+        self.startCM = self.main_widget.findChild(QWidget, "startCM")
+        self.startCM.textChanged.connect(self.analysis_changed)
+        self.endCM = self.main_widget.findChild(QWidget, "endCM")
+        self.endCM.textChanged.connect(self.analysis_changed)
+        self.besselFilterCM = self.main_widget.findChild(QWidget, "bessel_filt_cm")
+        self.besselFilterCM.textChanged.connect(self.analysis_changed)
 
     
     def file_select(self):
@@ -251,10 +263,11 @@ class analysis_gui(QWidget):
             #self.spike_df = pd.concat(self.spike_df)
         elif self.get_current_analysis() is 'subthres':
             self.spike_df = None
-            self.subthres_df, _ = analyze_subthres(self.abf)
+            self.subthres_df, _ = analyze_subthres(self.abf, **self.subt_param_dict)
             
     
     def get_analysis_params(self):
+        #build the spike param_dict
         dv_cut = float(self.dvdt_thres.text())
         lowerlim = float(self.start_time.text())
         upperlim = float(self.end_time.text())
@@ -265,6 +278,26 @@ class analysis_gui(QWidget):
         bessel_filter = float(self.bessel.text())
         self.param_dict = {'filter': 0, 'dv_cutoff':dv_cut, 'start': lowerlim, 'end': upperlim, 'max_interval': tp_cut, 'min_height': min_cut, 'min_peak': min_peak, 
         'stim_find': bstim_find, 'bessel_filter': bessel_filter}
+        #build the subthres param_dict
+        try:
+            subt_sweeps = np.fromstring(self.subthresSweeps.text(), dtype=int, sep=',')
+            if len(subt_sweeps) == 0:
+                subt_sweeps = None
+        except:
+            subt_sweeps = None
+        try:
+            start_sear = float(self.startCM.text())
+            end_sear = float(self.endCM.text())
+        except:
+            start_sear = None
+            end_sear = None
+        time_after = float(self.stimPer.text())
+        
+        if start_sear == 0:
+            start_sear = None
+        if end_sear == 0:
+            end_sear = None
+        self.subt_param_dict ={'subt_sweeps': subt_sweeps, 'time_after': time_after, 'start_sear': start_sear, 'end_sear': end_sear}
         return self.param_dict
 
     def analysis_changed(self):
@@ -280,12 +313,18 @@ class analysis_gui(QWidget):
 
     
     def run_analysis(self):
-        #run the folder analysis
-        self.get_analysis_params()
-        self.get_selected_protocol()
-        #df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
-        df = self._inner_analysis_loop(self.selected_dir, self.param_dict,  self.selected_protocol)     
-        save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time())+self.outputTag.text())
+        #check whether we are running spike or subthres
+        if self.get_current_analysis() is 'spike':
+            #run the folder analysis
+            self.get_analysis_params()
+            self.get_selected_protocol()
+            #df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
+            df = self._inner_analysis_loop(self.selected_dir, self.param_dict,  self.selected_protocol)     
+            save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time())+self.outputTag.text())
+        elif self.get_current_analysis() is 'subthres':
+            self.get_analysis_params()
+            self.get_selected_protocol()
+            df = self._inner_analysis_loop_subthres(self.selected_dir, self.subt_param_dict,  self.selected_protocol)
         
     def get_current_analysis(self):
         index = self.tabselect.currentIndex()
@@ -408,6 +447,20 @@ class analysis_gui(QWidget):
         #         f.setBackgroundColor(QtGui.QColor(255, 0, 0))
 
         return dfs, df_spike_count, df_running_avg_count
+
+    def _inner_analysis_loop_subthres(self, folder, param_dict, protocol_name):
+        filelist = glob.glob(folder + "\\**\\*.abf", recursive=True)
+        popup = QProgressDialog("Operation in progress.", "Cancel", 0, len(filelist), self)
+        popup.setWindowModality(QtCore.Qt.WindowModal)
+        popup.forceShow()
+        dfs = []
+        for i, f in enumerate(filelist):
+            popup.setValue(i)
+            df = preprocess_abf_subthreshold(f, copy.deepcopy(param_dict), protocol_name)
+            dfs.append(df)
+        popup.hide()
+        return pd.concat(dfs, axis=1)
+
 
     def _plot_matplotlib(self):
         self.main_view.figure.clear()

@@ -189,14 +189,13 @@ def preprocess_abf_subthreshold(file_path, protocol_name='', param_dict={}):
         if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
             print(file_path + ' import')
 
-            temp_spike_df, df, temp_running_bin = analyze_subthres(abf, sweeplist=None,  param_dict=param_dict)
-            return temp_spike_df, df, temp_running_bin
+            df, avg = analyze_subthres(abf, sweeplist=None,  **param_dict)
+            return df, avg
         else:
             print('Not correct protocol: ' + abf.protocol)
-            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+            return pd.DataFrame(), pd.DataFrame()
     except:
-       return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-
+       return pd.DataFrame(), pd.DataFrame()
 
 def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False):
     filename = abf.abfID
