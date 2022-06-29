@@ -302,9 +302,6 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
             plt.savefig(root_fold+'//cm_plots//sagfit'+abf.abfID+'sweep'+real_sweep_number+'.png')
     
     full_dataI = np.vstack(full_dataI) 
-    #indices_of_same = np.any(full_dataI, axis=1)
-    #if np.any(indices_of_same) == False:
-    #    indices_of_same = 0
     indices_of_same = np.arange(full_dataI.shape[0])
     full_dataV = np.vstack(full_dataV)
     if bplot == True:
