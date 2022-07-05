@@ -201,7 +201,7 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
             temp_spike_df["mean_heightPT"] = [np.nanmean(abs(df['peak_v'].to_numpy() - df['fast_trough_v'].to_numpy()))]
             temp_spike_df["mean_heightTP"] = [np.nanmean(abs(df['threshold_v'].to_numpy() - df['peak_v'].to_numpy()))]
             temp_spike_df["mean_upstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
-            temp_spike_df["mean_downstroke"] = [np.nanmean(df['udownstroke'].to_numpy())]
+            temp_spike_df["mean_downstroke"] = [np.nanmean(df['downstroke'].to_numpy())]
             temp_spike_df["mean_fast_trough"] = [np.nanmean(df['fast_trough_v'].to_numpy())]
             spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
            
