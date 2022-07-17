@@ -126,13 +126,15 @@ class analysis_gui(QWidget):
     
     def file_select(self):
         self.selected_dir = QFileDialog.getExistingDirectory()
-        self.abf_list = glob.glob(self.selected_dir + "\\**\\*.abf", recursive=True)
+        self.abf_list = glob.glob(self.selected_dir + "/**/*.abf", recursive=True)
         self.abf_list_name = [os.path.basename(x) for x in self.abf_list]
         self.pairs = [c for c in zip(self.abf_list_name, self.abf_list)]
         self.abf_file = self.pairs
         self.selected_sweeps = None
         #create a popup about the scanning the files
         self.scan_popup = QProgressDialog("Scanning files", "Cancel", 0, len(self.abf_list))
+        self.scan_popup.setWindowModality(QtCore.Qt.WindowModal)
+        self.scan_popup.forceShow()
         #Generate the protocol list
         self.protocol_list = []
         self.protocol_file_pair = {}
@@ -395,14 +397,14 @@ class analysis_gui(QWidget):
         dfs = pd.DataFrame()
         df_spike_count = pd.DataFrame()
         df_running_avg_count = pd.DataFrame()
-        filelist = glob.glob(folder + "\\**\\*.abf", recursive=True)
+        filelist = glob.glob(folder + "/**/*.abf", recursive=True)
         popup = QProgressDialog("Operation in progress.", "Cancel", 0, len(filelist), self)
         popup.setWindowModality(QtCore.Qt.WindowModal)
         popup.forceShow()
         spike_count = []
         df_full = []
         df_running_avg = []
-        parallel_processing = False
+        parallel_processing = True
         i = 0
 
         if parallel_processing:
@@ -449,7 +451,7 @@ class analysis_gui(QWidget):
         return dfs, df_spike_count, df_running_avg_count
 
     def _inner_analysis_loop_subthres(self, folder, param_dict, protocol_name):
-        filelist = glob.glob(folder + "\\**\\*.abf", recursive=True)
+        filelist = glob.glob(folder + "/**/*.abf", recursive=True)
         popup = QProgressDialog("Operation in progress.", "Cancel", 0, len(filelist), self)
         popup.setWindowModality(QtCore.Qt.WindowModal)
         popup.forceShow()
