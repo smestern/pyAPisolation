@@ -484,7 +484,7 @@ class analysis_gui(QWidget):
             self.abf.setSweep(sweep)
             self.axe1.plot(self.abf.sweepX, self.abf.sweepY, label=str(sweep))
             #plot the dvdt
-            self.axe2.plot(self.abf.sweepX[:-1], (np.diff(self.abf.sweepY)/np.diff(self.abf.sweepX))/1000)
+            self.axe2.plot(self.abf.sweepX[:-1], (np.diff(self.abf.sweepY)/(np.diff(self.abf.sweepX)*1000)))
         self.axe1.set_title(self.selected_abf_name)
 
         #draw the dvdt threshold
@@ -502,10 +502,15 @@ class analysis_gui(QWidget):
                 if labeled_legend == False:
                     self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99, label='Spike Peak')
                     self.axe1.scatter(self.spike_df[sweep]['threshold_t'], self.spike_df[sweep]['threshold_v'], color='#00FF00', s=10, zorder=99, label='Threshold')
+                    #plot the dv/dt threshold
+                    self.axe2.scatter(self.spike_df[sweep]['downstroke_t'], self.spike_df[sweep]['downstroke'], color='#FF0000', label='Downstroke/Decay')
+                    self.axe2.scatter(self.spike_df[sweep]['upstroke_t'], self.spike_df[sweep]['upstroke'], color='#00FF00', label='Upstroke/Rise')
                     labeled_legend = True
                 else:
                     self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99)
                     self.axe1.scatter(self.spike_df[sweep]['threshold_t'], self.spike_df[sweep]['threshold_v'], color='#00FF00', s=10, zorder=99)
+                    self.axe2.scatter(self.spike_df[sweep]['downstroke_t'], self.spike_df[sweep]['downstroke'], color='#FF0000')
+                    self.axe2.scatter(self.spike_df[sweep]['upstroke_t'], self.spike_df[sweep]['upstroke'], color='#00FF00')
 
         #if the analysis was subthreshold, we need to plot the results
         if self.subthres_df is not None:
@@ -561,6 +566,7 @@ class analysis_gui(QWidget):
 
                 
         self.axe1.legend(loc='upper right')
+        self.axe2.legend(loc='upper right')
         self.main_view.draw()
 
     def _plot_pyqtgraph(self):

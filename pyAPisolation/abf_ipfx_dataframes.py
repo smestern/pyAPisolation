@@ -190,7 +190,7 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
             temp_spike_df["rheobase_heightTP"] = [abs(df['threshold_v'].to_numpy()[0] - df['peak_v'].to_numpy()[0])]
                 
             temp_spike_df["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
-            temp_spike_df["rheobase_downstroke"] = [df['upstroke'].to_numpy()[0]]
+            temp_spike_df["rheobase_downstroke"] = [df['downstroke'].to_numpy()[0]]
             temp_spike_df["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
             for key in ipfx_train_feature_labels:
                 temp_spike_df[f"mean_{key}"] = [np.nanmean(df[key].to_numpy())]
@@ -201,7 +201,7 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
             temp_spike_df["mean_heightPT"] = [np.nanmean(abs(df['peak_v'].to_numpy() - df['fast_trough_v'].to_numpy()))]
             temp_spike_df["mean_heightTP"] = [np.nanmean(abs(df['threshold_v'].to_numpy() - df['peak_v'].to_numpy()))]
             temp_spike_df["mean_upstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
-            temp_spike_df["mean_downstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
+            temp_spike_df["mean_downstroke"] = [np.nanmean(df['downstroke'].to_numpy())]
             temp_spike_df["mean_fast_trough"] = [np.nanmean(df['fast_trough_v'].to_numpy())]
             spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
            
