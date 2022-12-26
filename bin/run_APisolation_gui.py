@@ -509,8 +509,11 @@ class analysis_gui(QWidget):
                 else:
                     self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99)
                     self.axe1.scatter(self.spike_df[sweep]['threshold_t'], self.spike_df[sweep]['threshold_v'], color='#00FF00', s=10, zorder=99)
-                    self.axe2.scatter(self.spike_df[sweep]['downstroke_t'], self.spike_df[sweep]['downstroke'], color='#FF0000')
-                    self.axe2.scatter(self.spike_df[sweep]['upstroke_t'], self.spike_df[sweep]['upstroke'], color='#00FF00')
+                    try:
+                        self.axe2.scatter(self.spike_df[sweep]['downstroke_t'], self.spike_df[sweep]['downstroke'], color='#FF0000')
+                        self.axe2.scatter(self.spike_df[sweep]['upstroke_t'], self.spike_df[sweep]['upstroke'], color='#00FF00')
+                    except:
+                        pass
 
         #if the analysis was subthreshold, we need to plot the results
         if self.subthres_df is not None:
