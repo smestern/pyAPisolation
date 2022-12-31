@@ -1,4 +1,5 @@
 import numpy as np
+from loadABF import loadABF
 try:
     import h5py
     ##Does not import when using python-matlab interface on windows machines
@@ -6,20 +7,50 @@ except:
     print("h5py import fail")
 import pandas as pd
 
-
-def loadNWB(file_path, return_obj=False):
-    ''' Loads the nwb object and returns three arrays dataX, dataY, dataC and optionally the object.
+def loadFile(file_path, return_obj=False, old=False):
+    """Loads the nwb object and returns three arrays dataX, dataY, dataC and optionally the object.
     same input / output as loadABF for easy pipeline inclusion
-    
-    dataX - time (should be seconds)
-    dataY - voltage (should be mV)
-    dataC - current (should be pA)
-    dt - sampling interval (should be seconds)
-    '''
-    #try:
-    nwb = nwbFile(file_path)
-    #except:
-        #nwb = old_nwbFile(file_path)
+
+    Args:
+        file_path (str): [description]
+        return_obj (bool, optional): return the NWB object to access various properites. Defaults to False.
+        old (bool, optional): use the old indexing method, uneeded in most cases. Defaults to False.
+
+    Returns:
+        dataX: time (should be seconds)
+        dataY: voltage (should be mV)
+        dataC: current (should be pA)
+        dt: time step (should be seconds)
+    """    
+    if file_path.endswith(".nwb"):
+        return loadNWB(file_path, return_obj, old)
+    elif file_path.endswith(".abf"):
+        return loadABF(file_path, return_obj)
+    else:
+        raise Exception("File type not supported")
+
+
+
+def loadNWB(file_path, return_obj=False, old=False):
+    """Loads the nwb object and returns three arrays dataX, dataY, dataC and optionally the object.
+    same input / output as loadABF for easy pipeline inclusion
+
+    Args:
+        file_path (str): [description]
+        return_obj (bool, optional): return the NWB object to access various properites. Defaults to False.
+        old (bool, optional): use the old indexing method, uneeded in most cases. Defaults to False.
+
+    Returns:
+        dataX: time (should be seconds)
+        dataY: voltage (should be mV)
+        dataC: current (should be pA)
+        dt: time step (should be seconds)
+    """    
+   
+    if old:
+        nwb = old_nwbFile(file_path)
+    else:
+        nwb = nwbFile(file_path)
     
     fs_dict = nwb.rate # sampling rate info
     fs = fs_dict["rate"] # assumes units of Hz
@@ -95,13 +126,16 @@ class nwbFile(object):
             self.sweepCount = len(sweeps)
             self.rate = dict(f['acquisition'][sweeps[0]]['starting_time'].attrs.items())
             self.sweepYVars = dict(f['acquisition'][sweeps[-1]]['data'].attrs.items())
-            self.sweepCVars = dict(f['stimulus']['presentation'][sweeps[-1]]['data'].attrs.items())
+            try:
+                self.sweepCVars = dict(f['stimulus']['presentation'][sweeps[-1]]['data'].attrs.items())
+            except:
+                self.sweepCVars = None
             #self.temp = f['general']['Temperature'][()]
             ## Find the index's with long square
             index_to_use = []
             for key in sweeps: 
                 sweep_dict = dict(f['acquisition'][key].attrs.items())
-                if ('long' in sweep_dict['stimulus_description'] and 'rheo' not in sweep_dict['stimulus_description']):
+                if check_stimulus(sweep_dict['stimulus_description']):
                     index_to_use.append(key) 
 
             
@@ -111,9 +145,16 @@ class nwbFile(object):
             for sweep in index_to_use:
                 ##Load the response and stim
                 data_space_s = 1/(dict(f['acquisition'][sweep]['starting_time'].attrs.items())['rate'])
+                try:
+                    bias_current = f['acquisition'][sweep]['bias_current'][()]
+                    if np.isnan(bias_current):
+                        #continue
+                        bias_current = 0
+                except:
+                    bias_current = 0
                 temp_dataY = np.asarray(f['acquisition'][sweep]['data'][()])
                 temp_dataX = np.cumsum(np.hstack((0, np.full(temp_dataY.shape[0]-1,data_space_s))))
-                temp_dataC = np.asarray(f['stimulus']['presentation'][sweep]['data'][()])
+                temp_dataC = np.asarray(f['stimulus']['presentation'][sweep]['data'][()]) #+ (bias_current * 1e+12) #in pA => A
                 dataY.append(temp_dataY)
                 dataX.append(temp_dataX)
                 dataC.append(temp_dataC)
@@ -129,3 +170,21 @@ class nwbFile(object):
                 self.dataY = dataY
         return
 
+class stim_names:
+    stim_inc = ['long', '1000']
+    stim_exc = ['rheo', 'Rf50_']
+    def __init__(self):
+        self.stim_inc = stim_names.stim_inc
+        self.stim_exc = stim_names.stim_exc
+        return
+
+global_stim_names = stim_names()
+def check_stimulus(stim_desc):
+    try:
+        stim_desc_str = stim_desc.decode()
+    except:
+        stim_desc_str = stim_desc
+    #print(stim_desc_str)
+    include_s = np.any([x in stim_desc_str for x in global_stim_names.stim_inc])
+    exclude_s = np.invert(np.any([x in stim_desc_str for x in global_stim_names.stim_exc]))
+    return np.logical_and(include_s, exclude_s)

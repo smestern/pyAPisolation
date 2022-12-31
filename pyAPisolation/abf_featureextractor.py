@@ -38,7 +38,7 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     dfs = pd.DataFrame()
     df_spike_count = pd.DataFrame()
     df_running_avg_count = pd.DataFrame()
-    filelist = glob.glob(files + "\\**\\*.abf", recursive=True)
+    filelist = glob.glob(files + "/**/*.abf", recursive=True)
     spike_count = []
     df_full = []
     df_running_avg = []
@@ -48,8 +48,11 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
         pool.close()
         ##split out the results
         for result in results:
-            if result[0].empty:
-                print('Empty result')
+            temp_res = result
+            df_full.append(temp_res[1])
+            df_running_avg.append(temp_res[2])
+            spike_count.append(temp_res[0])
+        pool.join()
     else:
         for f in filelist:
             temp_df_spike_count, temp_full_df, temp_running_bin = preprocess_abf(f, copy.deepcopy(param_dict), plot_sweeps, protocol_name)

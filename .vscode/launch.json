@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": false,
+            "args": ["--data_folder", "/media/smestern/Expansion/IC1 Files_220106_183 cells/"]
         }
     ]
 }

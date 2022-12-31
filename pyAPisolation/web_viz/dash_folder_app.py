@@ -1,3 +1,10 @@
+#os sys imports
+import os
+import sys
+import glob
+import argparse
+
+#dash / plotly imports
 import dash
 from dash.dependencies import Input, Output
 import dash_table
@@ -6,50 +13,19 @@ import dash_bootstrap_components as dbc
 import dash_html_components as html
 import plotly.graph_objs as go
 import plotly.express as px
+
+#data science imports
 import pandas as pd
 import numpy as np
 import pyabf
-import os
-import sys
-import glob
+
 sys.path.append('..')
 sys.path.append('')
-os.chdir(".\\pyAPisolation\\")
 print(os.getcwd())
+#pyAPisolation imports
 from pyAPisolation.patch_ml import *
 from pyAPisolation.abf_featureextractor import *
-
-
-def loadABF(file_path, return_obj=False):
-    '''
-    Employs pyABF to generate numpy arrays of the ABF data. Optionally returns abf object.
-    Same I/O as loadNWB
-    '''
-    abf = pyabf.ABF(file_path)
-    dataX = []
-    dataY = []
-    dataC = []
-    for sweep in abf.sweepList:
-        abf.setSweep(sweep)
-        tempX = abf.sweepX
-        tempY = abf.sweepY
-        tempC = abf.sweepC
-        dataX.append(tempX)
-        dataY.append(tempY)
-        dataC.append(tempC)
-    npdataX = np.vstack(dataX)
-    npdataY = np.vstack(dataY)
-    npdataC = np.vstack(dataC)
-
-    if return_obj == True:
-
-        return npdataX, npdataY, npdataC, abf
-    else:
-
-        return npdataX, npdataY, npdataC
-
-    ##Final return incase if statement fails somehow
-    return npdataX, npdataY, npdataC
+from pyAPisolation.loadABF import loadFile
 
 def _df_select_by_col(df, string_to_find):
     columns = df.columns.values
@@ -62,11 +38,11 @@ def _df_select_by_col(df, string_to_find):
 
 
 class live_data_viz():
-    def __init__(self):
+    def __init__(self, dir_path=None, database_file=None):
         self.df_raw = None
         self.df = None
         self.para_df =None
-        self._run_analysis(os.getcwd()+'/bin/')
+        self._run_analysis(dir_path)
         
         app = dash.Dash("abf", external_stylesheets=[dbc.themes.BOOTSTRAP])
         
@@ -119,12 +95,7 @@ class live_data_viz():
             )], id='data-table-col')
 
          
-        app.layout = html.Div([dcc.Input(
-                id='dir-input',
-                placeholder='Enter a dir',
-                type='text',
-                value='/../bin'
-                ),
+        app.layout = html.Div([
                 dbc.Card([dbc.CardBody([
                  dbc.Row([col1, col2], style={"flex-wrap":"nowrap"}),
                  dbc.Row([col3])
@@ -334,8 +305,15 @@ class live_data_viz():
 
 
 if __name__ == '__main__':
-
-    app = live_data_viz()
+    #make an argparse to parse the command line arguments. command line args should be the path to the data folder, or 
+    #pregenerated dataframes
+    parser = argparse.ArgumentParser(description='web app for visualizing data')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--data_folder', type=str, help='path to the data folder containing the ABF files')
+    group.add_argument('--data_df', type=str, help='path to the pregenerated database')
+    args = parser.parse_args()
+    data_folder = args.data_folder
+    app = live_data_viz(data_folder)
 
 
     app.app.run_server(host= '0.0.0.0',debug=False)

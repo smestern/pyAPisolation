@@ -4,7 +4,7 @@ import logging
 import pyabf
 from ipfx.sweep import Sweep,SweepSet
 from ipfx.ephys_data_set import EphysDataSet
-
+from . import loadNWB
 
 class ABFDataSet(EphysDataSet):
     def __init__(self, sweep_info=None, abf_file=None, ontology=None, api_sweeps=True, validate_stim=True):
