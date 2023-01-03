@@ -25,7 +25,7 @@ print(os.getcwd())
 #pyAPisolation imports
 from pyAPisolation.patch_ml import *
 from pyAPisolation.abf_featureextractor import *
-from pyAPisolation.loadABF import loadFile
+from pyAPisolation.loadNWB import loadFile
 
 def _df_select_by_col(df, string_to_find):
     columns = df.columns.values
@@ -42,7 +42,7 @@ class live_data_viz():
         self.df_raw = None
         self.df = None
         self.para_df =None
-        self._run_analysis(dir_path)
+        self._run_analysis(dir_path, database_file)
         
         app = dash.Dash("abf", external_stylesheets=[dbc.themes.BOOTSTRAP])
         
@@ -58,18 +58,8 @@ class live_data_viz():
                     id="loading-2",
                     children=[html.Div(id='datatable-plot-cell', style={
                     "flex-wrap": "nowrap" })])], width='auto')
-        col1 = dbc.Col([dcc.Loading(
-                    id="loading-3",
-                    children=[dcc.Graph(id='UMAP-graph',
-                        figure=umap_fig, style={
-                            "width": "100%",
-                            "height": "100%"
-                        }
-                    )])], width='auto') # config=dict(
-                 #   autosizable=True,
-                  #  fillFrame=False
-                #),
-                #responsive=True
+        col1 = dbc.Col(umap_fig,
+                     width='auto')
         col3 = dbc.Col([dash_table.DataTable(
                 id='datatable-row-ids',
                 columns=[
@@ -97,7 +87,7 @@ class live_data_viz():
          
         app.layout = html.Div([
                 dbc.Card([dbc.CardBody([
-                 dbc.Row([col1, col2], style={"flex-wrap":"nowrap"}),
+                 dbc.Row([col1, col2]),
                  dbc.Row([col3])
                  ])]),
                 dcc.Interval(
@@ -109,9 +99,6 @@ class live_data_viz():
         self.app = app
         #Define Callbacks
         app.callback(
-        Output('loading-3', 'children'),
-        Input('dir-input', 'children'))(self.gen_umap_plots)
-        app.callback(
         Output('loading-2', 'children'),
         Input('datatable-row-ids', 'derived_virtual_row_ids'),
         Input('datatable-row-ids', 'selected_row_ids'),
@@ -119,23 +106,24 @@ class live_data_viz():
 
 
         app.callback(Output('datatable-row-ids', 'data'), 
-                   Input('UMAP-graph', 'restyleData'),
+                   Input('UMAP-graph', 'selectedData'),
                     Input('UMAP-graph', 'figure')
-                    )(self.filter_datatable)
+                    )(self._filter_datatable_umap)
 
-        app.callback(
-            Output('data-table-col', 'children'),
-            Input('dir-input', 'value'))(self._run_analysis)
- 
-        app.callback(Output('dir-input', 'value'),
-                    Input('interval-component', 'n_intervals'))(self._gen_abf_list)
-
+        
     def _gen_abf_list(self, dir):
         #os.path.abspath(dir)
         pass
 
-    def _run_analysis(self, dir):
-        _, df, _ = folder_feature_extract(os.path.abspath(dir), default_dict, protocol_name='')
+    def _run_analysis(self, dir=None, df=None):
+        if df is None:
+            
+            if dir is not None:
+                _, df, _ = folder_feature_extract(os.path.abspath(dir), default_dict, protocol_name='')
+            else:
+                _, df, _ = folder_feature_extract(os.path.abspath('../data/'), default_dict, protocol_name='')
+        else:
+            df = pd.read_csv(df) 
         self.df_raw = df
         df = _df_select_by_col(df, ["rheo", "filename", "foldername", "QC"])
         df['id'] = df["filename"]
@@ -166,28 +154,38 @@ class live_data_viz():
             )]
 
     def gen_umap_plots(self,*args):
-        pre_df = preprocess_df(self.df)
-        #data = dense_umap(pre_df)
-        #labels = cluster_df(pre_df)
-        df = _df_select_by_col(self.df, ["rheo", "filename"])
-        #fig = go.Figure(data=go.Scatter(x=data[:,0], y=data[:,1], mode='markers', marker=dict(color=labels), ids=self.df['id'].to_numpy()))
-        fig = px.parallel_coordinates(df, color="rheobase_width",
-                             color_continuous_scale=px.colors.diverging.Tealrose)
-        self.para_df = df
+        pre_df, outliers = preprocess_df(self.df)
+        umap_labels_df, labels_df = _df_select_by_col(self.df_raw, ['umap']), _df_select_by_col(self.df_raw, ['label'])
+        if umap_labels_df.empty is False:
+            
+            data = umap_labels_df[['umap X', 'umap Y']].to_numpy()
+            labels = labels_df['label_c'].to_numpy()
+        else:
+            data = dense_umap(pre_df)
+            labels = cluster_df(pre_df)
+        #df = _df_select_by_col(self.df, ["rheo", "filename"])
+        fig = go.Figure(data=go.Scatter(x=data[:,0], y=data[:,1], mode='markers', marker=dict(color=labels), ids=self.df['id'].to_numpy()))
+        #fig = px.parallel_coordinates(df, color="rheobase_width",
+                             #color_continuous_scale=px.colors.diverging.Tealrose)
+        self.para_df = pre_df
         fig.layout.autosize = True
         return [
                 dcc.Graph(
                     id='UMAP-graph',
                     figure=fig,
-                   style={
+                    style={
                     "width": "100%",
                     "height": "100%"
                     },
+                    config=dict(
+                        autosizable=True,
+                    ),
+                    responsive=True
                     
                 )
             ]
 
-    def filter_datatable(self, selectedData, fig):
+    def _filter_datatable_para(self, selectedData, fig):
         def bool_multi_filter(df, kwargs):
             return ' & '.join([f'{key} >= {i[0]} & {key} <= {i[1]}' for key, i in kwargs.items()])
 
@@ -203,6 +201,19 @@ class live_data_viz():
                     constraints[row['label']] = [-9999, 9999]
             out = bool_multi_filter(self.df, constraints)
             filtered_df = self.df.query(out)
+            out_data = filtered_df.to_dict('records')
+        return out_data
+    
+    def _filter_datatable_umap(self, selectedData, fig):
+        def bool_multi_filter(df, kwargs):
+            return ' & '.join([f'{key} >= {i[0]} & {key} <= {i[1]}' for key, i in kwargs.items()])
+
+        if selectedData is None:
+            out_data = self.df.to_dict('records')
+        else:
+            selected_ids = [x['id'] for x in selectedData['points']]
+            
+            filtered_df = self.df.loc[selected_ids]
             out_data = filtered_df.to_dict('records')
         return out_data
 
@@ -231,13 +242,12 @@ class live_data_viz():
             traces = []
             for sweep_x, sweep_y in zip(x, y):
                 traces.append(go.Scattergl(x=sweep_x, y=sweep_y, mode='lines'))
-            fig =  go.Figure(data=traces)
+            fig =  go.Figure(data=traces, )
 
             fig.layout.autosize = True
 
 
-            return [
-                dcc.Graph(
+            return dcc.Graph(
                     id="file_plot",
                     figure=fig,
                    style={
@@ -249,7 +259,7 @@ class live_data_viz():
                     ),
                     responsive=True
                 )
-            ]
+            
 
     
     def update_graphs(self, row_ids, selected_row_ids, active_cell):
@@ -313,7 +323,9 @@ if __name__ == '__main__':
     group.add_argument('--data_df', type=str, help='path to the pregenerated database')
     args = parser.parse_args()
     data_folder = args.data_folder
-    app = live_data_viz(data_folder)
+    data_df = args.data_df
+
+    app = live_data_viz(data_folder, database_file=data_df)
 
 
     app.app.run_server(host= '0.0.0.0',debug=False)

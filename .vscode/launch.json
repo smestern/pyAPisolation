@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": ["--data_folder", "/media/smestern/Expansion/IC1 Files_220106_183 cells/"]
+            "args": ["--data_df", "/media/smestern/Expansion/PVN_MARM_PROJECT/dataframe/main_sheet_filtered_new7.csv"]
         }
     ]
 }

@@ -1,19 +1,5 @@
 import numpy as np
 import pyabf
-from . import loadNWB
-
-def loadFile(file_path, return_obj=False):
-    '''
-    Loads an ABF or NWB file and returns the data as numpy arrays. Optionally returns abf object.
-    '''
-    if file_path[-3:] == 'abf':
-        return loadABF(file_path, return_obj=return_obj)
-    elif file_path[-3:] == 'nwb':
-        return loadNWB(file_path, return_obj=return_obj)
-    else:
-        raise ValueError('File type not recognized. Must be .abf or .nwb')
-
-
 
 
 def loadABF(file_path, return_obj=False):

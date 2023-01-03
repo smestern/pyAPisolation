@@ -16,7 +16,6 @@ bin/form.ui
 bin/main.pyproject
 bin/org_by_protocol.py
 bin/org_by_protocol.spec
-bin/pyABF-APisolation - Code Walkthrough.ipynb
 bin/pyAPisolation copy 2.spec
 bin/pyAPisolation copy.spec
 bin/pyAPisolation.spec
@@ -36,13 +35,12 @@ bin/run_web_gui.spec
 bin/runqthook.py
 pyAPisolation/QC.py
 pyAPisolation/__init__.py
-pyAPisolation/abf_chirp.py
-pyAPisolation/abf_dataset.py
 pyAPisolation/abf_featureextractor.py
 pyAPisolation/abf_ipfx_dataframes.py
 pyAPisolation/abfanalysis.ipynb
 pyAPisolation/abfanalysis_local.ipynb
 pyAPisolation/abfderivative.py
+pyAPisolation/dataset.py
 pyAPisolation/loadABF.py
 pyAPisolation/loadNWB.py
 pyAPisolation/patch_VC_analysis.py
@@ -59,9 +57,9 @@ pyAPisolation/deprecated/nuactionpotential.py
 pyAPisolation/deprecated/run_APisolation.py
 pyAPisolation/deprecated/run_APisolation_dir.py
 pyAPisolation/dev/__init__.py
+pyAPisolation/dev/abf_chirp.py
 pyAPisolation/dev/grow.py
 pyAPisolation/dev/main.spec
-pyAPisolation/dev/marm_concat_analysis.py
 pyAPisolation/dev/run_APisolation_ipfx_fv_ic1.py
 pyAPisolation/dev/run_FV_SPCA.py
 pyAPisolation/dev/run_GROW_ANALYSIS copy.ipynb
@@ -83,6 +81,8 @@ pyAPisolation/dev/old/run_GROW_ANALYSIS copy 3.ipynb
 pyAPisolation/dev/old/run_GROW_ANALYSIS copy.ipynb
 pyAPisolation/dev/old/run_GROW_ANALYSIS_gp.ipynb
 pyAPisolation/dev/old/run_GROW_ANALYSIS_polyfit.ipynb
+pyAPisolation/web_viz/build_database.py
+pyAPisolation/web_viz/dandi_scraper.py
 pyAPisolation/web_viz/dash_folder_app.py
 pyAPisolation/web_viz/run_output_to_web2.py
 pyAPisolation/web_viz/run_output_to_web_qc.py
