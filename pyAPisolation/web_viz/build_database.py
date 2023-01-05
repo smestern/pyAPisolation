@@ -43,6 +43,7 @@ from ipfx.dataset.create import create_ephys_data_set
 from pyAPisolation import patch_utils
 from pyAPisolation.loadNWB import loadNWB, GLOBAL_STIM_NAMES
 
+
 # ==== GLOBALS =====
 _ONTOLOGY = ju.read(StimulusOntology.DEFAULT_STIMULUS_ONTOLOGY_FILE)
 _UNIT_ONTOLOGY = {'amp': ['amp', 'ampere', 'amps', 'amperes', 'A'],'volt': ['volt', 'v', 'volts', 'V'], 'sec': ['sec', 's', 'second', 'seconds', 'secs', 'sec']}
@@ -155,6 +156,49 @@ def get_stim_characteristics(i, t, test_pulse=True, start_epoch=None, end_epoch=
 
 ipfx.stim_features.get_stim_characteristics = get_stim_characteristics
 
+def parse_long_pulse_from_dataset(data_set):
+    sweeps = []
+    start_times = []
+    end_times = []
+    for sweep in np.arange(len(data_set.dataY)):
+        i = data_set.dataC[sweep]*1
+        t = data_set.dataX[sweep]
+        v = data_set.dataY[sweep]
+        dt = t[1] - t[0]
+        #if its not current clamp
+        if match_unit(data_set.sweepMetadata[sweep]['stim_dict']["unit"]) != "amp":
+            continue
+        #if the sweep v is in volts, convert to mV, ipfx wants mV
+        if match_unit(data_set.sweepMetadata[sweep]['resp_dict']["unit"]) == "volt":
+            #sometimes the voltage is in volts, sometimes in mV, this is a hack to fix that
+            if np.max(v) > 500 and np.min(v) < -500:
+                #possibly in nV or something else, convert to mV anyway
+                v = v/1000
+            elif np.max(v) < 1 and np.min(v) > -1:
+                #probably in volts, convert to mV
+                v = v*1000
+        
+        #if the sweep i is in amps, convert to pA, ipfx wants pA
+        if match_unit(data_set.sweepMetadata[sweep]['stim_dict']["unit"])=="amp":
+            if np.max(i) < 0.1 and np.min(i) > -0.1:
+                #probably in amp, convert to picoAmps
+                i = np.rint(i*1000000000000).astype(np.float32)
+            else:
+                #probably in pA already
+                i = np.rint(i).astype(np.float32)
+            #sometimes i will have a very small offset, this will remove it
+            i[np.logical_and(i < 5, i > -5)] = 0
+        if match_protocol(i, t) != "Long Square":
+            continue
+        start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(i, t)
+        if start_time is None:
+            continue
+        #construct a sweep obj
+        start_times.append(start_time)
+        end_times.append(start_time+duration)
+        sweep_item = Sweep(t, v, i, clamp_mode="CurrentClamp", sampling_rate=int(1/dt), sweep_number=sweep)
+        sweeps.append(sweep_item)
+    return sweeps, start_times, end_times
 
 def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_list=None, amp_interval=20, max_above_rheo=100):
     
@@ -199,6 +243,7 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
                 else:
                     #probably in pA already
                     i = np.rint(i).astype(np.float32)
+                #i[np.logical_and(i < 5, i > -5)] = 0
             if match_protocol(i, t) != "Long Square":
                 continue
             start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(i, t)
@@ -214,8 +259,8 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
         start_time = scipy.stats.mode(np.array(start_times))[0][0]
         end_time = scipy.stats.mode(np.array(end_times))[0][0]
         #index out the sweeps that have the most common start and end times
-        idx_pass = np.where((np.array(start_times) == start_time) & (np.array(end_times) == end_time))[0]
-        sweeps = SweepSet(np.array(sweeps, dtype=object)[idx_pass].tolist())
+        #idx_pass = np.where((np.array(start_times) == start_time) & (np.array(end_times) == end_time))[0]
+        sweeps = SweepSet(np.array(sweeps, dtype=object).tolist())
 
         lsq_spx, lsq_spfx = dsf.extractors_for_sweeps(
             sweeps,
@@ -357,7 +402,7 @@ def match_protocol(i, t, test_pulse=True, start_epoch=None, end_epoch=None, test
         return None
     if duration > 0.5:
         #if the stimulus is longer than 500ms, then it is probably a long square
-        return match_long_square_protocol(i, t)
+        return match_long_square_protocol(i, t, start_idx, end_idx)
     elif duration < 0.1:
         #if the stimulus is less than 100ms, then it is probably a short square
         return match_short_square_protocol(i, t)
@@ -366,7 +411,7 @@ def match_protocol(i, t, test_pulse=True, start_epoch=None, end_epoch=None, test
         return match_ramp_protocol(i, t)
     
 
-def match_long_square_protocol(i, t):
+def match_long_square_protocol(i, t, start_idx, end_idx):
     #here we will do some analysis to determine if the stimulus is a long square, and if so, what the parameters are
     fs = 1/(t[1]  - t[0])
 
@@ -379,11 +424,23 @@ def match_long_square_protocol(i, t):
     if len(di_idx) == 1:
         #if there is only one up/down transition, then this is not a long square
         return None
-    if len(di_idx) > 6:
+    #if len(di_idx) > 6:
         #if there are more than 6 up/down transitions, then this is (probably) not a long square
-        return None
-
-
+      #  return 
+    #check if its a long square by fitting a line to the dataset,
+    #and checking if the slope is 0
+    #if the slope is 0, then it is a long square
+    #if the slope is not 0, then it is not a long square
+    if len(di_idx) > 6:
+        y_data = i[start_idx: end_idx]
+        x_data = t[start_idx: end_idx]
+        slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(x_data, y_data)
+        if slope < 0.1 and p_value < 0.05:
+            return 'Long Square'
+        elif slope > 0.1 and p_value > 0.05:
+            return 'Long Square'
+        else:
+            return None
     #ensure that the stim starts at 0, and ends at 0
     if i[0] != 0:
         return None
@@ -409,126 +466,13 @@ def match_unit(unit, ontology=_UNIT_ONTOLOGY):
 
 
 
-from dandi.dandiapi import DandiAPIClient
-from dandi.download import download as dandi_download
-from collections import defaultdict
-#dandi functions
 
-
-def build_dandiset_df():
-    client = DandiAPIClient()
-
-    dandisets = list(client.get_dandisets())
-
-    species_replacement = {
-        "Mus musculus - House mouse": "House mouse",
-        "Rattus norvegicus - Norway rat": "Rat",
-        "Brown rat": "Rat",
-        "Rat; norway rat; rats; brown rat": "Rat",
-        "Homo sapiens - Human": "Human",
-        "Drosophila melanogaster - Fruit fly": "Fruit fly",
-    }
-
-    neurodata_type_map = dict(
-        ecephys=["LFP", "Units", "ElectricalSeries"],
-        ophys=["PlaneSegmentation", "TwoPhotonSeries", "ImageSegmentation"],
-        icephys=["PatchClampSeries", "VoltageClampSeries", "CurrentClampSeries"],
-    )
-
-    def is_nwb(metadata):
-        return any(
-            x['identifier'] == 'RRID:SCR_015242'
-            for x in metadata['assetsSummary'].get('dataStandard', {})
-        )
-
-    data = defaultdict(list)
-    for dandiset in dandisets:
-        identifier = dandiset.identifier
-        metadata = dandiset.get_raw_metadata()
-        if not is_nwb(metadata) or not dandiset.draft_version.size:
-            continue
-        data["identifier"].append(identifier)
-        data["created"].append(dandiset.created)
-        data["size"].append(dandiset.draft_version.size)
-        if "species" in metadata["assetsSummary"] and len(metadata["assetsSummary"]["species"]):
-            data["species"].append(metadata["assetsSummary"]["species"][0]["name"])
-        else:
-            data["species"].append(np.nan)
-        
-        
-        for modality, ndtypes in neurodata_type_map.items():
-            data[modality].append(
-                any(x in ndtypes for x in metadata["assetsSummary"]["variableMeasured"])
-            )
-        
-        if "numberOfSubjects" in metadata["assetsSummary"]:
-            data["numberOfSubjects"].append(metadata["assetsSummary"]["numberOfSubjects"])
-        else:
-            data["numberOfSubjects"].append(np.nan)
-
-        data['keywords'].append([x.lower() for x in metadata.get("keywords", [])])
-    df = pd.DataFrame.from_dict(data)
-
-    for key, val in species_replacement.items():
-        df["species"] = df["species"].replace(key, val)
-    return df
-
-def analyze_dandiset(code, cache_dir=None):
-    df_dandiset = run_analysis(cache_dir+'/'+code)
-    return df_dandiset
     
-def filter_dandiset_df(row, species=None, modality=None, keywords=[], method='or'):
-    flags = []
-    if species is not None:
-        flags.append(row["species"] == species)
-    if modality is not None:
-        flags.append(row[modality] == True)
-    if len(keywords) > 0:
-        flags.append(np.any(np.ravel([[x in j for j in row["keywords"]] for x in keywords])))
-    if method == 'or':
-        return any(flags)
-    elif method == 'and':
-        return all(flags)
-    else:
-        raise ValueError("method must be 'or' or 'and'")
-
-
-def download_dandiset(code=None, save_dir=None, overwrite=False):
-    client = DandiAPIClient()
-    dandiset = client.get_dandiset(code)
-    if save_dir is None:
-        save_dir = os.getcwd()
-    if os.path.exists(save_dir+'/'+code) and overwrite==False:
-        return
-    dandi_download(dandiset.api_url, save_dir)
-    
-dandisets_to_skip = ['000012', '000013', '000005', '000117', '000168', '000362']
-dandisets_to_include = ['000008', '000035']
-def run_analyze_dandiset():
-    dandi_df = build_dandiset_df()
-    filtered_df = dandi_df[dandi_df.apply(lambda x: filter_dandiset_df(x, modality='icephys', keywords=['intracellular', 'patch'], method='or'), axis=1)]
-    
-    print(len(filtered_df))
-    #glob the csv files
-    csv_files = glob.glob('/media/smestern/Expansion/dandi/*.csv')
-    csv_files = [x.split('/')[-1].split('.')[0] for x in csv_files]
-    filtered_df = filtered_df[~filtered_df["identifier"].isin(csv_files)]
-
-
-    for row in filtered_df.iterrows():
-        print(f"Downloading {row[1]['identifier']}")
-        if row[1]["identifier"] in dandisets_to_skip:
-            continue
-        download_dandiset(row[1]["identifier"], save_dir='/media/smestern/Expansion/dandi', overwrite=False)
-        df_dandiset = analyze_dandiset(row[1]["identifier"],cache_dir='/media/smestern/Expansion/dandi/')
-        df_dandiset["dandiset"] = row[1]["identifier"]
-        df_dandiset["created"] = row[1]["created"]
-        df_dandiset["species"] = row[1]["species"]
-        df_dandiset.to_csv('/media/smestern/Expansion/dandi/'+row[1]["identifier"]+'.csv')
 
 
 if __name__ == "__main__":
     freeze_support()
     #run_analysis('/media/smestern/Expansion/dandi/000020', backend="ipfx", outfile='out.csv', ext="nwb", parallel=1)
-    run_analyze_dandiset()
+    #run_analyze_dandiset()
+    
 
