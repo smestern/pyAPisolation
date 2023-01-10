@@ -16,7 +16,7 @@ import dash_bootstrap_components as dbc
 import dash_html_components as html
 import plotly.graph_objs as go
 import plotly.express as px
-
+from plotly.subplots import make_subplots
 # data science imports
 import pandas as pd
 import numpy as np
@@ -25,7 +25,11 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 sys.path.append('..')
 sys.path.append('')
+sys.path.append("pyAPisolation/web_viz/")
 print(os.getcwd())
+#get current file path
+file_path = os.path.dirname(os.path.realpath(__file__))
+#change working directory to file path
 # pyAPisolation imports
 
 class analysis_fields():
@@ -34,8 +38,9 @@ class analysis_fields():
         self.file_path = "foldername"
         self.table_vars_rq = ['filename', 'foldername']
         self.table_vars = ["rheo", "QC", 'label_c']
-        self.para_vars = ["rheo", 'label_c']
-        self.umap_labels = ['label']
+        self.para_vars = ["rheo", 'CRH' 'label_c']
+        self.para_var_colors = 'rheobase_width'
+        self.umap_labels = ['label', 'CRH', 'AVP']
         self.para_vars_limit = 10
         self.table_vars_limit = 5
         self.__dict__.update(kwargs)
@@ -59,7 +64,7 @@ class live_data_viz():
         self.para_df = None
         self._run_analysis(dir_path, database_file)
 
-        app = dash.Dash("abf", external_stylesheets=[dbc.themes.ZEPHYR])
+        app = dash.Dash(__name__,)
 
         # find pregenerated labels
         self.labels = self._find_label_cols(self.df_raw)
@@ -74,27 +79,21 @@ class live_data_viz():
 
         # Make grid ui
         # make the header descibing the app
-        header = dbc.Row([
-            dbc.Col(html.H1("pyAPisolation", className="text-center"), width=12),
-            dbc.Col(html.H3("Live Data Visualization",
-                    className="text-center"), width=12),
-            dbc.Col(html.H5("Select a file to view",
-                    className="text-center"), width=12),
-        ])
+        header = self._generate_header()
 
-        col_long = dbc.Col(dbc.Container([dbc.Card([
-            dbc.CardHeader("Longitudinal Plot"),
-            dbc.CardBody([dcc.Loading(
-            id="loading-2", fullscreen=False, type="default",
-            children=[html.Div(id='datatable-plot-cell', style={
-                "flex-wrap": "nowrap"})])])])
-                ]), width=6)
-        col_umap = dbc.Col(dbc.Container([
+        col_long = dbc.Col([dbc.Card([
+                dbc.CardHeader("Longitudinal Plot"),
+                dbc.CardBody([dcc.Loading(
+                    id="loading-2", fullscreen=False, type="default",
+                    children=[html.Div(id='datatable-plot-cell', )])])],style={
+                    "flex-wrap": "nowrap", "min-height": "500px", "overflow-x": "hidden"})]
+                , width=12)
+        col_umap = dbc.Col([
             dbc.Card([dbc.CardHeader("UMAP Plot"),
                       dbc.CardBody([umap_fig], id='umap-cardbody',
                                    style={"min-height": "500px"}),
                       dbc.CardFooter(["Select Color:", self.dropdown]),
-                      ])]),
+                      ])],
             width=6)
         col_para = dbc.Col([dbc.Card(
             [dbc.CardHeader(dbc.Button(
@@ -108,7 +107,7 @@ class live_data_viz():
                  para_fig,
                  id="para-collapse",
                  is_open=True,
-             )])])], width=12)
+             )])])], width=6)
         col_datatable = dbc.Col([dash_table.DataTable(
             id='datatable-row-ids',
             columns=[
@@ -131,14 +130,14 @@ class live_data_viz():
                 'maxWidth': 0
             }
 
-        )], id='data-table-col')
+        )],className="table-card-like table-borderless table-striped", id='data-table-col')
 
-        app.layout = html.Div([dbc.Container([
+        app.layout = html.Div([dbc.Container([dbc.Container([
             dbc.Row([header]),
-            dbc.Row([col_para]),
-            dbc.Row([col_umap, col_long]),
+            dbc.Row([col_para, col_umap,], className="g-0"),
+            dbc.Row([ col_long]),
             dbc.Row([col_datatable])
-        ]),
+        ], fluid=True, style={"margin-left": "auto","margin-right": "auto"})],),
             dcc.Interval(
             id='interval-component',
             interval=240*1000,  # in milliseconds
@@ -149,10 +148,9 @@ class live_data_viz():
         # Define Callbacks
         app.callback(
             Output('loading-2', 'children'),
-            Input('datatable-row-ids', 'derived_virtual_row_ids'),
+            State('datatable-row-ids', 'derived_virtual_row_ids'),
             Input('datatable-row-ids', 'selected_row_ids'),
-            Input('datatable-row-ids', 'active_cell'),
-            Input('datatable-row-ids', 'data'))(self.update_cell_plot)
+            State('datatable-row-ids', 'data'))(self.update_cell_plot)
 
         app.callback(Output('datatable-row-ids', 'data'),
                      Input('UMAP-graph', 'selectedData'),
@@ -230,11 +228,10 @@ class live_data_viz():
             pre_df, outliers = preprocess_df(self.df)
             data = dense_umap(pre_df)
             labels = cluster_df(pre_df)
-        fig = go.Figure(data=go.Scatter(x=data[:, 0], y=data[:, 1], mode='markers',
-                                        marker=dict(color=labels), ids=self.df['id'].to_numpy()), )
+        fig = px.scatter(x=data[:, 0], y=data[:, 1], color=labels.astype(str), hover_name=self.df['id'].to_numpy())
         fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
-        fig.update_yaxes(automargin=True)
-        fig.update_xaxes(automargin=True)
+        fig.update_yaxes(automargin=True, autorange=False, range=[min(data[:, 1]), max(data[:, 1])])
+        fig.update_xaxes(automargin=True, autorange=False, range=[min(data[:, 0]), max(data[:, 0])])
         fig.layout.autosize = True
         return dcc.Graph(
             id='UMAP-graph',
@@ -264,9 +261,9 @@ class live_data_viz():
 
     def gen_para_plots(self, *args):
 
-        df = _df_select_by_col(self.df, GLOBAL_VARS.para_vars).iloc[:, :GLOBAL_VARS.para_vars_limit]
+        df = _df_select_by_col(self.df_raw, GLOBAL_VARS.para_vars).iloc[:, :GLOBAL_VARS.para_vars_limit]
         #fig = go.Figure(data=go.Scatter(x=data[:,0], y=data[:,1], mode='markers', marker=dict(color=labels), ids=self.df['id'].to_numpy()))
-        fig = px.parallel_coordinates(df,
+        fig = px.parallel_coordinates(df, color=GLOBAL_VARS.para_var_colors,
                                       color_continuous_scale=px.colors.diverging.Tealrose)
         self.para_df = df
         fig.layout.autosize = True
@@ -324,24 +321,23 @@ class live_data_viz():
         if umap_selectedData is not None and para_selectedData is None:
             combined = umap_out_data
         if umap_selectedData is not None and para_selectedData is not None:
-            combined =  para_out_data.update(umap_out_data)
+            combined =  para_out_data.append(umap_out_data)
         #combined = None
         return combined
 
     def _filter_datatable_umap(self, selectedData, fig):
-        def bool_multi_filter(df, kwargs):
-            return ' & '.join([f'{key} >= {i[0]} & {key} <= {i[1]}' for key, i in kwargs.items()])
+        
 
         if selectedData is None:
             out_data = self.df.to_dict('records')
         else:
-            selected_ids = [x['id'] for x in selectedData['points']]
+            selected_ids = [x['hovertext'] for x in selectedData['points']]
 
             filtered_df = self.df.loc[selected_ids]
             out_data = filtered_df.to_dict('records')
         return out_data
 
-    def update_cell_plot(self, row_ids, selected_row_ids, active_cell, data):
+    def update_cell_plot(self, row_ids, selected_row_ids, data):
         selected_id_set = set(selected_row_ids or [])
 
         if row_ids is None:
@@ -351,26 +347,38 @@ class live_data_viz():
         else:
             dff = self.df.loc[row_ids]
 
-        active_row_id = active_cell['row_id'] if active_cell else None
-        if active_row_id is None:
-            active_row_id = self.df.iloc[0]['id']
-        if active_row_id is not None:
-            fold = self.df.loc[active_row_id]["foldername"]
-            if isinstance(fold, (list, tuple, np.ndarray, pd.Series)):
-                fold = fold.to_numpy()[0]
-            file_path = os.path.join(fold, active_row_id + ".abf")
-            x, y, c = loadABF(file_path)
+        active_row_ids = selected_row_ids
+        if active_row_ids is None or len(active_row_ids) == 0:
+            active_row_ids = [self.df.iloc[0]['id']]
+        if active_row_ids is not None:
+            #determine the amount of different cells to plot, then make up to 4 subplots
+            len_active_row_ids = len(active_row_ids)
+            if len_active_row_ids == 1:
+                fig = make_subplots(rows=1, cols=1, subplot_titles=selected_row_ids)
+                plot_coords = [(1,1)]
+            elif len_active_row_ids == 2:
+                fig = make_subplots(rows=1, cols=2, subplot_titles=selected_row_ids)
+                plot_coords = [(1,1), (1,2)]
+            elif len_active_row_ids >= 3:
+                fig = make_subplots(rows=2, cols=2,subplot_titles=selected_row_ids[:4])
+                plot_coords = [(1,1), (1,2), (2,1), (2,2)]
+            #now iter through the active row ids and plot them
+            for active_row_id in active_row_ids[:4]:
+                fold = self.df.loc[active_row_id]["foldername"]
+                if isinstance(fold, (list, tuple, np.ndarray, pd.Series)):
+                    fold = fold.to_numpy()[0]
+                file_path = os.path.join(fold, active_row_id + ".abf")
+                x, y, c = loadABF(file_path)
 
-            cutoff = np.argmin(np.abs(x-2.50))
-            x, y = x[:, :cutoff], y[:, :cutoff]
-            traces = []
-            for sweep_x, sweep_y in zip(x, y):
-                traces.append(go.Scattergl(x=sweep_x, y=sweep_y, mode='lines'))
-            fig = go.Figure(data=traces, )
-
-            fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+                cutoff = np.argmin(np.abs(x-2.50))
+                x, y = x[:, :cutoff], y[:, :cutoff]
+                traces = []
+                for sweep_x, sweep_y in zip(x, y):
+                    traces.append(go.Scatter(x=sweep_x, y=sweep_y, mode='lines', ))
+                #fig = go.Figure(data=traces, )
+                fig.add_traces(traces, rows=plot_coords[active_row_ids.index(active_row_id)][0], cols=plot_coords[active_row_ids.index(active_row_id)][1])
+                fig.update_layout(margin=dict(l=0, r=0, t=50, b=0))
             fig.update_yaxes(automargin=True)
-            fig.update_xaxes(automargin=True)
             fig.layout.autosize = True
 
             return dcc.Graph(
@@ -381,7 +389,7 @@ class live_data_viz():
                     "height": "100%"
                 },
                 config=dict(
-                    autosizable=True,
+                    autosizable=True, edits=dict(titleText=active_row_id),
                     
                 frameMargins=0,
                 ),
@@ -397,12 +405,12 @@ class live_data_viz():
             temp_dict = {}
             temp_dict['data'] = df_labels[col].to_numpy()
             # if its a str, encode it
-            if isinstance(temp_dict['data'][0], str):
-                temp_dict['encoder'] = LabelEncoder()
-                temp_dict['data'] = temp_dict['encoder'].fit_transform(
-                    temp_dict['data'])
-            else:
-                temp_dict['encoder'] = None
+            #if isinstance(temp_dict['data'][0], str):
+            #    temp_dict['encoder'] = LabelEncoder()
+            #    temp_dict['data'] = temp_dict['encoder'].fit_transform(
+            #        temp_dict['data'])
+            #else:
+            temp_dict['encoder'] = None
             label_cols[col] = temp_dict
         return label_cols
 
@@ -411,6 +419,14 @@ class live_data_viz():
             return not is_open
         return is_open
 
+    def _generate_header(self):
+        return dbc.Row([
+            dbc.Col(html.H1("pyAPisolation", className="text-center"), width=12),
+            dbc.Col(html.H3("Live Data Visualization",
+                    className="text-center"), width=12),
+            dbc.Col(html.H5("Select a file to view",
+                    className="text-center"), width=12),
+        ])
 
 if __name__ == '__main__':
     # make an argparse to parse the command line arguments. command line args should be the path to the data folder, or

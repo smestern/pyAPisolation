@@ -200,10 +200,11 @@ def parse_long_pulse_from_dataset(data_set):
         sweeps.append(sweep_item)
     return sweeps, start_times, end_times
 
-def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_list=None, amp_interval=20, max_above_rheo=100):
+def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_list=None, amp_interval=20, max_above_rheo=100, debug=True):
     
     result = {}
     result["specimen_id"] = file_list[specimen_id]
+
     try:
         #this is a clone of the function in ipfx/bin/run_feature_collection.py,
         # here we are gonna try to use it to handle data that may not be in an NWB format IPFX can handle
@@ -217,13 +218,17 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
         sweeps = []
         start_times = []
         end_times = []
+        
+        debug_log = {}
         for sweep in np.arange(len(data_set.dataY)):
-            i = data_set.dataC[sweep]*1
+            i = np.nan_to_num(data_set.dataC[sweep]*1)
             t = data_set.dataX[sweep]
-            v = data_set.dataY[sweep]
+            v = np.nan_to_num(data_set.dataY[sweep])
             dt = t[1] - t[0]
             #if its not current clamp
             if match_unit(data_set.sweepMetadata[sweep]['stim_dict']["unit"]) != "amp":
+                logging.debug(f"sweep {sweep} is not current clamp")
+                #debug_log[sweep] = "not current clamp"
                 continue
             #if the sweep v is in volts, convert to mV, ipfx wants mV
             if match_unit(data_set.sweepMetadata[sweep]['resp_dict']["unit"]) == "volt":
@@ -239,28 +244,46 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
             if match_unit(data_set.sweepMetadata[sweep]['stim_dict']["unit"])=="amp":
                 if np.max(i) < 0.1 and np.min(i) > -0.1:
                     #probably in amp, convert to picoAmps
-                    i = np.rint(i*1000000000000).astype(np.float32)
+                    i = i*1000000000000
                 else:
                     #probably in pA already
-                    i = np.rint(i).astype(np.float32)
+                    i = i
                 #i[np.logical_and(i < 5, i > -5)] = 0
+
+            #try to figure out if this is a long square
             if match_protocol(i, t) != "Long Square":
+                logging.debug(f"skipping sweep {sweep} because it is not a long square")
+                debug_log[sweep] = "likely not a long square"
                 continue
+
             start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(i, t)
-            if start_time is None:
+
+            if QC_voltage_data(t, v, i) == 0:
+                logging.debug(f"skipping sweep {sweep} because it failed QC")
+                debug_log[sweep] = "failed QC"
                 continue
             #construct a sweep obj
             start_times.append(start_time)
             end_times.append(start_time+duration)
             sweep_item = Sweep(t, v, i, clamp_mode="CurrentClamp", sampling_rate=int(1/dt), sweep_number=sweep)
             sweeps.append(sweep_item)
-
+        if debug:
+            for sweep in debug_log.keys():
+                print(f"sweep {sweep} failed QC because it was {debug_log[sweep]}")
+                if debug_log[sweep] == "failed QC":
+                    plt.plot(data_set.dataX[sweep], data_set.dataY[sweep], label=f"{sweep} {debug_log[sweep]}", c='r')
+                else:
+                    #plt.plot(data_set.dataX[sweep], data_set.dataY[sweep], label=f"{sweep} {debug_log[sweep]}", c='k')
+                    continue
+                
+            #plt.legend()
+            plt.pause(0.2)
         #get the most common start and end times
         start_time = scipy.stats.mode(np.array(start_times))[0][0]
         end_time = scipy.stats.mode(np.array(end_times))[0][0]
         #index out the sweeps that have the most common start and end times
-        #idx_pass = np.where((np.array(start_times) == start_time) & (np.array(end_times) == end_time))[0]
-        sweeps = SweepSet(np.array(sweeps, dtype=object).tolist())
+        idx_pass = np.where((np.array(start_times) == start_time) & (np.array(end_times) == end_time))[0]
+        sweeps = SweepSet(np.array(sweeps, dtype=object)[idx_pass].tolist())
 
         lsq_spx, lsq_spfx = dsf.extractors_for_sweeps(
             sweeps,
@@ -327,7 +350,9 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
     except Exception as e:
         print("error with specimen_id: ", specimen_id)
         print(e)
+        plt.close()
         return result
+    plt.close()
     return result
 
 def find_time_index(t, t_0):
@@ -400,7 +425,7 @@ def match_protocol(i, t, test_pulse=True, start_epoch=None, end_epoch=None, test
     if start_time is None:
         #if we can't find the start time, then we can't identify the stimulus protocol
         return None
-    if duration > 0.5:
+    if duration > 0.25:
         #if the stimulus is longer than 500ms, then it is probably a long square
         return match_long_square_protocol(i, t, start_idx, end_idx)
     elif duration < 0.1:
@@ -435,7 +460,7 @@ def match_long_square_protocol(i, t, start_idx, end_idx):
         y_data = i[start_idx: end_idx]
         x_data = t[start_idx: end_idx]
         slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(x_data, y_data)
-        if slope < 0.1 and p_value < 0.05:
+        if slope < 0.1 and p_value < 0.05 and r_value > 0.6:
             return 'Long Square'
         elif slope > 0.1 and p_value > 0.05:
             return 'Long Square'
@@ -451,9 +476,11 @@ def match_long_square_protocol(i, t, start_idx, end_idx):
     return "Long Square"
 
 def match_short_square_protocol(stimulus_protocol, ontology):
+    #TODO: implement this function
     pass
 
 def match_ramp_protocol(stimulus_protocol, ontology):
+    #TODO: implement this function
     pass
 
 def match_unit(unit, ontology=_UNIT_ONTOLOGY):
@@ -465,9 +492,43 @@ def match_unit(unit, ontology=_UNIT_ONTOLOGY):
     return None
 
 
-
-
+def QC_voltage_data(t,v,i, zero_threshold=0.2, noise_threshold=10):
+    #this function will take a voltage trace and return a QC score
+    #Sometimes the voltage trace is not a voltage trace, but rather a current trace
+    #or with IGOR / MIES generated NWB files, the sweep was aborted halfway through, and there is a large jump in the voltage trace, and a bunhc of zeros
+    #this function will check for these things and return a QC score
+    #if the QC score is 0, then the sweep is bad
+    #if the QC score is 1, then the sweep is good
+    if v is None:
+        return 0
+    if i is None:
+        return 0
+    if len(v) == 0:
+        return 0
+    if np.any(v > 500) or np.any(v < -500): #membrane voltages are very very unlikely to be this large, this threshold could be lowered
+        return 0
     
+
+    #check for extended periods of 0
+    if np.sum(v == 0) > zero_threshold*len(v): #if more than 10% of the trace is 0, then it was probably aborted
+        #this is only a problem if the current is not 0
+        #check if while the voltage is 0, the current is 0
+        idx_zero = np.flatnonzero(np.isclose(v, 0))
+        if np.sum(i[idx_zero] != 0) > (zero_threshold/2)*len(idx_zero):
+            return 0
+        else:
+            return 1 
+        
+
+    #check for large jumps in the voltage trace
+    #dv = np.diff(v)
+    #if np.any(np.abs(dv) > 1e9):
+        #return 0
+
+    #todo, more qc checks
+    return 1
+
+
 
 
 if __name__ == "__main__":
