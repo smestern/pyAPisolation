@@ -14,7 +14,7 @@ setup(
     install_requires=[	
        'matplotlib>=2.1.0',
        'numpy>=1.17',
-       'pyabf==2.1.9'
+       'pyabf>=2.1.9'
 	],
     packages=find_packages(include=['pyAPisolation', 'pyAPisolation.dev'], exclude=["tests", "web_viz", "build", "dist", 'run_APisolation_ipfx.py']),
 )

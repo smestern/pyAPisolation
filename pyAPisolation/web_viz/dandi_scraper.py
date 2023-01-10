@@ -2,12 +2,12 @@
 #for heroku deployment we have to force install some packages here
 import sys
 import subprocess
-packages = ['dandi', 'dash-table',]
+packages = ['pyabf', ]
 # implement pip as a subprocess:
 for package in packages:
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
 
-
+#test imports
 
 from dandi.dandiapi import DandiAPIClient
 from dandi.download import download as dandi_download
@@ -338,7 +338,8 @@ class dandi_data_viz(live_data_viz):
                     className="text-center"), width=12),
         ])
 
-
+def main():
+    pass
 #run_merge_dandiset()
     # caching to save accessed data to RAM.
 fs = CachingFileSystem(
