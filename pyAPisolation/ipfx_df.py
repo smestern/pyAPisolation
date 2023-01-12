@@ -1,15 +1,14 @@
+#############
+# this script is built to do some additional processing on the output of ipfx
+# primairly we will be computing some features needed / desired for the inoue lab
 
-import sys
+# here we will be wrangling some of the data frames and saving them to csv files
+# we will also be generating some plots and saving them to the same folder
+#############
 import numpy as np
 import os
 import pandas as pd
-import matplotlib.pyplot as plt
-import scipy.signal as signal
-from scipy import interpolate
-from scipy.optimize import curve_fit
-from ipfx import feature_extractor
-from ipfx import subthresh_features as subt
-import pyabf
+
 from .patch_utils import *
 from .patch_subthres import *
 
@@ -20,6 +19,7 @@ subsheets_spike = {'spike count':['spike count'], 'rheobase features':['rheobase
                     'mean':['mean'], 'isi':['isi'], 'latency': ['latency_'], 'current':['current'],'QC':['QC'], 
                     'spike features':['spike_'], 'subthres features':['baseline voltage', 'Sag', 'Taum'], 'full sheet': ['']}
 def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag=''):
+
     #try:  
         #ids = dfs['file_name'].unique()
         #tempframe = dfs.groupby('file_name').mean().reset_index()
@@ -50,6 +50,11 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
                 temp_df.to_excel(runf, sheet_name=p)
     #except: 
         #print('error saving')
+
+
+# TODO <--- this is a mess, clean it up
+# Ensure functions do no require the abf object, or dataframes
+# functions should not depend on further analysis, only concat of dataframes
 
 def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict):
             spike_count = spike_in_sweep.shape[0]
