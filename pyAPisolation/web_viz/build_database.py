@@ -48,6 +48,9 @@ from pyAPisolation.loadNWB import loadNWB, GLOBAL_STIM_NAMES
 _ONTOLOGY = ju.read(StimulusOntology.DEFAULT_STIMULUS_ONTOLOGY_FILE)
 _UNIT_ONTOLOGY = {'amp': ['amp', 'ampere', 'amps', 'amperes', 'A'],'volt': ['volt', 'v', 'volts', 'V'], 'sec': ['sec', 's', 'second', 'seconds', 'secs', 'sec']}
 log = logging.getLogger(__name__)
+
+
+
 def glob_files(folder, ext="nwb"):
 
     #this function will take a folder and a file extension, and return a list of files
@@ -70,14 +73,11 @@ def run_analysis(folder, backend="ipfx", outfile='out.csv', ext="nwb", parallel=
                                 data_source='filesystem',
                                 ontology=None,
                                 file_list=files)
-        #if parallel == True:
-            # Run in parallel
-            #parallel = joblib.cpu_count()
-        results = list(map(get_data_partial, file_idx))#joblib.Parallel(n_jobs=4, backend='multiprocessing')(joblib.delayed(get_data_partial)(specimen_id) for specimen_id in file_idx)
-        # Save results list(map(get_data_partial, file_idx))
-        #with open(outfile, 'w') as f:
-            #json.dump(results, f)
-
+        if parallel == True:
+            #Run in parallel
+            parallel = joblib.cpu_count()
+        results = joblib.Parallel(n_jobs=4, backend='multiprocessing')(joblib.delayed(get_data_partial)(specimen_id) for specimen_id in file_idx)
+        
     elif backend == "custom":
         raise(NotImplementedError)
         # Use custom backend to extract features
@@ -533,7 +533,8 @@ def QC_voltage_data(t,v,i, zero_threshold=0.2, noise_threshold=10):
 
 if __name__ == "__main__":
     freeze_support()
-    #run_analysis('/media/smestern/Expansion/dandi/000020', backend="ipfx", outfile='out.csv', ext="nwb", parallel=1)
-    #run_analyze_dandiset()
+    #call main 
+    main()
+
     
 
