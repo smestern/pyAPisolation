@@ -1,6 +1,6 @@
 # os sys imports
 from pyAPisolation.loadNWB import loadFile
-from pyAPisolation.abf_featureextractor import *
+from pyAPisolation.feature_extractor import *
 from pyAPisolation.patch_ml import *
 import os
 import sys

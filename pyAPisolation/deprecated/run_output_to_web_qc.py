@@ -9,14 +9,14 @@ import sys
 from scipy.signal import resample, decimate
 sys.path.append('..')
 sys.path.append('')
-os.chdir("./pyAPisolation/")
+os.chdir(".\\pyAPisolation\\")
 print(os.getcwd())
-from pyAPisolation.patch_ml import *
-from pyAPisolation.patch_utils import *
+from patch_ml import *
+from patch_utils import *
 from pyAPisolation.feature_extractor import *
-from pyAPisolation.loadABF import loadABF
+from loadABF import loadABF
 import pyabf
-os.chdir("./web_viz")
+os.chdir(".\\web_viz")
 from http.server import HTTPServer, CGIHTTPRequestHandler
 import matplotlib.pyplot as plt
 
@@ -66,29 +66,39 @@ def main():
         full_dataframe = full_dataframe.append(temp)
     #full_dataframe = full_dataframe.set_index(index_col)
     #full_dataframe = full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"])
-    #full_dataframe = full_dataframe.drop(labels=['Unnamed: 0'], axis=1)
-    full_dataframe = df_select_by_col(full_dataframe, ['rheo', 'latency', 'filename', 'foldername'])
+    full_dataframe = full_dataframe.drop(labels=['Unnamed: 0'], axis=1)
+    full_dataframe = df_select_by_col(full_dataframe, ['rheo', 'filename', 'foldername'])
 
-
+    #read qc csv
+    qc = filedialog.askopenfilename(filetypes=(('qc', '*.csv'),
+                                    ('All files', '*.*')),
+                                    title='Select Input File'
+                                    )
+    qc_df = pd.read_csv(qc, index_col=0)
 
     full_dataframe['ID'] = full_dataframe['filename']
-    #find label
-    bool_l = [x=='label' for x in full_dataframe.columns.values]
-    if np.any(bool_l):
-        labels = full_dataframe['label'].to_numpy()
-    else:
-        labels = None
-
-    pred_col, labels = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]), ret_labels=True, labels=labels)
+    pred_col, labels = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]), ret_labels=True)
     plot_data = generate_plots(full_dataframe)
     full_dataframe['label'] = labels
     #Fix foldernames by truncating
     new_names = []
     for name in full_dataframe['foldername'].to_numpy():
-        temp = name.split("/")[-3:]
+        temp = name.split("\\")[-3:]
         temp = temp[0] + "_" + temp[1] + "_" + temp[2]
         new_names.append(temp)
     full_dataframe['foldername'] = new_names
+
+
+    qc_ordered = []
+    #Add QC
+    for row, data in full_dataframe.iterrows():
+        qc_data = qc_df.loc[data['foldername']].to_numpy()
+        qc_ordered.append(qc_data)
+
+    qc_ordered = np.vstack(qc_ordered)
+
+    for label, data in zip(qc_df.columns.values, qc_ordered.T):
+        full_dataframe[label] = data
 
     json_df = full_dataframe.to_json(orient='records')
     parsed = json.loads(json_df)
@@ -109,17 +119,26 @@ def main():
 
     #column tags
     table_head= soup.find('th')
-    pred_col = np.hstack((pred_col[:10], 'foldername'))
-    print(pred_col)
+
+
+    pred_col = np.hstack((pred_col[:10]))
     for col in pred_col:
-        test = gen_table_head_str_(col, soup)
+        test = gen_table_head_str_(col, soup, dict_args={'data-switchable': 'true'})
         table_head.insert_after(test)
+
+    ##Add QC data:
+    for col in qc_df.columns.values:
+        test = gen_table_head_str_(col, soup, dict_args={'data-cell-style': 'cellStyle', 'data-switchable': 'true'})
+        table_head.insert_after(test)
+    
+    test = gen_table_head_str_('foldername', soup)
+    table_head.insert_after(test)
 
     with open("output.html", "w") as outf:
         outf.write(str(soup))
     print("=== Running Server ===")
     # Create server object listening the port 80
-    #server_object = HTTPServer(server_address=('', 80), RequestHandlerClass=CGIHTTPRequestHandler)
+    server_object = HTTPServer(server_address=('', 80), RequestHandlerClass=CGIHTTPRequestHandler)
     # Start the web server
-    #server_object.serve_forever()
+    server_object.serve_forever()
 main()

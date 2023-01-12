@@ -1,5 +1,4 @@
-from .loadABF import *
-from .loadNWB import *
+import numpy as np
 import os
 import glob
 import pandas as pd

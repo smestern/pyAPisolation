@@ -1,3 +1,7 @@
+
+
+
+
 import numpy as np
 import pandas as pd
 import os
@@ -13,7 +17,7 @@ os.chdir("./pyAPisolation/")
 print(os.getcwd())
 from pyAPisolation.patch_ml import *
 from pyAPisolation.patch_utils import *
-from pyAPisolation.abf_featureextractor import *
+from pyAPisolation.feature_extractor import *
 from pyAPisolation.loadABF import loadABF
 import pyabf
 os.chdir("./web_viz")
