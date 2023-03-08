@@ -13,7 +13,7 @@ os.chdir(".\\pyAPisolation\\")
 print(os.getcwd())
 from pyAPisolation.patch_ml import *
 from pyAPisolation.patch_utils import *
-from pyAPisolation.abf_featureextractor import *
+from pyAPisolation.featureextractor import *
 from pyAPisolation.loadABF import loadABF
 import pyabf
 os.chdir(".\\web_viz")

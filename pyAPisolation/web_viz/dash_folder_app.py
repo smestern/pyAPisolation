@@ -17,7 +17,7 @@ sys.path.append('')
 os.chdir(".\\pyAPisolation\\")
 print(os.getcwd())
 from pyAPisolation.patch_ml import *
-from pyAPisolation.abf_featureextractor import *
+from pyAPisolation.featureextractor import *
 
 
 def loadABF(file_path, return_obj=False):

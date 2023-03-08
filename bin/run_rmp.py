@@ -99,7 +99,7 @@ def rmp_abf(abf, time=30, crop=True, bin_time=100):
             
             mode_vm_last = mode_vm
             median_vm_last= np.nanmedian(abf.sweepY)
-        if mean_vm < -20 and mean_vm >-100:
+        if mean_vm < 200 and mean_vm >-1000:
             sweepsdata.append(np.hstack((mean_vm, std_vm, f_vm, median_vm, mode_vm, e_vm, median_vm_last, mode_vm_last, delta_vm, sweep_time)))
     sweep_full = np.vstack(sweepsdata)
     df = pd.DataFrame(data=sweep_full, columns=[f'Overall Mean vm','Overall STD vm', f'first {time}s Mean Vm', f'first {time}s Median Vm',f'first {time}s Mode Vm',  f'End {time}s Mean Vm', f'End {time}s median Vm', f'End {time}s mode Vm', 'Delta Vm', 'Length(s)'])
