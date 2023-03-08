@@ -1,8 +1,8 @@
 import os
 import sys
 from http.server import HTTPServer, CGIHTTPRequestHandler
-os.chdir(".\\pyAPisolation\\")
-os.chdir(".\\web_viz")
+os.chdir("./pyAPisolation/")
+os.chdir("./web_viz")
 sys.path.append('..')
 sys.path.append('')
 # Create server object listening the port 80

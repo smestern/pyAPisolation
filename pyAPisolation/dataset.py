@@ -3,8 +3,11 @@ import numpy as np
 import logging
 import pyabf
 from ipfx.sweep import Sweep,SweepSet
-from ipfx.ephys_data_set import EphysDataSet
-
+from ipfx.dataset.ephys_data_set import EphysDataSet
+from ipfx.stimulus import StimulusOntology
+from ipfx.dataset.ephys_nwb_data import EphysNWBData, get_finite_or_none
+from ipfx.dataset.hbg_nwb_data import HBGNWBData
+from . import loadNWB
 
 class ABFDataSet(EphysDataSet):
     def __init__(self, sweep_info=None, abf_file=None, ontology=None, api_sweeps=True, validate_stim=True):
@@ -272,3 +275,85 @@ class ABFDataSet(EphysDataSet):
 
         return sweep_data
 
+class flexNWBData(HBGNWBData):
+    """
+    a flexible NWB data class that allows for the use of the NWBData class, 
+    but allows for flexibility in NWB loading and validation
+
+    """
+
+    def __init__(self,
+                 nwb_file: str,
+                 ontology: None,
+                 load_into_memory: bool = True,
+                 validate_stim: bool = True
+                 ):
+        super(flexNWBData, self).__init__(
+            nwb_file=nwb_file,
+            ontology=ontology,
+            load_into_memory=load_into_memory,
+            validate_stim=validate_stim
+        )
+
+    def get_stimulus_code_ext(self, sweep_number):
+        return super().get_stimulus_code(sweep_number)
+
+    def get_sweep_metadata(self, sweep_number: int):
+        attrs = self.get_sweep_attrs(sweep_number)
+
+        sweep_record = {
+            "sweep_number": sweep_number,
+            "stimulus_units": self.get_stimulus_unit(sweep_number),
+            "bridge_balance_mohm": get_finite_or_none(attrs, "bridge_balance"),
+            "leak_pa": get_finite_or_none(attrs, "bias_current"),
+            "stimulus_scale_factor": get_finite_or_none(attrs, "gain"),
+            "stimulus_code": self.get_stimulus_code(sweep_number),
+            "stimulus_code_ext": self.get_stimulus_code_ext(sweep_number),
+            "clamp_mode": self.get_clamp_mode(sweep_number),
+        }
+
+        if self.ontology:
+            sweep_record["stimulus_name"] = self.get_stimulus_name(
+                sweep_record["stimulus_code"]
+            )
+
+        return sweep_record
+    def _get_series(self, sweep_number: int,
+                    series_class):
+        """
+        Get Time Series of a specified class
+        Parameters
+        ----------
+        sweep_number: int sweep number
+        series_class: pynwb.PatchClampSeries
+
+        Returns
+        -------
+        series: pynwb.PatchClampSeries
+        """
+        series = self.nwb.sweep_table.get_series(sweep_number)
+
+        if series is None:
+            raise ValueError("No TimeSeries found for sweep number {}.".format(sweep_number))
+
+        matching_series = []
+
+        for s in series:
+            if isinstance(s,series_class):
+                matching_series.append(s)
+
+        if len(matching_series) == 1:
+            return matching_series[0]
+        elif len(matching_series) == 0:
+            raise ValueError("No TimeSeries found for sweep number {}.".format(sweep_number))
+        else:
+            return matching_series[0]
+            raise ValueError("Found multiple stimulus series "
+                             "{[s.name for s in matching_series]} "
+                             "for sweep number {sweep_number}")
+
+def flexNWBDataset(self, nwb_path,  ontology=None, load_into_memory=True, validate_stim=True, sweep_info=[]):
+
+    nwb_data = flexNWBData(nwb_path, ontology, load_into_memory, validate_stim)
+    return EphysDataSet(nwb_data, sweep_info)
+        

@@ -9,14 +9,14 @@ import sys
 from scipy.signal import resample, decimate
 sys.path.append('..')
 sys.path.append('')
-os.chdir(".\\pyAPisolation\\")
+os.chdir("./pyAPisolation/")
 print(os.getcwd())
 from pyAPisolation.patch_ml import *
 from pyAPisolation.patch_utils import *
-from pyAPisolation.featureextractor import *
+from pyAPisolation.feature_extractor import *
 from pyAPisolation.loadABF import loadABF
 import pyabf
-os.chdir(".\\web_viz")
+os.chdir("./web_viz")
 from http.server import HTTPServer, CGIHTTPRequestHandler
 import matplotlib.pyplot as plt
 
@@ -85,7 +85,7 @@ def main():
     #Fix foldernames by truncating
     new_names = []
     for name in full_dataframe['foldername'].to_numpy():
-        temp = name.split("\\")[-3:]
+        temp = name.split("/")[-3:]
         temp = temp[0] + "_" + temp[1] + "_" + temp[2]
         new_names.append(temp)
     full_dataframe['foldername'] = new_names

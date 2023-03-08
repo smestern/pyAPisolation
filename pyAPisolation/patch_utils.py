@@ -5,6 +5,7 @@ import pyabf
 from scipy import interpolate
 from scipy.optimize import curve_fit
 import scipy.signal as signal
+
 def load_protocols(path):
     protocol = []
     for root,dir,fileList in os.walk(path):

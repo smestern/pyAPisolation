@@ -23,7 +23,7 @@ from matplotlib.backends.backend_qtagg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
 print("Loaded external libraries")
-from pyAPisolation.featureextractor import folder_feature_extract, save_data_frames, preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
+from pyAPisolation.feature_extractor import folder_feature_extract, save_data_frames, preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
 from pyAPisolation.patch_utils import load_protocols
 from pyAPisolation.patch_subthres import exp_decay_2p, exp_decay_1p, exp_decay_factor
 
@@ -126,13 +126,15 @@ class analysis_gui(QWidget):
     
     def file_select(self):
         self.selected_dir = QFileDialog.getExistingDirectory()
-        self.abf_list = glob.glob(self.selected_dir + "\\**\\*.abf", recursive=True)
+        self.abf_list = glob.glob(self.selected_dir + "/**/*.abf", recursive=True)
         self.abf_list_name = [os.path.basename(x) for x in self.abf_list]
         self.pairs = [c for c in zip(self.abf_list_name, self.abf_list)]
         self.abf_file = self.pairs
         self.selected_sweeps = None
         #create a popup about the scanning the files
         self.scan_popup = QProgressDialog("Scanning files", "Cancel", 0, len(self.abf_list))
+        self.scan_popup.setWindowModality(QtCore.Qt.WindowModal)
+        self.scan_popup.forceShow()
         #Generate the protocol list
         self.protocol_list = []
         self.protocol_file_pair = {}
@@ -395,14 +397,14 @@ class analysis_gui(QWidget):
         dfs = pd.DataFrame()
         df_spike_count = pd.DataFrame()
         df_running_avg_count = pd.DataFrame()
-        filelist = glob.glob(folder + "\\**\\*.abf", recursive=True)
+        filelist = glob.glob(folder + "/**/*.abf", recursive=True)
         popup = QProgressDialog("Operation in progress.", "Cancel", 0, len(filelist), self)
         popup.setWindowModality(QtCore.Qt.WindowModal)
         popup.forceShow()
         spike_count = []
         df_full = []
         df_running_avg = []
-        parallel_processing = False
+        parallel_processing = True
         i = 0
 
         if parallel_processing:
@@ -449,7 +451,7 @@ class analysis_gui(QWidget):
         return dfs, df_spike_count, df_running_avg_count
 
     def _inner_analysis_loop_subthres(self, folder, param_dict, protocol_name):
-        filelist = glob.glob(folder + "\\**\\*.abf", recursive=True)
+        filelist = glob.glob(folder + "/**/*.abf", recursive=True)
         popup = QProgressDialog("Operation in progress.", "Cancel", 0, len(filelist), self)
         popup.setWindowModality(QtCore.Qt.WindowModal)
         popup.forceShow()
@@ -501,14 +503,20 @@ class analysis_gui(QWidget):
                     self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99, label='Spike Peak')
                     self.axe1.scatter(self.spike_df[sweep]['threshold_t'], self.spike_df[sweep]['threshold_v'], color='#00FF00', s=10, zorder=99, label='Threshold')
                     #plot the dv/dt threshold
-                    self.axe2.scatter(self.spike_df[sweep]['downstroke_t'], self.spike_df[sweep]['downstroke'], color='#FF0000', label='Downstroke/Decay')
-                    self.axe2.scatter(self.spike_df[sweep]['upstroke_t'], self.spike_df[sweep]['upstroke'], color='#00FF00', label='Upstroke/Rise')
-                    labeled_legend = True
+                    try:
+                        self.axe2.scatter(self.spike_df[sweep]['downstroke_t'], self.spike_df[sweep]['downstroke'], color='#FF0000', label='Downstroke/Decay')
+                        self.axe2.scatter(self.spike_df[sweep]['upstroke_t'], self.spike_df[sweep]['upstroke'], color='#00FF00', label='Upstroke/Rise')
+                        labeled_legend = True
+                    except:
+                        pass
                 else:
                     self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99)
                     self.axe1.scatter(self.spike_df[sweep]['threshold_t'], self.spike_df[sweep]['threshold_v'], color='#00FF00', s=10, zorder=99)
-                    self.axe2.scatter(self.spike_df[sweep]['downstroke_t'], self.spike_df[sweep]['downstroke'], color='#FF0000')
-                    self.axe2.scatter(self.spike_df[sweep]['upstroke_t'], self.spike_df[sweep]['upstroke'], color='#00FF00')
+                    try:
+                        self.axe2.scatter(self.spike_df[sweep]['downstroke_t'], self.spike_df[sweep]['downstroke'], color='#FF0000')
+                        self.axe2.scatter(self.spike_df[sweep]['upstroke_t'], self.spike_df[sweep]['upstroke'], color='#00FF00')
+                    except:
+                        pass
 
         #if the analysis was subthreshold, we need to plot the results
         if self.subthres_df is not None:

@@ -1,0 +1,10 @@
+Metadata-Version: 2.1
+Name: pyAPisolation
+Version: 0.1.4
+Summary: Python library for isolating action potentials from ABF files
+Home-page: https://github.com/smestern/pyAPisolation
+Author: Sam Mestern
+Author-email: SMESTERN@UWO.CA
+License: MIT License
+Platform: any
+License-File: LICENSE

@@ -1,3 +1,7 @@
+
+
+
+
 import numpy as np
 import pandas as pd
 import os
@@ -9,12 +13,14 @@ import sys
 from scipy.signal import decimate
 sys.path.append('..')
 sys.path.append('')
-os.chdir(".\\pyAPisolation\\")
+os.chdir("./pyAPisolation/")
 print(os.getcwd())
-from patch_ml import *
-from abf_featureextractor import *
+from pyAPisolation.patch_ml import *
+from pyAPisolation.patch_utils import *
+from pyAPisolation.feature_extractor import *
+from pyAPisolation.loadABF import loadABF
 import pyabf
-os.chdir(".\\web_viz")
+os.chdir("./web_viz")
 from http.server import HTTPServer, CGIHTTPRequestHandler
 
 index_col = "filename"
@@ -89,9 +95,9 @@ def main():
         full_dataframe = full_dataframe.append(temp)
     #full_dataframe = full_dataframe.set_index(index_col)
     #full_dataframe = full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"])
-    full_dataframe = full_dataframe.drop(labels=['Unnamed: 0'], axis=1)
+    #full_dataframe = full_dataframe.drop(labels=['Unnamed: 0'], axis=1)
     full_dataframe['ID'] = full_dataframe[index_col]
-    pred_col = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]))
+    pred_col = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]), ret_labels=True)
     
     plot_data = generate_plots(full_dataframe)
     json_df = full_dataframe.to_json(orient='records')

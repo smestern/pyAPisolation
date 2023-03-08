@@ -1,6 +1,7 @@
 import numpy as np
 import pyabf
 
+
 def loadABF(file_path, return_obj=False):
     '''
     Employs pyABF to generate numpy arrays of the ABF data. Optionally returns abf object.

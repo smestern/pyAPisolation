@@ -13,8 +13,6 @@ import pandas as pd
 from tkinter import *
 root = Tk()
 #root.withdraw()
-
-
 dir_path = filedialog.askdirectory(title="Choose Dir to sort")
 out_path = filedialog.askdirectory(title="Choose output dir")
 
@@ -57,6 +55,8 @@ for dir_paths in subfolders_to_use:
                 try:
                     abf = pyabf.ABF(fp, loadData=False)
                     proto = abf.protocol
+                    if '\\' in proto:
+                        proto = proto.split('\\')[-1]
                     new_path = find_or_create_folder(out_path, proto)
                     print(f"copying {fp}")
                     shutil.copy2(fp, new_path)

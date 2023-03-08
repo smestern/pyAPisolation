@@ -16,7 +16,7 @@ import pyabf
 
 from numpy import genfromtxt
 print("Loaded external libraries")
-from pyAPisolation.featureextractor import folder_feature_extract, save_data_frames
+from pyAPisolation.feature_extractor import folder_feature_extract, save_data_frames
 from pyAPisolation.patch_utils import load_protocols
 
 
