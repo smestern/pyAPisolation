@@ -85,7 +85,7 @@ def rmp_abf(abf, time=30, crop=True, bin_time=100):
         mode_vm = mode(data[:t1], nan_policy='omit')[0][0]
 
         #Compute the running bin
-        df_raw = pd.DataFrame(data=data, index=abf.sweepX)
+        #df_raw = pd.DataFrame(data=data, index=abf.sweepX)
         df_running = running_bin(abf.sweepX, data, bin_time/1000)
         
 
@@ -193,7 +193,7 @@ for root,dirs,fileList in os.walk(root_fold):
         fp = os.path.join(root, x)
         if '.abf' in x:
             
-            try:
+            #try:
                 abf = pyabf.ABF(fp)
                 if proto == -1 or protocol_name in abf.protocol:
                     print(abf.abfID + ' import')
@@ -201,8 +201,8 @@ for root,dirs,fileList in os.walk(root_fold):
                     if temp_df.empty == False:
                         full_df = full_df.append(temp_df)
                         full_df_running = full_df_running.join(temp_df_running.rename({0: temp_df['cell_name'].to_numpy()[0]}, axis='columns'), how='outer')
-            except:
-              print('error processing file ' + fp)
+            #except:
+                print('error processing file ' + fp)
 
 
 with pd.ExcelWriter(root_fold + '/RMP_' + tag + '.xlsx') as runf:

@@ -8,7 +8,8 @@ import pyabf
 import copy
 from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
-
+import ipfx
+print(ipfx.__version__)
 
 from .abf_ipfx_dataframes import _build_full_df, _build_sweepwise_dataframe, save_data_frames
 from .loadABF import loadABF
