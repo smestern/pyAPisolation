@@ -4,6 +4,7 @@ import os
 import pyabf
 from scipy import interpolate
 from scipy.optimize import curve_fit
+import scipy.signal as signal
 
 def load_protocols(path):
     protocol = []
@@ -128,3 +129,23 @@ def find_downward(dataI):
 def find_non_zero_range(dataT, dataI):
     non_zero_points = np.nonzero(dataI)[0]
     return (dataT[non_zero_points[0]], dataT[non_zero_points[-1]])
+
+def filter_abf(data_V, abf, cutoff):
+    """_summary_
+
+    Args:
+        data_V (_type_): _description_
+        abf (_type_): _description_
+        cutoff (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    #filter the abf with 5 khz lowpass
+    #if the cutoff is lower than critical frequency, filter the data
+    try:
+        b, a = signal.bessel(4, cutoff, 'low', norm='phase', fs=abf.dataRate)
+        dataV = signal.filtfilt(b, a, data_V)
+    except:
+        dataV = data_V
+    return dataV

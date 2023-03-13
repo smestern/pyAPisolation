@@ -10,5 +10,11 @@ To run simple analysis on your files. navigate to the /bin folder and run:
   
 This will prompt you to select your files for analysis. The script will create an output folder for your traces.
 
+### GUI
+To run simple analysis with gui on your files. navigate to the /bin folder and run:
+  
+  `python run_APisolation_GUI.py`
+![](PVN_CLAMP.PNG)
+
 ### Advanced use
 //todo

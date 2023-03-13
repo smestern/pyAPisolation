@@ -1,15 +1,14 @@
+#############
+# this script is built to do some additional processing on the output of ipfx
+# primairly we will be computing some features needed / desired for the inoue lab
 
-import sys
+# here we will be wrangling some of the data frames and saving them to csv files
+# we will also be generating some plots and saving them to the same folder
+#############
 import numpy as np
 import os
 import pandas as pd
-import matplotlib.pyplot as plt
-import scipy.signal as signal
-from scipy import interpolate
-from scipy.optimize import curve_fit
-from ipfx import feature_extractor
-from ipfx import subthresh_features as subt
-import pyabf
+
 from .patch_utils import *
 from .patch_subthres import *
 
@@ -20,22 +19,16 @@ subsheets_spike = {'spike count':['spike count'], 'rheobase features':['rheobase
                     'mean':['mean'], 'isi':['isi'], 'latency': ['latency_'], 'current':['current'],'QC':['QC'], 
                     'spike features':['spike_'], 'subthres features':['baseline voltage', 'Sag', 'Taum'], 'full sheet': ['']}
 def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag=''):
+
     #try:  
         #ids = dfs['file_name'].unique()
         #tempframe = dfs.groupby('file_name').mean().reset_index()
         #tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
         #tempframe = dfs.drop_duplicates(subset='file_name')
         #tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
-        dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
-        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
-            cols = df_running_avg_count.columns.values
-            df_ind = df_running_avg_count.loc[:,['foldername', 'filename', 'Sweep Number']]
-            index = pd.MultiIndex.from_frame(df_ind)
-            for p in running_lab:
-                temp_ind = [p in col for col in cols]
-                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
-                temp_df.to_excel(runf, sheet_name=p)
+        
         #df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
+        dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
         with pd.ExcelWriter(root_fold + '/spike_count_' + tag + '.xlsx') as runf:
             cols = df_spike_count.columns.values
             df_ind = df_select_by_col(df_spike_count, ['foldername', 'filename'])
@@ -46,8 +39,22 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
                 temp_df = temp_ind.set_index(index)
                 temp_df.to_excel(runf, sheet_name=key)
             #print(df_ind)
+        
+        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
+            cols = df_running_avg_count.columns.values
+            df_ind = df_running_avg_count.loc[:,['foldername', 'filename', 'Sweep Number']]
+            index = pd.MultiIndex.from_frame(df_ind)
+            for p in running_lab:
+                temp_ind = [p in col for col in cols]
+                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
+                temp_df.to_excel(runf, sheet_name=p)
     #except: 
         #print('error saving')
+
+
+# TODO <--- this is a mess, clean it up
+# Ensure functions do no require the abf object, or dataframes
+# functions should not depend on further analysis, only concat of dataframes
 
 def _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict):
             spike_count = spike_in_sweep.shape[0]
@@ -188,7 +195,7 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
             temp_spike_df["rheobase_heightTP"] = [abs(df['threshold_v'].to_numpy()[0] - df['peak_v'].to_numpy()[0])]
                 
             temp_spike_df["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
-            temp_spike_df["rheobase_downstroke"] = [df['upstroke'].to_numpy()[0]]
+            temp_spike_df["rheobase_downstroke"] = [df['downstroke'].to_numpy()[0]]
             temp_spike_df["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
             for key in ipfx_train_feature_labels:
                 temp_spike_df[f"mean_{key}"] = [np.nanmean(df[key].to_numpy())]
@@ -199,7 +206,7 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
             temp_spike_df["mean_heightPT"] = [np.nanmean(abs(df['peak_v'].to_numpy() - df['fast_trough_v'].to_numpy()))]
             temp_spike_df["mean_heightTP"] = [np.nanmean(abs(df['threshold_v'].to_numpy() - df['peak_v'].to_numpy()))]
             temp_spike_df["mean_upstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
-            temp_spike_df["mean_downstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
+            temp_spike_df["mean_downstroke"] = [np.nanmean(df['downstroke'].to_numpy())]
             temp_spike_df["mean_fast_trough"] = [np.nanmean(df['fast_trough_v'].to_numpy())]
             spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
            

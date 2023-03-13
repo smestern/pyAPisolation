@@ -15,6 +15,7 @@
 *.userprefs
 *.png
 # Build results
+nwb-cache/
 dist/
 build/
 [Dd]ebug/
