@@ -98,6 +98,9 @@ class analysis_gui(QWidget):
         self.protocol_select.currentIndexChanged.connect(self.change_protocol_select)
         self.bstim = self.main_widget.findChild(QWidget, "bstim")
         self.bessel = self.main_widget.findChild(QWidget, "bessel_filt")
+        self.thres_per = self.main_widget.findChild(QWidget, "thres_percent")
+        self.thres_per.textChanged.connect(self.analysis_changed)
+
         self.protocol_select.currentIndexChanged.connect(self.analysis_changed)
         self.bessel.textChanged.connect(self.analysis_changed)
         run_analysis = self.main_widget.findChild(QWidget, "run_analysis")
@@ -254,14 +257,21 @@ class analysis_gui(QWidget):
             self.subthres_df = None
             if self.selected_sweeps is None:
                 self.selected_sweeps = self.abf.sweepList
-            #create the spike extractor
+            #create the spike extractor 
+            if self.param_dict['end'] == 0.0 or self.param_dict['end'] > self.abf.sweepX[-1]:
+                self.param_dict['end'] = self.abf.sweepX[-1]
+
             self.spike_extractor = SpikeFeatureExtractor(filter=0,  dv_cutoff=self.param_dict['dv_cutoff'],
-                max_interval=self.param_dict['max_interval'], min_height=self.param_dict['min_height'], min_peak=self.param_dict['min_peak'])
+                max_interval=self.param_dict['max_interval'], min_height=self.param_dict['min_height'], min_peak=self.param_dict['min_peak'],
+                start=self.param_dict['start'], end=self.param_dict['end'])
             #extract the spikes and make a dataframe for each sweep
             self.spike_df = {}
             for sweep in self.selected_sweeps:
                 self.abf.setSweep(sweep)
+                
                 self.spike_df[sweep] = self.spike_extractor.process(self.abf.sweepX,self.abf.sweepY, self.abf.sweepC)
+                determine_rejected_spikes(self.spike_extractor, self.spike_df[sweep], self.abf.sweepY, self.abf.sweepX, 
+                self.param_dict)
             #self.spike_df = pd.concat(self.spike_df)
         elif self.get_current_analysis() is 'subthres':
             self.spike_df = None
@@ -273,13 +283,16 @@ class analysis_gui(QWidget):
         dv_cut = float(self.dvdt_thres.text())
         lowerlim = float(self.start_time.text())
         upperlim = float(self.end_time.text())
-        tp_cut = float(self.thres_to_peak_time.text())
+        tp_cut = float(self.thres_to_peak_time.text())/1000
         min_cut = float(self.thres_to_peak_height.text())
         min_peak = float(self.min_peak_height.text())
         bstim_find = self.bstim.isChecked()
         bessel_filter = float(self.bessel.text())
-        self.param_dict = {'filter': 0, 'dv_cutoff':dv_cut, 'start': lowerlim, 'end': upperlim, 'max_interval': tp_cut, 'min_height': min_cut, 'min_peak': min_peak, 
-        'stim_find': bstim_find, 'bessel_filter': bessel_filter}
+        thresh_frac = float(self.thres_per.text())
+
+        self.param_dict = {'filter': 0, 'dv_cutoff':dv_cut, 'start': lowerlim, 'end': upperlim, 'max_interval': tp_cut,
+         'min_height': min_cut, 'min_peak': min_peak, 'start': lowerlim, 'end': upperlim, 
+        'stim_find': bstim_find, 'bessel_filter': bessel_filter, 'thresh_frac': thresh_frac}
         #build the subthres param_dict
         try:
             subt_sweeps = np.fromstring(self.subthresSweeps.text(), dtype=int, sep=',')
@@ -404,7 +417,7 @@ class analysis_gui(QWidget):
         spike_count = []
         df_full = []
         df_running_avg = []
-        parallel_processing = True
+        parallel_processing = False
         i = 0
 
         if parallel_processing:
@@ -610,7 +623,114 @@ class analysis_gui(QWidget):
                     continue
                 #self.axe1.scatter(self.spike_df[sweep].loc[:, 'peak_t'], self.spike_df[sweep].loc[:,'peak_v'], color='#FF0000', s=10, zorder=99)
 
+from ipfx import spike_detector,time_series_utils
+def determine_rejected_spikes(spfx, spike_df, v, t, param_dict):
+    """Determine which spikes were rejected by the spike detection algorithm.
+    Parameters
+    ----------
+    spfx : SweepFeatures object
+    spike_df : pandas.DataFrame
+        DataFrame containing spike features
+    Returns
+    -------
+    rejected_spikes : list of bool
+        True if spike was rejected, False if spike was accepted
+    """
+    dvdt = time_series_utils.calculate_dvdt(v, t, 0)
 
+    rejected_spikes = {}
+    intial_spikes = spike_detector.detect_putative_spikes(v, t, param_dict['start'], param_dict['end'],
+                                                    dv_cutoff=param_dict['dv_cutoff'],
+                                                    dvdt=dvdt)
+    peaks = spike_detector.find_peak_indexes(v, t, intial_spikes, param_dict['end'])
+    if len(peaks) == 0:
+        return rejected_spikes
+    diff_mask = [np.any(dvdt[peak_ind:spike_ind] < 0)
+                 for peak_ind, spike_ind
+                 in zip(peaks[:-1], intial_spikes[1:])]
+    peak_indexes = peaks[np.array(diff_mask + [True])]
+    spike_indexes = intial_spikes[np.array([True] + diff_mask)]
+
+    peak_level_mask = v[peak_indexes] >= param_dict['min_peak']
+        
+
+    height_mask = (v[peak_indexes] - v[spike_indexes]) >= param_dict['min_height']
+    for i, spike in enumerate(peak_indexes):
+        if np.any([~peak_level_mask[i], ~height_mask[i]]):
+            rejected_spikes[spike] = {'peak_level': ~peak_level_mask[i], 'height': height_mask[i]}
+    
+    peak_level_mask = v[peak_indexes] >= param_dict['min_peak']
+    spike_indexes = spike_indexes[peak_level_mask]
+    peak_indexes = peak_indexes[peak_level_mask]
+
+    height_mask = (v[peak_indexes] - v[spike_indexes]) >= param_dict['min_height']
+    spike_indexes = spike_indexes[height_mask]
+    peak_indexes = peak_indexes[height_mask]
+    
+    if len(spike_indexes) == 0:
+        return rejected_spikes
+    upstrokes = spike_detector.find_upstroke_indexes(v, t, spike_indexes, peak_indexes, filter=0, dvdt=dvdt)
+    thresholds = spike_detector.refine_threshold_indexes(v, t, upstrokes, param_dict['thresh_frac'],
+                                                dvdt=dvdt)
+
+
+    overlaps = np.flatnonzero(spike_indexes[1:] <= peak_indexes[:-1] + 1)
+    if overlaps.size:
+        spike_mask = np.ones_like(spike_indexes, dtype=bool)
+        spike_mask[overlaps + 1] = False
+        spike_indexes = spike_indexes[spike_mask]
+
+        peak_mask = np.ones_like(peak_indexes, dtype=bool)
+        peak_mask[overlaps] = False
+        peak_indexes = peak_indexes[peak_mask]
+
+        upstroke_mask = np.ones_like(upstroke_indexes, dtype=bool)
+        upstroke_mask[overlaps] = False
+        upstroke_indexes = upstroke_indexes[upstroke_mask]
+
+    # Validate that peaks don't occur too long after the threshold
+    # If they do, try to re-find threshold from the peak
+    too_long_spikes = []
+    for i, (spk, peak) in enumerate(zip(spike_indexes, peak_indexes)):
+        if t[peak] - t[spk] >= param_dict['max_interval']:
+            print("Need to recalculate threshold-peak pair that exceeds maximum allowed interval ({:f} s)".format(max_interval))
+            too_long_spikes.append(i)
+    if too_long_spikes:
+        i
+        avg_upstroke = dvdt[upstroke_indexes].mean()
+        target = avg_upstroke * param_dict['thresh_frac']
+        drop_spikes = []
+        for i in too_long_spikes:
+            # First guessing that threshold is wrong and peak is right
+            peak = peak_indexes[i]
+            t_0 = time_series_utils.find_time_index(t, t[peak] - param_dict['max_interval'])
+            below_target = np.flatnonzero(dvdt[upstroke_indexes[i]:t_0:-1] <= target)
+            if not below_target.size:
+                # Now try to see if threshold was right but peak was wrong
+
+                # Find the peak in a window twice the size of our allowed window
+                spike = spike_indexes[i]
+                t_0 = time_series_utils.find_time_index(t, t[spike] + 2 * param_dict['max_interval'])
+                new_peak = np.argmax(v[spike:t_0]) + spike
+
+                # If that peak is okay (not outside the allowed window, not past the next spike)
+                # then keep it
+                if t[new_peak] - t[spike] < max_interval and \
+                   (i == len(spike_indexes) - 1 or t[new_peak] < t[spike_indexes[i + 1]]):
+                    peak_indexes[i] = new_peak
+                else:
+                    # Otherwise, log and get rid of the spike
+                    logging.info("Could not redetermine threshold-peak pair - dropping that pair")
+                    drop_spikes.append(i)
+#                     raise FeatureError("Could not redetermine threshold")
+            else:
+                spike_indexes[i] = upstroke_indexes[i] - below_target[0]
+
+        if drop_spikes:
+            spike_indexes = np.delete(spike_indexes, drop_spikes)
+            peak_indexes = np.delete(peak_indexes, drop_spikes)
+            upstroke_indexes = np.delete(upstroke_indexes, drop_spikes)
+    return rejected_spikes
 
 
 
