@@ -42,7 +42,7 @@ from ipfx.dataset.create import create_ephys_data_set
 # Import custom functions
 from pyAPisolation import patch_utils
 from pyAPisolation.loadNWB import loadNWB, GLOBAL_STIM_NAMES
-
+from pyAPisolation.dev import stim_classifier as sc
 
 # ==== GLOBALS =====
 _ONTOLOGY = ju.read(StimulusOntology.DEFAULT_STIMULUS_ONTOLOGY_FILE)
@@ -76,7 +76,7 @@ def run_analysis(folder, backend="ipfx", outfile='out.csv', ext="nwb", parallel=
         if parallel == True:
             #Run in parallel
             parallel = joblib.cpu_count()
-        results = joblib.Parallel(n_jobs=4, backend='multiprocessing')(joblib.delayed(get_data_partial)(specimen_id) for specimen_id in file_idx)
+        results = joblib.Parallel(n_jobs=1, backend='multiprocessing')(joblib.delayed(get_data_partial)(specimen_id) for specimen_id in file_idx)
         
     elif backend == "custom":
         raise(NotImplementedError)
@@ -232,7 +232,7 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
                 continue
             #if the sweep v is in volts, convert to mV, ipfx wants mV
             if match_unit(data_set.sweepMetadata[sweep]['resp_dict']["unit"]) == "volt":
-                #sometimes the voltage is in volts, sometimes in mV, this is a hack to fix that
+                #sometimes the voltage is in volts, sometimes in mV,  even thought it is logged as bolts this is a hack to fix that
                 if np.max(v) > 500 and np.min(v) < -500:
                     #possibly in nV or something else, convert to mV anyway
                     v = v/1000
@@ -245,9 +245,8 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
                 if np.max(i) < 0.1 and np.min(i) > -0.1:
                     #probably in amp, convert to picoAmps
                     i = i*1000000000000
-                else:
-                    #probably in pA already
-                    i = i
+                
+                #probably in pA already
                 #i[np.logical_and(i < 5, i > -5)] = 0
 
             #try to figure out if this is a long square
@@ -393,6 +392,7 @@ def get_stimulus_protocols(files, ext="nwb", method='random'):
     #here we are gonna set the GLOBAL_STIM_NAMES filter to blank, so that we can get all the stimulus names
     GLOBAL_STIM_NAMES.stim_inc = ['']
     GLOBAL_STIM_NAMES.stim_exc = []
+    classifier = sc.stimClassifier()
     stim_to_use = []
     for i, f in enumerate(files):
         _, _, _, _, data_set = loadNWB(f, return_obj=True)
@@ -403,7 +403,8 @@ def get_stimulus_protocols(files, ext="nwb", method='random'):
             sweep_meta = data_set.sweepMetadata[j]
             i = data_set.dataC[j]
             t = data_set.dataX[j]
-            stim_protocol = match_protocol(i, t) #stimulus protocol is the matching protocol 
+            #stim_protocol = match_protocol(i, t) #stimulus protocol is the matching protocol 
+            stim_protocol = classifier.predict(i)
             #reference mapped to the allen protocol names
             if stim_protocol is not None:
                 #add stim_protocol to ontology
@@ -420,8 +421,11 @@ def get_stimulus_protocols(files, ext="nwb", method='random'):
 def match_protocol(i, t, test_pulse=True, start_epoch=None, end_epoch=None, test_pulse_length=0.1):
     #this function will take a stimulus and return the stimulus protocol at least it will try
     #first we will try to match the stimulus protocol to a known protocol
-    
+    classifier = sc.stimClassifier()
     start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(i, t, test_pulse=test_pulse, start_epoch=start_epoch, end_epoch=end_epoch, test_pulse_length=test_pulse_length)
+    pred = classifier.decode(classifier.predict(i.reshape(1, -1)))[0]
+    if pred=="long_square":
+        return "Long Square"
     if start_time is None:
         #if we can't find the start time, then we can't identify the stimulus protocol
         return None

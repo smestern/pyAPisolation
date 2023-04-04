@@ -47,6 +47,11 @@ class analysis_fields():
 
 GLOBAL_VARS = analysis_fields()
 
+BOOTSTRAP_TABLE_CSS = ['https://unpkg.com/bootstrap-table@1.21.2/dist/bootstrap-table.min.css']
+BOOTSTRAP_TABLE_JS = ['https://unpkg.com/bootstrap-table/dist/bootstrap-table.min.js']
+
+
+
 def _df_select_by_col(df, string_to_find):
     columns = df.columns.values
     out = []
@@ -64,7 +69,7 @@ class live_data_viz():
         self.para_df = None
         self._run_analysis(dir_path, database_file)
 
-        app = dash.Dash(__name__,)
+        app = dash.Dash(__name__)
 
         # find pregenerated labels
         self.labels = self._find_label_cols(self.df_raw)
@@ -94,7 +99,7 @@ class live_data_viz():
                                    style={"min-height": "500px"}),
                       dbc.CardFooter(["Select Color:", self.dropdown]),
                       ])],
-            width=6)
+            width=12)
         col_para = dbc.Col([dbc.Card(
             [dbc.CardHeader(dbc.Button(
                             "Paracoords Plot",
@@ -128,16 +133,17 @@ class live_data_viz():
                 'overflow': 'hidden',
                 'textOverflow': 'ellipsis',
                 'maxWidth': 0
-            }
+            },
 
-        )],className="table-card-like table-borderless table-striped", id='data-table-col')
+        )], id='data-table-col')
 
-        app.layout = html.Div([dbc.Container([dbc.Container([
+        app.layout = html.Div([dbc.Container([
             dbc.Row([header]),
-            dbc.Row([col_para, col_umap,], className="g-0"),
+            dbc.Row([ col_para, col_umap,], className="g-0"),
             dbc.Row([ col_long]),
             dbc.Row([col_datatable])
-        ], fluid=True, style={"margin-left": "auto","margin-right": "auto"})],),
+        
+        ]),
             dcc.Interval(
             id='interval-component',
             interval=240*1000,  # in milliseconds
@@ -217,10 +223,10 @@ class live_data_viz():
 
     def gen_umap_plots(self, labels=None, label_legend=None, data=None):
         umap_labels_df, labels_df = _df_select_by_col(
-            self.df_raw, ['umap']), _df_select_by_col(self.df_raw, GLOBAL_VARS.umap_labels)
+            self.df_raw, ['pca']), _df_select_by_col(self.df_raw, GLOBAL_VARS.umap_labels)
         if umap_labels_df.empty is False:
 
-            data = umap_labels_df[['umap X', 'umap Y']].to_numpy()
+            data = umap_labels_df[['pca X', 'pca Y']].to_numpy()
             if labels is None:
                 labels = labels_df[labels_df.columns.values[0]].to_numpy()
 
@@ -228,7 +234,7 @@ class live_data_viz():
             pre_df, outliers = preprocess_df(self.df)
             data = dense_umap(pre_df)
             labels = cluster_df(pre_df)
-        fig = px.scatter(x=data[:, 0], y=data[:, 1], color=labels.astype(str), hover_name=self.df['id'].to_numpy())
+        fig = px.scatter(x=data[:, 0], y=data[:, 1], color=labels.astype(str), hover_name=self.df.iloc[[x not in outliers for x in np.arange(len(self.df))], :]['id'].to_numpy())
         fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
         fig.update_yaxes(automargin=True, autorange=False, range=[min(data[:, 1]), max(data[:, 1])])
         fig.update_xaxes(automargin=True, autorange=False, range=[min(data[:, 0]), max(data[:, 0])])

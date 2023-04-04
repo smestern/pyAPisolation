@@ -16,5 +16,6 @@ setup(
        'numpy>=1.17',
        'pyabf>=2.1.9'
 	],
+    package_data={'': ['*.pt']},
     packages=find_packages(include=['pyAPisolation', 'pyAPisolation.dev', 'web_viz'], exclude=["tests", "build", "dist", 'run_APisolation_ipfx.py']),
 )
