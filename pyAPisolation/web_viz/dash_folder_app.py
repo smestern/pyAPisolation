@@ -92,14 +92,14 @@ class live_data_viz():
                     id="loading-2", fullscreen=False, type="default",
                     children=[html.Div(id='datatable-plot-cell', )])])],style={
                     "flex-wrap": "nowrap", "min-height": "500px", "overflow-x": "hidden"})]
-                , width=12)
+                , width=6)
         col_umap = dbc.Col([
             dbc.Card([dbc.CardHeader("UMAP Plot"),
                       dbc.CardBody([umap_fig], id='umap-cardbody',
                                    style={"min-height": "500px"}),
                       dbc.CardFooter(["Select Color:", self.dropdown]),
                       ])],
-            width=12)
+            width=6)
         col_para = dbc.Col([dbc.Card(
             [dbc.CardHeader(dbc.Button(
                             "Paracoords Plot",
@@ -139,9 +139,9 @@ class live_data_viz():
 
         app.layout = html.Div([dbc.Container([
             dbc.Row([header]),
-            dbc.Row([ col_para, col_umap,], className="g-0"),
-            dbc.Row([ col_long]),
-            dbc.Row([col_datatable])
+            dbc.Row([ col_para, col_umap,]),
+            dbc.Row([ col_long, col_datatable]),
+            dbc.Row([])
         
         ]),
             dcc.Interval(
@@ -229,15 +229,19 @@ class live_data_viz():
             data = umap_labels_df[['pca X', 'pca Y']].to_numpy()
             if labels is None:
                 labels = labels_df[labels_df.columns.values[0]].to_numpy()
+            hover_names = self.df.iloc[:, :]['id'].to_numpy()
 
         else:
+            #if the data is not embedded, embed it
+            #first preprocess the data
             pre_df, outliers = preprocess_df(self.df)
             data = dense_umap(pre_df)
             labels = cluster_df(pre_df)
-        fig = px.scatter(x=data[:, 0], y=data[:, 1], color=labels.astype(str), hover_name=self.df.iloc[[x not in outliers for x in np.arange(len(self.df))], :]['id'].to_numpy())
+            hover_names = self.df.iloc[[x not in outliers for x in np.arange(len(self.df))], :]['id'].to_numpy()
+        fig = px.scatter(x=data[:, 0], y=data[:, 1], color=labels.astype(str), hover_name=hover_names)
         fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
-        fig.update_yaxes(automargin=True, autorange=False, range=[min(data[:, 1]), max(data[:, 1])])
-        fig.update_xaxes(automargin=True, autorange=False, range=[min(data[:, 0]), max(data[:, 0])])
+        fig.update_yaxes(automargin=True, autorange=True)
+        fig.update_xaxes(automargin=True, autorange=True)
         fig.layout.autosize = True
         return dcc.Graph(
             id='UMAP-graph',
