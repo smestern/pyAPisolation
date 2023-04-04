@@ -103,6 +103,11 @@
          </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <property name="sizeConstraint">
+             <enum>QLayout::SetFixedSize</enum>
+            </property>
+            <item>
             <layout class="QHBoxLayout" name="horizontalLayout">
              <property name="sizeConstraint">
               <enum>QLayout::SetMaximumSize</enum>
@@ -395,8 +400,10 @@
               </widget>
              </item>
             </layout>
-           </item>
-          </layout>
+            </item>
+           </layout>
+          </item>
+         </layout>
         </widget>
         <widget class="QWidget" name="runcmcalc">
          <attribute name="title">
