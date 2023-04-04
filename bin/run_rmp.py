@@ -85,7 +85,7 @@ def rmp_abf(abf, time=30, crop=True, bin_time=100):
         mode_vm = mode(data[:t1], nan_policy='omit')[0][0]
 
         #Compute the running bin
-        df_raw = pd.DataFrame(data=data, index=abf.sweepX)
+        #df_raw = pd.DataFrame(data=data, index=abf.sweepX)
         df_running = running_bin(abf.sweepX, data, bin_time/1000)
         
 
@@ -99,7 +99,7 @@ def rmp_abf(abf, time=30, crop=True, bin_time=100):
             
             mode_vm_last = mode_vm
             median_vm_last= np.nanmedian(abf.sweepY)
-        if mean_vm < -20 and mean_vm >-100:
+        if mean_vm < 200 and mean_vm >-1000:
             sweepsdata.append(np.hstack((mean_vm, std_vm, f_vm, median_vm, mode_vm, e_vm, median_vm_last, mode_vm_last, delta_vm, sweep_time)))
     sweep_full = np.vstack(sweepsdata)
     df = pd.DataFrame(data=sweep_full, columns=[f'Overall Mean vm','Overall STD vm', f'first {time}s Mean Vm', f'first {time}s Median Vm',f'first {time}s Mode Vm',  f'End {time}s Mean Vm', f'End {time}s median Vm', f'End {time}s mode Vm', 'Delta Vm', 'Length(s)'])
@@ -193,7 +193,7 @@ for root,dirs,fileList in os.walk(root_fold):
         fp = os.path.join(root, x)
         if '.abf' in x:
             
-            try:
+            #try:
                 abf = pyabf.ABF(fp)
                 if proto == -1 or protocol_name in abf.protocol:
                     print(abf.abfID + ' import')
@@ -201,8 +201,8 @@ for root,dirs,fileList in os.walk(root_fold):
                     if temp_df.empty == False:
                         full_df = full_df.append(temp_df)
                         full_df_running = full_df_running.join(temp_df_running.rename({0: temp_df['cell_name'].to_numpy()[0]}, axis='columns'), how='outer')
-            except:
-              print('error processing file ' + fp)
+            #except:
+                print('error processing file ' + fp)
 
 
 with pd.ExcelWriter(root_fold + '/RMP_' + tag + '.xlsx') as runf:

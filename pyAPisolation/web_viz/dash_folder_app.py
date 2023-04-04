@@ -47,6 +47,11 @@ class analysis_fields():
 
 GLOBAL_VARS = analysis_fields()
 
+BOOTSTRAP_TABLE_CSS = ['https://unpkg.com/bootstrap-table@1.21.2/dist/bootstrap-table.min.css']
+BOOTSTRAP_TABLE_JS = ['https://unpkg.com/bootstrap-table/dist/bootstrap-table.min.js']
+
+
+
 def _df_select_by_col(df, string_to_find):
     columns = df.columns.values
     out = []
@@ -64,7 +69,7 @@ class live_data_viz():
         self.para_df = None
         self._run_analysis(dir_path, database_file)
 
-        app = dash.Dash(__name__,)
+        app = dash.Dash(__name__)
 
         # find pregenerated labels
         self.labels = self._find_label_cols(self.df_raw)
@@ -87,7 +92,7 @@ class live_data_viz():
                     id="loading-2", fullscreen=False, type="default",
                     children=[html.Div(id='datatable-plot-cell', )])])],style={
                     "flex-wrap": "nowrap", "min-height": "500px", "overflow-x": "hidden"})]
-                , width=12)
+                , width=6)
         col_umap = dbc.Col([
             dbc.Card([dbc.CardHeader("UMAP Plot"),
                       dbc.CardBody([umap_fig], id='umap-cardbody',
@@ -128,16 +133,17 @@ class live_data_viz():
                 'overflow': 'hidden',
                 'textOverflow': 'ellipsis',
                 'maxWidth': 0
-            }
+            },
 
-        )],className="table-card-like table-borderless table-striped", id='data-table-col')
+        )], id='data-table-col')
 
-        app.layout = html.Div([dbc.Container([dbc.Container([
+        app.layout = html.Div([dbc.Container([
             dbc.Row([header]),
-            dbc.Row([col_para, col_umap,], className="g-0"),
-            dbc.Row([ col_long]),
-            dbc.Row([col_datatable])
-        ], fluid=True, style={"margin-left": "auto","margin-right": "auto"})],),
+            dbc.Row([ col_para, col_umap,]),
+            dbc.Row([ col_long, col_datatable]),
+            dbc.Row([])
+        
+        ]),
             dcc.Interval(
             id='interval-component',
             interval=240*1000,  # in milliseconds
@@ -217,21 +223,25 @@ class live_data_viz():
 
     def gen_umap_plots(self, labels=None, label_legend=None, data=None):
         umap_labels_df, labels_df = _df_select_by_col(
-            self.df_raw, ['umap']), _df_select_by_col(self.df_raw, GLOBAL_VARS.umap_labels)
+            self.df_raw, ['pca']), _df_select_by_col(self.df_raw, GLOBAL_VARS.umap_labels)
         if umap_labels_df.empty is False:
 
-            data = umap_labels_df[['umap X', 'umap Y']].to_numpy()
+            data = umap_labels_df[['pca X', 'pca Y']].to_numpy()
             if labels is None:
                 labels = labels_df[labels_df.columns.values[0]].to_numpy()
+            hover_names = self.df.iloc[:, :]['id'].to_numpy()
 
         else:
+            #if the data is not embedded, embed it
+            #first preprocess the data
             pre_df, outliers = preprocess_df(self.df)
             data = dense_umap(pre_df)
             labels = cluster_df(pre_df)
-        fig = px.scatter(x=data[:, 0], y=data[:, 1], color=labels.astype(str), hover_name=self.df['id'].to_numpy())
+            hover_names = self.df.iloc[[x not in outliers for x in np.arange(len(self.df))], :]['id'].to_numpy()
+        fig = px.scatter(x=data[:, 0], y=data[:, 1], color=labels.astype(str), hover_name=hover_names)
         fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
-        fig.update_yaxes(automargin=True, autorange=False, range=[min(data[:, 1]), max(data[:, 1])])
-        fig.update_xaxes(automargin=True, autorange=False, range=[min(data[:, 0]), max(data[:, 0])])
+        fig.update_yaxes(automargin=True, autorange=True)
+        fig.update_xaxes(automargin=True, autorange=True)
         fig.layout.autosize = True
         return dcc.Graph(
             id='UMAP-graph',
