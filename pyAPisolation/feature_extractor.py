@@ -7,7 +7,7 @@ import pandas as pd
 import pyabf
 import copy
 import multiprocessing as mp
-from ipfx import feature_extractor
+from ipfx import feature_extractor, spike_detector, time_series_utils
 from ipfx import subthresh_features as subt
 import scipy.signal as signal
 
@@ -350,10 +350,30 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
     return temp_df, temp_avg
     
 
+def determine_rejected_spikes(spfx, spike_df, v, t, start, end, dv_cutoff=20.):
+    """Determine which spikes were rejected by the spike detection algorithm.
+    Parameters
+    ----------
+    spfx : SweepFeatures object
+    spike_df : pandas.DataFrame
+        DataFrame containing spike features
+    Returns
+    -------
+    rejected_spikes : list of bool
+        True if spike was rejected, False if spike was accepted
+    """
+    dvdt = time_series_utils.calculate_dvdt(v, t, 0)
+    rejected_spikes = []
+    intial_spikes = spike_detector.detect_putative_spikes(v, t, start, end,
+                                                    dv_cutoff=dv_cutoff,
+                                                    dvdt=dvdt)
+    return rejected_spikes
 
 
 
-class abfFeatExtractor(object):
+
+
+class FeatExtractor(object):
     """TODO """
     def __init__(self, abf, start=None, end=None, filter=10.,
                  dv_cutoff=20., max_interval=0.005, min_height=2., min_peak=-30.,
