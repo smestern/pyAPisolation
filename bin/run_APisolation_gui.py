@@ -266,15 +266,18 @@ class analysis_gui(QWidget):
                 start=self.param_dict['start'], end=self.param_dict['end'])
             #extract the spikes and make a dataframe for each sweep
             self.spike_df = {}
+            self.rejected_spikes = {}
             for sweep in self.selected_sweeps:
                 self.abf.setSweep(sweep)
                 
                 self.spike_df[sweep] = self.spike_extractor.process(self.abf.sweepX,self.abf.sweepY, self.abf.sweepC)
-                determine_rejected_spikes(self.spike_extractor, self.spike_df[sweep], self.abf.sweepY, self.abf.sweepX, 
-                self.param_dict)
+                #self.rejected_spikes[sweep] = pd.DataFrame().from_dict(determine_rejected_spikes(self.spike_extractor, self.spike_df[sweep], self.abf.sweepY, self.abf.sweepX, 
+                #self.param_dict)).T
+                self.rejected_spikes = None
             #self.spike_df = pd.concat(self.spike_df)
         elif self.get_current_analysis() is 'subthres':
             self.spike_df = None
+            self.rejected_spikes = None
             self.subthres_df, _ = analyze_subthres(self.abf, **self.subt_param_dict)
             
     
@@ -485,7 +488,7 @@ class analysis_gui(QWidget):
         #self.main_view.figure.set_facecolor('#F0F0F0')
         #self.main_view.figure.set_edgecolor('#F0F0F0')
        # self.main_view.figure.set_dpi(100)
-        #self.main_view.figure.set_tight_layout(True)
+        self.main_view.figure.set_tight_layout(True)
         #self.main_view.figure.set_facecolor('#F0F0F0')
         self.get_selected_abf()
         self.get_selected_sweeps()
@@ -530,7 +533,17 @@ class analysis_gui(QWidget):
                         self.axe2.scatter(self.spike_df[sweep]['upstroke_t'], self.spike_df[sweep]['upstroke'], color='#00FF00')
                     except:
                         pass
+        
+        #plot the rejected spikes if they exist
+        if self.rejected_spikes is not None:
+            for sweep in self.selected_sweeps:
+                self.abf.setSweep(sweep)
+                if self.rejected_spikes[sweep].empty:
+                    continue
+                for index, row in self.rejected_spikes[sweep].iterrows():
+                    #determine why the spike was rejected
 
+                    self.axe1.scatter(self.abf.sweepX[int(index)], self.abf.sweepY[int(index)], s=10, zorder=99, label=str(row.to_dict()))
         #if the analysis was subthreshold, we need to plot the results
         if self.subthres_df is not None:
             cols = self.subthres_df.columns
@@ -584,7 +597,8 @@ class analysis_gui(QWidget):
 
 
                 
-        self.axe1.legend(loc='upper right')
+        self.axe1.legend( bbox_to_anchor=(1.05, 1),
+                         loc='upper left', borderaxespad=0.)
         self.axe2.legend(loc='upper right')
         self.main_view.draw()
 
@@ -669,8 +683,8 @@ def determine_rejected_spikes(spfx, spike_df, v, t, param_dict):
     
     if len(spike_indexes) == 0:
         return rejected_spikes
-    upstrokes = spike_detector.find_upstroke_indexes(v, t, spike_indexes, peak_indexes, filter=0, dvdt=dvdt)
-    thresholds = spike_detector.refine_threshold_indexes(v, t, upstrokes, param_dict['thresh_frac'],
+    upstroke_indexes = spike_detector.find_upstroke_indexes(v, t, spike_indexes, peak_indexes, filter=0, dvdt=dvdt)
+    thresholds = spike_detector.refine_threshold_indexes(v, t, upstroke_indexes, param_dict['thresh_frac'],
                                                 dvdt=dvdt)
 
 
@@ -693,7 +707,6 @@ def determine_rejected_spikes(spfx, spike_df, v, t, param_dict):
     too_long_spikes = []
     for i, (spk, peak) in enumerate(zip(spike_indexes, peak_indexes)):
         if t[peak] - t[spk] >= param_dict['max_interval']:
-            print("Need to recalculate threshold-peak pair that exceeds maximum allowed interval ({:f} s)".format(max_interval))
             too_long_spikes.append(i)
     if too_long_spikes:
         i
@@ -715,21 +728,19 @@ def determine_rejected_spikes(spfx, spike_df, v, t, param_dict):
 
                 # If that peak is okay (not outside the allowed window, not past the next spike)
                 # then keep it
-                if t[new_peak] - t[spike] < max_interval and \
+                if t[new_peak] - t[spike] < param_dict['max_interval'] and \
                    (i == len(spike_indexes) - 1 or t[new_peak] < t[spike_indexes[i + 1]]):
                     peak_indexes[i] = new_peak
                 else:
                     # Otherwise, log and get rid of the spike
-                    logging.info("Could not redetermine threshold-peak pair - dropping that pair")
                     drop_spikes.append(i)
 #                     raise FeatureError("Could not redetermine threshold")
             else:
                 spike_indexes[i] = upstroke_indexes[i] - below_target[0]
-
-        if drop_spikes:
-            spike_indexes = np.delete(spike_indexes, drop_spikes)
-            peak_indexes = np.delete(peak_indexes, drop_spikes)
-            upstroke_indexes = np.delete(upstroke_indexes, drop_spikes)
+        for i in drop_spikes:
+            rejected_spikes[spike_indexes[i]] = {'peak_level': False, 'height': False, 'threshold to peak': True, }
+    else:
+        return rejected_spikes
     return rejected_spikes
 
 
