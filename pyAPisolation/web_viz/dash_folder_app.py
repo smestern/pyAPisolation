@@ -91,15 +91,15 @@ class live_data_viz():
                 dbc.CardBody([dcc.Loading(
                     id="loading-2", fullscreen=False, type="default",
                     children=[html.Div(id='datatable-plot-cell', )])])],style={
-                    "flex-wrap": "nowrap", "min-height": "500px", "overflow-x": "hidden"})]
-                , width=6)
+                    "flex-wrap": "nowrap", "min-height": "700px", "overflow-x": "hidden"})]
+                , width=4)
         col_umap = dbc.Col([
             dbc.Card([dbc.CardHeader("UMAP Plot"),
                       dbc.CardBody([umap_fig], id='umap-cardbody',
-                                   style={"min-height": "500px"}),
+                                   style={"min-height": "600px"}),
                       dbc.CardFooter(["Select Color:", self.dropdown]),
                       ])],
-            width=6)
+            width=8)
         col_para = dbc.Col([dbc.Card(
             [dbc.CardHeader(dbc.Button(
                             "Paracoords Plot",
@@ -112,7 +112,7 @@ class live_data_viz():
                  para_fig,
                  id="para-collapse",
                  is_open=True,
-             )])])], width=6)
+             )])])], width=12)
         col_datatable = dbc.Col([dash_table.DataTable(
             id='datatable-row-ids',
             columns=[
@@ -139,9 +139,9 @@ class live_data_viz():
 
         app.layout = html.Div([dbc.Container([
             dbc.Row([header]),
-            dbc.Row([ col_para, col_umap,]),
-            dbc.Row([ col_long, col_datatable]),
-            dbc.Row([])
+            dbc.Row([ col_umap,  col_long]),
+            dbc.Row([ col_para, ]),
+            dbc.Row([col_datatable])
         
         ]),
             dcc.Interval(
@@ -223,10 +223,10 @@ class live_data_viz():
 
     def gen_umap_plots(self, labels=None, label_legend=None, data=None):
         umap_labels_df, labels_df = _df_select_by_col(
-            self.df_raw, ['pca']), _df_select_by_col(self.df_raw, GLOBAL_VARS.umap_labels)
+            self.df_raw, ['umap']), _df_select_by_col(self.df_raw, GLOBAL_VARS.umap_labels)
         if umap_labels_df.empty is False:
 
-            data = umap_labels_df[['pca X', 'pca Y']].to_numpy()
+            data = umap_labels_df[['umap X', 'umap Y']].to_numpy()
             if labels is None:
                 labels = labels_df[labels_df.columns.values[0]].to_numpy()
             hover_names = self.df.iloc[:, :]['id'].to_numpy()
@@ -239,16 +239,16 @@ class live_data_viz():
             labels = cluster_df(pre_df)
             hover_names = self.df.iloc[[x not in outliers for x in np.arange(len(self.df))], :]['id'].to_numpy()
         fig = px.scatter(x=data[:, 0], y=data[:, 1], color=labels.astype(str), hover_name=hover_names)
-        fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
-        fig.update_yaxes(automargin=True, autorange=True)
-        fig.update_xaxes(automargin=True, autorange=True)
+        fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), xaxis=dict(scaleanchor="y", scaleratio=1))
+        fig.update_yaxes(automargin=True, autorange=True) #force square aspect ratio
+        fig.update_xaxes(automargin=True, autorange=True, )
         fig.layout.autosize = True
         return dcc.Graph(
             id='UMAP-graph',
             figure=fig,
             style={
                 "width": "100%",
-                "height": "100%"
+                "height": "600px"
             },
             config=dict(
                 autosizable=True,
@@ -267,7 +267,7 @@ class live_data_viz():
         else:
             label_legend = None
         fig = self.gen_umap_plots(labels=labels, label_legend=label_legend)
-        return [fig]
+        return fig
 
     def gen_para_plots(self, *args):
 

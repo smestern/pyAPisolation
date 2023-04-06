@@ -656,8 +656,8 @@ progress {
   width: 100%;
   padding-right: var(--bs-gutter-x, 0.2rem);
   padding-left: var(--bs-gutter-x, 0.2rem);
-  margin-right: 10%;
-  margin-left: 10%;
+  margin-right: 3%;
+  margin-left: 3%;
 }
 
 @media (min-width: 576px) {
@@ -684,9 +684,15 @@ progress {
   }
 }
 
-@media (min-width: 150px) {
+@media (min-width: 1600px) {
   .container, .container-sm, .container-md, .container-lg, .container-xl, .container-xxl {
-    max-width: 1450px;
+    max-width: 1696px;
+  }
+}
+
+@media (min-width: 1900px) {
+  .container, .container-sm, .container-md, .container-lg, .container-xl, .container-xxl {
+    max-width: 1805px;
   }
 }
 
