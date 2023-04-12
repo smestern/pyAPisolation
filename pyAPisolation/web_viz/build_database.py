@@ -42,7 +42,10 @@ from ipfx.dataset.create import create_ephys_data_set
 # Import custom functions
 from pyAPisolation import patch_utils
 from pyAPisolation.loadNWB import loadNWB, GLOBAL_STIM_NAMES
-from pyAPisolation.dev import stim_classifier as sc
+try:
+    from pyAPisolation.dev import stim_classifier as sc
+except:
+    print("Could not import stim_classifier")
 
 # ==== GLOBALS =====
 _ONTOLOGY = ju.read(StimulusOntology.DEFAULT_STIMULUS_ONTOLOGY_FILE)

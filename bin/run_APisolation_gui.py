@@ -8,6 +8,7 @@ import pandas as pd
 import multiprocessing as mp
 from sklearn.svm import OneClassSVM
 from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import LabelEncoder
 import copy
 from functools import partial
 import scipy.signal as signal
@@ -22,6 +23,8 @@ from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.backends.backend_qtagg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
+from matplotlib import pyplot as plt
+from matplotlib import patches as mpatches
 print("Loaded external libraries")
 from pyAPisolation.feature_extractor import folder_feature_extract, save_data_frames, preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
 from pyAPisolation.patch_utils import load_protocols
@@ -263,17 +266,17 @@ class analysis_gui(QWidget):
 
             self.spike_extractor = SpikeFeatureExtractor(filter=0,  dv_cutoff=self.param_dict['dv_cutoff'],
                 max_interval=self.param_dict['max_interval'], min_height=self.param_dict['min_height'], min_peak=self.param_dict['min_peak'],
-                start=self.param_dict['start'], end=self.param_dict['end'])
+                start=self.param_dict['start'], end=self.param_dict['end'], thresh_frac=self.param_dict['thresh_frac'])
             #extract the spikes and make a dataframe for each sweep
             self.spike_df = {}
-            self.rejected_spikes = {}
+            self.rejected_spikes = None #{}
             for sweep in self.selected_sweeps:
                 self.abf.setSweep(sweep)
                 
                 self.spike_df[sweep] = self.spike_extractor.process(self.abf.sweepX,self.abf.sweepY, self.abf.sweepC)
-                #self.rejected_spikes[sweep] = pd.DataFrame().from_dict(determine_rejected_spikes(self.spike_extractor, self.spike_df[sweep], self.abf.sweepY, self.abf.sweepX, 
-                #self.param_dict)).T
-                self.rejected_spikes = None
+                # self.rejected_spikes[sweep] = pd.DataFrame().from_dict(determine_rejected_spikes(self.spike_extractor, self.spike_df[sweep], self.abf.sweepY, self.abf.sweepX, 
+                # self.param_dict)).T
+                #self.rejected_spikes = None
             #self.spike_df = pd.concat(self.spike_df)
         elif self.get_current_analysis() is 'subthres':
             self.spike_df = None
@@ -516,8 +519,8 @@ class analysis_gui(QWidget):
                 
                 #plot with labels if its the first sweep
                 if labeled_legend == False:
-                    self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99, label='Spike Peak')
-                    self.axe1.scatter(self.spike_df[sweep]['threshold_t'], self.spike_df[sweep]['threshold_v'], color='#00FF00', s=10, zorder=99, label='Threshold')
+                    self.axe1.scatter(self.spike_df[sweep]['peak_t'], self.spike_df[sweep]['peak_v'], color='#FF0000', s=10, zorder=99, alpha=0.5, label='Spike Peak')
+                    self.axe1.scatter(self.spike_df[sweep]['threshold_t'], self.spike_df[sweep]['threshold_v'], color='#00FF00', s=10, zorder=99, alpha=0.5, label='Threshold')
                     #plot the dv/dt threshold
                     try:
                         self.axe2.scatter(self.spike_df[sweep]['downstroke_t'], self.spike_df[sweep]['downstroke'], color='#FF0000', label='Downstroke/Decay')
@@ -536,14 +539,32 @@ class analysis_gui(QWidget):
         
         #plot the rejected spikes if they exist
         if self.rejected_spikes is not None:
+            #
+            
+            #create a cmap for the labels
+            cmap = plt.cm.get_cmap('viridis')
+            #create a list of colors for the labels
+            labels = [str(row.to_dict()) for sweep in self.selected_sweeps for index, row in self.rejected_spikes[sweep].iterrows()]
+            colors = [cmap(i) for i in np.linspace(0, 1, len(labels))]
+            #create a dictionary of colors for the labels
+            color_dict = dict(zip(labels, colors))
+
             for sweep in self.selected_sweeps:
                 self.abf.setSweep(sweep)
                 if self.rejected_spikes[sweep].empty:
                     continue
                 for index, row in self.rejected_spikes[sweep].iterrows():
-                    #determine why the spike was rejected
+                    #plot the rejected spikes
+                    self.axe1.scatter(self.abf.sweepX[int(index)], self.abf.sweepY[int(index)], color=color_dict[str(row.to_dict())], s=10, zorder=99,)
+                    
+                    #self.axe1.scatter(self.abf.sweepX[int(index)], self.abf.sweepY[int(index)], c='r', s=10, zorder=99, label=)
+           
+            #create a legend for the rejected spikes
+            #create a list of patches for the legend
+            patches = [mpatches.Patch(color=color_dict[label], label=label) for label in color_dict]
+            #create the legend
+            reject_spikes_legend = self.axe1.legend(handles=patches, loc='upper left', fontsize=8)
 
-                    self.axe1.scatter(self.abf.sweepX[int(index)], self.abf.sweepY[int(index)], s=10, zorder=99, label=str(row.to_dict()))
         #if the analysis was subthreshold, we need to plot the results
         if self.subthres_df is not None:
             cols = self.subthres_df.columns
@@ -600,6 +621,7 @@ class analysis_gui(QWidget):
         self.axe1.legend( bbox_to_anchor=(1.05, 1),
                          loc='upper left', borderaxespad=0.)
         self.axe2.legend(loc='upper right')
+        self.axe1.add_artist(reject_spikes_legend)
         self.main_view.draw()
 
     def _plot_pyqtgraph(self):
@@ -688,19 +710,19 @@ def determine_rejected_spikes(spfx, spike_df, v, t, param_dict):
                                                 dvdt=dvdt)
 
 
-    overlaps = np.flatnonzero(spike_indexes[1:] <= peak_indexes[:-1] + 1)
-    if overlaps.size:
-        spike_mask = np.ones_like(spike_indexes, dtype=bool)
-        spike_mask[overlaps + 1] = False
-        spike_indexes = spike_indexes[spike_mask]
+    # overlaps = np.flatnonzero(spike_indexes[1:] <= peak_indexes[:-1] + 1)
+    # if overlaps.size:
+    #     spike_mask = np.ones_like(spike_indexes, dtype=bool)
+    #     spike_mask[overlaps + 1] = False
+    #     spike_indexes = spike_indexes[spike_mask]
 
-        peak_mask = np.ones_like(peak_indexes, dtype=bool)
-        peak_mask[overlaps] = False
-        peak_indexes = peak_indexes[peak_mask]
+    #     peak_mask = np.ones_like(peak_indexes, dtype=bool)
+    #     peak_mask[overlaps] = False
+    #     peak_indexes = peak_indexes[peak_mask]
 
-        upstroke_mask = np.ones_like(upstroke_indexes, dtype=bool)
-        upstroke_mask[overlaps] = False
-        upstroke_indexes = upstroke_indexes[upstroke_mask]
+    #     upstroke_mask = np.ones_like(upstroke_indexes, dtype=bool)
+    #     upstroke_mask[overlaps] = False
+    #     upstroke_indexes = upstroke_indexes[upstroke_mask]
 
     # Validate that peaks don't occur too long after the threshold
     # If they do, try to re-find threshold from the peak
