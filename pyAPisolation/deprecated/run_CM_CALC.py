@@ -113,8 +113,10 @@ def main():
         end_sear = float(end_sear)
     except:
         end_sear = None    
-            
 
+    if bplot == True:
+                            if not os.path.exists(root_fold+'//cm_plots//'):
+                                    os.mkdir(root_fold+'//cm_plots//')  
 
     debugplot = 0
     running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
@@ -234,11 +236,10 @@ def main():
                         #    indices_of_same = 0
                         indices_of_same = np.arange(full_dataI.shape[0])
                         full_dataV = np.vstack(full_dataV)
-                        if bplot == True:
-                            if not os.path.exists(root_fold+'//cm_plots//'):
-                                    os.mkdir(root_fold+'//cm_plots//')   
+                         
                         print("Fitting Decay")
-                        decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=root_fold)
+                        decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), 
+                        np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=root_fold)
                         print("Computing Sag")
                         grow = exp_growth_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), 1/decay_slow)
                         temp_avg[f"Voltage sag mean"], temp_avg["Voltage Min point"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, plot=bplot)
@@ -308,4 +309,4 @@ def main():
 if __name__=="__main__":
     freeze_support()
     
-    Process(target=main).start()
+    main()

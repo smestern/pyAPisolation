@@ -27,24 +27,41 @@ root_fold = files
 
 def crop_ap(abf):
     print("Finding Spikes to be Removed")
-    spikext = feature_extractor.SpikeFeatureExtractor(filter=0, dv_cutoff=20)
-    dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+    spikext = feature_extractor.SpikeFeatureExtractor(filter=0, dv_cutoff=20, thresh_frac=0.2)
+    dataT, dataV, dataI = abf.sweepX, np.copy(abf.sweepY), np.copy(abf.sweepC)
+    dt = dataT[1] - dataT[0]
     spike_in_sweep = spikext.process(dataT, dataV, dataI)
     sweep_indi = np.arange(0, dataV.shape[0])
     if spike_in_sweep.empty == False:
-        ap_start_ = spike_in_sweep['threshold_index'].to_numpy()
-        ap_end_ = spike_in_sweep['trough_index'].to_numpy() + 300
+        #remove spikes
+        print(f" === Found {spike_in_sweep.shape[0]} spikes === ")
+        ap_start_ = spike_in_sweep['threshold_index'].to_numpy() - 500
+        ap_end_ = spike_in_sweep['trough_index'].to_numpy() + 500
         pairs = np.vstack((ap_start_, ap_end_)).T
         pair_data = []
         for p in pairs:
+            if (p[1] - p[0])*dt > 0.1:
+                print(f" === Found a long spike at {dataT[p[0]]} === ")
+                p[1] = np.clip(p[1], p[0], p[0]+int(0.1/dt))
             temp = np.arange(p[0], p[1]).astype(np.int)
             pair_data.append(temp.tolist())
+            print(f" === cropping spike between {dataT[p[0]]} and {dataT[p[1]]} === ")
         pair_data = np.hstack(pair_data)
         pair_data = pair_data[pair_data<dataV.shape[0]]
         dataV[pair_data] = np.nan
         sweep_data = dataV
+
+
+        #debug plot
+        if True:
+            plt.plot(abf.sweepX, abf.sweepY, 'k')
+            plt.plot(abf.sweepX, sweep_data, 'r')
+            plt.scatter(abf.sweepX[pairs[:,0]], abf.sweepY[pairs[:,0]], c='g', s=100)
+            plt.scatter(abf.sweepX[pairs[:,1]], abf.sweepY[pairs[:,1]], c='b', s=100)
+            plt.show()
     else:
         sweep_data = abf.sweepY
+    
     
         
     return sweep_data
@@ -103,7 +120,7 @@ def rmp_abf(abf, time=30, crop=True, bin_time=100):
             sweepsdata.append(np.hstack((mean_vm, std_vm, f_vm, median_vm, mode_vm, e_vm, median_vm_last, mode_vm_last, delta_vm, sweep_time)))
     sweep_full = np.vstack(sweepsdata)
     df = pd.DataFrame(data=sweep_full, columns=[f'Overall Mean vm','Overall STD vm', f'first {time}s Mean Vm', f'first {time}s Median Vm',f'first {time}s Mode Vm',  f'End {time}s Mean Vm', f'End {time}s median Vm', f'End {time}s mode Vm', 'Delta Vm', 'Length(s)'])
-    df['fold_name'] = np.full(sweep_full.shape[0], abf.abfFolderPath)
+    df['fold_name'] = np.full(sweep_full.shape[0], os.path.dirname(abf.abfFilePath))
     df['sweep number'] = abf.sweepList[:sweep_full.shape[0]]
     df['cell_name'] = np.full(sweep_full.shape[0], abf.abfID)
     return df, df_running
