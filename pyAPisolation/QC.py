@@ -9,6 +9,11 @@ def find_zero(realC):
     zero_ind = np.where(realC == 0)[0]
     return zero_ind
 
+def find_baseline(zero_ind):
+    #the baseline will be the first continious set of zeros
+    baseline_idx = np.where(np.diff(zero_ind) > 1)[0][0]
+    return zero_ind[0:baseline_idx+1]
+
 def compute_vm_drift(realY, zero_ind):
     sweep_wise_mean = np.mean(realY[:,zero_ind], axis=1)
     mean_drift = np.abs(np.amax(sweep_wise_mean) - np.amin(sweep_wise_mean))
@@ -28,6 +33,7 @@ def compute_rms(realY, zero_ind):
 
 def run_qc(realY, realC):
     zero_ind = find_zero(realC[0,:])
+    zero_ind = find_baseline(zero_ind)
     mean_rms, max_rms = compute_rms(realY, zero_ind)
     mean_drift, max_drift = compute_vm_drift(realY, zero_ind)
     return [mean_rms, max_rms, mean_drift, max_drift]
