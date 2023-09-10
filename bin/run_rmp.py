@@ -53,7 +53,7 @@ def crop_ap(abf):
 
 
         #debug plot
-        if True:
+        if False:
             plt.plot(abf.sweepX, abf.sweepY, 'k')
             plt.plot(abf.sweepX, sweep_data, 'r')
             plt.scatter(abf.sweepX[pairs[:,0]], abf.sweepY[pairs[:,0]], c='g', s=100)

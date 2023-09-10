@@ -621,7 +621,7 @@ class analysis_gui(QWidget):
         self.axe1.legend( bbox_to_anchor=(1.05, 1),
                          loc='upper left', borderaxespad=0.)
         self.axe2.legend(loc='upper right')
-        self.axe1.add_artist(reject_spikes_legend)
+        #self.axe1.add_artist(reject_spikes_legend)
         self.main_view.draw()
 
     def _plot_pyqtgraph(self):
