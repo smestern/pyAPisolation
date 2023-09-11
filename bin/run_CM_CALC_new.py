@@ -18,6 +18,7 @@ from ipfx import feature_extractor
 import pyabf
 import logging
 import scipy.ndimage as ndimage
+from pyAPisolation.patch_subthres as subthres_a
 print("Load finished")
 logging.basicConfig(level=logging.DEBUG)
 root = tk.Tk()
@@ -603,10 +604,14 @@ for root,dir,fileList in os.walk(files):
                     temp_df[f"_ALT_2 phase Cm {real_sweep_number}"] =  Cm3 * 1000000000000
                     temp_df[f"_1 phase Cm {real_sweep_number}"] =  Cm1 * 1000000000000
                     temp_df[f"Voltage sag {real_sweep_number}"], _ = compute_sag(dataT,dataV,dataI, time_after)
+                    sag_ratio, taum_allen, voltage_allen = subthres_a(dataT,dataV,dataI, param_dict['start'], param_dict['end'])
+                    temp_df[f"Voltage sag ratio {real_sweep_number}"] = sag_ratio
+                    temp_df[f"Tau_m Allen {real_sweep_number}"] = taum_allen    
+                    temp_df[f"Voltage sag Allen {real_sweep_number}"] = voltage_allen
                     #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
                     #
                     #temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
-                    #temp_spike_df['voltage_deflection' + real_sweep_number] = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+                    #['voltage_deflection' + real_sweep_number] = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
 
 
 
@@ -665,6 +670,10 @@ for root,dir,fileList in os.walk(files):
                 temp_avg["Averaged 2 phase Cm"] =  Cm2 * 1000000000000
                 temp_avg["Averaged 2 phase Cm Alt"] =  Cm3 * 1000000000000
                 temp_avg["Averaged 1 phase Cm"] =  Cm1 * 1000000000000
+                sag_ratio, taum_allen, voltage_allen = subthres_a(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), param_dict['start'], param_dict['end'])
+                temp_avg[f"Averaged Voltage sag ratio {real_sweep_number}"] = sag_ratio
+                temp_avg[f"Averaged Tau_m Allen {real_sweep_number}"] = taum_allen    
+                temp_avg[f"Average Voltage sag Allen {real_sweep_number}"] = voltage_allen
                 temp_avg["Protocol"] =  abf.protocol
                 print(f"Computed a membrane resistance of {(resist  / 1000000000)} giga ohms, and a capatiance of {Cm2 * 1000000000000} pF, and tau of {decay_slow*1000} ms")
                 dfs = dfs.append(temp_df, sort=True)
