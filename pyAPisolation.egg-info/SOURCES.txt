@@ -21,6 +21,7 @@ bin/run_APisolation_gui.py
 bin/run_APisolation_gui.spec
 bin/run_APisolation_ipfx.py
 bin/run_APisolation_ipfx.spec
+bin/run_CM_CALC.py
 bin/run_CM_CALC.spec
 bin/run_CM_CALC_new.py
 bin/run_QC.py
@@ -53,7 +54,6 @@ pyAPisolation/deprecated/ephy_view_extension.py
 pyAPisolation/deprecated/nuactionpotential.py
 pyAPisolation/deprecated/run_APisolation.py
 pyAPisolation/deprecated/run_APisolation_dir.py
-pyAPisolation/deprecated/run_CM_CALC.py
 pyAPisolation/deprecated/run_CM_CALC_para.py
 pyAPisolation/deprecated/run_output_to_web_qc.py
 pyAPisolation/deprecated/run_web_gui.py
@@ -79,11 +79,6 @@ pyAPisolation/dev/stim_classifier.py
 pyAPisolation/dev/test_feature_change.spec
 pyAPisolation/dev/vc_K_channel.ipynb
 pyAPisolation/dev/.ipynb_checkpoints/run_GROW_ANALYSIS-checkpoint.ipynb
-pyAPisolation/dev/old/run_GROW_ANALYSIS copy 2.ipynb
-pyAPisolation/dev/old/run_GROW_ANALYSIS copy 3.ipynb
-pyAPisolation/dev/old/run_GROW_ANALYSIS copy.ipynb
-pyAPisolation/dev/old/run_GROW_ANALYSIS_gp.ipynb
-pyAPisolation/dev/old/run_GROW_ANALYSIS_polyfit.ipynb
 pyAPisolation/tests/test_feature_change.py
 pyAPisolation/tests/test_feature_extractor.py
 pyAPisolation/tests/test_data/known_good_df.joblib

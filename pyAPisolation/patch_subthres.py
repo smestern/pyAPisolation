@@ -20,6 +20,8 @@ def exp_grow(t, a, b, alpha):
     return a - b * np.exp(-alpha * t)
 def exp_decay_2p(t, a, b1, alphaFast, b2, alphaSlow):
     return a + b1*np.exp(-alphaFast*t) + b2*np.exp(-alphaSlow*t)
+
+
 def exp_decay_1p(t, a, b1, alphaFast):
     return a + b1*np.exp(-alphaFast*t)
 
@@ -188,8 +190,12 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
         diff = np.abs(upperC - lowerC) + 5
         t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
         SpanFast=(upperC-lowerC)*1*.01
+
+        guess = (lowerC, diff, 50)
+        curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000, p0=guess,
+                                      bounds=([-np.inf, diff-15, 2], [np.inf, diff+15, 750]), xtol=None)
         curve, pcov_2p = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=([-np.inf,  0, 100,  0, 0], [np.inf, np.inf, 500, np.inf, np.inf]), xtol=None)
-        curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=(-np.inf, np.inf))
+        
         residuals_2p = dataV[downwardinfl:end_index]- exp_decay_2p(t1, *curve)
         residuals_1p = dataV[downwardinfl:end_index]- exp_decay_1p(t1, *curve2)
         ss_res_2p = np.sum(residuals_2p**2)

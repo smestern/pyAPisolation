@@ -210,8 +210,11 @@ def main():
                             temp_df[f"_ALT_2 phase Cm {real_sweep_number}"] =  Cm3 * 1000000000000
                             temp_df[f"_1 phase Cm {real_sweep_number}"] =  Cm1 * 1000000000000
                             temp_df[f"Voltage sag {real_sweep_number}"],temp_df[f"Voltage min {real_sweep_number}"] = compute_sag(dataT,dataV,dataI, time_after, plot=bplot, clear=False)
-                            
-                            #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
+                            sag_ratio, taum_allen, voltage_allen = subthres_a(dataT,dataV,dataI, 0.0, np.amax(dataT))
+                            temp_df[f"Voltage sag ratio {real_sweep_number}"] = sag_ratio
+                            temp_df[f"Tau_m Allen {real_sweep_number}"] = taum_allen    
+                            temp_df[f"Voltage sag Allen {real_sweep_number}"] = voltage_allen[0]
+                                    #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
                             #
                             #temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
                             #temp_spike_df['voltage_deflection' + real_sweep_number] = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
@@ -276,6 +279,12 @@ def main():
                         temp_avg["Averaged 2 phase Cm"] =  Cm2 * 1000000000000
                         temp_avg["Averaged 2 phase Cm Alt"] =  Cm3 * 1000000000000
                         temp_avg["Averaged 1 phase Cm"] =  Cm1 * 1000000000000
+                        
+                        sag_ratio, taum_allen, voltage_allen = subthres_a(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0),
+                                                                   np.nanmean(full_dataI[indices_of_same,:],axis=0), 0.0, np.amax(dataT))
+                        temp_avg[f"Averaged Voltage sag ratio "] = sag_ratio
+                        temp_avg[f"Averaged Tau_m Allen "] = taum_allen    
+                        temp_avg[f"Average Voltage sag Allen "] = voltage_allen[0]
                         print(f"Computed a membrane resistance of {(resist  / 1000000000)} giga ohms, and a capatiance of {Cm2 * 1000000000000} pF, and tau of {decay_slow*1000} ms")
                         dfs = dfs.append(temp_df, sort=True)
                         averages = averages.append(temp_avg, sort=True)
