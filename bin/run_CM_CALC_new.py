@@ -18,7 +18,7 @@ from ipfx import feature_extractor
 import pyabf
 import logging
 import scipy.ndimage as ndimage
-from pyAPisolation.patch_subthres as subthres_a
+from pyAPisolation.patch_subthres import subthres_a
 print("Load finished")
 logging.basicConfig(level=logging.DEBUG)
 root = tk.Tk()
@@ -540,10 +540,7 @@ for root,dir,fileList in os.walk(files):
                 np.nan_to_num(abf.data, nan=-9999, copy=False)
                 if savfilter >0:
                     abf.data = signal.savgol_filter(abf.data, savfilter, polyorder=3)
-                try:
-                    del spikext
-                except:
-                     _ = 1
+                
                  #If there is more than one sweep, we need to ensure we dont iterate out of range
                 if abf.sweepCount > 1:
                     if subt_sweeps is None:
@@ -604,7 +601,7 @@ for root,dir,fileList in os.walk(files):
                     temp_df[f"_ALT_2 phase Cm {real_sweep_number}"] =  Cm3 * 1000000000000
                     temp_df[f"_1 phase Cm {real_sweep_number}"] =  Cm1 * 1000000000000
                     temp_df[f"Voltage sag {real_sweep_number}"], _ = compute_sag(dataT,dataV,dataI, time_after)
-                    sag_ratio, taum_allen, voltage_allen = subthres_a(dataT,dataV,dataI, param_dict['start'], param_dict['end'])
+                    sag_ratio, taum_allen, voltage_allen = subthres_a(dataT,dataV,dataI, 0, np.amax(dataT))
                     temp_df[f"Voltage sag ratio {real_sweep_number}"] = sag_ratio
                     temp_df[f"Tau_m Allen {real_sweep_number}"] = taum_allen    
                     temp_df[f"Voltage sag Allen {real_sweep_number}"] = voltage_allen
@@ -670,7 +667,8 @@ for root,dir,fileList in os.walk(files):
                 temp_avg["Averaged 2 phase Cm"] =  Cm2 * 1000000000000
                 temp_avg["Averaged 2 phase Cm Alt"] =  Cm3 * 1000000000000
                 temp_avg["Averaged 1 phase Cm"] =  Cm1 * 1000000000000
-                sag_ratio, taum_allen, voltage_allen = subthres_a(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), param_dict['start'], param_dict['end'])
+                sag_ratio, taum_allen, voltage_allen = subthres_a(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0),
+                                                                   np.nanmean(full_dataI[indices_of_same,:],axis=0),0.0, np.amax(dataT))
                 temp_avg[f"Averaged Voltage sag ratio {real_sweep_number}"] = sag_ratio
                 temp_avg[f"Averaged Tau_m Allen {real_sweep_number}"] = taum_allen    
                 temp_avg[f"Average Voltage sag Allen {real_sweep_number}"] = voltage_allen
