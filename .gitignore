@@ -354,3 +354,5 @@ pyAPisolation/web_viz/table.html
 *.html
 .vscode/settings.json
 .vscode/settings.json
+pyAPisolation.egg-info/SOURCES.txt
+.vscode/launch.json

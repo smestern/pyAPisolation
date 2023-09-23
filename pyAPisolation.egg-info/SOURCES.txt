@@ -51,7 +51,6 @@ pyAPisolation/deprecated/abfanalysis_local-checkpoint.ipynb
 pyAPisolation/deprecated/abfanalysis_local.ipynb
 pyAPisolation/deprecated/abfderivative.py
 pyAPisolation/deprecated/ephy_view_extension.py
-pyAPisolation/deprecated/nuactionpotential.py
 pyAPisolation/deprecated/run_APisolation.py
 pyAPisolation/deprecated/run_APisolation_dir.py
 pyAPisolation/deprecated/run_CM_CALC_para.py

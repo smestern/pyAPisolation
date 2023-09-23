@@ -64,7 +64,7 @@ def plotabf(abf, spiketimes, lowerlim, upperlim, sweep_plots):
    except:
         print('plot failed')
 
-def build_running_bin(array, time, start, end, bin=1000, time_units='s', kind='nearest'):
+def build_running_bin(array, time, start, end, bin=20, time_units='s', kind='nearest'):
     if time_units == 's':
         start = start * 1000
         end = end* 1000
