@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1600</width>
-    <height>900</height>
+    <width>1161</width>
+    <height>805</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -148,24 +148,42 @@
          <number>0</number>
         </property>
         <widget class="QWidget" name="tab_11">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="layoutDirection">
           <enum>Qt::LeftToRight</enum>
          </property>
          <attribute name="title">
           <string>run spike finder</string>
          </attribute>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="widget" native="true">
           <property name="geometry">
            <rect>
-            <x>10</x>
-            <y>10</y>
-            <width>551</width>
-            <height>391</height>
+            <x>0</x>
+            <y>0</y>
+            <width>560</width>
+            <height>321</height>
            </rect>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>560</width>
+            <height>16777215</height>
+           </size>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <property name="sizeConstraint">
-            <enum>QLayout::SetMinAndMaxSize</enum>
+            <enum>QLayout::SetFixedSize</enum>
            </property>
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout">
