@@ -9,13 +9,11 @@ setup.py
 .vscode/settings.json
 .vscode/.ropeproject/config.py
 bin/.spec
-bin/abfanalysis_local-checkpoint.ipynb
-bin/abfanalysis_local.ipynb
-bin/ephy_view_extension.py
 bin/form.ui
 bin/main.pyproject
 bin/org_by_protocol.py
 bin/org_by_protocol.spec
+bin/py Code Walkthrough.ipynb
 bin/pyAPisolation copy 2.spec
 bin/pyAPisolation copy.spec
 bin/pyAPisolation.spec
@@ -26,21 +24,16 @@ bin/run_APisolation_ipfx.spec
 bin/run_CM_CALC.py
 bin/run_CM_CALC.spec
 bin/run_CM_CALC_new.py
-bin/run_CM_CALC_para.py
 bin/run_QC.py
 bin/run_rmp.py
 bin/run_rmp.spec
-bin/run_web_gui.py
 bin/run_web_gui.spec
 bin/runqthook.py
 pyAPisolation/QC.py
 pyAPisolation/__init__.py
-pyAPisolation/abf_featureextractor.py
-pyAPisolation/abf_ipfx_dataframes.py
-pyAPisolation/abfanalysis.ipynb
-pyAPisolation/abfanalysis_local.ipynb
-pyAPisolation/abfderivative.py
 pyAPisolation/dataset.py
+pyAPisolation/feature_extractor.py
+pyAPisolation/ipfx_df.py
 pyAPisolation/loadABF.py
 pyAPisolation/loadNWB.py
 pyAPisolation/patch_VC_analysis.py
@@ -53,13 +46,22 @@ pyAPisolation.egg-info/SOURCES.txt
 pyAPisolation.egg-info/dependency_links.txt
 pyAPisolation.egg-info/requires.txt
 pyAPisolation.egg-info/top_level.txt
+pyAPisolation/deprecated/abfanalysis.ipynb
+pyAPisolation/deprecated/abfanalysis_local-checkpoint.ipynb
+pyAPisolation/deprecated/abfanalysis_local.ipynb
+pyAPisolation/deprecated/abfderivative.py
+pyAPisolation/deprecated/ephy_view_extension.py
 pyAPisolation/deprecated/nuactionpotential.py
 pyAPisolation/deprecated/run_APisolation.py
 pyAPisolation/deprecated/run_APisolation_dir.py
+pyAPisolation/deprecated/run_CM_CALC_para.py
+pyAPisolation/deprecated/run_output_to_web_qc.py
+pyAPisolation/deprecated/run_web_gui.py
 pyAPisolation/dev/__init__.py
 pyAPisolation/dev/abf_chirp.py
 pyAPisolation/dev/grow.py
 pyAPisolation/dev/main.spec
+pyAPisolation/dev/model.pt
 pyAPisolation/dev/run_APisolation_ipfx_fv_ic1.py
 pyAPisolation/dev/run_FV_SPCA.py
 pyAPisolation/dev/run_GROW_ANALYSIS copy.ipynb
@@ -73,20 +75,19 @@ pyAPisolation/dev/run_organize_file_list.spec
 pyAPisolation/dev/run_puff_analysis.py
 pyAPisolation/dev/run_sort_file_by_name.py
 pyAPisolation/dev/runqthook.py
-pyAPisolation/dev/test_feature_change.py
+pyAPisolation/dev/stim_classifier.py
 pyAPisolation/dev/test_feature_change.spec
 pyAPisolation/dev/vc_K_channel.ipynb
-pyAPisolation/dev/old/run_GROW_ANALYSIS copy 2.ipynb
-pyAPisolation/dev/old/run_GROW_ANALYSIS copy 3.ipynb
-pyAPisolation/dev/old/run_GROW_ANALYSIS copy.ipynb
-pyAPisolation/dev/old/run_GROW_ANALYSIS_gp.ipynb
-pyAPisolation/dev/old/run_GROW_ANALYSIS_polyfit.ipynb
+pyAPisolation/dev/.ipynb_checkpoints/run_GROW_ANALYSIS-checkpoint.ipynb
+pyAPisolation/tests/test_feature_change.py
+pyAPisolation/tests/test_feature_extractor.py
+pyAPisolation/tests/test_data/known_good_df.joblib
 pyAPisolation/web_viz/build_database.py
-pyAPisolation/web_viz/dandi_scraper.py
 pyAPisolation/web_viz/dash_folder_app.py
-pyAPisolation/web_viz/run_output_to_web2.py
-pyAPisolation/web_viz/run_output_to_web_qc.py
+pyAPisolation/web_viz/run_output_to_web.py
 pyAPisolation/web_viz/run_output_to_web_static.py
 pyAPisolation/web_viz/run_server_only.py
+pyAPisolation/web_viz/run_web_viz.py
 pyAPisolation/web_viz/template.html
 pyAPisolation/web_viz/template_static.html
+pyAPisolation/web_viz/assets/bootstrap.css

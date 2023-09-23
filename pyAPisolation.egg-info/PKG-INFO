@@ -1,7 +1,7 @@
 Metadata-Version: 2.1
 Name: pyAPisolation
-Version: 0.1.4
-Summary: Python library for isolating action potentials from ABF files
+Version: 0.5
+Summary: Python library for analysis of patch clamp data
 Home-page: https://github.com/smestern/pyAPisolation
 Author: Sam Mestern
 Author-email: SMESTERN@UWO.CA
