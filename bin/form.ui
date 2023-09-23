@@ -78,7 +78,7 @@
      </property>
      <property name="minimumSize">
       <size>
-       <width>300</width>
+       <width>600</width>
        <height>0</height>
       </size>
      </property>
@@ -443,6 +443,12 @@
               </item>
               <item>
                <widget class="QCheckBox" name="spikeFinder">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="font">
                  <font>
                   <pointsize>9</pointsize>
@@ -458,6 +464,12 @@
               </item>
               <item>
                <widget class="QCheckBox" name="runningBin">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
                  <string>Running Bin</string>
                 </property>
@@ -465,6 +477,12 @@
               </item>
               <item>
                <widget class="QCheckBox" name="rawSpike">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
                  <string>Raw Spike Data</string>
                 </property>
