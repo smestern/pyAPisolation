@@ -37,7 +37,6 @@ def exp_growth_factor(dataT,dataV,dataI, alpha, end_index=1, plot=False):
         diff_I = np.diff(dataI)
         upwardinfl = np.argmax(diff_I)
         end_index += upwardinfl
-        upperC = np.amax(dataV[upwardinfl:end_index])
         t1 = dataT[upwardinfl:end_index] - dataT[upwardinfl]
         curve = curve_fit(exp_grow, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, -np.inf, alpha-0.05], [np.inf, np.inf, alpha+0.05]), xtol=None)[0]
         tau = curve[2]
@@ -376,6 +375,8 @@ def find_hyperpolarization_segment(dataT, dataI, lowerlim, upperlim):
         lowerlim (_type_): _description_
         upperlim (_type_): _description_
     """
+    #copy dataI so we dont change the original
+    dataI = dataI.copy()
     #clip greater than 0 to 0
     dataI[dataI>0] = 0
     #find the first point where the current is negative

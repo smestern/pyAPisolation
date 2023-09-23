@@ -76,18 +76,18 @@ def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
     Returns:
         spike_dataframe, spikewise_dataframe, running_bin_data_frame : _description_
     """
-    try:
-        abf = pyabf.ABF(file_path)           
-        if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
-            print(file_path + ' import')
+    #$try:
+    abf = pyabf.ABF(file_path)           
+    if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
+        print(file_path + ' import')
 
-            temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
-            return temp_spike_df, df, temp_running_bin
-        else:
-            print('Not correct protocol: ' + abf.protocol)
-            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-    except:
-       return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
+        return temp_spike_df, df, temp_running_bin
+    else:
+        print('Not correct protocol: ' + abf.protocol)
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    #except:
+       #return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 def analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=None):
     """_summary_
@@ -129,20 +129,28 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         _type_: _description_
     """    
     np.nan_to_num(abf.data, nan=-9999, copy=False)
+
+
+    #load the data 
+    x, y ,c = loadABF(abf.abfFilePath)
+
     #If there is more than one sweep, we need to ensure we dont iterate out of range
     if sweeplist == None:
         if abf.sweepCount > 1:
             sweepcount = abf.sweepList
         else:
             sweepcount = [0]
-    df = pd.DataFrame()
+    
     #Now we walk through the sweeps looking for action potentials
+    df = pd.DataFrame()
     temp_spike_df = pd.DataFrame()
     temp_spike_df['filename'] = [abf.abfID]
     temp_spike_df['foldername'] = [os.path.dirname(abf.abfFilePath)]
     temp_running_bin = pd.DataFrame()
-    stim_find = param_dict.pop('stim_find')
+    
+    
     #for now if user wants to filter by stim time we will just use the first sweep
+    stim_find = param_dict.pop('stim_find')
     if stim_find:
         abf.setSweep(abf.sweepList[-1])
         start, end = find_non_zero_range(abf.sweepX, abf.sweepC)
@@ -159,6 +167,8 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
     #iterate through the sweeps
     for sweepNumber in sweepcount: 
         real_sweep_length = abf.sweepLengthSec - 0.0001
+        abf.setSweep(sweepNumber)
+        #here we just make sure the sweep number is in the correct format for the dataframe
         if sweepNumber < 9:
             real_sweep_number = '00' + str(sweepNumber + 1)
         elif sweepNumber > 8 and sweepNumber < 99:
@@ -167,10 +177,19 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
             param_dict['end']= real_sweep_length
         elif param_dict['end'] > real_sweep_length:
             param_dict['end'] = real_sweep_length
+        
         spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by 
-        temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
+        
+        temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
+        
+        #attach the custom features
+        custom_features = _custom_features(x[sweepNumber], y[sweepNumber] ,c[sweepNumber] , real_sweep_number, param_dict, temp_spike_df)
+        temp_spike_df = temp_spike_df.assign(**custom_features)
+
+    #compute some final features
     temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
-    x, y ,c = loadABF(abf.abfFilePath)
+    
+
     #try qc or just return the dataframe
     try:
         _qc_data = run_qc(y, c)
@@ -179,13 +198,82 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
     except:
         temp_spike_df['QC Mean RMS'] = np.nan
         temp_spike_df['QC Mean Sweep Drift'] = np.nan
-    try:
-        spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
-        plotabf(abf, spiketimes, param_dict['start'], param_dict['end'], plot)
-    except:
-        pass
+    
+
     return temp_spike_df, df, temp_running_bin
 
+
+#CUSTOM FEATURES
+def _custom_features(sweepX, sweepY, sweepC, real_sweep_number, param_dict, spike_df):
+    custom_features = {}
+
+    sag, taum, voltage = subthres_a(sweepX, sweepY, sweepC, param_dict['start'], param_dict['end'])
+    custom_features["Sag Ratio " + real_sweep_number + ""] = sag
+    custom_features["Taum " + real_sweep_number + ""] = taum
+
+    try:
+        custom_features['baseline voltage' + real_sweep_number] = subt.baseline_voltage(sweepX, sweepY, start=0.1, filter_frequency=param_dict['filter'])
+    except:
+        print('Fail to find baseline voltage')
+    
+    current_inject = compute_sweepwise_current_injection_features(sweepC, real_sweep_number)
+    custom_features.update(current_inject)
+    
+    #compute features if there was a spike
+    if spike_df.empty:
+        custom_features["exp growth tau1 " + real_sweep_number] = np.nan
+        custom_features["exp growth tau2 " + real_sweep_number] = np.nan
+    else:
+        curve = exp_growth_factor(sweepX, sweepY, sweepC, alpha=0.1)
+        custom_features["exp growth tau1 " + real_sweep_number] = curve[2]
+        custom_features["exp growth tau2 " + real_sweep_number] = curve[-1]
+    return custom_features
+
+def compute_sweepwise_current_injection_features(sweepC, real_sweep_number):
+    current_injection_features = {}
+    #get the unique current injections
+    unique_current_injections = np.unique(sweepC)
+    #figure out how many current injections there are, if there are more than 6, we will only take the first 3 and last 3
+    if len(unique_current_injections) > 6:
+        unique_current_injections = np.hstack((unique_current_injections[:3], unique_current_injections[-3:]))
+    #append them in the order they appear in the sweepC array
+    if np.any(unique_current_injections<0):
+        negative_current_injections = unique_current_injections[unique_current_injections<0]
+        for i, current_injection in enumerate(negative_current_injections):
+            current_injection_features[f"sweep_{real_sweep_number,}_hyperpolarizing_{str(i)}_current"] = current_injection
+    if np.any(unique_current_injections>0.0):
+        positive_current_injections = unique_current_injections[unique_current_injections>0]
+        for i, current_injection in enumerate(positive_current_injections):
+            current_injection_features[f"sweep_{real_sweep_number}_{str(i)}_current"] = current_injection
+    else:
+        for i, current_injection in enumerate(unique_current_injections):
+            current_injection_features[f"sweep_{real_sweep_number,}_{str(i)}_current"] = current_injection
+
+def compute_current_injection_features(sweepX, sweepY, sweepC):
+    
+    current_injection_features = {}
+
+    for sweepN, sweep in enumerate(sweepC):
+        pass
+    
+    
+    #now compute some other features
+    if len(sweepC) > 1:
+        #compute the difference between the first and second current injection, this is the delta current
+        current_injection_features["current_delta"] = current_injection_features[f"sweep_{0}_{0}_current"] - current_injection_features[f"sweep_{1}_{0}_current"]
+    
+    #merge the hyperpolarizing current injections into a single feature, if they are all the same
+    if len(current_injection_features) > 1:
+        hyperpolarizing_current_injections = [current_injection_features[key] for key in current_injection_features.keys() if "hyperpolarizing" in key]
+        if len(np.unique(hyperpolarizing_current_injections)) == 1:
+            current_injection_features["hyperpolarizing_current"] = hyperpolarizing_current_injections[0]
+    
+    return current_injection_features
+
+
+
+
+#SUBTHRESHOLD FEATURES
 def preprocess_abf_subthreshold(file_path, protocol_name='', param_dict={}):
     try:
         abf = pyabf.ABF(file_path)           
@@ -290,7 +378,7 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
         #temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
         #temp_spike_df['voltage_deflection' + real_sweep_number] = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
 
-
+        
 
         full_dataI.append(dataI)
         full_dataV.append(dataV)
@@ -349,29 +437,6 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
     print(f"Computed a membrane resistance of {(resist  / 1000000000)} giga ohms, and a capatiance of {Cm2 * 1000000000000} pF, and tau of {decay_slow*1000} ms")
     return temp_df, temp_avg
     
-
-def determine_rejected_spikes(spfx, spike_df, v, t, start, end, dv_cutoff=20.):
-    """Determine which spikes were rejected by the spike detection algorithm.
-    Parameters
-    ----------
-    spfx : SweepFeatures object
-    spike_df : pandas.DataFrame
-        DataFrame containing spike features
-    Returns
-    -------
-    rejected_spikes : list of bool
-        True if spike was rejected, False if spike was accepted
-    """
-    dvdt = time_series_utils.calculate_dvdt(v, t, 0)
-    rejected_spikes = []
-    intial_spikes = spike_detector.detect_putative_spikes(v, t, start, end,
-                                                    dv_cutoff=dv_cutoff,
-                                                    dvdt=dvdt)
-    return rejected_spikes
-
-
-
-
 
 class FeatExtractor(object):
     """TODO """
