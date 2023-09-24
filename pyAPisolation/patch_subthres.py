@@ -36,7 +36,7 @@ def exp_growth_factor(dataT,dataV,dataI, alpha, end_index=1, plot=False):
         end_index = int(end_index / dt)
         diff_I = np.diff(dataI)
         upwardinfl = np.argmax(diff_I)
-        end_index += upwardinfl
+        #end_index += upwardinfl
         t1 = dataT[upwardinfl:end_index] - dataT[upwardinfl]
         curve = curve_fit(exp_grow, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, -np.inf, alpha-0.05], [np.inf, np.inf, alpha+0.05]), xtol=None)[0]
         tau = curve[2]
@@ -47,9 +47,9 @@ def exp_growth_factor(dataT,dataV,dataI, alpha, end_index=1, plot=False):
             
             plt.figure(2)
             plt.clf()
-            plt.plot(t1, dataV[upwardinfl:end_index], label='Data')
+            plt.plot( dataT[upwardinfl:end_index], dataV[upwardinfl:end_index], label='Data')
             plt.scatter(t1[minpoint], exp_grow(t1, *curve)[minpoint], label='min')
-            plt.plot(t1, exp_grow(t1, *curve), label='1 phase fit')
+            plt.plot( dataT[upwardinfl:end_index], exp_grow(t1, *curve), label='1 phase fit')
             plt.legend()
             #plt.title(abf_id)
             plt.pause(0.5)

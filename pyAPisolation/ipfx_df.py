@@ -11,8 +11,9 @@ import pandas as pd
 from .patch_utils import *
 from .patch_subthres import *
 
-ipfx_train_feature_labels =['adapt', 'latency', 'isi_cv', 'mean_isi', 'median_isi', 'first_isi',
+ipfx_train_feature_labels =['adapt',  'isi_cv', 'mean_isi', 'median_isi', 
        'avg_rate']
+#'first_isi', 'latency',
 running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width', 'isi']
 
 subsheets_spike = {'full sheet': ['']}
@@ -23,6 +24,7 @@ subsheets_spike = {'full sheet': ['']}
 
 
 def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag='', savespikeFinder=True, saveRunningAvg=True, saveRaw=False):
+    dfs, df_spike_count, df_running_avg_count = organize_data_frames(dfs, df_spike_count, df_running_avg_count)
     if savespikeFinder:
         with pd.ExcelWriter(root_fold + '/spike_count_' + tag + '.xlsx') as runf:
             cols = df_spike_count.columns.values
@@ -44,10 +46,42 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
                 temp_ind = [p in col for col in cols]
                 temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
                 temp_df.to_excel(runf, sheet_name=p)
+    print("data frames saved to excel")
+
+def organize_data_frames(dfs, df_spike_count, df_running_avg_count):
+    #here we will reorder the columns,
+    #we want to put the file name and folder name first
+    cols = df_spike_count.columns.values
+    #get the index of the file name and folder name
+    ind = [col in ['filename', 'foldername', 'protocol'] for col in cols]
+    
+    #now we want the mean and rheobase features
+    mean_ind = [np.logical_and('mean' in col,'mean_isi0' not in col) for col in cols ]
+
+    rheo_ind = ['rheobase' in col for col in cols]
+    #now get the spike_count features
+    spike_ind = ['spike count' in col for col in cols]
+    #now the stimuli features
+    stim_ind = ['stimuli_length' in col for col in cols]
+    sample_rate = ['sample_rate' in col for col in cols]
+    epoch_ind = ['epoch' in col for col in cols]
+    #now the rest of the columns are alphabetical
+    #now we want to sort the columns
+    cols_sort = np.hstack((cols[ind], cols[mean_ind], cols[rheo_ind], cols[spike_ind], cols[stim_ind], cols[epoch_ind]))
+    colother = np.setdiff1d(cols, cols_sort)
+    cols_sort = np.hstack((cols_sort, np.sort(colother)))
+    assert len(cols_sort) == len(cols)
+    #now we want to sort the rows
+    df_spike_count = df_spike_count[cols_sort]
+    return dfs, df_spike_count, df_running_avg_count
+
+
+
+
 
 
 # TODO <--- this is a mess, clean it up
-# Ensure functions do no require the abf object, or dataframes
+# Ensure functions do no require the abf object
 # functions should not depend on further analysis, only concat of dataframes
 # functions should not depend on the order of the sweeps
 def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict):
@@ -113,7 +147,7 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
         dict_spike_df["spike_width" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
         
                 
-        if spike_count > 2:
+        if spike_count >= 2:
             f_isi = spike_in_sweep['peak_t'].to_numpy()[-1]
             l_isi = spike_in_sweep['peak_t'].to_numpy()[-2]
             dict_spike_df["last_isi" + real_sweep_number + " isi"] = [abs( f_isi- l_isi )]

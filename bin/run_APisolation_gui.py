@@ -347,7 +347,8 @@ class analysis_gui(QWidget):
             self.get_selected_protocol()
             #df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
             df = self._inner_analysis_loop(self.selected_dir, self.param_dict,  self.selected_protocol)     
-            save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time())+self.outputTag.text(), self.bspikeFind, self.brunningBin, self.brawData)
+            save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time())+self.outputTag.text(), self.bspikeFind.isChecked()
+                             , self.brunningBin.isChecked(), self.brawData.isChecked())
         elif self.get_current_analysis() is 'subthres':
             self.get_analysis_params()
             self.get_selected_protocol()
