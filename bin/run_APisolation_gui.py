@@ -103,6 +103,10 @@ class analysis_gui(QWidget):
         self.bessel = self.main_widget.findChild(QWidget, "bessel_filt")
         self.thres_per = self.main_widget.findChild(QWidget, "thres_percent")
         self.thres_per.textChanged.connect(self.analysis_changed)
+        #find the output buttons
+        self.bspikeFind = self.main_widget.findChild(QWidget, "spikeFinder")
+        self.brunningBin = self.main_widget.findChild(QWidget, "runningBin")
+        self.brawData = self.main_widget.findChild(QWidget, "rawSpike")
 
         self.protocol_select.currentIndexChanged.connect(self.analysis_changed)
         self.bessel.textChanged.connect(self.analysis_changed)
@@ -128,6 +132,8 @@ class analysis_gui(QWidget):
         self.endCM.textChanged.connect(self.analysis_changed)
         self.besselFilterCM = self.main_widget.findChild(QWidget, "bessel_filt_cm")
         self.besselFilterCM.textChanged.connect(self.analysis_changed)
+
+        
 
     
     def file_select(self):
@@ -341,7 +347,7 @@ class analysis_gui(QWidget):
             self.get_selected_protocol()
             #df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
             df = self._inner_analysis_loop(self.selected_dir, self.param_dict,  self.selected_protocol)     
-            save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time())+self.outputTag.text())
+            save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time())+self.outputTag.text(), self.bspikeFind, self.brunningBin, self.brawData)
         elif self.get_current_analysis() is 'subthres':
             self.get_analysis_params()
             self.get_selected_protocol()

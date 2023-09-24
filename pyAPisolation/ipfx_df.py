@@ -15,43 +15,35 @@ ipfx_train_feature_labels =['adapt', 'latency', 'isi_cv', 'mean_isi', 'median_is
        'avg_rate']
 running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width', 'isi']
 
-subsheets_spike = {'spike count':['spike count'], 'rheobase features':['rheobase'], 
-                    'mean':['mean'], 'isi':['isi'], 'latency': ['latency_'], 'current':['current'],'QC':['QC'], 
-                    'spike features':['spike_'], 'subthres features':['baseline voltage', 'Sag', 'Taum'], 'full sheet': ['']}
+subsheets_spike = {'full sheet': ['']}
+#old subsheets 'spike count':['spike count'], 'rheobase features':['rheobase'], 
+    #                'mean':['mean'], 'isi':['isi'], 'latency': ['latency_'], 'current':['current'],'QC':['QC'], 
+        #            'spike features':['spike_'], 'subthres features':['baseline voltage', 'Sag', 'Taum'], 
 
 
 
-def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag=''):
-    #try:  
-    #ids = dfs['file_name'].unique()
-    #tempframe = dfs.groupby('file_name').mean().reset_index()
-    #tempframe.to_csv(root_fold + '/allAVG_' + tag + '.csv')
-    #tempframe = dfs.drop_duplicates(subset='file_name')
-    #tempframe.to_csv(root_fold + '/allRheo_' + tag + '.csv')
-    
-    #df_spike_count.to_csv(root_fold + '/spike_count_' + tag + '.csv')
-    dfs.to_csv(root_fold + '/allfeatures_' + tag + '.csv')
-    with pd.ExcelWriter(root_fold + '/spike_count_' + tag + '.xlsx') as runf:
-        cols = df_spike_count.columns.values
-        df_ind = df_select_by_col(df_spike_count, ['foldername', 'filename'])
-        df_ind = df_ind.loc[:,['foldername', 'filename']]
-        index = pd.MultiIndex.from_frame(df_ind)
-        for key, p in subsheets_spike.items():
-            temp_ind = df_select_by_col(df_spike_count, p)
-            temp_df = temp_ind.set_index(index)
-            temp_df.to_excel(runf, sheet_name=key)
-        #print(df_ind)
-    
-    with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
-        cols = df_running_avg_count.columns.values
-        df_ind = df_running_avg_count.loc[:,['foldername', 'filename', 'Sweep Number']]
-        index = pd.MultiIndex.from_frame(df_ind)
-        for p in running_lab:
-            temp_ind = [p in col for col in cols]
-            temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
-            temp_df.to_excel(runf, sheet_name=p)
-    #except: 
-        #print('error saving')
+def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag='', savespikeFinder=True, saveRunningAvg=True, saveRaw=False):
+    if savespikeFinder:
+        with pd.ExcelWriter(root_fold + '/spike_count_' + tag + '.xlsx') as runf:
+            cols = df_spike_count.columns.values
+            df_ind = df_select_by_col(df_spike_count, ['foldername', 'filename'])
+            df_ind = df_ind.loc[:,['foldername', 'filename']]
+            index = pd.MultiIndex.from_frame(df_ind)
+            for key, p in subsheets_spike.items():
+                temp_ind = df_select_by_col(df_spike_count, p)
+                temp_df = temp_ind.set_index(index)
+                temp_df.to_excel(runf, sheet_name=key)
+            if saveRaw:
+                dfs.to_excel(runf, sheet_name="RAW")
+    if saveRunningAvg:
+        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
+            cols = df_running_avg_count.columns.values
+            df_ind = df_running_avg_count.loc[:,['foldername', 'filename', 'Sweep Number']]
+            index = pd.MultiIndex.from_frame(df_ind)
+            for p in running_lab:
+                temp_ind = [p in col for col in cols]
+                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
+                temp_df.to_excel(runf, sheet_name=p)
 
 
 # TODO <--- this is a mess, clean it up

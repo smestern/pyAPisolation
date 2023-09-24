@@ -183,10 +183,11 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
         
         #attach the custom features
-        custom_features = _custom_features(x[sweepNumber], y[sweepNumber] ,c[sweepNumber] , real_sweep_number, param_dict, temp_spike_df)
+        custom_features = _custom_sweepwise_features(x[sweepNumber], y[sweepNumber] ,c[sweepNumber] , real_sweep_number, param_dict, temp_spike_df)
         temp_spike_df = temp_spike_df.assign(**custom_features)
 
     #compute some final features
+    temp_spike_df = _custom_full_features(x, y, c, param_dict, temp_spike_df)
     temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
     
 
@@ -204,7 +205,7 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
 
 
 #CUSTOM FEATURES
-def _custom_features(sweepX, sweepY, sweepC, real_sweep_number, param_dict, spike_df):
+def _custom_sweepwise_features(sweepX, sweepY, sweepC, real_sweep_number, param_dict, spike_df):
     custom_features = {}
 
     sag, taum, voltage = subthres_a(sweepX, sweepY, sweepC, param_dict['start'], param_dict['end'])
@@ -231,44 +232,75 @@ def _custom_features(sweepX, sweepY, sweepC, real_sweep_number, param_dict, spik
 
 def compute_sweepwise_current_injection_features(sweepC, real_sweep_number):
     current_injection_features = {}
-    #get the unique current injections
-    unique_current_injections = np.unique(sweepC)
+    #
+    #get the unique current injections, only nonzero
+    unique_current_injections = np.unique(sweepC[np.flatnonzero(sweepC)])
     #figure out how many current injections there are, if there are more than 6, we will only take the first 3 and last 3
     if len(unique_current_injections) > 6:
         unique_current_injections = np.hstack((unique_current_injections[:3], unique_current_injections[-3:]))
     #append them in the order they appear in the sweepC array
-    if np.any(unique_current_injections<0):
-        negative_current_injections = unique_current_injections[unique_current_injections<0]
-        for i, current_injection in enumerate(negative_current_injections):
-            current_injection_features[f"sweep_{real_sweep_number,}_hyperpolarizing_{str(i)}_current"] = current_injection
-    if np.any(unique_current_injections>0.0):
-        positive_current_injections = unique_current_injections[unique_current_injections>0]
-        for i, current_injection in enumerate(positive_current_injections):
+    unique_negative_current_injections = unique_current_injections[unique_current_injections<0]
+    unique_positive_current_injections = unique_current_injections[unique_current_injections>0]
+    if len(unique_negative_current_injections) > 0:
+        for i, current_injection in enumerate(unique_negative_current_injections[:1]): #here we are only using the first hyperpolarizing current injection
+            #THIS IS basically a special case for INOUE lab standard. However, we are neglecting information about the other hyperpolarizing current injections
+            current_injection_features[f"sweep_{real_sweep_number}_hyperpolarizing_{str(i)}_current"] = current_injection
+         #if there are current injections that are non-positive and have not been accounted for
+        #stack the remaining current injections
+        if len(unique_negative_current_injections) > 1:
+            unique_positive_current_injections = np.hstack((unique_positive_current_injections, unique_negative_current_injections[1:]))
+
+    if len(unique_positive_current_injections) > 0:
+        for i, current_injection in enumerate(unique_positive_current_injections):
             current_injection_features[f"sweep_{real_sweep_number}_{str(i)}_current"] = current_injection
-    else:
-        for i, current_injection in enumerate(unique_current_injections):
-            current_injection_features[f"sweep_{real_sweep_number,}_{str(i)}_current"] = current_injection
+    return current_injection_features
 
-def compute_current_injection_features(sweepX, sweepY, sweepC):
-    
-    current_injection_features = {}
+def _custom_full_features(x,y,c, param_dict, spike_df):
+    #gather some protocol information that is requested by patchers
+    #some more advanced current injection features
+    spike_df = merge_current_injection_features(x, y, c, spike_df)
 
-    for sweepN, sweep in enumerate(sweepC):
-        pass
-    
-    
+
+def merge_current_injection_features(sweepX, sweepY, sweepC, spike_df):
+    new_current_injection_features = {}
+    current_injection_features = df_select_by_col(spike_df, ['_current']).to_dict()
     #now compute some other features
     if len(sweepC) > 1:
-        #compute the difference between the first and second current injection, this is the delta current
-        current_injection_features["current_delta"] = current_injection_features[f"sweep_{0}_{0}_current"] - current_injection_features[f"sweep_{1}_{0}_current"]
-    
+        #here we will index the current injections by the current injection number in the df
+        new_current_injection_features['delta'] = current_injection_features[f'sweep_001_0_current'][0] - current_injection_features['sweep_002_0_current'][0]
+    else:
+        new_current_injection_features['delta'] = np.nan
+
     #merge the hyperpolarizing current injections into a single feature, if they are all the same
     if len(current_injection_features) > 1:
-        hyperpolarizing_current_injections = [current_injection_features[key] for key in current_injection_features.keys() if "hyperpolarizing" in key]
+        hyperpolarizing_current_injections = [current_injection_features[key][0] for key in current_injection_features.keys() if "hyperpolarizing" in key]
         if len(np.unique(hyperpolarizing_current_injections)) == 1:
-            current_injection_features["hyperpolarizing_current"] = hyperpolarizing_current_injections[0]
-    
-    return current_injection_features
+            new_current_injection_features["hyperpolarizing_current"] = hyperpolarizing_current_injections[0]
+            #remove the individual hyperpolarizing current injections
+            #drop the singluar current injections
+            spike_df.drop(columns=[col for col in spike_df.columns if "hyperpolarizing" in col], inplace=True)
+
+    #finally we want to compute the stimuli size
+    #compute the dt
+    dt = np.diff(sweepX[0])[0]
+    #first compute the sweepwise variation by taking the diff along the columns
+    #compute the length of the nonzero current injections:
+    stimuli_length = [len(np.flatnonzero(row))*dt for row in sweepC if np.any(row)]
+    #pack it into the dict, if there is only one stimuli length, we will just take that
+    if len(np.unique(stimuli_length)) == 1:
+        new_current_injection_features['stimuli_length'] = stimuli_length[0]
+    else:
+        #take the mode of the stimuli length
+        new_current_injection_features['stimuli_length'] = np.unique(stimuli_length)[np.unique(stimuli_length, return_counts=True)[1].argmax()]
+        for i, stimuli in enumerate(stimuli_length):
+            new_current_injection_features[f"stimuli_length_sweep_{i}"] = stimuli
+
+    #also compute the sample_rate
+    new_current_injection_features['sample_rate'] = np.round(1/dt, 2)
+
+    #ideally we would not modify the dataframe in place, but this is the easiest way to do it
+    spike_df = spike_df.assign(**new_current_injection_features)
+    return spike_df
 
 
 
