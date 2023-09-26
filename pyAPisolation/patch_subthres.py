@@ -36,11 +36,10 @@ def exp_growth_factor(dataT,dataV,dataI, alpha, end_index=1, plot=False):
         end_index = int(end_index / dt)
         diff_I = np.diff(dataI)
         upwardinfl = np.argmax(diff_I)
-        #end_index += upwardinfl
         t1 = dataT[upwardinfl:end_index] - dataT[upwardinfl]
         curve = curve_fit(exp_grow, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, -np.inf, alpha-0.05], [np.inf, np.inf, alpha+0.05]), xtol=None)[0]
-        tau = curve[2]
-        x_deriv, deriv_ar = deriv(t1, exp_grow(t1, *curve))
+        
+        _, deriv_ar = deriv(t1, exp_grow(t1, *curve))
         diff = np.abs(deriv_ar - 2)
         minpoint = np.argmin(diff)
         if plot==True:

@@ -418,8 +418,7 @@ class analysis_gui(QWidget):
 
 
     def _inner_analysis_loop(self, folder, param_dict, protocol_name):
-        debugplot = 0
-        running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
+        
         dfs = pd.DataFrame()
         df_spike_count = pd.DataFrame()
         df_running_avg_count = pd.DataFrame()
@@ -623,8 +622,6 @@ class analysis_gui(QWidget):
                 self.axe1.scatter(dataT[end_index:upwardinfl], dataV[end_index:upwardinfl], c='g', zorder=99, label="Mean Vm Measured")
                 self.axe1.plot(dataT[np.full(sag_diff_plot.shape[0], min_point, dtype=np.int64)], sag_diff_plot, label=f"Sag of {sag_diff}")
 
-
-                
         self.axe1.legend( bbox_to_anchor=(1.05, 1),
                          loc='upper left', borderaxespad=0.)
         self.axe2.legend(loc='upper right')

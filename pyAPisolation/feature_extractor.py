@@ -17,6 +17,11 @@ from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_ab
 from .patch_subthres import *
 from .QC import run_qc
 print("feature extractor loaded")
+
+#this is here, to swap functions in the feature extractor for ones specfic to the INOUE lab IC1 standard protocol
+IC1_SPECIFIC_FUNCTIONS = True
+
+
 parallel = True
 default_dict = {'start': 0, 'end': 0, 'filter': 0, 'stim_find': True}
 
@@ -211,14 +216,15 @@ def _custom_sweepwise_features(sweepX, sweepY, sweepC, real_sweep_number, param_
     
     
     #compute features if there was a spike
-    if spike_df.empty:
-        custom_features["exp growth tau1 " + real_sweep_number] = np.nan
-        custom_features["exp growth tau2 " + real_sweep_number] = np.nan
-    else:
-        end_index = rawspike_df['threshold_t'][0] if 'threshold_t' in rawspike_df.columns else 0.7
-        curve = exp_growth_factor(sweepX, sweepY, sweepC, alpha=1/taum, end_index=end_index )
-        custom_features["exp growth tau1 " + real_sweep_number] = curve[2]
-        custom_features["exp growth tau2 " + real_sweep_number] = curve[-1]
+    #if spike_df.empty:
+        #custom_features["exp growth tau1 " + real_sweep_number] = np.nan
+        #custom_features["exp growth tau2 " + real_sweep_number] = np.nan
+    #else:
+        #pass
+        #end_index = rawspike_df['threshold_t'][0] if 'threshold_t' in rawspike_df.columns else 0.7
+        #curve = exp_growth_factor(sweepX, sweepY, sweepC, alpha=1/taum, end_index=end_index )
+        #custom_features["exp growth tau1 " + real_sweep_number] = curve[2]
+        #custom_features["exp growth tau2 " + real_sweep_number] = curve[-1]
     return custom_features
 
 
@@ -237,7 +243,7 @@ def _custom_full_features(x,y,c, param_dict, spike_df):
     return spike_df
 
 
-def merge_current_injection_features(sweepX, sweepY, sweepC, spike_df):
+def _merge_current_injection_features(sweepX, sweepY, sweepC, spike_df):
     new_current_injection_features = {}
     #first we want to compute the number of epochs, take the diff along the columns and count the number of nonzero rows
     diffC = np.diff(sweepC, axis=1)
@@ -277,6 +283,81 @@ def merge_current_injection_features(sweepX, sweepY, sweepC, spike_df):
     return spike_df
 
 
+def _merge_current_injection_features_IC1(sweepX, sweepY, sweepC, spike_df):
+    new_current_injection_features = {}
+    #first we want to compute the number of epochs, take the diff along the columns and count the number of nonzero rows
+    diffC = np.diff(sweepC, axis=1)
+    #find the row with the most nonzero entries
+    most_nonzero = np.argmax(np.count_nonzero(diffC, axis=1))
+    idx_epochs = np.sort(np.unique(diffC[most_nonzero], return_index=True)[1]) +1
+    #now iter the sweeps and find the current at each epoch
+    non_zero_epochs = idx_epochs[np.any(sweepC[:,idx_epochs ], axis=0)]
+    #should be 2 epochs for IC1
+    if len(non_zero_epochs) > 2 or len(idx_epochs) > 3:
+        print("Warning, more than 2 epochs found in IC1 protocol, taking the first two")
+        new_current_injection_features["IC1_protocol_check"] = "Other"
+        non_zero_epochs = non_zero_epochs[:2]
+    elif len(non_zero_epochs) < 2:
+        #if there are less than 2 epochs, we will flag the cell, return no features
+        print("Warning, less than 2 epochs found in IC1 protocol, no current injection features will be computed")
+        new_current_injection_features["IC1_protocol_check"] = "Other"
+        #ideally we would not modify the dataframe in place, but this is the easiest way to do it
+        spike_df = spike_df.assign(**new_current_injection_features)
+        return spike_df
+    
+
+    #get the hyperpolarizing current, which should be the first epoch
+    hyperpolarizing_current = sweepC[:, non_zero_epochs[0]]
+    if len(np.unique(hyperpolarizing_current)) == 1 & np.all(hyperpolarizing_current==-20):
+        new_current_injection_features["hyperpolarizing_current"] = hyperpolarizing_current[0]
+    else:
+        print("Warning, more than one hyperpolarizing current found in IC1 protocol or different step size, taking the first")
+        new_current_injection_features["hyperpolarizing_current"] = hyperpolarizing_current[0]
+        if "IC1_protocol_check" not in new_current_injection_features:
+            new_current_injection_features["IC1_protocol_check"] = "IC1-Modified-step"
+    
+    #get the depolarizing current, which should be the second epoch
+    depolarizing_current = sweepC[:, non_zero_epochs[1]]
+    #get the delta between the two currents
+    if sweepC.shape[0] < 2:
+        new_current_injection_features['depolarizing_current_delta'] = np.nan
+    else:
+        new_current_injection_features['depolarizing_current_delta'] = depolarizing_current[1] - depolarizing_current[0]
+    new_current_injection_features.update({f"depolarizing_current_sweep_{sweepNumber_to_real_sweep_number(i)}": current for i, current in enumerate(depolarizing_current)})
+    #if the delta is not 10 or consistent across sweeps, we will will flag the cell
+    if np.all(np.diff(depolarizing_current)!=10) or new_current_injection_features['depolarizing_current_delta']!=10:
+        if "IC1_protocol_check" not in new_current_injection_features:
+            new_current_injection_features["IC1_protocol_check"] = "IC1-Modified-step"
+
+
+    #finally we want to compute the stimuli size
+    #compute the dt
+    dt = np.diff(sweepX[0])[0]
+    #use the last sweep to compute the stimuli length
+    hyperpolarizing_stimuli_length = np.round(len(sweepC[-1, (sweepC[-1]<0.0)])*dt, 4)
+    depolarizing_stimuli_length = np.round(len(sweepC[-1, (sweepC[-1]>0.0)])*dt, 4)
+
+    new_current_injection_features['hyperpolarizing_stimuli_length'] = hyperpolarizing_stimuli_length
+    new_current_injection_features['depolarizing_stimuli_length'] = depolarizing_stimuli_length
+
+    if hyperpolarizing_stimuli_length != 0.3 or depolarizing_stimuli_length != 0.7:
+        if "IC1_protocol_check" not in new_current_injection_features:
+            new_current_injection_features["IC1_protocol_check"] = "IC1-Modified-length"
+    
+    if "IC1_protocol_check" not in new_current_injection_features:
+        new_current_injection_features["IC1_protocol_check"] = "IC1"
+
+    #also compute the sample_rate
+    new_current_injection_features['sample_rate'] = np.round(1/dt, 2)
+
+    #ideally we would not modify the dataframe in place, but this is the easiest way to do it
+    spike_df = spike_df.assign(**new_current_injection_features)
+    return spike_df
+
+if IC1_SPECIFIC_FUNCTIONS:
+    merge_current_injection_features = _merge_current_injection_features_IC1
+else:
+    merge_current_injection_features = _merge_current_injection_features
 
 
 #SUBTHRESHOLD FEATURES
