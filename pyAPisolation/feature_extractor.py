@@ -188,6 +188,9 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         custom_features = _custom_sweepwise_features(x[sweepNumber], y[sweepNumber] ,c[sweepNumber] , real_sweep_number, param_dict, temp_spike_df, spike_in_sweep)
         temp_spike_df = temp_spike_df.assign(**custom_features)
 
+    #add the filename and foldername to the temp_running_bin
+    temp_running_bin['filename'] = abf.abfID
+    temp_running_bin['foldername'] = os.path.dirname(abf.abfFilePath)
     #compute some final features
     temp_spike_df = _custom_full_features(x, y, c, param_dict, temp_spike_df)
     temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)

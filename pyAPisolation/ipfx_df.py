@@ -37,15 +37,14 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
                 temp_df.to_excel(runf, sheet_name=key)
             if saveRaw:
                 dfs.to_excel(runf, sheet_name="RAW")
-    if saveRunningAvg:
-        with pd.ExcelWriter(root_fold + '/running_avg_' + tag + '.xlsx') as runf:
-            cols = df_running_avg_count.columns.values
-            df_ind = df_running_avg_count.loc[:,['foldername', 'filename', 'Sweep Number']]
-            index = pd.MultiIndex.from_frame(df_ind)
-            for p in running_lab:
-                temp_ind = [p in col for col in cols]
-                temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
-                temp_df.to_excel(runf, sheet_name=p)
+            if saveRunningAvg:
+                cols = df_running_avg_count.columns.values
+                df_ind = df_running_avg_count.loc[:,['foldername', 'filename', 'Sweep Number']]
+                index = pd.MultiIndex.from_frame(df_ind)
+                for p in running_lab:
+                    temp_ind = [p in col for col in cols]
+                    temp_df = df_running_avg_count.set_index(index).loc[:,temp_ind]
+                    temp_df.to_excel(runf, sheet_name=p)
     print("data frames saved to excel")
 
 def organize_data_frames(dfs, df_spike_count, df_running_avg_count):
@@ -62,15 +61,24 @@ def organize_data_frames(dfs, df_spike_count, df_running_avg_count):
     #now get the spike_count features
     spike_ind = ['spike count' in col for col in cols]
     #now the stimuli features
-    stim_ind = ['stimuli_length' in col for col in cols]
+    stim_ind_2 = ['depolarizing_current_delta' in col for col in cols]
+    stim_ind_3 = ['hyperpolarizing_stimuli_length' in col for col in cols]
+    stim_ind_4 = ['depolarizing_stimuli_length' in col for col in cols]
+    stim_ind_5 = ['hyperpolarizing_current_sweep' in col for col in cols]
+    stim_ind_6 = ['depolarizing_current_sweep' in col for col in cols]
     sample_rate = ['sample_rate' in col for col in cols]
     epoch_ind = ['epoch' in col for col in cols]
+    IC1_ind = ["IC1_protocol_check" in col for col in cols]
     #now the rest of the columns are alphabetical
     #now we want to sort the columns
-    cols_sort = np.hstack((cols[ind], cols[mean_ind], cols[rheo_ind], cols[spike_ind], cols[stim_ind], cols[epoch_ind]))
+    cols_sort = np.hstack((cols[ind], cols[mean_ind], cols[rheo_ind], cols[spike_ind],
+                           cols[stim_ind_2], cols[stim_ind_3], cols[stim_ind_4], cols[stim_ind_5], cols[stim_ind_6],
+                             cols[sample_rate], cols[IC1_ind], cols[epoch_ind]))
     colother = np.setdiff1d(cols, cols_sort)
     cols_sort = np.hstack((cols_sort, np.sort(colother)))
     assert len(cols_sort) == len(cols)
+    #assert all the columns from the original dataframe are in the new one
+    assert all([col in cols_sort for col in cols])
     #now we want to sort the rows
     df_spike_count = df_spike_count[cols_sort]
     return dfs, df_spike_count, df_running_avg_count
@@ -135,7 +143,7 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
         spike_in_sweep['spike count'] = np.hstack((spike_count, np.full(abs(spike_count-1), np.nan)))
         spike_in_sweep['sweep Number'] = np.full(abs(spike_count), int(real_sweep_number))
 
-        dict_spike_df["first_isi " + real_sweep_number + " isi"] = [spike_train['first_isi']]
+        dict_spike_df["first_isi_all_spikes" + real_sweep_number + " isi"] = [spike_train['first_isi']]
         dict_spike_df["spike_amp" + real_sweep_number + " 1"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['threshold_v'].to_numpy()[0])
         dict_spike_df["spike_thres" + real_sweep_number + " 1"] = spike_in_sweep['threshold_v'].to_numpy()[0]
         dict_spike_df["spike_peak" + real_sweep_number + " 1"] = spike_in_sweep['peak_v'].to_numpy()[0]
@@ -143,7 +151,7 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
         dict_spike_df["spike_decay" + real_sweep_number + " 1"] = spike_in_sweep['downstroke'].to_numpy()[0]
         dict_spike_df["spike_AHP 1" + real_sweep_number + " "] = spike_in_sweep['fast_trough_v'].to_numpy()[0]
         dict_spike_df["spike_AHP height 1" + real_sweep_number + " "] = abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['fast_trough_v'].to_numpy()[0])
-        dict_spike_df["latency_" + real_sweep_number + " latency"] = spike_train['latency']
+        dict_spike_df["latency_all_spikes" + real_sweep_number + ""] = spike_train['latency']
         dict_spike_df["spike_width" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
         
                 
@@ -153,20 +161,18 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
             dict_spike_df["last_isi" + real_sweep_number + " isi"] = [abs( f_isi- l_isi )]
             spike_in_sweep['isi_'] = np.hstack((np.diff(spike_in_sweep['peak_t'].to_numpy()), np.nan))
             dict_spike_df["min_isi" + real_sweep_number + " isi"] = np.nanmin(np.hstack((np.diff(spike_in_sweep['peak_t'].to_numpy()), np.nan)))
-            # dict_spike_df["spike_" + real_sweep_number + " 2"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[1] - spike_in_sweep['threshold_v'].to_numpy()[1])
-            # dict_spike_df["spike_" + real_sweep_number + " 3"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[-1] - spike_in_sweep['threshold_v'].to_numpy()[-1])
-            # dict_spike_df["spike_" + real_sweep_number + "AHP 2"] = spike_in_sweep['fast_trough_v'].to_numpy()[1]
-            # dict_spike_df["spike_" + real_sweep_number + "AHP 3"] = spike_in_sweep['fast_trough_v'].to_numpy()[-1]
-            # dict_spike_df["spike_" + real_sweep_number + "AHP height 2"] = abs(spike_in_sweep['peak_v'].to_numpy()[1] - spike_in_sweep['fast_trough_v'].to_numpy()[1])
-            # dict_spike_df["spike_" + real_sweep_number + "AHP height 3"] = abs(spike_in_sweep['peak_v'].to_numpy()[-1] - spike_in_sweep['fast_trough_v'].to_numpy()[-1])
-            # dict_spike_df["spike_width" + real_sweep_number + "2"] = spike_in_sweep['width'].to_numpy()[1]
-            # dict_spike_df["spike_width" + real_sweep_number + "3"] = spike_in_sweep['width'].to_numpy()[-1]
+            
             for label in ipfx_train_feature_labels:
                 try:
                     dict_spike_df[label + real_sweep_number] = spike_train[label]
                 except:
                     dict_spike_df[label + real_sweep_number] = np.nan
-            
+            if spike_count >= 3:
+                for label in ['first_isi', 'latency']:
+                    try:
+                        dict_spike_df[label + "_3_spikes" + real_sweep_number] = spike_train[label]
+                    except:
+                        dict_spike_df[label + "_3_spikes" + real_sweep_number] = np.nan
         else:
             dict_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
             spike_in_sweep['isi_'] = np.hstack((np.full(abs(spike_count), np.nan)))
@@ -177,30 +183,8 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
         print("Processed Sweep " + str(real_sweep_number) + " with " + str(spike_count) + " aps")
         df = df.append(spike_in_sweep, ignore_index=True, sort=True)
     else:
-        dict_spike_df["latency_" + real_sweep_number + " latency"] = [np.nan]
-        dict_spike_df["first_isi " + real_sweep_number + " isi"] = [np.nan]
-        dict_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
-        dict_spike_df["spike_amp" + real_sweep_number + " 1"] = [np.nan]
-        dict_spike_df["spike_thres" + real_sweep_number + " 1"] = [np.nan]
-        dict_spike_df["spike_rise" + real_sweep_number + " 1"] = [np.nan]
-        dict_spike_df["spike_decay" + real_sweep_number + " 1"] = [np.nan]
-        # dict_spike_df["spike_" + real_sweep_number + " 2"] = [np.nan]
-        # dict_spike_df["spike_" + real_sweep_number + " 3"] = [np.nan]
-        dict_spike_df["spike_AHP 1" + real_sweep_number + " "] = [np.nan]
-        dict_spike_df["spike_peak" + real_sweep_number + " 1"] = [np.nan]
-        dict_spike_df["spike_AHP height 1" + real_sweep_number + " "] = [np.nan]
-        # dict_spike_df["spike_" + real_sweep_number + "AHP 2"] = [np.nan]
-        # dict_spike_df["spike_" + real_sweep_number + "AHP 3"] = [np.nan]
-        # dict_spike_df["spike_" + real_sweep_number + "AHP height 2"] = [np.nan]
-        # dict_spike_df["spike_" + real_sweep_number + "AHP height 3"] = [np.nan]
-        dict_spike_df["latency_" + real_sweep_number + " latency"] = [np.nan]
-        dict_spike_df["spike_width" + real_sweep_number + "1"] = [np.nan]
-        # dict_spike_df["spike_width" + real_sweep_number + "2"] = [np.nan]
-        # dict_spike_df["spike_width" + real_sweep_number + "3"] = [np.nan]
-        dict_spike_df["min_isi" + real_sweep_number + " isi"] = [np.nan]
         sweep_running_bin = pd.DataFrame(data=nan_row_run, columns=_run_labels, index=[real_sweep_number])
-        for label in ipfx_train_feature_labels:
-            dict_spike_df[label + real_sweep_number] = [np.nan]
+
 
     
     sweep_running_bin['Sweep Number'] = [real_sweep_number]
