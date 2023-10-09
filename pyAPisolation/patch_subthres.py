@@ -9,6 +9,7 @@ from scipy import interpolate
 from scipy.optimize import curve_fit
 from scipy.stats import mode
 from ipfx import subthresh_features as subt
+from ipfx import feature_extractor as fx
 from . import patch_utils
 import pyabf
 #from brian2.units import ohm, Gohm, amp, volt, mV, second, pA
@@ -314,9 +315,7 @@ def mem_cap_alt(resist, tau, b2, deflection):
     return cm
 
 def determine_subt(abf, idx_bounds):
-    def nonzero_1d(a):
-        non = np.nonzero(a)
-        return a[non]
+    
     dataC =[]
     for sweep in abf.sweepList:
         abf.setSweep(sweep)
@@ -325,6 +324,64 @@ def determine_subt(abf, idx_bounds):
     dataC = np.vstack(dataC)
     deflections = np.unique(np.where(dataC<0)[0])
     return deflections
+
+def nonzero_1d(a):
+    non = np.nonzero(a)
+    return a[non]
+
+
+def ladder_rm(dataT, dataV, dataI):
+    """ Computes the membrane resistance using the ladder method. Essentially we need a changing hyperpolarization / depolarization segment
+    to compute the membrane resistance.
+    """
+    #find the sweepwise difference in current amp
+    diff_I = np.diff(dataI, axis=0)
+    #filter out nonzero values
+    ladder_pulse_point = [[]]
+    for row in diff_I:
+        #assuming sqaure pulse here, the nonzero idxs should be continous
+        non_zero_idxs = np.flatnonzero(row)
+        if len(non_zero_idxs) > 1:
+            #compute the difference and assert that its 1
+            diff_idx = np.diff(non_zero_idxs)
+            #filter down to the first one that is not 1
+            first_non_one = np.flatnonzero(diff_idx != 1)
+            #finally we want to adjust to skip the first 25% of the pulse
+            skip_idx = int(len(non_zero_idxs) * 0.25)
+            if len(first_non_one) > 0:
+                ladder_pulse_point.append(non_zero_idxs[skip_idx:first_non_one[0]] )
+            else:
+                ladder_pulse_point.append(non_zero_idxs[skip_idx:] )
+        else:
+            ladder_pulse_point.append([])
+    # we need to find the spiking sweeps, and drop them
+    #find the spiking sweeps
+    spikefx = fx.SpikeFeatureExtractor(filter = 0)
+    non_spike_sweeps = []
+    for i, (sweepX, sweepY, sweepC) in enumerate(zip(dataT, dataV, dataI)):
+        try:
+            if len(ladder_pulse_point[i]) > 0:
+                sweep_features= spikefx.process(sweepX[ladder_pulse_point[i]], sweepY[ladder_pulse_point[i]], sweepC[ladder_pulse_point[i]])
+                if sweep_features.empty:
+                    non_spike_sweeps.append(i)
+        except:
+            pass
+            #non_spike_sweeps.append(i)
+    
+    #if there are less than 2 non spike sweeps, we cant compute the membrane resistance
+    if len(non_spike_sweeps) < 2:
+        return np.nan
+    
+    #finally fit a line to the ladder pulse point by taking the means
+    sweep_mean_V = []
+    sweep_mean_I = []
+    for i in non_spike_sweeps:
+        sweep_mean_V.append(np.mean(dataV[i][ladder_pulse_point[i]]))
+        sweep_mean_I.append(np.mean(dataI[i][ladder_pulse_point[i]]))
+    #fit a line to the mean V and I
+    slope, intercept = np.polyfit(sweep_mean_V, sweep_mean_I, 1)
+    return slope, intercept, len(non_spike_sweeps)
+
 
 
 def subthres_a(dataT, dataV, dataI, lowerlim, upperlim):

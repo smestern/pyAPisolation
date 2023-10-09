@@ -9,14 +9,13 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.signal as signal
-from scipy import interpolate
-from scipy.optimize import curve_fit
 from multiprocessing import Process, freeze_support
 from ipfx import subthresh_features as subt
 import pyabf
 import logging
-import scipy.ndimage as ndimage
 from pyAPisolation.patch_subthres import *
+from pyAPisolation.QC import *
+from pyAPisolation.feature_extractor import _merge_current_injection_features
 print("Load finished")
 def main():
     
@@ -118,8 +117,7 @@ def main():
                             if not os.path.exists(root_fold+'//cm_plots//'):
                                     os.mkdir(root_fold+'//cm_plots//')  
 
-    debugplot = 0
-    running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
+    
     dfs = pd.DataFrame()
     averages = pd.DataFrame()
     for root,dir,fileList in os.walk(files):
@@ -196,9 +194,9 @@ def main():
                             resist = membrane_resistance(dataT, dataV, dataI)
                             Cm2, Cm1 = mem_cap(resist, decay_slow)
                             Cm3 = mem_cap_alt(resist, decay_slow, curve[3], np.amin(dataI))
-                            temp_df[f"_1 phase decay {real_sweep_number}"] = [p_decay]           
-                            temp_df[f"fast 2 phase decay {real_sweep_number}"] = [decay_fast]
-                            temp_df[f"slow 2 phase decay {real_sweep_number}"] = [decay_slow]
+                            temp_df[f"_1 phase tau {real_sweep_number}"] = [p_decay]           
+                            temp_df[f"fast 2 phase tau {real_sweep_number}"] = [decay_fast]
+                            temp_df[f"slow 2 phase tau {real_sweep_number}"] = [decay_slow]
                             temp_df[f"Curve fit A {real_sweep_number}"] = [curve[0]]
                             temp_df[f"Curve fit b1 {real_sweep_number}"] = [curve[1]]
                             temp_df[f"Curve fit b2 {real_sweep_number}"] = [curve[3]]
@@ -240,7 +238,7 @@ def main():
                         indices_of_same = np.arange(full_dataI.shape[0])
                         full_dataV = np.vstack(full_dataV)
                          
-                        print("Fitting Decay")
+                        print("Fitting tau")
                         decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), 
                         np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=root_fold)
                         print("Computing Sag")
@@ -250,9 +248,9 @@ def main():
                         if bplot == True:
                             plt.title(abf.abfID)
                             plt.savefig(root_fold+'//cm_plots//sagfit'+abf.abfID)
-                        temp_avg["Averaged 1 phase decay "] = [p_decay]           
-                        temp_avg["Averaged 2 phase fast decay "] = [decay_fast]
-                        temp_avg["Averaged 2 phase slow decay "] = [decay_slow]
+                        temp_avg["Averaged 1 phase tau "] = [p_decay]           
+                        temp_avg["Averaged 2 phase fast tau "] = [decay_fast]
+                        temp_avg["Averaged 2 phase slow tau "] = [decay_slow]
                         temp_avg["Averaged Curve fit A"] = [curve[0]]
                         temp_avg["Averaged Curve fit b1"] = [curve[1]]
                         temp_avg["Averaged Curve fit b2"] = [curve[3]]
@@ -285,6 +283,30 @@ def main():
                         temp_avg[f"Averaged Voltage sag ratio "] = sag_ratio
                         temp_avg[f"Averaged Tau_m Allen "] = taum_allen    
                         temp_avg[f"Average Voltage sag Allen "] = voltage_allen[0]
+                        
+
+                        #compute the QC features
+                        print("Computing QC features")
+                        mean_rms, max_rms, mean_drift, max_drift = run_qc(full_dataV[indices_of_same,:], full_dataI[indices_of_same,:])
+                        temp_avg["Averaged Mean RMS"] = mean_rms
+                        temp_avg["Averaged Max RMS"] = max_rms
+                        temp_avg["Averaged Mean Drift"] = mean_drift
+                        temp_avg["Averaged Max Drift"] = max_drift
+                        
+                        #pack in some protocol info
+                        temp_avg = _merge_current_injection_features(sweepX=np.tile(dataT, (full_dataI.shape[0], 1)), sweepY=full_dataI, sweepC=full_dataI, spike_df=temp_avg)
+                        
+
+                        #try the ladder_RM
+                        print("Computing ladder RM")
+                        try:
+                            rm_ladder, _, sweep_count = ladder_rm(np.tile(dataT, (full_dataI.shape[0], 1)), full_dataV, full_dataI)
+                            temp_avg["Resistance Ladder Fit"] = rm_ladder
+                            temp_avg["Resistance Ladder SweepCount Measured"] = sweep_count
+                        except:
+                            temp_avg["Resistance Ladder Fit"] = np.nan
+                            temp_avg["Resistance Ladder SweepCount Measured"] = np.nan
+                        
                         print(f"Computed a membrane resistance of {(resist  / 1000000000)} giga ohms, and a capatiance of {Cm2 * 1000000000000} pF, and tau of {decay_slow*1000} ms")
                         dfs = dfs.append(temp_df, sort=True)
                         averages = averages.append(temp_avg, sort=True)
