@@ -223,7 +223,7 @@ def main():
                             full_dataV.append(dataV)
                             if dataI.shape[0] < dataV.shape[0]:
                                 dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
-                        
+                            sweepcount
                         if bplot == True:
                                 plt.title(abf.abfID)
                                 plt.ylim(top=-40)
@@ -242,7 +242,7 @@ def main():
                         decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), 
                         np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=root_fold)
                         print("Computing Sag")
-                        grow = exp_growth_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), 1/decay_slow)
+                        #grow = exp_growth_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), 1/decay_slow)
                         temp_avg[f"Voltage sag mean"], temp_avg["Voltage Min point"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, plot=bplot)
                         temp_avg[f"Sweepwise Voltage sag mean"], temp_avg["Sweepwise Voltage Min point"] = np.nanmean(df_select_by_col(temp_df, ['Voltage sag 0'])), np.nanmean(df_select_by_col(temp_df, ['Voltage min']))
                         if bplot == True:
@@ -258,8 +258,8 @@ def main():
                         temp_avg["Averaged R squared 1 phase"] = [r_squared_1p]
                         temp_avg[f"Averaged RMP"] = [rmp_mode(np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0))]
                         temp_avg["SweepCount Measured"] = [sweepcount]
-                        temp_avg["Averaged alpha tau"] = [grow[1]]
-                        temp_avg["Averaged b tau"] = [grow[3]]
+                        #temp_avg["Averaged alpha tau"] = [grow[1]]
+                        #temp_avg["Averaged b tau"] = [grow[3]]
                         if r_squared_2p > r_squared_1p:
                             temp_avg["Averaged Best Fit"] = [2]
                         else:

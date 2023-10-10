@@ -142,7 +142,7 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
         
         spike_in_sweep['spike count'] = np.hstack((spike_count, np.full(abs(spike_count-1), np.nan)))
         spike_in_sweep['sweep Number'] = np.full(abs(spike_count), int(real_sweep_number))
-
+        #pack in the spike features
         dict_spike_df["first_isi_all_spikes" + real_sweep_number + " isi"] = [spike_train['first_isi']]
         dict_spike_df["spike_amp" + real_sweep_number + " 1"] = np.abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['threshold_v'].to_numpy()[0])
         dict_spike_df["spike_thres" + real_sweep_number + " 1"] = spike_in_sweep['threshold_v'].to_numpy()[0]
@@ -154,42 +154,70 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
         dict_spike_df["latency_all_spikes" + real_sweep_number + ""] = spike_train['latency']
         dict_spike_df["spike_width" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
         
-                
-        if spike_count >= 2:
-            f_isi = spike_in_sweep['peak_t'].to_numpy()[-1]
-            l_isi = spike_in_sweep['peak_t'].to_numpy()[-2]
+        #add        
+        if spike_count >= 2: #if there are more than 2 spikes in the sweep
+            f_isi = spike_in_sweep['peak_t'].to_numpy()[-1] #first spike time
+            l_isi = spike_in_sweep['peak_t'].to_numpy()[-2] #second spike time
             dict_spike_df["last_isi" + real_sweep_number + " isi"] = [abs( f_isi- l_isi )]
-            spike_in_sweep['isi_'] = np.hstack((np.diff(spike_in_sweep['peak_t'].to_numpy()), np.nan))
             dict_spike_df["min_isi" + real_sweep_number + " isi"] = np.nanmin(np.hstack((np.diff(spike_in_sweep['peak_t'].to_numpy()), np.nan)))
-            
-            for label in ipfx_train_feature_labels:
+            #add the isi stuff to the spike_in_sweep dataframe
+            spike_in_sweep['isi_'] = np.hstack((np.diff(spike_in_sweep['peak_t'].to_numpy()), np.nan))
+            for label in ipfx_train_feature_labels: #for the ipfx features
                 try:
                     dict_spike_df[label + real_sweep_number] = spike_train[label]
                 except:
                     dict_spike_df[label + real_sweep_number] = np.nan
-            if spike_count >= 3:
-                for label in ['first_isi', 'latency']:
+            
+            if spike_count >= 3: #if there are more than 3 spikes in the sweep
+                for label in ['first_isi', 'latency']: #add the ipfx train features but for the 3 spikes.
                     try:
                         dict_spike_df[label + "_3_spikes" + real_sweep_number] = spike_train[label]
                     except:
                         dict_spike_df[label + "_3_spikes" + real_sweep_number] = np.nan
-        else:
+            else: #if there are less than 3 spikes in the sweep
+                for label in ['first_isi', 'latency']: #add blanks
+                    dict_spike_df[label + "_3_spikes" + real_sweep_number] = np.nan
+
+        else: #else add blanks to the dataframe
             dict_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
-            spike_in_sweep['isi_'] = np.hstack((np.full(abs(spike_count), np.nan)))
             dict_spike_df["min_isi" + real_sweep_number + " isi"] = [spike_train['first_isi']]
+            spike_in_sweep['isi_'] = np.hstack((np.full(abs(spike_count), np.nan)))
             for label in ipfx_train_feature_labels:
                 dict_spike_df[label + real_sweep_number] = [np.nan]
+
         spike_in_sweep = spike_in_sweep.join(spike_train_df)
         print("Processed Sweep " + str(real_sweep_number) + " with " + str(spike_count) + " aps")
         df = df.append(spike_in_sweep, ignore_index=True, sort=True)
     else:
         sweep_running_bin = pd.DataFrame(data=nan_row_run, columns=_run_labels, index=[real_sweep_number])
+        print("Processed Sweep " + str(real_sweep_number) + " with " + str(spike_count) + " aps")
+        #fill in np nans for the features that cant be calculated when there are no spikes
+        #first the spike train generated features
+        for label in ['first_isi', 'latency']: #add blanks
+                    dict_spike_df[label + "_3_spikes" + real_sweep_number] = np.nan
+        #2 spike features
+        dict_spike_df["last_isi" + real_sweep_number + " isi"] = [np.nan]
+        dict_spike_df["min_isi" + real_sweep_number + " isi"] = np.nan
+        spike_in_sweep['isi_'] = np.nan
+        for label in ipfx_train_feature_labels:
+            dict_spike_df[label + real_sweep_number] = [np.nan]
+        #1 spike features
+        dict_spike_df["first_isi_all_spikes" + real_sweep_number + " isi"] = np.nan
+        dict_spike_df["spike_amp" + real_sweep_number + " 1"] = np.nan
+        dict_spike_df["spike_thres" + real_sweep_number + " 1"] = np.nan
+        dict_spike_df["spike_peak" + real_sweep_number + " 1"] = np.nan
+        dict_spike_df["spike_rise" + real_sweep_number + " 1"] = np.nan
+        dict_spike_df["spike_decay" + real_sweep_number + " 1"] = np.nan
+        dict_spike_df["spike_AHP 1" + real_sweep_number + " "] = np.nan
+        dict_spike_df["spike_AHP height 1" + real_sweep_number + " "] = np.nan
+        dict_spike_df["latency_all_spikes" + real_sweep_number + ""] = np.nan
+        dict_spike_df["spike_width" + real_sweep_number + "1"] = np.nan
+
 
 
     
     sweep_running_bin['Sweep Number'] = [real_sweep_number]
-    #sweep_running_bin['filename'] = [abf.abfID]
-    #sweep_running_bin['foldername'] = [os.path.dirname(abf.abfFilePath)]
+    
   
     temp_running_bin = temp_running_bin.append(sweep_running_bin)
     #append the dict as new columns to the temp_spike_df
