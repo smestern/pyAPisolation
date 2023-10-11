@@ -17,7 +17,7 @@ import pyabf
 from pyAPisolation.patch_utils import build_running_bin
 
 print("Load finished")
-
+DEBUG = False
 root = tk.Tk()
 root.withdraw()
 files = filedialog.askdirectory(
@@ -30,7 +30,10 @@ def crop_ap(abf):
     spikext = feature_extractor.SpikeFeatureExtractor(filter=0, dv_cutoff=20, thresh_frac=0.2)
     dataT, dataV, dataI = abf.sweepX, np.copy(abf.sweepY), np.copy(abf.sweepC)
     dt = dataT[1] - dataT[0]
-    spike_in_sweep = spikext.process(dataT, dataV, dataI)
+    try:
+        spike_in_sweep = spikext.process(dataT, dataV, dataI)
+    except:
+        spike_in_sweep = pd.DataFrame()
     sweep_indi = np.arange(0, dataV.shape[0])
     if spike_in_sweep.empty == False:
         #remove spikes
@@ -38,14 +41,19 @@ def crop_ap(abf):
         ap_start_ = spike_in_sweep['threshold_index'].to_numpy() - 500
         ap_end_ = spike_in_sweep['trough_index'].to_numpy() + 500
         pairs = np.vstack((ap_start_, ap_end_)).T
+        pairs = np.nan_to_num(pairs, nan=len(dataT))
+        pairs = pairs.astype(np.int)
         pair_data = []
         for p in pairs:
             if (p[1] - p[0])*dt > 0.1:
                 print(f" === Found a long spike at {dataT[p[0]]} === ")
                 p[1] = np.clip(p[1], p[0], p[0]+int(0.1/dt))
+            
+            #also enforce p[1] <= len()
+            p[1] = np.clip(p[1], p[0], len(dataT)-1).astype(np.int)
             temp = np.arange(p[0], p[1]).astype(np.int)
             pair_data.append(temp.tolist())
-            print(f" === cropping spike between {dataT[p[0]]} and {dataT[p[1]]} === ")
+            print(f" === cropping spike between {dataT[int(p[0])]} and {dataT[(p[1])]} === ")
         pair_data = np.hstack(pair_data)
         pair_data = pair_data[pair_data<dataV.shape[0]]
         dataV[pair_data] = np.nan
@@ -77,11 +85,8 @@ def running_bin(x, y, bin_time):
 
 
 def rmp_abf(abf, time=30, crop=True, bin_time=100):
- #try:
-    
     sweepsdata = []
-    
-            
+        
     for sweepNumber in abf.sweepList:
         print(f"Processing sweep number {sweepNumber}")
         #f10 = int((abf.sweepLengthSec * .10) * 1000)
@@ -219,7 +224,7 @@ for root,dirs,fileList in os.walk(root_fold):
                         full_df = full_df.append(temp_df)
                         full_df_running = full_df_running.join(temp_df_running.rename({0: temp_df['cell_name'].to_numpy()[0]}, axis='columns'), how='outer')
             #except:
-                print('error processing file ' + fp)
+                #print('error processing file ' + fp)
 
 
 with pd.ExcelWriter(root_fold + '/RMP_' + tag + '.xlsx') as runf:
