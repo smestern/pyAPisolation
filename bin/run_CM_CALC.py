@@ -287,11 +287,11 @@ def main():
                                                                     np.nanmean(full_dataI[indices_of_same,:],axis=0), 0.0, np.amax(dataT))
                             temp_avg[f"Averaged Voltage sag ratio "] = sag_ratio
                             temp_avg[f"Averaged Tau_m Allen "] = taum_allen    
-                            temp_avg[f"Average Voltage sag Allen "] = voltage_allen[0]
+                            temp_avg[f"Averaged Voltage sag min Allen "] = voltage_allen[0]
                         except:
                             temp_avg[f"Averaged Voltage sag ratio "] = np.nan
                             temp_avg[f"Averaged Tau_m Allen "] = np.nan
-                            temp_avg[f"Average Voltage sag Allen "] = np.nan
+                            temp_avg[f"Averaged Voltage sag min Allen "] = np.nan
 
                         #compute the QC features
                         print("Computing QC features")
@@ -304,8 +304,8 @@ def main():
                         except:
                             temp_avg["Averaged Mean RMS"] = np.nan
                             temp_avg["Max RMS"] = np.nan
-                            #temp_avg["Averaged Mean Drift"] = np.nan
-                            #temp_avg["Max Drift"] = np.nan
+                            temp_avg["Averaged Mean Drift"] = np.nan
+                            temp_avg["Max Drift"] = np.nan
                     #pack in some protocol info
                         temp_avg = _merge_current_injection_features(sweepX=np.tile(dataT, (full_dataI.shape[0], 1)), sweepY=full_dataI, sweepC=full_dataI, spike_df=temp_avg)
                         
