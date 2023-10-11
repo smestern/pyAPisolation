@@ -298,14 +298,14 @@ def main():
                         try:
                             mean_rms, max_rms, mean_drift, max_drift = run_qc(full_dataV[indices_of_same,:], full_dataI[indices_of_same,:])
                             temp_avg["Averaged Mean RMS"] = mean_rms
-                            temp_avg["Averaged Max RMS"] = max_rms
+                            temp_avg["Max RMS"] = max_rms
                             temp_avg["Averaged Mean Drift"] = mean_drift
-                            temp_avg["Averaged Max Drift"] = max_drift
+                            temp_avg["Max Drift"] = max_drift
                         except:
                             temp_avg["Averaged Mean RMS"] = np.nan
-                            temp_avg["Averaged Max RMS"] = np.nan
+                            temp_avg["Max RMS"] = np.nan
                             temp_avg["Averaged Mean Drift"] = np.nan
-                            temp_avg["Averaged Max Drift"] = np.nan
+                            temp_avg["Max Drift"] = np.nan
                         #pack in some protocol info
                         temp_avg = _merge_current_injection_features(sweepX=np.tile(dataT, (full_dataI.shape[0], 1)), sweepY=full_dataI, sweepC=full_dataI, spike_df=temp_avg)
                         
@@ -314,10 +314,12 @@ def main():
                         print("Computing ladder RM")
                         try:
                             rm_ladder, _, sweep_count = ladder_rm(np.tile(dataT, (full_dataI.shape[0], 1)), full_dataV, full_dataI)
-                            temp_avg["Resistance Ladder Fit"] = rm_ladder
+                            temp_avg["Resistance Ladder Slope"] = rm_ladder
+                            temp_avg["Rm Resistance Ladder"] = 1/rm_ladder[0]
                             temp_avg["Resistance Ladder SweepCount Measured"] = sweep_count
                         except:
                             temp_avg["Resistance Ladder Fit"] = np.nan
+                            temp_avg["Rm Resistance Ladder"] = np.nan
                             temp_avg["Resistance Ladder SweepCount Measured"] = np.nan
                         
                         print(f"Computed a membrane resistance of {(resist  / 1000000000)} giga ohms, and a capatiance of {Cm2 * 1000000000000} pF, and tau of {decay_slow*1000} ms")
