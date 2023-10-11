@@ -103,6 +103,10 @@ class analysis_gui(QWidget):
         self.bessel = self.main_widget.findChild(QWidget, "bessel_filt")
         self.thres_per = self.main_widget.findChild(QWidget, "thres_percent")
         self.thres_per.textChanged.connect(self.analysis_changed)
+        #find the output buttons
+        self.bspikeFind = self.main_widget.findChild(QWidget, "spikeFinder")
+        self.brunningBin = self.main_widget.findChild(QWidget, "runningBin")
+        self.brawData = self.main_widget.findChild(QWidget, "rawSpike")
 
         self.protocol_select.currentIndexChanged.connect(self.analysis_changed)
         self.bessel.textChanged.connect(self.analysis_changed)
@@ -128,6 +132,8 @@ class analysis_gui(QWidget):
         self.endCM.textChanged.connect(self.analysis_changed)
         self.besselFilterCM = self.main_widget.findChild(QWidget, "bessel_filt_cm")
         self.besselFilterCM.textChanged.connect(self.analysis_changed)
+
+        
 
     
     def file_select(self):
@@ -341,7 +347,8 @@ class analysis_gui(QWidget):
             self.get_selected_protocol()
             #df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
             df = self._inner_analysis_loop(self.selected_dir, self.param_dict,  self.selected_protocol)     
-            save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time())+self.outputTag.text())
+            save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time())+self.outputTag.text(), self.bspikeFind.isChecked()
+                             , self.brunningBin.isChecked(), self.brawData.isChecked())
         elif self.get_current_analysis() is 'subthres':
             self.get_analysis_params()
             self.get_selected_protocol()
@@ -411,8 +418,7 @@ class analysis_gui(QWidget):
 
 
     def _inner_analysis_loop(self, folder, param_dict, protocol_name):
-        debugplot = 0
-        running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
+        
         dfs = pd.DataFrame()
         df_spike_count = pd.DataFrame()
         df_running_avg_count = pd.DataFrame()
@@ -616,8 +622,6 @@ class analysis_gui(QWidget):
                 self.axe1.scatter(dataT[end_index:upwardinfl], dataV[end_index:upwardinfl], c='g', zorder=99, label="Mean Vm Measured")
                 self.axe1.plot(dataT[np.full(sag_diff_plot.shape[0], min_point, dtype=np.int64)], sag_diff_plot, label=f"Sag of {sag_diff}")
 
-
-                
         self.axe1.legend( bbox_to_anchor=(1.05, 1),
                          loc='upper left', borderaxespad=0.)
         self.axe2.legend(loc='upper right')

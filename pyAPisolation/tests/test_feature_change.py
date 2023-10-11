@@ -20,7 +20,10 @@ def compare_excel_files(file1, file2, sheet_name='full sheet'):
                 col1 = df1[col].to_numpy()
                 col2 = df2[col].to_numpy()
                 #compute the mean perecentage error
-                mpe = np.nanmean(np.abs(col1 - col2)/col1)
+                try:
+                    mpe = np.nanmean(np.abs(col1 - col2)/col1)
+                except:
+                    mpe = np.nan
                 if mpe < 0.01:
                     print(col, "is equal")
                 else:
@@ -41,13 +44,13 @@ def compare_excel_files(file1, file2, sheet_name='full sheet'):
     #output the unequal columns as a csv
     if len(unequal_cols) > 0:
         df_unequal = pd.DataFrame(np.vstack([unequal_cols, diff]).T, columns=['unequal_cols', 'mean percent error'])
-        df_unequal.to_csv(base_folder+'\\unequal_cols.csv')
+        df_unequal.to_csv(base_folder+'//unequal_cols.csv')
         #isolate the unequal columns from df1 and df2
         df_unequal = df_unequal['unequal_cols'].tolist()
         df1_unequal = df1[df_unequal]
         df2_unequal = df2[df_unequal]
         #write the unequal columns to excel
-        writer = pd.ExcelWriter(base_folder+'\\unequal_cols.xlsx')
+        writer = pd.ExcelWriter(base_folder+'//unequal_cols.xlsx')
         df1_unequal.to_excel(writer, 'df1_unequal')
         df2_unequal.to_excel(writer, 'df2_unequal')
         writer.save()

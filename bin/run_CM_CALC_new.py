@@ -604,14 +604,7 @@ for root,dir,fileList in os.walk(files):
                     sag_ratio, taum_allen, voltage_allen = subthres_a(dataT,dataV,dataI, 0, np.amax(dataT))
                     temp_df[f"Voltage sag ratio {real_sweep_number}"] = sag_ratio
                     temp_df[f"Tau_m Allen {real_sweep_number}"] = taum_allen    
-                    temp_df[f"Voltage sag Allen {real_sweep_number}"] = voltage_allen
-                    #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
-                    #
-                    #temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
-                    #['voltage_deflection' + real_sweep_number] = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
-
-
-
+                    temp_df[f"Voltage sag Allen {real_sweep_number}"] = voltage_allen[0]
                     full_dataI.append(dataI)
                     full_dataV.append(dataV)
                     if dataI.shape[0] < dataV.shape[0]:

@@ -9,6 +9,7 @@ from scipy import interpolate
 from scipy.optimize import curve_fit
 from scipy.stats import mode
 from ipfx import subthresh_features as subt
+from ipfx import feature_extractor as fx
 from . import patch_utils
 import pyabf
 #from brian2.units import ohm, Gohm, amp, volt, mV, second, pA
@@ -20,6 +21,8 @@ def exp_grow(t, a, b, alpha):
     return a - b * np.exp(-alpha * t)
 def exp_decay_2p(t, a, b1, alphaFast, b2, alphaSlow):
     return a + b1*np.exp(-alphaFast*t) + b2*np.exp(-alphaSlow*t)
+
+
 def exp_decay_1p(t, a, b1, alphaFast):
     return a + b1*np.exp(-alphaFast*t)
 
@@ -34,21 +37,19 @@ def exp_growth_factor(dataT,dataV,dataI, alpha, end_index=1, plot=False):
         end_index = int(end_index / dt)
         diff_I = np.diff(dataI)
         upwardinfl = np.argmax(diff_I)
-        end_index += upwardinfl
-        upperC = np.amax(dataV[upwardinfl:end_index])
         t1 = dataT[upwardinfl:end_index] - dataT[upwardinfl]
         curve = curve_fit(exp_grow, t1, dataV[upwardinfl:end_index], maxfev=50000, bounds=([-np.inf, -np.inf, alpha-0.05], [np.inf, np.inf, alpha+0.05]), xtol=None)[0]
-        tau = curve[2]
-        x_deriv, deriv_ar = deriv(t1, exp_grow(t1, *curve))
+        
+        _, deriv_ar = deriv(t1, exp_grow(t1, *curve))
         diff = np.abs(deriv_ar - 2)
         minpoint = np.argmin(diff)
         if plot==True:
             
             plt.figure(2)
             plt.clf()
-            plt.plot(t1, dataV[upwardinfl:end_index], label='Data')
+            plt.plot( dataT[upwardinfl:end_index], dataV[upwardinfl:end_index], label='Data')
             plt.scatter(t1[minpoint], exp_grow(t1, *curve)[minpoint], label='min')
-            plt.plot(t1, exp_grow(t1, *curve), label='1 phase fit')
+            plt.plot( dataT[upwardinfl:end_index], exp_grow(t1, *curve), label='1 phase fit')
             plt.legend()
             #plt.title(abf_id)
             plt.pause(0.5)
@@ -67,8 +68,10 @@ def deriv(x,y):
     return xfirst, yfirst
 
 def rmp_mode(dataV, dataI):
+
     pre = find_downward(dataI)
-    mode_vm = mode(dataV[:pre], nan_policy='omit')[0][0]
+
+    mode_vm = mode(np.round(dataV[:pre]*4)/4, nan_policy='omit')[0][0]
     return mode_vm
 
 def mem_resist_alt(cm_alt, slow_decay):
@@ -188,8 +191,12 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
         diff = np.abs(upperC - lowerC) + 5
         t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
         SpanFast=(upperC-lowerC)*1*.01
+
+        guess = (lowerC, diff, 50)
+        curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000, p0=guess,
+                                      bounds=([-np.inf, diff-15, 2], [np.inf, diff+15, 750]), xtol=None)
         curve, pcov_2p = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=([-np.inf,  0, 100,  0, 0], [np.inf, np.inf, 500, np.inf, np.inf]), xtol=None)
-        curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=(-np.inf, np.inf))
+        
         residuals_2p = dataV[downwardinfl:end_index]- exp_decay_2p(t1, *curve)
         residuals_1p = dataV[downwardinfl:end_index]- exp_decay_1p(t1, *curve2)
         ss_res_2p = np.sum(residuals_2p**2)
@@ -308,9 +315,7 @@ def mem_cap_alt(resist, tau, b2, deflection):
     return cm
 
 def determine_subt(abf, idx_bounds):
-    def nonzero_1d(a):
-        non = np.nonzero(a)
-        return a[non]
+    
     dataC =[]
     for sweep in abf.sweepList:
         abf.setSweep(sweep)
@@ -319,6 +324,64 @@ def determine_subt(abf, idx_bounds):
     dataC = np.vstack(dataC)
     deflections = np.unique(np.where(dataC<0)[0])
     return deflections
+
+def nonzero_1d(a):
+    non = np.nonzero(a)
+    return a[non]
+
+
+def ladder_rm(dataT, dataV, dataI):
+    """ Computes the membrane resistance using the ladder method. Essentially we need a changing hyperpolarization / depolarization segment
+    to compute the membrane resistance.
+    """
+    #find the sweepwise difference in current amp
+    diff_I = np.diff(dataI, axis=0)
+    #filter out nonzero values
+    ladder_pulse_point = [[]]
+    for row in diff_I:
+        #assuming sqaure pulse here, the nonzero idxs should be continous
+        non_zero_idxs = np.flatnonzero(row)
+        if len(non_zero_idxs) > 1:
+            #compute the difference and assert that its 1
+            diff_idx = np.diff(non_zero_idxs)
+            #filter down to the first one that is not 1
+            first_non_one = np.flatnonzero(diff_idx != 1)
+            #finally we want to adjust to skip the first 25% of the pulse
+            skip_idx = int(len(non_zero_idxs) * 0.25)
+            if len(first_non_one) > 0:
+                ladder_pulse_point.append(non_zero_idxs[skip_idx:first_non_one[0]] )
+            else:
+                ladder_pulse_point.append(non_zero_idxs[skip_idx:] )
+        else:
+            ladder_pulse_point.append([])
+    # we need to find the spiking sweeps, and drop them
+    #find the spiking sweeps
+    spikefx = fx.SpikeFeatureExtractor(filter = 0)
+    non_spike_sweeps = []
+    for i, (sweepX, sweepY, sweepC) in enumerate(zip(dataT, dataV, dataI)):
+        try:
+            if len(ladder_pulse_point[i]) > 0:
+                sweep_features= spikefx.process(sweepX[ladder_pulse_point[i]], sweepY[ladder_pulse_point[i]], sweepC[ladder_pulse_point[i]])
+                if sweep_features.empty:
+                    non_spike_sweeps.append(i)
+        except:
+            pass
+            #non_spike_sweeps.append(i)
+    
+    #if there are less than 2 non spike sweeps, we cant compute the membrane resistance
+    if len(non_spike_sweeps) < 2:
+        return np.nan
+    
+    #finally fit a line to the ladder pulse point by taking the means
+    sweep_mean_V = []
+    sweep_mean_I = []
+    for i in non_spike_sweeps:
+        sweep_mean_V.append(np.mean(dataV[i][ladder_pulse_point[i]]))
+        sweep_mean_I.append(np.mean(dataI[i][ladder_pulse_point[i]]))
+    #fit a line to the mean V and I
+    slope, intercept = np.polyfit(sweep_mean_V, sweep_mean_I, 1)
+    return slope, intercept, len(non_spike_sweeps)
+
 
 
 def subthres_a(dataT, dataV, dataI, lowerlim, upperlim):
@@ -355,9 +418,9 @@ def subthres_a(dataT, dataV, dataI, lowerlim, upperlim):
                         except Exception as e:
                             print("Subthreshold Processing Error ")
                             print(e.args)
-                            return np.nan, np.nan, np.nan
+                            return np.nan, np.nan, [np.nan, np.nan]
     else:
-        return np.nan, np.nan, np.nan
+        return np.nan, np.nan, [np.nan, np.nan]
 
 def find_hyperpolarization_segment(dataT, dataI, lowerlim, upperlim):
     """Finds the hyperpolarization segment, assuming the current is a square pulse. Or the hyperpolarization is continuous.
@@ -368,6 +431,8 @@ def find_hyperpolarization_segment(dataT, dataI, lowerlim, upperlim):
         lowerlim (_type_): _description_
         upperlim (_type_): _description_
     """
+    #copy dataI so we dont change the original
+    dataI = dataI.copy()
     #clip greater than 0 to 0
     dataI[dataI>0] = 0
     #find the first point where the current is negative

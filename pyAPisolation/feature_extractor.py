@@ -17,6 +17,11 @@ from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_ab
 from .patch_subthres import *
 from .QC import run_qc
 print("feature extractor loaded")
+
+#this is here, to swap functions in the feature extractor for ones specfic to the INOUE lab IC1 standard protocol
+IC1_SPECIFIC_FUNCTIONS = True
+
+
 parallel = True
 default_dict = {'start': 0, 'end': 0, 'filter': 0, 'stim_find': True}
 
@@ -129,20 +134,28 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         _type_: _description_
     """    
     np.nan_to_num(abf.data, nan=-9999, copy=False)
+
+
+    #load the data 
+    x, y ,c = loadABF(abf.abfFilePath)
+
     #If there is more than one sweep, we need to ensure we dont iterate out of range
     if sweeplist == None:
         if abf.sweepCount > 1:
             sweepcount = abf.sweepList
         else:
             sweepcount = [0]
-    df = pd.DataFrame()
+    
     #Now we walk through the sweeps looking for action potentials
+    df = pd.DataFrame()
     temp_spike_df = pd.DataFrame()
     temp_spike_df['filename'] = [abf.abfID]
     temp_spike_df['foldername'] = [os.path.dirname(abf.abfFilePath)]
     temp_running_bin = pd.DataFrame()
-    stim_find = param_dict.pop('stim_find')
+    
+    
     #for now if user wants to filter by stim time we will just use the first sweep
+    stim_find = param_dict.pop('stim_find')
     if stim_find:
         abf.setSweep(abf.sweepList[-1])
         start, end = find_non_zero_range(abf.sweepX, abf.sweepC)
@@ -159,33 +172,198 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
     #iterate through the sweeps
     for sweepNumber in sweepcount: 
         real_sweep_length = abf.sweepLengthSec - 0.0001
-        if sweepNumber < 9:
-            real_sweep_number = '00' + str(sweepNumber + 1)
-        elif sweepNumber > 8 and sweepNumber < 99:
-            real_sweep_number = '0' + str(sweepNumber + 1)
+        abf.setSweep(sweepNumber)
+        #here we just make sure the sweep number is in the correct format for the dataframe
+        real_sweep_number = sweepNumber_to_real_sweep_number(sweepNumber)
         if param_dict['start'] == 0 and param_dict['end'] == 0: 
             param_dict['end']= real_sweep_length
         elif param_dict['end'] > real_sweep_length:
             param_dict['end'] = real_sweep_length
+        
         spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by 
-        temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(abf, real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
+        
+        temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
+        
+        #attach the custom features
+        custom_features = _custom_sweepwise_features(x[sweepNumber], y[sweepNumber] ,c[sweepNumber] , real_sweep_number, param_dict, temp_spike_df, spike_in_sweep)
+        temp_spike_df = temp_spike_df.assign(**custom_features)
+
+    #add the filename and foldername to the temp_running_bin
+    temp_running_bin['filename'] = abf.abfID
+    temp_running_bin['foldername'] = os.path.dirname(abf.abfFilePath)
+    #compute some final features
+    temp_spike_df = _custom_full_features(x, y, c, param_dict, temp_spike_df)
     temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
-    x, y ,c = loadABF(abf.abfFilePath)
+    
+    return temp_spike_df, df, temp_running_bin
+
+def sweepNumber_to_real_sweep_number(sweepNumber):
+    if sweepNumber < 9:
+            real_sweep_number = '00' + str(sweepNumber + 1)
+    elif sweepNumber > 8 and sweepNumber < 99:
+            real_sweep_number = '0' + str(sweepNumber + 1)
+    return real_sweep_number
+
+#CUSTOM FEATURES
+def _custom_sweepwise_features(sweepX, sweepY, sweepC, real_sweep_number, param_dict, spike_df, rawspike_df):
+    custom_features = {}
+
+    sag, taum, voltage = subthres_a(sweepX, sweepY, sweepC, param_dict['start'], param_dict['end'])
+    custom_features["Sag Ratio " + real_sweep_number + ""] = sag
+    custom_features["Taum " + real_sweep_number + ""] = taum
+
+    try:
+        custom_features['baseline voltage' + real_sweep_number] = subt.baseline_voltage(sweepX, sweepY, start=0.1, filter_frequency=param_dict['filter'])
+    except:
+        print('Fail to find baseline voltage')
+    
+    
+    #compute features if there was a spike
+    #if spike_df.empty:
+        #custom_features["exp growth tau1 " + real_sweep_number] = np.nan
+        #custom_features["exp growth tau2 " + real_sweep_number] = np.nan
+    #else:
+        #pass
+        #end_index = rawspike_df['threshold_t'][0] if 'threshold_t' in rawspike_df.columns else 0.7
+        #curve = exp_growth_factor(sweepX, sweepY, sweepC, alpha=1/taum, end_index=end_index )
+        #custom_features["exp growth tau1 " + real_sweep_number] = curve[2]
+        #custom_features["exp growth tau2 " + real_sweep_number] = curve[-1]
+    return custom_features
+
+
+def _custom_full_features(x,y,c, param_dict, spike_df):
+    #gather some protocol information that is requested by patchers
+    #some more advanced current injection features
+    spike_df = merge_current_injection_features(x, y, c, spike_df)
     #try qc or just return the dataframe
     try:
         _qc_data = run_qc(y, c)
-        temp_spike_df['QC Mean RMS'] = _qc_data[0]
-        temp_spike_df['QC Mean Sweep Drift'] = _qc_data[2]
+        spike_df['QC Mean RMS'] = _qc_data[0]
+        spike_df['QC Mean Sweep Drift'] = _qc_data[2]
     except:
-        temp_spike_df['QC Mean RMS'] = np.nan
-        temp_spike_df['QC Mean Sweep Drift'] = np.nan
-    try:
-        spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
-        plotabf(abf, spiketimes, param_dict['start'], param_dict['end'], plot)
-    except:
-        pass
-    return temp_spike_df, df, temp_running_bin
+        spike_df['QC Mean RMS'] = np.nan
+        spike_df['QC Mean Sweep Drift'] = np.nan
+    return spike_df
 
+
+def _merge_current_injection_features(sweepX, sweepY, sweepC, spike_df):
+    new_current_injection_features = {}
+    #first we want to compute the number of epochs, take the diff along the columns and count the number of nonzero rows
+    diffC = np.diff(sweepC, axis=1)
+    #find the row with the most nonzero entries
+    most_nonzero = np.argmax(np.count_nonzero(diffC, axis=1))
+    idx_epochs = np.sort(np.unique(diffC[most_nonzero], return_index=True)[1]) +1
+    #now iter the sweeps and find the current at each epoch
+    for j, idx in enumerate(idx_epochs):
+        currents = sweepC[:, idx]
+        if np.any(currents): #if its not zero
+            if len(np.unique(currents)) == 1:
+                new_current_injection_features[f"current_sweep_all_epoch_{j}"] = currents[0]
+            else:
+                new_current_injection_features.update({f"current_sweep_{sweepNumber_to_real_sweep_number(i)}_epoch_{j}": current for i, current in enumerate(currents)})
+                new_current_injection_features[f"current_epoch_{j}_delta"] = np.diff(currents)[0]
+     
+    #finally we want to compute the stimuli size
+    #compute the dt
+    dt = np.diff(sweepX[0])[0]
+    #first compute the sweepwise variation by taking the diff along the columns
+    #compute the length of the nonzero current injections:
+    stimuli_length = [len(np.flatnonzero(row))*dt for row in sweepC if np.any(row)]
+    #pack it into the dict, if there is only one stimuli length, we will just take that
+    if len(np.unique(stimuli_length)) == 1:
+        new_current_injection_features['stimuli_length'] = stimuli_length[0]
+    else:
+        #take the mode of the stimuli length
+        new_current_injection_features['stimuli_length'] = np.unique(stimuli_length)[np.unique(stimuli_length, return_counts=True)[1].argmax()]
+       # for i, stimuli in enumerate(stimuli_length):
+         #   new_current_injection_features[f"stimuli_length_sweep_{i}"] = stimuli
+
+    #also compute the sample_rate
+    new_current_injection_features['sample_rate'] = np.round(1/dt, 2)
+
+    #ideally we would not modify the dataframe in place, but this is the easiest way to do it
+    spike_df = spike_df.assign(**new_current_injection_features)
+    return spike_df
+
+
+def _merge_current_injection_features_IC1(sweepX, sweepY, sweepC, spike_df):
+    new_current_injection_features = {}
+    #first we want to compute the number of epochs, take the diff along the columns and count the number of nonzero rows
+    diffC = np.diff(sweepC, axis=1)
+    #find the row with the most nonzero entries
+    most_nonzero = np.argmax(np.count_nonzero(diffC, axis=1))
+    idx_epochs = np.sort(np.unique(diffC[most_nonzero], return_index=True)[1]) +1
+    #now iter the sweeps and find the current at each epoch
+    non_zero_epochs = idx_epochs[np.any(sweepC[:,idx_epochs ], axis=0)]
+    #should be 2 epochs for IC1
+    if len(non_zero_epochs) > 2 or len(idx_epochs) > 3:
+        print("Warning, more than 2 epochs found in IC1 protocol, taking the first two")
+        new_current_injection_features["IC1_protocol_check"] = "Other"
+        non_zero_epochs = non_zero_epochs[:2]
+    elif len(non_zero_epochs) < 2:
+        #if there are less than 2 epochs, we will flag the cell, return no features
+        print("Warning, less than 2 epochs found in IC1 protocol, no current injection features will be computed")
+        new_current_injection_features["IC1_protocol_check"] = "Other"
+        #ideally we would not modify the dataframe in place, but this is the easiest way to do it
+        spike_df = spike_df.assign(**new_current_injection_features)
+        return spike_df
+    
+
+    #get the hyperpolarizing current, which should be the first epoch
+    hyperpolarizing_current = sweepC[:, non_zero_epochs[0]]
+    if len(np.unique(hyperpolarizing_current)) == 1 & np.all(hyperpolarizing_current==-20):
+        new_current_injection_features["hyperpolarizing_current"] = hyperpolarizing_current[0]
+    else:
+        print("Warning, more than one hyperpolarizing current found in IC1 protocol or different step size, taking the first")
+        new_current_injection_features["hyperpolarizing_current"] = hyperpolarizing_current[0]
+        if "IC1_protocol_check" not in new_current_injection_features:
+            new_current_injection_features["IC1_protocol_check"] = "IC1-Modified-step"
+    
+    #get the depolarizing current, which should be the second epoch
+    depolarizing_current = sweepC[:, non_zero_epochs[1]]
+    #get the delta between the two currents
+    if sweepC.shape[0] < 2:
+        new_current_injection_features['depolarizing_current_delta'] = np.nan
+    else:
+        new_current_injection_features['depolarizing_current_delta'] = depolarizing_current[1] - depolarizing_current[0]
+    new_current_injection_features.update({f"depolarizing_current_sweep_{sweepNumber_to_real_sweep_number(i)}": current for i, current in enumerate(depolarizing_current)})
+    #if the delta is not 10 or consistent across sweeps, we will will flag the cell
+    if np.all(np.diff(depolarizing_current)!=10) or new_current_injection_features['depolarizing_current_delta']!=10:
+        if "IC1_protocol_check" not in new_current_injection_features:
+            new_current_injection_features["IC1_protocol_check"] = "IC1-Modified-step"
+
+
+    #finally we want to compute the stimuli size
+    #compute the dt
+    dt = np.diff(sweepX[0])[0]
+    #use the last sweep to compute the stimuli length
+    hyperpolarizing_stimuli_length = np.round(len(sweepC[-1, (sweepC[-1]<0.0)])*dt, 4)
+    depolarizing_stimuli_length = np.round(len(sweepC[-1, (sweepC[-1]>0.0)])*dt, 4)
+
+    new_current_injection_features['hyperpolarizing_stimuli_length'] = hyperpolarizing_stimuli_length
+    new_current_injection_features['depolarizing_stimuli_length'] = depolarizing_stimuli_length
+
+    if hyperpolarizing_stimuli_length != 0.3 or depolarizing_stimuli_length != 0.7:
+        if "IC1_protocol_check" not in new_current_injection_features:
+            new_current_injection_features["IC1_protocol_check"] = "IC1-Modified-length"
+    
+    if "IC1_protocol_check" not in new_current_injection_features:
+        new_current_injection_features["IC1_protocol_check"] = "IC1"
+
+    #also compute the sample_rate
+    new_current_injection_features['sample_rate'] = np.round(1/dt, 2)
+
+    #ideally we would not modify the dataframe in place, but this is the easiest way to do it
+    spike_df = spike_df.assign(**new_current_injection_features)
+    return spike_df
+
+if IC1_SPECIFIC_FUNCTIONS:
+    merge_current_injection_features = _merge_current_injection_features_IC1
+else:
+    merge_current_injection_features = _merge_current_injection_features
+
+
+#SUBTHRESHOLD FEATURES
 def preprocess_abf_subthreshold(file_path, protocol_name='', param_dict={}):
     try:
         abf = pyabf.ABF(file_path)           
@@ -290,7 +468,7 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
         #temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
         #temp_spike_df['voltage_deflection' + real_sweep_number] = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
 
-
+        
 
         full_dataI.append(dataI)
         full_dataV.append(dataV)
@@ -350,29 +528,6 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
     return temp_df, temp_avg
     
 
-def determine_rejected_spikes(spfx, spike_df, v, t, start, end, dv_cutoff=20.):
-    """Determine which spikes were rejected by the spike detection algorithm.
-    Parameters
-    ----------
-    spfx : SweepFeatures object
-    spike_df : pandas.DataFrame
-        DataFrame containing spike features
-    Returns
-    -------
-    rejected_spikes : list of bool
-        True if spike was rejected, False if spike was accepted
-    """
-    dvdt = time_series_utils.calculate_dvdt(v, t, 0)
-    rejected_spikes = []
-    intial_spikes = spike_detector.detect_putative_spikes(v, t, start, end,
-                                                    dv_cutoff=dv_cutoff,
-                                                    dvdt=dvdt)
-    return rejected_spikes
-
-
-
-
-
 class FeatExtractor(object):
     """TODO """
     def __init__(self, abf, start=None, end=None, filter=10.,
@@ -411,4 +566,34 @@ class FeatExtractor(object):
         self.spiketrainextractor = feature_extractor.SpikeTrainFeatureExtractor(start=start, end=end)
 
 if __name__ == '__main__':
+
+
     mp.freeze_support()
+
+
+
+
+# def compute_sweepwise_current_injection_features(sweepC, real_sweep_number):
+#     current_injection_features = {}
+#     #
+#     #get the unique current injections, only nonzero
+#     unique_current_injections = np.unique(sweepC[np.flatnonzero(sweepC)])
+#     #figure out how many current injections there are, if there are more than 6, we will only take the first 3 and last 3
+#     if len(unique_current_injections) > 6:
+#         unique_current_injections = np.hstack((unique_current_injections[:3], unique_current_injections[-3:]))
+#     #append them in the order they appear in the sweepC array
+#     unique_negative_current_injections = unique_current_injections[unique_current_injections<0]
+#     unique_positive_current_injections = unique_current_injections[unique_current_injections>0]
+#     if len(unique_negative_current_injections) > 0:
+#         for i, current_injection in enumerate(unique_negative_current_injections[:1]): #here we are only using the first hyperpolarizing current injection
+#             #THIS IS basically a special case for INOUE lab standard. However, we are neglecting information about the other hyperpolarizing current injections
+#             current_injection_features[f"sweep_{real_sweep_number}_hyperpolarizing_{str(i)}_current"] = current_injection
+#          #if there are current injections that are non-positive and have not been accounted for
+#         #stack the remaining current injections
+#         if len(unique_negative_current_injections) > 1:
+#             unique_positive_current_injections = np.hstack((unique_positive_current_injections, unique_negative_current_injections[1:]))
+
+#     if len(unique_positive_current_injections) > 0:
+#         for i, current_injection in enumerate(unique_positive_current_injections):
+#             current_injection_features[f"sweep_{real_sweep_number}_{str(i)}_current"] = current_injection
+#     return current_injection_features
