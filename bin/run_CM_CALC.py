@@ -304,9 +304,9 @@ def main():
                         except:
                             temp_avg["Averaged Mean RMS"] = np.nan
                             temp_avg["Max RMS"] = np.nan
-                            temp_avg["Averaged Mean Drift"] = np.nan
-                            temp_avg["Max Drift"] = np.nan
-                        #pack in some protocol info
+                            #temp_avg["Averaged Mean Drift"] = np.nan
+                            #temp_avg["Max Drift"] = np.nan
+                    #pack in some protocol info
                         temp_avg = _merge_current_injection_features(sweepX=np.tile(dataT, (full_dataI.shape[0], 1)), sweepY=full_dataI, sweepC=full_dataI, spike_df=temp_avg)
                         
 
@@ -315,10 +315,10 @@ def main():
                         try:
                             rm_ladder, _, sweep_count = ladder_rm(np.tile(dataT, (full_dataI.shape[0], 1)), full_dataV, full_dataI)
                             temp_avg["Resistance Ladder Slope"] = rm_ladder
-                            temp_avg["Rm Resistance Ladder"] = 1/rm_ladder[0]
+                            temp_avg["Rm Resistance Ladder"] = 1/rm_ladder
                             temp_avg["Resistance Ladder SweepCount Measured"] = sweep_count
                         except:
-                            temp_avg["Resistance Ladder Fit"] = np.nan
+                            temp_avg["Resistance Ladder Slope"] = np.nan
                             temp_avg["Rm Resistance Ladder"] = np.nan
                             temp_avg["Resistance Ladder SweepCount Measured"] = np.nan
                         

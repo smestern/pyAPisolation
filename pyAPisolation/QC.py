@@ -11,7 +11,11 @@ def find_zero(realC):
 
 def find_baseline(zero_ind):
     #the baseline will be the first continious set of zeros
-    baseline_idx = np.where(np.diff(zero_ind) > 1)[0][0]
+    baseline_idx = np.where(np.diff(zero_ind) > 1)[0]
+    if len(baseline_idx) == 0:
+        baseline_idx = len(zero_ind)
+    else:
+        baseline_idx = baseline_idx[0]
     return zero_ind[0:baseline_idx+1]
 
 def compute_vm_drift(realY, zero_ind):
