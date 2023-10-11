@@ -418,9 +418,9 @@ def subthres_a(dataT, dataV, dataI, lowerlim, upperlim):
                         except Exception as e:
                             print("Subthreshold Processing Error ")
                             print(e.args)
-                            return np.nan, np.nan, np.nan
+                            return np.nan, np.nan, [np.nan, np.nan]
     else:
-        return np.nan, np.nan, np.nan
+        return np.nan, np.nan, [np.nan, np.nan]
 
 def find_hyperpolarization_segment(dataT, dataI, lowerlim, upperlim):
     """Finds the hyperpolarization segment, assuming the current is a square pulse. Or the hyperpolarization is continuous.
