@@ -215,7 +215,7 @@ for root,dirs,fileList in os.walk(root_fold):
         fp = os.path.join(root, x)
         if '.abf' in x:
             
-            #try:
+            try:
                 abf = pyabf.ABF(fp)
                 if proto == -1 or protocol_name in abf.protocol:
                     print(abf.abfID + ' import')
@@ -223,8 +223,8 @@ for root,dirs,fileList in os.walk(root_fold):
                     if temp_df.empty == False:
                         full_df = full_df.append(temp_df)
                         full_df_running = full_df_running.join(temp_df_running.rename({0: temp_df['cell_name'].to_numpy()[0]}, axis='columns'), how='outer')
-            #except:
-                #print('error processing file ' + fp)
+            except:
+                print('error processing file ' + fp)
 
 
 with pd.ExcelWriter(root_fold + '/RMP_' + tag + '.xlsx') as runf:
