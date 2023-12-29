@@ -31,7 +31,7 @@ def loadFile(file_path, return_obj=False, old=False):
 
 
 
-def loadNWB(file_path, return_obj=False, old=False):
+def loadNWB(file_path, return_obj=False, old=False, load_into_mem=True):
     """Loads the nwb object and returns three arrays dataX, dataY, dataC and optionally the object.
     same input / output as loadABF for easy pipeline inclusion
 
@@ -39,7 +39,7 @@ def loadNWB(file_path, return_obj=False, old=False):
         file_path (str): [description]
         return_obj (bool, optional): return the NWB object to access various properites. Defaults to False.
         old (bool, optional): use the old indexing method, uneeded in most cases. Defaults to False.
-
+        load_into_mem (bool, optional): load the data into memory. Defaults to True.
     Returns:
         dataX: time (should be seconds)
         dataY: voltage (should be mV)
@@ -50,7 +50,7 @@ def loadNWB(file_path, return_obj=False, old=False):
     if old:
         nwb = old_nwbFile(file_path)
     else:
-        nwb = nwbFile(file_path)
+        nwb = nwbFile(file_path, load_into_mem=load_into_mem)
     
     fs_dict = nwb.rate # sampling rate info
     fs = fs_dict["rate"] # assumes units of Hz
@@ -119,7 +119,7 @@ class old_nwbFile(object):
 
 class nwbFile(object):
 
-    def __init__(self, file_path):
+    def __init__(self, file_path, load_into_mem=True):
         with h5py.File(file_path,  "r") as f:
             ##Load some general properities
             acq_keys = list(f['acquisition'].keys())

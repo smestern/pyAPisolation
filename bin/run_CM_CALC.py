@@ -268,7 +268,7 @@ def main():
                         if r_squared_2p > r_squared_1p:
                             temp_avg["Averaged Best Fit"] = [2]
                         else:
-                            temp_avg["AverageD Best Fit"] = [1]
+                            temp_avg["Averaged Best Fit"] = [1]
                         print(f"fitting Membrane resist")
                         resist = membrane_resistance(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0))
                         resist_alt = exp_rm_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, decay_slow, abf_id=abf.abfID,  root_fold=root_fold)
