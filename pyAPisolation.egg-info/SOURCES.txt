@@ -41,6 +41,7 @@ pyAPisolation/patch_ml.py
 pyAPisolation/patch_subthres.py
 pyAPisolation/patch_utils.py
 pyAPisolation/pyAPisolation.pyproj
+pyAPisolation/utils.py
 pyAPisolation.egg-info/PKG-INFO
 pyAPisolation.egg-info/SOURCES.txt
 pyAPisolation.egg-info/dependency_links.txt
