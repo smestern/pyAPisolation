@@ -29,7 +29,7 @@ x86/
 bld/
 [Oo]bj/
 [Ll]og/
-
+*.egg-info/
 # Visual Studio 2015/2017 cache/options directory
 .vs/
 # Uncomment if you have tasks that create the project's static files in wwwroot
@@ -356,3 +356,9 @@ pyAPisolation/web_viz/table.html
 .vscode/settings.json
 pyAPisolation.egg-info/SOURCES.txt
 .vscode/launch.json
+bin/run_CM_CALC.spec
+pyAPisolation.egg-info/dependency_links.txt
+pyAPisolation.egg-info/PKG-INFO
+pyAPisolation.egg-info/requires.txt
+pyAPisolation.egg-info/SOURCES.txt
+pyAPisolation.egg-info/top_level.txt
