@@ -109,6 +109,9 @@ def rmp_abf(abf, time=30, crop=True, bin_time=100):
         #Compute the running bin
         #df_raw = pd.DataFrame(data=data, index=abf.sweepX)
         df_running = running_bin(abf.sweepX, data, bin_time/1000)
+        #set the row name to increment time from the start of the sweep
+        time_index = df_running.index + sweepNumber*abf.sweepLengthSec
+        df_running.index = time_index
         running_sweeps.append(df_running)
 
         delta_vm = f_vm - e_vm
