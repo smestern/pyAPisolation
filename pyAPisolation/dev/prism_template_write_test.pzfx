@@ -1,0 +1,1840 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GraphPadPrismFile xmlns="http://graphpad.com/prism/Prism.htm" PrismXMLVersion="5.00">
+<Created>
+<OriginalVersion CreatedByProgram="GraphPad Prism" CreatedByVersion="10.0.2.232" Login="SMest" DateTime="2023-10-18T09:16:12-05:00"/>
+</Created>
+<InfoSequence>
+<Ref ID="Info0" Selected="1"/>
+</InfoSequence>
+<Info ID="Info0">
+<Title>Project info 1</Title>
+<Notes/>
+<Constant><Name>Experiment Date</Name><Value>2023-10-18</Value></Constant>
+<Constant><Name>Experiment ID</Name><Value/></Constant>
+<Constant><Name>Notebook ID</Name><Value/></Constant>
+<Constant><Name>Project</Name><Value/></Constant>
+<Constant><Name>Experimenter</Name><Value/></Constant>
+<Constant><Name>Protocol</Name><Value/></Constant>
+</Info>
+
+<TableSequence Selected="1">
+<Ref ID="Table0"/>
+<Ref ID="Table1"/>
+<Ref ID="Table2"/>
+<Ref ID="Table3" Selected="1"/>
+</TableSequence>
+<Table ID="Table0" XFormat="none" TableType="OneWay" ExtTableType="MultipleVariables" EVFormat="AsteriskAfterNumber">
+<Title>mv_example</Title>
+<YColumn Width="81" Decimals="0" Subcolumns="1" MVType="Continues" statDecimals="0" statNumbers="100" statTexts="0">
+<Title>test1</Title>
+<Subcolumn>
+<d CellType="Integer" UserText="1">1</d>
+<d CellType="Integer" UserText="2">2</d>
+<d CellType="Integer" UserText="3">3</d>
+<d CellType="Integer" UserText="4">4</d>
+<d CellType="Integer" UserText="5">5</d>
+<d CellType="Integer" UserText="6">6</d>
+<d CellType="Integer" UserText="7">7</d>
+<d CellType="Integer" UserText="8">8</d>
+<d CellType="Integer" UserText="9">9</d>
+<d CellType="Integer" UserText="10">10</d>
+<d CellType="Integer" UserText="11">11</d>
+<d CellType="Integer" UserText="12">12</d>
+<d CellType="Integer" UserText="13">13</d>
+<d CellType="Integer" UserText="14">14</d>
+<d CellType="Integer" UserText="15">15</d>
+<d CellType="Integer" UserText="16">16</d>
+<d CellType="Integer" UserText="17">17</d>
+<d CellType="Integer" UserText="18">18</d>
+<d CellType="Integer" UserText="19">19</d>
+<d CellType="Integer" UserText="20">20</d>
+<d CellType="Integer" UserText="21">21</d>
+<d CellType="Integer" UserText="22">22</d>
+<d CellType="Integer" UserText="23">23</d>
+<d CellType="Integer" UserText="24">24</d>
+<d CellType="Integer" UserText="25">25</d>
+<d CellType="Integer" UserText="26">26</d>
+<d CellType="Integer" UserText="27">27</d>
+<d CellType="Integer" UserText="28">28</d>
+<d CellType="Integer" UserText="29">29</d>
+<d CellType="Integer" UserText="30">30</d>
+<d CellType="Integer" UserText="31">31</d>
+<d CellType="Integer" UserText="32">32</d>
+<d CellType="Integer" UserText="33">33</d>
+<d CellType="Integer" UserText="34">34</d>
+<d CellType="Integer" UserText="35">35</d>
+<d CellType="Integer" UserText="36">36</d>
+<d CellType="Integer" UserText="37">37</d>
+<d CellType="Integer" UserText="38">38</d>
+<d CellType="Integer" UserText="39">39</d>
+<d CellType="Integer" UserText="40">40</d>
+<d CellType="Integer" UserText="41">41</d>
+<d CellType="Integer" UserText="42">42</d>
+<d CellType="Integer" UserText="43">43</d>
+<d CellType="Integer" UserText="44">44</d>
+<d CellType="Integer" UserText="45">45</d>
+<d CellType="Integer" UserText="46">46</d>
+<d CellType="Integer" UserText="47">47</d>
+<d CellType="Integer" UserText="48">48</d>
+<d CellType="Integer" UserText="49">49</d>
+<d CellType="Integer" UserText="50">50</d>
+<d CellType="Integer" UserText="51">51</d>
+<d CellType="Integer" UserText="52">52</d>
+<d CellType="Integer" UserText="53">53</d>
+<d CellType="Integer" UserText="54">54</d>
+<d CellType="Integer" UserText="55">55</d>
+<d CellType="Integer" UserText="56">56</d>
+<d CellType="Integer" UserText="57">57</d>
+<d CellType="Integer" UserText="58">58</d>
+<d CellType="Integer" UserText="59">59</d>
+<d CellType="Integer" UserText="60">60</d>
+<d CellType="Integer" UserText="61">61</d>
+<d CellType="Integer" UserText="62">62</d>
+<d CellType="Integer" UserText="63">63</d>
+<d CellType="Integer" UserText="64">64</d>
+<d CellType="Integer" UserText="65">65</d>
+<d CellType="Integer" UserText="66">66</d>
+<d CellType="Integer" UserText="67">67</d>
+<d CellType="Integer" UserText="68">68</d>
+<d CellType="Integer" UserText="69">69</d>
+<d CellType="Integer" UserText="70">70</d>
+<d CellType="Integer" UserText="71">71</d>
+<d CellType="Integer" UserText="72">72</d>
+<d CellType="Integer" UserText="73">73</d>
+<d CellType="Integer" UserText="74">74</d>
+<d CellType="Integer" UserText="75">75</d>
+<d CellType="Integer" UserText="76">76</d>
+<d CellType="Integer" UserText="77">77</d>
+<d CellType="Integer" UserText="78">78</d>
+<d CellType="Integer" UserText="79">79</d>
+<d CellType="Integer" UserText="80">80</d>
+<d CellType="Integer" UserText="81">81</d>
+<d CellType="Integer" UserText="82">82</d>
+<d CellType="Integer" UserText="83">83</d>
+<d CellType="Integer" UserText="84">84</d>
+<d CellType="Integer" UserText="85">85</d>
+<d CellType="Integer" UserText="86">86</d>
+<d CellType="Integer" UserText="87">87</d>
+<d CellType="Integer" UserText="88">88</d>
+<d CellType="Integer" UserText="89">89</d>
+<d CellType="Integer" UserText="90">90</d>
+<d CellType="Integer" UserText="91">91</d>
+<d CellType="Integer" UserText="92">92</d>
+<d CellType="Integer" UserText="93">93</d>
+<d CellType="Integer" UserText="94">94</d>
+<d CellType="Integer" UserText="95">95</d>
+<d CellType="Integer" UserText="96">96</d>
+<d CellType="Integer" UserText="97">97</d>
+<d CellType="Integer" UserText="98">98</d>
+<d CellType="Integer" UserText="99">99</d>
+<d CellType="Integer" UserText="100">100</d>
+</Subcolumn>
+</YColumn>
+<YColumn Width="81" Decimals="0" Subcolumns="1" MVType="Continues" statDecimals="0" statNumbers="100" statTexts="0">
+<Title>test2</Title>
+<Subcolumn>
+<d CellType="Integer" UserText="1">1</d>
+<d CellType="Integer" UserText="2">2</d>
+<d CellType="Integer" UserText="3">3</d>
+<d CellType="Integer" UserText="4">4</d>
+<d CellType="Integer" UserText="5">5</d>
+<d CellType="Integer" UserText="6">6</d>
+<d CellType="Integer" UserText="7">7</d>
+<d CellType="Integer" UserText="8">8</d>
+<d CellType="Integer" UserText="9">9</d>
+<d CellType="Integer" UserText="10">10</d>
+<d CellType="Integer" UserText="11">11</d>
+<d CellType="Integer" UserText="12">12</d>
+<d CellType="Integer" UserText="13">13</d>
+<d CellType="Integer" UserText="14">14</d>
+<d CellType="Integer" UserText="15">15</d>
+<d CellType="Integer" UserText="16">16</d>
+<d CellType="Integer" UserText="17">17</d>
+<d CellType="Integer" UserText="18">18</d>
+<d CellType="Integer" UserText="19">19</d>
+<d CellType="Integer" UserText="20">20</d>
+<d CellType="Integer" UserText="21">21</d>
+<d CellType="Integer" UserText="22">22</d>
+<d CellType="Integer" UserText="23">23</d>
+<d CellType="Integer" UserText="24">24</d>
+<d CellType="Integer" UserText="25">25</d>
+<d CellType="Integer" UserText="26">26</d>
+<d CellType="Integer" UserText="27">27</d>
+<d CellType="Integer" UserText="28">28</d>
+<d CellType="Integer" UserText="29">29</d>
+<d CellType="Integer" UserText="30">30</d>
+<d CellType="Integer" UserText="31">31</d>
+<d CellType="Integer" UserText="32">32</d>
+<d CellType="Integer" UserText="33">33</d>
+<d CellType="Integer" UserText="34">34</d>
+<d CellType="Integer" UserText="35">35</d>
+<d CellType="Integer" UserText="36">36</d>
+<d CellType="Integer" UserText="37">37</d>
+<d CellType="Integer" UserText="38">38</d>
+<d CellType="Integer" UserText="39">39</d>
+<d CellType="Integer" UserText="40">40</d>
+<d CellType="Integer" UserText="41">41</d>
+<d CellType="Integer" UserText="42">42</d>
+<d CellType="Integer" UserText="43">43</d>
+<d CellType="Integer" UserText="44">44</d>
+<d CellType="Integer" UserText="45">45</d>
+<d CellType="Integer" UserText="46">46</d>
+<d CellType="Integer" UserText="47">47</d>
+<d CellType="Integer" UserText="48">48</d>
+<d CellType="Integer" UserText="49">49</d>
+<d CellType="Integer" UserText="50">50</d>
+<d CellType="Integer" UserText="51">51</d>
+<d CellType="Integer" UserText="52">52</d>
+<d CellType="Integer" UserText="53">53</d>
+<d CellType="Integer" UserText="54">54</d>
+<d CellType="Integer" UserText="55">55</d>
+<d CellType="Integer" UserText="56">56</d>
+<d CellType="Integer" UserText="57">57</d>
+<d CellType="Integer" UserText="58">58</d>
+<d CellType="Integer" UserText="59">59</d>
+<d CellType="Integer" UserText="60">60</d>
+<d CellType="Integer" UserText="61">61</d>
+<d CellType="Integer" UserText="62">62</d>
+<d CellType="Integer" UserText="63">63</d>
+<d CellType="Integer" UserText="64">64</d>
+<d CellType="Integer" UserText="65">65</d>
+<d CellType="Integer" UserText="66">66</d>
+<d CellType="Integer" UserText="67">67</d>
+<d CellType="Integer" UserText="68">68</d>
+<d CellType="Integer" UserText="69">69</d>
+<d CellType="Integer" UserText="70">70</d>
+<d CellType="Integer" UserText="71">71</d>
+<d CellType="Integer" UserText="72">72</d>
+<d CellType="Integer" UserText="73">73</d>
+<d CellType="Integer" UserText="74">74</d>
+<d CellType="Integer" UserText="75">75</d>
+<d CellType="Integer" UserText="76">76</d>
+<d CellType="Integer" UserText="77">77</d>
+<d CellType="Integer" UserText="78">78</d>
+<d CellType="Integer" UserText="79">79</d>
+<d CellType="Integer" UserText="80">80</d>
+<d CellType="Integer" UserText="81">81</d>
+<d CellType="Integer" UserText="82">82</d>
+<d CellType="Integer" UserText="83">83</d>
+<d CellType="Integer" UserText="84">84</d>
+<d CellType="Integer" UserText="85">85</d>
+<d CellType="Integer" UserText="86">86</d>
+<d CellType="Integer" UserText="87">87</d>
+<d CellType="Integer" UserText="88">88</d>
+<d CellType="Integer" UserText="89">89</d>
+<d CellType="Integer" UserText="90">90</d>
+<d CellType="Integer" UserText="91">91</d>
+<d CellType="Integer" UserText="92">92</d>
+<d CellType="Integer" UserText="93">93</d>
+<d CellType="Integer" UserText="94">94</d>
+<d CellType="Integer" UserText="95">95</d>
+<d CellType="Integer" UserText="96">96</d>
+<d CellType="Integer" UserText="97">97</d>
+<d CellType="Integer" UserText="98">98</d>
+<d CellType="Integer" UserText="99">99</d>
+<d CellType="Integer" UserText="100">100</d>
+</Subcolumn>
+</YColumn>
+</Table>
+<Table ID="Table1" XFormat="none" YFormat="replicates" Replicates="3" TableType="TwoWay" EVFormat="AsteriskAfterNumber">
+<Title>group_example</Title>
+<YColumn Width="243" Decimals="0" Subcolumns="3">
+<Title>test1</Title>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+</YColumn>
+<YColumn Width="243" Decimals="0" Subcolumns="3">
+<Title>test2</Title>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+</YColumn>
+</Table>
+<Table ID="Table2" XFormat="none" TableType="OneWay" EVFormat="AsteriskAfterNumber">
+<Title>col_example</Title>
+<YColumn Width="81" Decimals="0" Subcolumns="1">
+<Title>test1</Title>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+</YColumn>
+<YColumn Width="81" Decimals="0" Subcolumns="1">
+<Title>test2</Title>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+</YColumn>
+</Table>
+<Table ID="Table3" XFormat="numbers" YFormat="replicates" Replicates="2" TableType="XY" EVFormat="AsteriskAfterNumber">
+<Title>xy_example</Title>
+<XColumn Width="81" Subcolumns="1" Decimals="0">
+<Title>x_test</Title>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+</XColumn>
+<XAdvancedColumn Version="1" Width="81" Decimals="0" Subcolumns="1">
+<Title>x_test</Title>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+</XAdvancedColumn>
+<YColumn Width="162" Decimals="0" Subcolumns="2">
+<Title>test1</Title>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+</YColumn>
+<YColumn Width="162" Decimals="0" Subcolumns="2">
+<Title>test2</Title>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+<Subcolumn>
+<d>1</d>
+<d>2</d>
+<d>3</d>
+<d>4</d>
+<d>5</d>
+<d>6</d>
+<d>7</d>
+<d>8</d>
+<d>9</d>
+<d>10</d>
+<d>11</d>
+<d>12</d>
+<d>13</d>
+<d>14</d>
+<d>15</d>
+<d>16</d>
+<d>17</d>
+<d>18</d>
+<d>19</d>
+<d>20</d>
+<d>21</d>
+<d>22</d>
+<d>23</d>
+<d>24</d>
+<d>25</d>
+<d>26</d>
+<d>27</d>
+<d>28</d>
+<d>29</d>
+<d>30</d>
+<d>31</d>
+<d>32</d>
+<d>33</d>
+<d>34</d>
+<d>35</d>
+<d>36</d>
+<d>37</d>
+<d>38</d>
+<d>39</d>
+<d>40</d>
+<d>41</d>
+<d>42</d>
+<d>43</d>
+<d>44</d>
+<d>45</d>
+<d>46</d>
+<d>47</d>
+<d>48</d>
+<d>49</d>
+<d>50</d>
+<d>51</d>
+<d>52</d>
+<d>53</d>
+<d>54</d>
+<d>55</d>
+<d>56</d>
+<d>57</d>
+<d>58</d>
+<d>59</d>
+<d>60</d>
+<d>61</d>
+<d>62</d>
+<d>63</d>
+<d>64</d>
+<d>65</d>
+<d>66</d>
+<d>67</d>
+<d>68</d>
+<d>69</d>
+<d>70</d>
+<d>71</d>
+<d>72</d>
+<d>73</d>
+<d>74</d>
+<d>75</d>
+<d>76</d>
+<d>77</d>
+<d>78</d>
+<d>79</d>
+<d>80</d>
+<d>81</d>
+<d>82</d>
+<d>83</d>
+<d>84</d>
+<d>85</d>
+<d>86</d>
+<d>87</d>
+<d>88</d>
+<d>89</d>
+<d>90</d>
+<d>91</d>
+<d>92</d>
+<d>93</d>
+<d>94</d>
+<d>95</d>
+<d>96</d>
+<d>97</d>
+<d>98</d>
+<d>99</d>
+<d>100</d>
+</Subcolumn>
+</YColumn>
+</Table>
+
+<!--Analyses, graphs and layouts as compressed binary. Don't edit this part of the file.-->
+
+<Template xmlns:dt="urn:schemas-microsoft-com:datatypes" dt:dt="bin.base64">eNrsPQt4G8WZo4ctWZHycBwSOEiXJMZpgoPtmDjpESI7DxOwTbCdACktWUtra7GkNauVH9CC
+IRBSmtKUAOVV3m1DW9qU0kB7XA+attAWyh3HR1uud9d+10faK22upHe90qtvZmdGWu3u7Mqy
+ncTJ/F82kkajf2f+/5//NbO/t6zftKm1s7nRMxoGAOz17PV44f9xcIX3UZCALYIPFMBh8tkL
+rz/VwFf4RgJpUCxsBV227d7RLRDbRvjODxBGAMrgddQDALrhGAQveQWkDwI6OI/h1WtoZ92N
+AwcOHDhw4MCBAwcOHDhw4DB1QONzDhw4cODAgQMHDhw4cODAgQMHDhw4cODAgUPp4AMt8P9O
+HwAtWfza5h/P79FxuyPAA8rwCTs/eLDIHz54nCZcPoq2F/4RBPSJY2hWZTHp8JtV8Jpn+LwX
+nyb0eT2LCB68bdE1kupRHBDVw2uBLZ5KgserX5fL6b44vDIMPOfCa4ktHi/Bg483dsspKSN0
+SENCp5IS07Z4ZjuOB8vCNkmNi2mROa8aJh5KH3RU81HQlo3JcVFoVcV0XCqCV3s9+fcYT7n+
+/iIpOShpckwskudWPIE834WWpBjrt/1dLbwqDZ9v8ZnnFTTg6RBVVRmyw/Of5FAqmz4VesN6
+MSn3qLIjnec44gkRPCmIhk2dc+BV5cj3GcbxCG1yX0IrYjznQjxjBeMJ6+2dSqx/SEoyV8YR
+Jn3oeCJ6QwvEIbR3M+f1X654ZuoNP51/IP6DmhlMPFmyoj1kvWLugD1z0z6CZxa8FCC6nGpe
+vxmAXgHo/QagwK85H7UJvUJKInjwqmkVVTGlpOMsPL9wnRfmQreYgOucPR4znue9ZvnB0h7F
+Ar01LceUuCS0m49IL89RkiWHc/G6iKWkTUpaY41nKVNvUD2GpbRFVcT4kDjCwrOEuS46CR6s
+vZv7pHRsRNjUwsBTnZN8Fn1Ow3xNyMmkpDLp/DaTX3Q88/WGS1Q5o0lpYXP3els8P7Xhl0fH
+00LwYGvSPCilZRUq+mGtKH34vNesD0/X32+Cirk/KaeFVkVLyDGhRVH6zXSOOPL9DIM+7FSy
+UM3H4YKFiJJxE51nOeL5G72hvUtol9OxhFKk3sjzq57gORPL8xaIpq9N3jpuPHR9nYX5nlWT
+1zkooGU5jcfi+0Js36UeJ/MOoMoA73Fc7/hbYk+7xHRmnHJI6SzgeSkpyG2ExrrWnfUzlcOz
+MZ1bs0k5xZY7wdVPWKQ3bBGToianFWh40oo2MiC52FPEr7EC+izW27ukPkUStm5mjWe5qz1d
+UoCHZQiX29jBQjzVGM9IsleU2EZjGXN90XmdQ/il9kgOfuYRVz1fg8cTU+UBzWaBGux7xBYP
+5ftSop/FeFIaES6Cfp2dMlvKnBfF816D3mCanSLszjKj/yO0i1rCjj5fyVkoFp2XY3lul2R1
+RGHSuc60Tq10PhePR0prWXWEqFV7f8x5XdSS8XQxcTivL6oPV2A/QZV6srGEpNkv9yL083l4
+PBsULTuh9V5H5iUm+7Jp5tyWu46nnsiP2AMVWTfUGBlJgxqkrxDPYea6oHLYQNZXVpUlZFCH
+mP7GXEc6rzTy3dEPn+Uoh42YPpeIcrdcCp3peM7HeFpETTQTpSg8dDyrMJ07hZaNnZe0bbyS
+7deFHf26psI4rkPKSm3dArRDwqomoT2+Pm2rN9CjhoXxxWomnvPPzwe9Zjrn7QXFs4aJp2Gl
+sDWptWkbh63rYq5FDt/HxNPYJLRpZF5LTH6m1V78LRNPfV2TcEVLsh+hqjHpQ2t8egETz5om
+gWDB9Ik44lmL+Z7sk6BeZRqwP7r6vRdieyFmE2I2I6xZWSqeddh+yamBpNwrQycTL30TnvNd
+7WkUjwf6uUJzWpOvzYqlxZXNxA7KcH2ldc/Zzp4udrVfODJplRS1zyF+X8LEQ8ezfsJ5Moxn
+A7YXUmoAskt3EO1iFfd4Z6PecCn0WuRMfwnxKdUbm4j8ZPoldRAFYcKlybiwSYxJ48sntOb4
+DlWEjqNLG0lKNnSebbtOKZ6LMB6UQRLjcWgybEO59+YyMyz6bCb5DTUtqnrEtF6BsVM6I8XN
+9iLsOK+L9axFbr0LaMFbx/MHezoH8ny/RMej5w8dZOS/7elskJ82/X1fEfKGgqo2uIwegeNt
+gV5JP3pZkiV42il9UHSqy6FdEL/ERs8Xrq8OYz5T6JR6bcfyjmvcdKnNeIQNUkp2XKfW8Wwh
+chhX0rLuh9vmIqtNcpjXz5Tvl2EaDgnQ5SgQH2HjsKaKRB8tZsoPHU8njr8URRU65VgCCiNL
+/zjLYVdhHltYydRjpzvi6c6tCzSWdiUutHQXF+8UxoM48l/fKjiK9NuuemObaV4NtngW5TIY
+LDyX63jaFRzeCl2KqmXs/bEFjn7UFRhPN2Yza15nu+Z7sSPXqmTjI0xtaF0X+XwUxbMdj0dU
+k9D/BsXmN45a5vV+mk+ARM4mSvdXryJxyiboQdd2tYwbTzPB8wFdH5L9AriWhM2amLT4G79z
+1asfNOGxH89Rezk04Llab9icEvsUUEoegNJ5B7FfWUm4SO5LMHKsC5l5AIpH1PmO7GkmISV7
+BbwTJjRZ6TzPUZ57sPx0CZdmtaQp+1goz+9xxBMjfoJjuFOE/MSpn9mVTZeCh45HMuwPbuly
+yv84x4PYXrXLMVXJKL0aNj1d0CnvLc4/pHq+z5BvSUEtlBmALlRc6IV6v6t5i9HuzHXMryaM
+eUhodDKKjdrQ6eMcL8tEnuEwHFLYNa7552twXl1UNblfdORXyJHOWPC2X94cV3qkTSw883I7
+kiy+J815WprdsuwLO+dJcJKlfQQyLC5cLvWUmvfDQvzzpc4eWXQO3gl65XNjY7mCOhckhn8D
+HiF4FEO+d31CKjkvMYDjU1FVoTnVlDQ7TzLT0X++FstzjxiXC92fgoyteX/HSme8p3OXyxOI
+6PsNEbxeqcvr8ywf3e2h+jlD8pDpuKhOZN9cM8oPSq8OwRDTktd6r2mf2ppfzVK9Cl1eSZXS
+MehzDEgxuPy1kcLxzHeU50Edz0VKEo5nZIts641hfp3mOK8hbAdHslpCHGESCNlBZ/95mOTr
+kkoa+vOsnZkjrvEpJkL05uTNqnCzsrNr57adPTs7zHgOM/E0EDzXkf04Ma21QodVEtrtPNY6
+G31YmI+6HtuvzUhlrGfuDL/tat8/RPA4JDds8r1WPB82jAeUsO9J8dxA8LQpTo7LEVc8N2J9
+SP3n9YqakQdFu3zLDFs603Uxirw2SueNLEqz/V46npvg9XWCp0Vk4XH3x2428l0cyBTHLyt9
+duoNLuLskNei8nwL3Ye1dzQIhPNnJAryAF4vHc+tRB8m5YymMNdptWu+bheOcwvPNQk0/qEu
+9Quu+7m3FcbdDvs7cxzHs9uAh+3XueP5iCkPYJv+0XddZjjiud2EZ4uS0SQVJXwHVClD8a0w
++T/WvNZHqf+sJaWMJjKOOix0tRd78LmCrJZVxRTmj2A9EYLsjt9xXXwMy2FrV4PQLqWzDDqf
+ldtJZI3nDpyHFDOyU15LyO34s/B8HMfLcjJJvLqkQfwK9kGqHO3gXr3hchlaija05c32E85w
+5PsnyPqC3E4mWezS8cxzxHMnxpOQY06R5VKmv0HntU9v2JiFYYomJyW0PCV0GKR7SDHFO87n
+Ku/CcUEaCnEcLvp0RlbS1qOay3M72ix+3Y3lUErKw0K3rCVl27CwmhmnUD/hHjyvdJ8qDkpq
+hqE6qk15raMWOn8S+wm6VUY5bHlQ0hcpDH8MaqTGVX7uLVxfaGqSdYGheNnnSJ/7cJwLmRST
+k477lZWO9Lnf6K+2qIxzg0tc4+4H8HqXNBiftkosgWbHuXRe+JTxFkkdkLSsSFlvZpt5XVjt
+xafwuoBLC4qxkmboZ/Z5CYrnocI8bZF+lNXvfdg+31JfLJ0pnkfs8TQ459WtdH7UHs9Kq/6Z
+78j3x4g/PzAAWZYUNSl/FM2gWhcz8xJ0Xo+z8BTEg4tN8mzdh32CxKeSBpdGJpYYkmSbg39n
+m+zpUQueT2N5FgcIZeytzxmu6+IzWG/EYlJaq2eu02qmv0H59VmsN9SsJvdJKOezuUPoTAmD
+K+rN/HLm+35MH0hUoVsZgpi67c4guvt1T1I/0xCfWj1O93j5c8b9U+b+jvv+6eexH+APuu5b
+0fyISlaTp2D/6wtkXzibSQi501a2djnkGKc8ZTxPAjElFCXZY8mP1gG3c01f1Bs6JGiYB9hP
+Kpzlat+/ROSn8LxouxSXsykhF/4scd1vOkD2lyXHk9Ts8xtUDr9stDubxGH2unBeX08Tf6NX
+UVP6EVa7xyZ0/zDsmG/5Cjkv0SOpWha5CUKbZj+viKP+eaYQT0GUk4cGV3341YL9FFbGzj1f
+dxCvd0XqTbIWuw1Y94WfxfwS05JQ6/DghCue5zB9RFVJ12T0BFlp4/ka9hPIudNiz0hY8Xwd
+y7OalahuHd/+MpXnvyPjGRiBqoN5/wbgdq7y+UI/nIHHfTx/j/fNVTkdF53jphmOeL6Ro4++
+080gknv+5x/weOQ0lELWqVN8em6WI31ewOO5vFloVSWp3yHecbaDL5J96mSf7HAgko2H+s/f
+tMiP3ZHjale/95A5D9nSX0Qe0qo3vkXmle7LyqJmj8X6HJDV7/02tsvO27lF7Md9B8cpyCsQ
+Gclnx/wYxfOSEU93goHK3U94OZfXghYjLYtp23MpZn5Z6fNd1vmNccYF3yN+rwL9XvaDbe52
+8PuY77KW0VRJTAnbJJXsX6Gcq9P+4FiBvXjFsO/JjndqXP2WV239DXTgRjAkW939jR+Y8jb2
+pK5h7g9SPK9Z8UDbbNh30m30OXTT3gZPefTDes4L/YmMG3Lv7gJBg1+JP3kKPnkLPvkKPvnJ
+p4/msml3gzcC+V6lj5b/0QwOHDhw4MDheINHz5BTG/8dMOgtzO9z4HBswBsNjuIgpEKP/FOD
+V0vDYmogKUEHGqWz0F+DO2yUTe+OXMr0VAdEh3NzKaQdkIB15OBZiAQyIeJ0n02uy/h1Ql8C
+CaEus+E2CtD0Y8lQbwuPBnIbBX+FUtAJPz0OQyy7NqPSp6FgbjEBdKThCtLqMfQKkVF4yYUw
+hgyYzEBDx1lkBvQKFzyAQOeJekZvRMnHBSazFB3AkhoD9FvjqIzfzhq9wJD2Mc5MMswnSOZi
+njlWOejwrSZltHow23AQ9x09ueElSQ6a6Pi4/rBNgOCh+BGUGUZohpCN6UVAswV7CYdmRfF8
+PJMyn4bjPB8fnM9HyMzuyzkaQaLsPXCkKJ3VpyrZAa7vJ1HfryX6/lpyvcOvE/qi+v6dIvU9
+1ea/hB+avJ5cW0xvi8G2fBbS56rvLzOs87WGX/mK0PfAoO99hstZ34dzGp39rZdpK+oMs/CZ
+rEEUPwlgeY9/5TGMsJhfYV3sNdk2j40uXmtIok6lbbELz9a66AuzbfFNynwaToD5sG2LF44U
+acKYkuSWhUcSPJIYRySBAD3A/Tjw5NpielsMtsWPQyThNVzFRhJ+x0iijBlJ+A0zoX8N/kSO
+JNy0fdmkzKfhBJgPW9v7SNpoeMRV2Se4srdV9gmTsg/ZhBGP8euEvqiyf6wIZU+XEFo2X/LC
+/31h2zajYkfCQpUAUpyFyp4+feM3uHB00VNlH3IJI4Ap0TORMCKSq20dIONnufy4J1WGTj2x
+Si03zA7dzWdSqX7DTMtNs6zQRzN8NVKq49ap5Ybplk+ijQgYoj67CdGIwGs7odJtnnE+1EZ4
+JyHCCU7KfBpOgPmwbZ4fjhSJ6BZVuUaKaYKc7lWEegE9GSkovUJMSWc0Ma1lGJbwCRtzfyoD
+tYRPeIFN2BMmwvQxcvHQYnqHPUsNltC4CrCn47FtM4c9uSeVb8Sf85YQGFzgsOnu1BKGiwh7
+jFBs2EPtDmq9mLRhpVhhuCP6nd+gFL3kzmHz3HJKEbWsJzrFRi/6iE4801YvGm8dNDgTwDLJ
+4vTinTlteFC/j1GHzyK4ZwF8qN1LRjWDjLKGjAthWEHuiXT1+wx2g9qRkAvJgo4kQ6PaJiaz
+0oToVTbJ9Koy4Qrl5mxnayrJtvw8AR3SFeub4o0re3trV67sjdU2NkmxWrGnIVZb1yvFYufX
+xxvjq+sdNnXon4Xx5HxKL7dBefHK2SBEl7l6wnpHxUOBxOyOMHVdhkEDoA8lhb24b1xP0+g/
+XfKQ/mR6pcE33ROkWqs658ebN+7od8AUutN22haHd28wCM8LUfojO0wAfFD/vip3+hhdp5ER
+PJJTBAg+kRO5ebl388EFFipdGWV/DgbwKDxkXt5xYzjgxxTCiWk/XHqlYfARzz8A5/hpvfZp
+WRGxuBOgPlODSZgQpqdGzXbsSb1WuX8c3uV+fQwupZKKxBsaF17U+6lo4Rw8Rd/LM657FY93
+xrjwzrCZg7foe3nHda/i8YbHhTdsmoPnJJAlz0kgS56TQJa8J4EseU8CWfJOW1mqHt1l892V
+0TNfuhb++8K6vO+BZ43pXwfyj8UviVpH7GVufJnBePehnHd0K/kbNwxYtyj3a3yn28jrbvL6
+lF7hCPkAK1gGHs+prhlFSdWEDB5HZygY2H5ikQFMERm8nAy7gPX0xpXRrTp8dV3eGS6eDHnX
+fZotCr+jNBzwbz+xyDBV0lDGybDLZkNhYoti2lqKwKRKw7RVkcFTnQwLRqnTFcjdoirvEo/l
+c6x7mxfrpatCFmeYfn92vtxALj++BgijC/V+i4MzA/E5lZHWYEMgOud3YZw864K3PwJuIcP/
+F31zPGRK1HtMQRu6jhyrtN+Y2WFFn88mu4zoK/p9FRgu2AQoLhTxOIiLEMW0C4J4cFkY0W53
+sCOMadcRxrSrK4F2dceNdgiwFFUUhDj5jHq0eRmZD5ZD6sP48j2iU0dnJKMfqVDDSEYlSGMk
+o+jVO83o7Cuazr7jQGcvWBXuKL8v0hbYHlbLs5GlATV8e/kHIrOhCqrzYDr7l46Dzh7/0uMn
+z/U55b2ooIyn0RAY9EXu91XgPH2mHxqr0zHsht9dqxukRtJj+Whlztcqo1WMAPpzk0jB61VA
+a8ljSH7ScabO5AOraJ48BH7uRxtpYUB3I8pBP/x/eUnMzeN1Yq4Q/lF4f+RQZEP4L+FbIg9H
+rgpXRZKR2yLTjbmeSWDuMwAzF1VQtGMu3hsqB14Dc5GHeoUtd3EF7p+umBru5vE6cXcwUF/R
+E3w2dH9ga8WFwX2hpwOpinOC14cM3N09Lu7uH4TL/lnYGb3WQw3VE8y/ovb7Yfs+8roVtl8Y
+zL+i9qdh+/XkNQXbzwnmX68PsbjrzXEX/Z2t0rj7frJ0BwqWrifHXS+Du1cS7p6j9y5jcLdc
+H9nx4PFBoI095qn3vAXuHbvBE/H8ARwY6/X8EX7X4CM83l88jxt8/v2PwTca/B691ntwhUH6
+itpvgO/vJa8ReL0F8q+ovRe+P0Be0Tj+APKvB/T7s8wg5vGeUKk8Pkx4DHIruLOAxz6dx4EC
+HiNX+sr6IpmMhnYsmbwgOqqfGtjtuUkv57YMtMCgRgQxeEcBvqYf1BEiV+FmIJSzDR8oMltv
+dJIfeeQJMDo6Ct544w2wY8cO/TN6PXz4sP5+OvU5GYHzhwMHDuOB3476iT/1Noj68lYV+UL8
+8BgHDuODt8Fsf2EiZewktM68D+/D+xTfJ29bvQbbyinF+/A+pawiH19FvA/vM8FV5OdxHgcO
+JcZ5dBWV8VXEgcMEV1E5X0UcOExwFQX4KuLAoST4bXQ0ujN3WiRfqOHx3DFpnNF/Qi8sgTIQ
+1rIUCKLN+R7G5/ABoCfWX4h2BtFZmO2DYnIbfK2MADD81tv3/OvFh+qqXnrtl7+6tUFctPvP
+3m+Mbnn+yTdnvtjz6PwP3jH46sHn7t3T+PJvDv3vpgvXt/9ww6Ht61Y1+7uW1qz57tjD+64+
+I3Fkwb4ISPzeOzz3ru+DH4qvfepnX/i9uvBXDz04++Whrpnam+An4XXfBV/8xI03XfeNxrU7
+v/fM59sXN6pn3tTb80LwP976evVtPxT/WuV57Mmmbz2z58Y3rnnxde+fngXd5z418+dPHHn9
+f95du/DSl+7Y17apMaUtv937zOfe/eI3fx35zP4bfvWDeT8+2Pzm0uRrP3l/rVL13NUrNt77
+3KGeMxvaNh76v3+7rP/u8s8cXPzuP9099MBPHr9p//cfenb5j9/85s8ePrjslZrrPjl/z2d3
+ty6quajy/qELAyu+fdv238Za7tKWPvCeL3947sKm4Ge/PHv3P5/32i/2Nz/wi1kVi//9S89e
+0FFd/fTXjrb++d2jbT8LHQ1d8trr77746q1bf33fR7dfd89Dn+77dW3zpWOH9/8p9L7A6xdv
+l9LxSlJow0MKbcSlVXVrYj0ra1dKcam2sSlWX7umV6yrbYw1NomS1FNf39PLrHDLy2ywwbnM
+hodUCysos1GOkhDoxJSPFHYAgrXMRjt5zoP0sDwg6DN8R8YxRiuT0fbiymyYMVnLbKB7T3WZ
+jTJy2jsEZpRYJKOcFPiLgJklYgiQOj+zwRxeZsMVeJmNQuBlNniZDV5mY7JkiZfZ4GU2JiZL
++HHZCosXQMtsjIJjXWajFhy3h6dDTGcIk2H7iUWGqXp4egYnwy5gLfN4ipbZiDhGCKdMfYmZ
+nAy7gKEAwKQsimlbZmP2pErDtC2zMedUJ8OCnAt4LMps7Jl9l15mIzF7IMLLbABQbPmHrcFl
+YUS7kSAqr4FoNz3LbCA3vbjyDxW8zMYE6Bwums5hXmZjAnRGs5/qMhv+6VdmY1tkf6R55obw
+dZFbImfNvCp8ZyQZKZs53ZhbNgnMXe3BzEV7R3bMLeNlNo5TmY1yMPVlNsp5mQ1wPMtsBMDU
+l9kI8DIb7rqVl9mYJsD5w4EDh/EAL7PBgcPkAS+zwfvwPrwPL7PB+/A+vMwG78P78DIbHDic
+bHEeL7PBgcNkrSJeZoMDh4muIl5mgwOH0oCX2Ti5y2x4SZmN1U2NjXWSJNU2iGvitY3Smp7a
+nqaGptp4U2/d6t76poaVTT2QleixgeERXmWjaHCuskHpVFBlw4tWBDowBejqMlXZ+ABcMNnc
+X1O1r7Jh/I6Mw3DiaTxVNsyYrFU20Jqe6iobFfqdKiH9qkqskRHSMcyDI51fIoYZOoYF4HRw
+Bq+y4Qq8ykYh8CobvMoGr7IxWbLEq2zwKhsTkyX8tGylxQugVTbyvscp8Oz0XEdn6NiWlyiC
+DFP17HQVJ8Mu3Uk2k+GUrLJxmqM0nDLlJeZzMuzS477JXBTT1lKcPqnSMG1V5BmnOhlwlQ0v
+ODZVNuJzKvUqG9E5vwvzKhsAFFv9IR5cFka02x3sCGPaTc8qG8hNL676QyWvsjEBOs8rms7z
+eJWNCdAZJcmnuspGcPpV2fhReH/kUGRD+C/hWyIPR64KV0WSkdsi0425FZPA3GcAZu5+YF9l
+o4JX2ThOVTZCYOqrbIR4lQ1wPKtszABTX2VjBq+y4a5beZWNaQKcPxw4cBgP8CobHDhMHvAq
+G7wP78P78CobvA/vw6ts8D68D6+ywYHDyRbn8SobHDhM1iriVTY4cJjoKuJVNjhwKA14lY2T
+tcrG6lEv4Q862b5FVa6RYpogp3sVoZ6Uzzjsw5cRePmMPB3ONRxIwken0HExvfEF2p4/AYVO
+P6XA6WCffsIJw8st9thp+8vNAIyuWx5N6Qe9/MQl1GH0joptnrc8qdl0Sab1I18bhwckVU5J
+aU3YIGoSUPChz7rzzmuoa1gJcHeP3n1mYffNG2BnffC4k1fvhEbfoWhSj6L0W7r49C7BvPwU
+fu3Xv44U3EZSC/uU6X0qMApNiSlJ+v3tYEl+wxA9yrTu1VdeudCOWnm1tDrqG40C91ISbuCJ
+/j8AAAD//wMAOLxNfg==</Template></GraphPadPrismFile>

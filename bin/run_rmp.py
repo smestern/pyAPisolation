@@ -86,7 +86,7 @@ def running_bin(x, y, bin_time):
 
 def rmp_abf(abf, time=30, crop=True, bin_time=100):
     sweepsdata = []
-        
+    running_sweeps = []
     for sweepNumber in abf.sweepList:
         print(f"Processing sweep number {sweepNumber}")
         #f10 = int((abf.sweepLengthSec * .10) * 1000)
@@ -109,7 +109,10 @@ def rmp_abf(abf, time=30, crop=True, bin_time=100):
         #Compute the running bin
         #df_raw = pd.DataFrame(data=data, index=abf.sweepX)
         df_running = running_bin(abf.sweepX, data, bin_time/1000)
-        
+        #set the row name to increment time from the start of the sweep
+        time_index = df_running.index + sweepNumber*abf.sweepLengthSec
+        df_running.index = time_index
+        running_sweeps.append(df_running)
 
         delta_vm = f_vm - e_vm
         sweep_time = abf.sweepLengthSec
@@ -128,6 +131,8 @@ def rmp_abf(abf, time=30, crop=True, bin_time=100):
     df['fold_name'] = np.full(sweep_full.shape[0], os.path.dirname(abf.abfFilePath))
     df['sweep number'] = abf.sweepList[:sweep_full.shape[0]]
     df['cell_name'] = np.full(sweep_full.shape[0], abf.abfID)
+
+    df_running = pd.concat(running_sweeps, axis=0)
     return df, df_running
  
  #except:
