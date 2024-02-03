@@ -124,7 +124,7 @@ def main():
         for filename in fileList:
             if filename.endswith(".abf"):
                 file_path = os.path.join(root,filename)
-                if True: #try:
+                try:
                     abf = pyabf.ABF(file_path)
                     plt.close('all')
                     if (proto==-1) or (abf.sweepLabelY != 'Clamp Current (pA)'and abf.protocol != 'Gap free' and protocol_name in abf.protocol):
@@ -330,8 +330,8 @@ def main():
 
                     else:
                         print('Not correct protocol: ' + abf.protocol)
-                #except:
-                   # print('Issue Processing ' + filename)
+                except:
+                   print('Issue Processing ' + filename)
 
 
     if True:
