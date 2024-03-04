@@ -24,18 +24,9 @@ def run_web_viz(dir_path=None, database_file=None, backend='static'):
         dir_path = os.getcwd()
     if database_file is None:
         database_file = os.path.join(dir_path, 'output', 'database.csv')
-    if backend == 'static':
-        run_output_to_web.main(database_file=database_file)
-        # Create server object listening the port 80
-        server_object = HTTPServer(server_address=('', 80), RequestHandlerClass=CGIHTTPRequestHandler)
-        # Start the web server
-        server_object.serve_forever()
-    elif backend == 'dynamic':
-        run_output_to_web.run_output_to_web_dynamic(dir_path)
-        # Create server object listening the port 80
-        server_object = HTTPServer(server_address=('', 80), RequestHandlerClass=CGIHTTPRequestHandler)
-        # Start the web server
-        server_object.serve_forever()
+    if backend == 'static' or backend == 'dynamic':
+        run_output_to_web.main(database_file=database_file, static=(backend=='static'))
+        return
     elif backend == 'dash':
         os.chdir("./pyAPisolation/")
         os.chdir("./web_viz")
@@ -59,7 +50,7 @@ if __name__ == '__main__':
     group.add_argument('--data_df', type=str,
                        help='path to the pregenerated database')
     
-    parser = arg_wrap(parser)
+    #parser = arg_wrap(parser)
 
     args = parser.parse_args()
     data_folder = args.data_folder

@@ -190,7 +190,7 @@ def parse_long_pulse_from_dataset(data_set):
                 #probably in pA already
                 i = np.rint(i).astype(np.float32)
             #sometimes i will have a very small offset, this will remove it
-            i[np.logical_and(i < 5, i > -5)] = 0
+            i[np.logical_and(i < 0.5, i > -0.5)] = 0
         if match_protocol(i, t) != "Long Square":
             continue
         start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(i, t)
@@ -424,11 +424,11 @@ def get_stimulus_protocols(files, ext="nwb", method='random'):
 def match_protocol(i, t, test_pulse=True, start_epoch=None, end_epoch=None, test_pulse_length=0.1):
     #this function will take a stimulus and return the stimulus protocol at least it will try
     #first we will try to match the stimulus protocol to a known protocol
-    classifier = sc.stimClassifier()
+    #classifier = sc.stimClassifier()
     start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(i, t, test_pulse=test_pulse, start_epoch=start_epoch, end_epoch=end_epoch, test_pulse_length=test_pulse_length)
-    pred = classifier.decode(classifier.predict(i.reshape(1, -1)))[0]
-    if pred=="long_square":
-        return "Long Square"
+    #pred = classifier.decode(classifier.predict(i.reshape(1, -1)))[0]
+    #if pred=="long_square":
+     #   return "Long Square"
     if start_time is None:
         #if we can't find the start time, then we can't identify the stimulus protocol
         return None
@@ -536,7 +536,100 @@ def QC_voltage_data(t,v,i, zero_threshold=0.2, noise_threshold=10):
     return 1
 
 
+def build_dataset_traces(folder, ext="nwb", parallel=True):
+    #this function will take a run_analysis function and return a dataset of traces
+    files = glob_files(folder)[::-1]
+    file_idx = np.arange(len(files))
+    if parallel == True:
+        #Run in parallel
+        parallel = joblib.cpu_count()
+    results = joblib.Parallel(n_jobs=parallel, backend='multiprocessing')(joblib.delayed(plot_data)(specimen_id, files) for specimen_id in file_idx)
 
+def plot_data(specimen_id, file_list=None, amp_interval=20, max_above_rheo=100, target_amps=[-100, -20, 20, 100], debug=True):
+    result = {}
+    result["specimen_id"] = file_list[specimen_id]
+    _, _, _, _, data_set = loadNWB(file_list[specimen_id], return_obj=True)
+    if data_set is None or len(data_set.dataY)<1:
+        return result
+    #here we are going to perform long square analysis on the data,
+            #hopefully this will be fixed in the future and we can use ipfx for this
+    sweeps = []
+    start_times = []
+    end_times = []
+    sweep_amp = []
+    debug_log = {}
+    for sweep in np.arange(len(data_set.dataY)):
+        i = np.nan_to_num(data_set.dataC[sweep]*1)
+        t = data_set.dataX[sweep]
+        v = np.nan_to_num(data_set.dataY[sweep])
+        dt = t[1] - t[0]
+        #if its not current clamp
+        if match_unit(data_set.sweepMetadata[sweep]['stim_dict']["unit"]) != "amp":
+            logging.debug(f"sweep {sweep} is not current clamp")
+            #debug_log[sweep] = "not current clamp"
+            continue
+        #if the sweep v is in volts, convert to mV, ipfx wants mV
+        if match_unit(data_set.sweepMetadata[sweep]['resp_dict']["unit"]) == "volt":
+            #sometimes the voltage is in volts, sometimes in mV,  even thought it is logged as bolts this is a hack to fix that
+            if np.max(v) > 500 and np.min(v) < -500:
+                #possibly in nV or something else, convert to mV anyway
+                v = v/1000
+            elif np.max(v) < 1 and np.min(v) > -1:
+                #probably in volts, convert to mV
+                v = v*1000
+        
+        #if the sweep i is in amps, convert to pA, ipfx wants pA
+        if match_unit(data_set.sweepMetadata[sweep]['stim_dict']["unit"])=="amp":
+            if np.max(i) < 0.1 and np.min(i) > -0.1:
+                #probably in amp, convert to picoAmps
+                i = i*1000000000000
+            
+            #probably in pA already
+            #i[np.logical_and(i < 5, i > -5)] = 0
+
+        #try to figure out if this is a long square
+        if match_protocol(i, t) != "Long Square":
+            logging.debug(f"skipping sweep {sweep} because it is not a long square")
+            debug_log[sweep] = "likely not a long square"
+            continue
+
+        start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(i, t)
+
+        if QC_voltage_data(t, v, i) == 0:
+            logging.debug(f"skipping sweep {sweep} because it failed QC")
+            debug_log[sweep] = "failed QC"
+            continue
+        #construct a sweep obj
+        start_times.append(start_time)
+        end_times.append(start_time+duration)
+        sweep_amp.append(amplitude)
+        sweeps.append(Sweep(t, v, i, clamp_mode="CurrentClamp", sampling_rate=int(1/dt), sweep_number=sweep))
+    
+    #get the most common start and end times
+    start_time = scipy.stats.mode(np.array(start_times))[0][0]
+    end_time = scipy.stats.mode(np.array(end_times))[0][0]
+    #index out the sweeps that have the most common start and end times
+    idx_pass = np.where((np.array(start_times) == start_time) & (np.array(end_times) == end_time))[0]
+
+    #the sweeps closest to the target amp
+    idx_targets = [np.argmin(np.abs(np.array(sweep_amp) - x)) for x in target_amps]
+
+    idx_pass = np.intersect1d(idx_pass, idx_targets)
+
+    sweeps = np.array(sweeps, dtype=object)[idx_pass]
+
+    sweeps = SweepSet(sweeps.tolist())
+    #plot the sweeps
+    fig, ax = plt.subplots(1, 1)
+    for sweep in sweeps.sweeps:
+        idx_start = find_time_index(sweep.t, np.clip(start_time*0.8, 0.0, np.inf))
+        idx_end = find_time_index(sweep.t, np.clip(end_time*1.4, end_time, sweep.t[-1]))
+        ax.plot(sweep.t[idx_start:idx_end], sweep.v[idx_start:idx_end])
+    #save the figure as a svg
+    plt.savefig(f"{file_list[specimen_id]}.svg")
+    plt.close('all')
+    print(f"saved {file_list[specimen_id]}.svg", end="\r")
+    
 
 if __name__ == "__main__":
     freeze_support()
