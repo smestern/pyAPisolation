@@ -4,24 +4,23 @@ from pyAPisolation.feature_extractor import *
 from pyAPisolation.patch_ml import *
 import os
 import sys
-import glob
 import argparse
 
 # dash / plotly imports
 import dash
 from dash.dependencies import Input, Output, State
-import dash_table
-import dash_core_components as dcc
+from dash import dash_table, dcc
+from dash import dcc
+
 import dash_bootstrap_components as dbc
-import dash_html_components as html
+from dash import html
 import plotly.graph_objs as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 # data science imports
 import pandas as pd
 import numpy as np
-import pyabf
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+
 
 sys.path.append('..')
 sys.path.append('')
@@ -47,10 +46,6 @@ class analysis_fields():
 
 GLOBAL_VARS = analysis_fields()
 
-BOOTSTRAP_TABLE_CSS = ['https://unpkg.com/bootstrap-table@1.21.2/dist/bootstrap-table.min.css']
-BOOTSTRAP_TABLE_JS = ['https://unpkg.com/bootstrap-table/dist/bootstrap-table.min.js']
-
-
 
 def _df_select_by_col(df, string_to_find):
     columns = df.columns.values
@@ -64,12 +59,15 @@ def _df_select_by_col(df, string_to_find):
 
 class live_data_viz():
     def __init__(self, dir_path=None, database_file=None):
+
+        #either load the database or generate it
         self.df_raw = None
         self.df = None
         self.para_df = None
-        self._run_analysis(dir_path, database_file)
+        datatable = self._run_analysis(dir_path, database_file)
 
-        app = dash.Dash(__name__)
+        # make the app
+        app = dash.Dash(__name__, external_scripts=[{'src':"https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"}])
 
         # find pregenerated labels
         self.labels = self._find_label_cols(self.df_raw)
@@ -86,12 +84,13 @@ class live_data_viz():
         # make the header descibing the app
         header = self._generate_header()
 
+        
+        
         col_long = dbc.Col([dbc.Card([
                 dbc.CardHeader("Longitudinal Plot"),
                 dbc.CardBody([dcc.Loading(
                     id="loading-2", fullscreen=False, type="default",
-                    children=[html.Div(id='datatable-plot-cell', )])])],style={
-                    "flex-wrap": "nowrap", "min-height": "700px", "overflow-x": "hidden"})]
+                    children=[html.Div(id='datatable-plot-cell', )])])],)]
                 , width=4)
         col_umap = dbc.Col([
             dbc.Card([dbc.CardHeader("UMAP Plot"),
@@ -113,50 +112,28 @@ class live_data_viz():
                  id="para-collapse",
                  is_open=True,
              )])])], width=12)
-        col_datatable = dbc.Col([dash_table.DataTable(
-            id='datatable-row-ids',
-            columns=[
-                {'name': i, 'id': i, 'deletable': True} for i in self.df.columns
-                # omit the id column
-                if i != 'id'
-            ],
-            data=self.df.to_dict('records'),
-            filter_action="native",
-            sort_action="native",
-            sort_mode='multi',
-            row_selectable='multi',
-            selected_rows=[],
-            page_action='native',
-            page_current=0,
-            page_size=10,
-            style_cell={
-                'overflow': 'hidden',
-                'textOverflow': 'ellipsis',
-                'maxWidth': 0
-            },
+        col_datatable = dbc.Col(datatable, id='data-table-col')
 
-        )], id='data-table-col')
-
-        app.layout = html.Div([dbc.Container([
-            dbc.Row([header]),
-            dbc.Row([ col_umap,  col_long]),
-            dbc.Row([ col_para, ]),
-            dbc.Row([col_datatable])
-        
-        ]),
-            dcc.Interval(
-            id='interval-component',
-            interval=240*1000,  # in milliseconds
-            n_intervals=0
+        app.layout = dbc.Container([
+            dbc.Row([header, dbc.Col([
+                dbc.Row([col_umap, ]), #col_long
+                dbc.Row([col_para, ]),
+                dbc.Row([col_datatable]),
+                html.Div(id='datatable-row-ids-store', style={'display': 'none'}),
+            ])]),
+            
+        ], id='primcont', className="container-lg", style={"padding-right": "0px", "padding-left": "0px", 'max-width': '95%'},
         )
-        ])
+        
         self.app = app
         # Define Callbacks
         app.callback(
-            Output('loading-2', 'children'),
+            Output('datatable-row-ids-store', 'children'),
             State('datatable-row-ids', 'derived_virtual_row_ids'),
-            Input('datatable-row-ids', 'selected_row_ids'),
-            State('datatable-row-ids', 'data'))(self.update_cell_plot)
+            State('data-table-col', 'children'),
+            State('datatable-row-ids', 'selected_row_ids'),
+            Input('datatable-row-ids', 'active_cell'),
+            State('datatable-row-ids', 'data'), prevent_intial_call=True)(self.update_cell_plot)
 
         app.callback(Output('datatable-row-ids', 'data'),
                      Input('UMAP-graph', 'selectedData'),
@@ -191,9 +168,15 @@ class live_data_viz():
             df = pd.read_csv(df)
         self.df_raw = copy.deepcopy(df)
         df = _df_select_by_col(self.df_raw, GLOBAL_VARS.table_vars_rq)
+         #add in a column for dropdown:
+        df['showMore'] = [''] * len(df)
+        #reorder so that the showMore column is first
+        df = df[['showMore'] + df.columns[:-1].tolist()]
+
         df_optional = _df_select_by_col(
             self.df_raw, GLOBAL_VARS.table_vars).iloc[:, :GLOBAL_VARS.table_vars_limit]
         df = pd.concat([df, df_optional], axis=1)
+
         df['id'] = df[GLOBAL_VARS.file_index] if GLOBAL_VARS.file_index in df.columns else df.index
         df.set_index('id', inplace=True, drop=False)
         self.df = df
@@ -208,7 +191,7 @@ class live_data_viz():
                 filter_action="native",
                 sort_action="native",
                 sort_mode='multi',
-                row_selectable='multi',
+                #row_selectable='multi',
                 selected_rows=[],
                 page_action='native',
                 page_current=0,
@@ -217,8 +200,8 @@ class live_data_viz():
                     'overflow': 'hidden',
                     'textOverflow': 'ellipsis',
                     'maxWidth': 0
-                }
-
+                },
+                style_as_list_view=True
                 )]
 
     def gen_umap_plots(self, labels=None, label_legend=None, data=None):
@@ -348,6 +331,7 @@ class live_data_viz():
         return out_data
 
     def update_cell_plot(self, row_ids, selected_row_ids, data):
+        raise print("this function is deprecated")
         selected_id_set = set(selected_row_ids or [])
 
         if row_ids is None:
@@ -430,13 +414,10 @@ class live_data_viz():
         return is_open
 
     def _generate_header(self):
-        return dbc.Row([
-            dbc.Col(html.H1("pyAPisolation", className="text-center"), width=12),
-            dbc.Col(html.H3("Live Data Visualization",
-                    className="text-center"), width=12),
-            dbc.Col(html.H5("Select a file to view",
-                    className="text-center"), width=12),
-        ])
+        return dbc.Col([html.H1("pyAPisolation", className="text-center"), html.H3("Live Data Visualization",
+                    className="text-center"),html.H5("Select a file to view",
+                    className="text-center")
+        ], className="col-xl-4", style={"max-width": "20%"})
 
 if __name__ == '__main__':
     # make an argparse to parse the command line arguments. command line args should be the path to the data folder, or

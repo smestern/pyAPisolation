@@ -11,7 +11,8 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["--data_df", "/media/smestern/Expansion/PVN_MARM_PROJECT/dataframe/main_sheet_filtered_new7.csv"]
+            "args": ["--data_folder", "/media/smestern/Expansion/opto_patch_data/"],
+            "sudo": true,
         }
     ]
 }

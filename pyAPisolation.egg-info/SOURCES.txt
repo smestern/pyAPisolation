@@ -62,6 +62,7 @@ pyAPisolation/dev/abf_chirp.py
 pyAPisolation/dev/grow.py
 pyAPisolation/dev/main.spec
 pyAPisolation/dev/model.pt
+pyAPisolation/dev/prism_writer.py
 pyAPisolation/dev/run_APisolation_ipfx_fv_ic1.py
 pyAPisolation/dev/run_FV_SPCA.py
 pyAPisolation/dev/run_GROW_ANALYSIS copy.ipynb

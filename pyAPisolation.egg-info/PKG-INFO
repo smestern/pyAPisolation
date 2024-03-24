@@ -1,4 +1,4 @@
-Metadata-Version: 1.0
+Metadata-Version: 2.1
 Name: pyAPisolation
 Version: 0.5
 Summary: Python library for analysis of patch clamp data
@@ -6,5 +6,5 @@ Home-page: https://github.com/smestern/pyAPisolation
 Author: Sam Mestern
 Author-email: SMESTERN@UWO.CA
 License: MIT License
-Description: UNKNOWN
 Platform: any
+License-File: LICENSE

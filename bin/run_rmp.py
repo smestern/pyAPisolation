@@ -112,7 +112,7 @@ def rmp_abf(abf, time=30, crop=True, bin_time=100):
         #set the row name to increment time from the start of the sweep
         time_index = df_running.index + sweepNumber*abf.sweepLengthSec
         df_running.index = time_index
-        running_sweeps.append(df_running)
+        running_sweeps.append(df_running.copy())
 
         delta_vm = f_vm - e_vm
         sweep_time = abf.sweepLengthSec
