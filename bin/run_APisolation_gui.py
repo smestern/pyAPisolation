@@ -14,12 +14,13 @@ from sklearn.preprocessing import LabelEncoder
 import copy
 from functools import partial
 import scipy.signal as signal
+print("Loaded basic libraries; importing QT")
 from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog
 from PySide2.QtCore import QFile
 from PySide2 import QtGui
 import PySide2.QtCore as QtCore
 from PySide2.QtUiTools import QUiLoader
-
+print("Loaded QT libraries")
 from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.backends.backend_qtagg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
@@ -30,8 +31,6 @@ print("Loaded external libraries")
 from pyAPisolation.feature_extractor import folder_feature_extract, save_data_frames, preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
 from pyAPisolation.patch_utils import load_protocols
 from pyAPisolation.patch_subthres import exp_decay_2p, exp_decay_1p, exp_decay_factor
-
-#import pyqtgraph as pg
 
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor

@@ -58,14 +58,19 @@ def loadNWB(file_path, return_obj=False, old=False, load_into_mem=True):
     fs = fs_dict["rate"] # assumes units of Hz
     dt = np.reciprocal(fs) # seconds
     
-    if isinstance(nwb.dataX, np.ndarray)==False:
+    if isinstance(nwb.dataX, np.ndarray)==False and load_into_mem==True:
         dataX = np.asarray(nwb.dataX, dtype=np.dtype('O')) ##Assumes if they are still lists its due to uneven size
         dataY = np.asarray(nwb.dataY, dtype=np.dtype('O')) #Casts them as numpy object types to deal with this
         dataC = np.asarray(nwb.dataC, dtype=np.dtype('O'))
-    else:
+    elif load_into_mem==True:
         dataX = nwb.dataX #If they are numpy arrays just pass them
         dataY = nwb.dataY
         dataC = nwb.dataC
+    else:
+        ##If not loading into memory just pass the lists
+        dataX = []
+        dataY = []
+        dataC = []
 
     if return_obj == True:
         return dataX, dataY, dataC, dt, nwb

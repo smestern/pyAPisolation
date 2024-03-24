@@ -150,6 +150,7 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
         dict_spike_df["spike_rise" + real_sweep_number + " 1"] = spike_in_sweep['upstroke'].to_numpy()[0]
         dict_spike_df["spike_decay" + real_sweep_number + " 1"] = spike_in_sweep['downstroke'].to_numpy()[0]
         dict_spike_df["spike_AHP 1" + real_sweep_number + " "] = spike_in_sweep['fast_trough_v'].to_numpy()[0]
+        dict_spike_df["spike_AHP slow 1" + real_sweep_number + " "] = spike_in_sweep['slow_trough_v'].to_numpy()[0] if 'slow_trough_v' in spike_in_sweep.columns else np.nan
         dict_spike_df["spike_AHP height 1" + real_sweep_number + " "] = abs(spike_in_sweep['peak_v'].to_numpy()[0] - spike_in_sweep['fast_trough_v'].to_numpy()[0])
         dict_spike_df["latency_all_spikes" + real_sweep_number + ""] = spike_train['latency']
         dict_spike_df["spike_width" + real_sweep_number + "1"] = spike_in_sweep['width'].to_numpy()[0]
@@ -209,6 +210,7 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
         dict_spike_df["spike_rise" + real_sweep_number + " 1"] = np.nan
         dict_spike_df["spike_decay" + real_sweep_number + " 1"] = np.nan
         dict_spike_df["spike_AHP 1" + real_sweep_number + " "] = np.nan
+        dict_spike_df["spike_AHP slow 1" + real_sweep_number + " "] = np.nan
         dict_spike_df["spike_AHP height 1" + real_sweep_number + " "] = np.nan
         dict_spike_df["latency_all_spikes" + real_sweep_number + ""] = np.nan
         dict_spike_df["spike_width" + real_sweep_number + "1"] = np.nan
@@ -248,6 +250,7 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
             temp_spike_df["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
             temp_spike_df["rheobase_downstroke"] = [df['downstroke'].to_numpy()[0]]
             temp_spike_df["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
+            temp_spike_df["rheobase_slow_trough"] = [df['slow_trough_v'].to_numpy()[0] if 'slow_trough_v' in df.columns else np.nan]
             for key in ipfx_train_feature_labels:
                 temp_spike_df[f"mean_{key}"] = [np.nanmean(df[key].to_numpy())]
             temp_spike_df["mean_current"] = [np.nanmean(df['peak_i'].to_numpy())]
@@ -259,6 +262,7 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
             temp_spike_df["mean_upstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
             temp_spike_df["mean_downstroke"] = [np.nanmean(df['downstroke'].to_numpy())]
             temp_spike_df["mean_fast_trough"] = [np.nanmean(df['fast_trough_v'].to_numpy())]
+            temp_spike_df["mean_slow_trough"] = [np.nanmean(df['slow_trough_v'].to_numpy()) if 'slow_trough_v' in df.columns else np.nan]
             spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
            
 
