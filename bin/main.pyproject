@@ -1,3 +1,7 @@
 {
-    "files": ["form.ui","run_APisolation_gui.py"]
+    "files": [
+        "form.ui",
+        "mainwindow.ui",
+        "run_APisolation_gui.py"
+    ]
 }

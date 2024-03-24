@@ -14,7 +14,7 @@ from sklearn.preprocessing import LabelEncoder
 import copy
 from functools import partial
 import scipy.signal as signal
-from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog
+from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog, QMainWindow
 from PySide2.QtCore import QFile
 from PySide2 import QtGui
 import PySide2.QtCore as QtCore
@@ -39,11 +39,11 @@ from ipfx.feature_extractor import SpikeFeatureExtractor
 PLOT_BACKEND = 'matplotlib'
 ANALYSIS_TABS = {0:'spike', 1:'subthres'}
 
-class analysis_gui(QWidget):
+class analysis_gui(QMainWindow):
     def __init__(self):
         super(analysis_gui, self).__init__()
         self.load_ui()
-        self.main_widget = self.children()[0]
+        self.main_widget = self.children()[1]
         self.abf = None
         self.current_filter = 0.
         self.bind_ui()
