@@ -12,7 +12,7 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--data_folder", "/media/smestern/Expansion/opto_patch_data/"],
-            "sudo": true,
+            //"sudo": true,
         }
     ]
 }

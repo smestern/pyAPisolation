@@ -288,6 +288,9 @@
                 <property name="decimals">
                  <number>4</number>
                 </property>
+                <property name="maximum">
+                 <number>99999999</number>
+                </property>
                </widget>
               </item>
              </layout>
@@ -320,6 +323,9 @@
                <widget class="QDoubleSpinBox" name="end_time">
                 <property name="decimals">
                  <number>4</number>
+                </property>
+                <property name="maximum">
+                 <number>99999999</number>
                 </property>
                </widget>
               </item>

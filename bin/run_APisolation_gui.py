@@ -27,6 +27,7 @@ from matplotlib.backends.backend_qtagg import (
 from matplotlib.figure import Figure
 from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
+from matplotlib.widgets import SpanSelector
 print("Loaded external libraries")
 from pyAPisolation.feature_extractor import folder_feature_extract, save_data_frames, preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
 from pyAPisolation.patch_utils import load_protocols
@@ -38,11 +39,11 @@ from ipfx.feature_extractor import SpikeFeatureExtractor
 PLOT_BACKEND = 'matplotlib'
 ANALYSIS_TABS = {0:'spike', 1:'subthres'}
 
-class analysis_gui(QMainWindow):
+class analysis_gui(QWidget):
     def __init__(self):
         super(analysis_gui, self).__init__()
         self.load_ui()
-        self.main_widget = self.children()[1]
+        self.main_widget = self.children()[0]
         self.abf = None
         self.current_filter = 0.
         self.bind_ui()
@@ -230,6 +231,13 @@ class analysis_gui(QMainWindow):
             self.sweep_selector.setLayout(layout)
         #sometimes the sweep selector is not cleared out
         #idk why 
+            
+        #finally if the time constraints are outside the bounds of the abf, reset them
+        if float(self.start_time.text()) > self.abf.sweepX[-1]:
+            self.start_time.setValue(0)
+        if float(self.end_time.text()) > self.abf.sweepX[-1]:
+            self.end_time.setValue(self.abf.sweepX[-1])
+
         self.run_indiv_analysis()
         self.plot_abf()
         
@@ -248,9 +256,23 @@ class analysis_gui(QMainWindow):
             self._plot_matplotlib()
         
     def filter_abf(self, abf):
+        #check if the filter is below the nyquist frequency
+        if float(self.bessel.text()) > abf.dataRate/2:
+            #create a popup ask the user if they want to adjust the filter or continue
+            pop = QtWidgets.QMessageBox()
+            pop.setText("The filter is above the nyquist frequency, do you want to adjust the filter? Otherwise no filter will be applied.")
+            pop.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            pop.setDefaultButton(QtWidgets.QMessageBox.No)
+            ret = pop.exec_()
+            if ret == QtWidgets.QMessageBox.No:
+                return abf
+            else:
+                self.bessel.setValue(float(abf.dataRate/2)-1)
+
         #filter the abf with 5 khz lowpass
         if self.bessel.text() == "" or float(self.bessel.text()) < 0:
             return abf
+        
         b, a = signal.bessel(4, float(self.bessel.text()), 'low', norm='phase', fs=abf.dataRate)
         abf.data = signal.filtfilt(b, a, abf.data)
         return abf
@@ -407,7 +429,7 @@ class analysis_gui(QMainWindow):
         self.run_indiv_analysis()
         if self.get_current_analysis() is 'spike':
             dfs = preprocess_abf(self.abf.abfFilePath, copy.deepcopy(self.param_dict), False, '')
-            save_data_frames(dfs[1], dfs[0], dfs[2], self.selected_dir, str(time.time())+self.outputTag.text())
+            save_data_frames(dfs[1], dfs[0], dfs[2], self.selected_dir, str(time.time())+self.outputTag.text(), self.bspikeFind.isChecked(), self.brunningBin.isChecked(), self.brawData.isChecked())
 
     def _find_outliers(self, df):
         outlier_dect = OneClassSVM(nu=0.1, kernel="rbf", gamma=0.1)
@@ -626,7 +648,28 @@ class analysis_gui(QMainWindow):
                          loc='upper left', borderaxespad=0.)
         self.axe2.legend(loc='upper right')
         #self.axe1.add_artist(reject_spikes_legend)
+        #create a span_selector for the time
+        #if float(self.start_time.text()) != 0 or float(self.end_time.text()) != 0:
+        #if the span selector has been created, update the extents
+        if hasattr(self, 'span'):
+            self.span.new_axes(self.axe1)
+            self.span.extents = (float(self.start_time.text()), float(self.end_time.text()))
+        else:
+            self.span = SpanSelector(self.axe1, self._mpl_span, 'horizontal', useblit=True,
+                    rectprops=dict(alpha=0.1, facecolor='red'), interactive=True)
+            self.span.extents = (float(self.start_time.text()), float(self.end_time.text()))
+        # else:
+        #     self.span = SpanSelector(self.axe1, self._mpl_span, 'horizontal', useblit=True,
+        #             rectprops=dict(alpha=0.1, facecolor='red'), interactive=True)
+        #     self.span.extents = (0, 0)
+        
         self.main_view.draw()
+
+    def _mpl_span(self, min_value, max_value):
+        #update the time values
+        self.start_time.setValue(float(min_value))
+        self.end_time.setValue(float(max_value))
+        self.analysis_changed_run()
 
     def _plot_pyqtgraph(self):
         '''TODO'''
