@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["--data_folder", "/media/smestern/Expansion/opto_patch_data/"],
+            "args": ["--data_folder", "C:/Users/SMest/Dropbox/20/"],
             //"sudo": true,
         }
     ]

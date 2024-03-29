@@ -102,7 +102,7 @@ def main(database_file=None, static=False):
     new_names = []
     for name in full_dataframe['foldername.1'].to_numpy():
         temp = name.split("/")[-3:]
-        temp = temp[0] + "_" + temp[1] + "_" + temp[2]
+        #temp = temp[0] + "_" + temp[1] + "_" + temp[2]
         new_names.append(temp)
     full_dataframe['foldername'] = new_names
 
@@ -136,6 +136,7 @@ def main(database_file=None, static=False):
 
     with open("output.html", "w") as outf:
         outf.write(str(soup))
+        
     print("=== Running Server ===")
     #Create server object listening the port 80
     server_object = HTTPServer(server_address=('', 80), RequestHandlerClass=CGIHTTPRequestHandler)

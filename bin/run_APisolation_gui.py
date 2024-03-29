@@ -656,7 +656,7 @@ class analysis_gui(QWidget):
             self.span.extents = (float(self.start_time.text()), float(self.end_time.text()))
         else:
             self.span = SpanSelector(self.axe1, self._mpl_span, 'horizontal', useblit=True,
-                    rectprops=dict(alpha=0.1, facecolor='red'), interactive=True)
+                    props=dict(alpha=0.1, facecolor='red'), handle_props=dict(alpha=0.0), interactive=True)
             self.span.extents = (float(self.start_time.text()), float(self.end_time.text()))
         # else:
         #     self.span = SpanSelector(self.axe1, self._mpl_span, 'horizontal', useblit=True,
