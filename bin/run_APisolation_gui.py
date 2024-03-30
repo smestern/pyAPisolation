@@ -15,7 +15,7 @@ import copy
 from functools import partial
 import scipy.signal as signal
 print("Loaded basic libraries; importing QT")
-from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog
+from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog, QMainWindow
 from PySide2.QtCore import QFile
 from PySide2 import QtGui
 import PySide2.QtCore as QtCore
@@ -39,20 +39,18 @@ from ipfx.feature_extractor import SpikeFeatureExtractor
 PLOT_BACKEND = 'matplotlib'
 ANALYSIS_TABS = {0:'spike', 1:'subthres'}
 
-class analysis_gui(QWidget):
+class analysis_gui(QMainWindow):
     def __init__(self):
         super(analysis_gui, self).__init__()
         self.load_ui()
-        self.main_widget = self.children()[0]
+        self.main_widget = self.children()[-1]
         self.abf = None
         self.current_filter = 0.
         self.bind_ui()
 
-
     def load_ui(self):
         loader = QUiLoader()
-        path = os.path.join(os.path.dirname(__file__), "form.ui")
-        print(path)
+        path = os.path.join(os.path.dirname(__file__), "mainwindow.ui")
         ui_file = QFile(path)
         ui_file.open(QFile.ReadOnly)
         loader.load(ui_file, self)
@@ -62,7 +60,6 @@ class analysis_gui(QWidget):
         children = self.main_widget.children()
         #assign the children to the main object for easy access
         for child in children:
-            print(child.objectName())
             if child.objectName() == "folder_select":
                 self.folder_select = child
                 #for the file loader make a folder select
@@ -134,9 +131,6 @@ class analysis_gui(QWidget):
         self.besselFilterCM = self.main_widget.findChild(QWidget, "bessel_filt_cm")
         self.besselFilterCM.textChanged.connect(self.analysis_changed)
 
-        
-
-    
     def file_select(self):
         self.selected_dir = QFileDialog.getExistingDirectory()
         self.abf_list = glob.glob(self.selected_dir + "/**/*.abf", recursive=True)
@@ -818,5 +812,5 @@ if __name__ == "__main__":
     mp.freeze_support()
     app = QApplication([])
     widget = analysis_gui()
-    widget.show()
+    widget.main_widget.show()
     sys.exit(app.exec_())
