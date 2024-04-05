@@ -2,6 +2,7 @@
     "files": [
         "form.ui",
         "mainwindow.ui",
+        "mainwindowMDI.ui",
         "run_APisolation_gui.py"
     ]
 }

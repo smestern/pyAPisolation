@@ -35,12 +35,11 @@ import ipfx.stimulus_protocol_analysis as spa
 import ipfx.data_set_features as dsf
 import ipfx.time_series_utils as tsu
 import ipfx.feature_vectors as fv
-from ipfx.dataset.create import create_ephys_data_set
-
 
 
 # Import custom functions
 from pyAPisolation import patch_utils
+from pyAPisolation.utils import arg_wrap
 from pyAPisolation.loadNWB import loadNWB, GLOBAL_STIM_NAMES
 try:
     from pyAPisolation.dev import stim_classifier as sc
@@ -101,10 +100,20 @@ def main():
     #main function to be called when running this script
     # Handle command line arguments
     parser = argparse.ArgumentParser(description='Build database for web visualization')
-    parser.add_argument('folder', type=str, help='Folder containing ABF or NWB files')
+    parser.add_argument('folder', type=str, default=None, help='Folder containing ABF or NWB files')
+    # add a data_folder argument which will be the folder where the data is stored is mut
     parser.add_argument('--backend', type=str, default="ipfx", help='Backend to use for feature extraction')
-    parser.add_argument('--outfile', type=str, default="out.csv", help='Output file name')
+    parser.add_argument('--outfile', type=str, default="out.csv", help='Output file name') 
+    parser.add_argument('--ext', type=str, default="nwb", help='File extension to search for in the folder')
+    parser.add_argument('--data_folder', type=str, default=None, help='Folder containing ABF or NWB files')
+    
+    parser = arg_wrap(parser, cli_prompt=True)  # Wrap the parser to catch exceptions
     args = parser.parse_args()
+    #args should have folder or data_folder
+    if args.folder is None and args.data_folder is None:
+        raise ValueError("You must provide a folder with ABF or NWB files, either with the folder argument or the --data_folder argument")
+    if args.data_folder is not None: #data_folder will supercede folder
+        args.folder = args.data_folder
     # Run analysis
     run_analysis(args.folder, args.backend, args.outfile)
 

@@ -34,86 +34,6 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="0">
-     <widget class="QPushButton" name="folder_select">
-      <property name="text">
-       <string>Select a Folder</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <widget class="QFrame" name="frame_2">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>150</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>600</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout">
-       <item>
-        <widget class="QComboBox" name="protocol_selector"/>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="outputTag">
-         <property name="text">
-          <string/>
-         </property>
-         <property name="placeholderText">
-          <string>output_tag</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="run_analysis">
-         <property name="text">
-          <string>Analyze Folder</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="saveCur">
-         <property name="text">
-          <string>Save Current File Analysis</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item row="3" column="1">
-     <widget class="QWidget" name="sweep_selector" native="true">
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>50</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>50</height>
-       </size>
-      </property>
-     </widget>
-    </item>
     <item row="1" column="0">
      <widget class="QGroupBox" name="analysis_set">
       <property name="sizePolicy">
@@ -547,30 +467,295 @@
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>16777215</height>
+            <height>16777212</height>
            </size>
           </property>
           <attribute name="title">
            <string>run cm calc</string>
           </attribute>
-          <widget class="QWidget" name="widget" native="true">
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_6" stretch="0,0,0,0,0,0">
+             <property name="sizeConstraint">
+              <enum>QLayout::SetFixedSize</enum>
+             </property>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_11">
+               <property name="sizeConstraint">
+                <enum>QLayout::SetFixedSize</enum>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_10">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>155</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Percentage of Stim to use</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="stimPer">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="wrapping">
+                  <bool>false</bool>
+                 </property>
+                 <property name="frame">
+                  <bool>true</bool>
+                 </property>
+                 <property name="value">
+                  <double>50.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_15">
+               <property name="sizeConstraint">
+                <enum>QLayout::SetMaximumSize</enum>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_13">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>155</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>End Search Period (s)</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="endCM">
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_13">
+               <property name="sizeConstraint">
+                <enum>QLayout::SetMaximumSize</enum>
+               </property>
+               <item>
+                <widget class="QCheckBox" name="bstim_2">
+                 <property name="text">
+                  <string>Find Stim Time Automatically</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_14">
+               <property name="sizeConstraint">
+                <enum>QLayout::SetMaximumSize</enum>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_12">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>155</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Start Search Period (S)</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="startCM">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_5">
+               <property name="sizeConstraint">
+                <enum>QLayout::SetMaximumSize</enum>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_9">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>155</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Subthreshold Sweeps</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="subthresSweeps">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_16">
+               <property name="sizeConstraint">
+                <enum>QLayout::SetMaximumSize</enum>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_14">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>155</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                 <property name="text">
+                  <string>Bessel Filter (Hz)</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="bessel_filt_cm">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>25</height>
+                  </size>
+                 </property>
+                 <property name="minimum">
+                  <double>-1.000000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>9000000.000000000000000</double>
+                 </property>
+                 <property name="singleStep">
+                  <double>500.000000000000000</double>
+                 </property>
+                 <property name="value">
+                  <double>4999.000000000000000</double>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="tab">
+          <attribute name="title">
+           <string>Page</string>
+          </attribute>
+          <widget class="QWidget" name="widget_2" native="true">
            <property name="geometry">
             <rect>
              <x>0</x>
              <y>0</y>
              <width>571</width>
-             <height>391</height>
+             <height>401</height>
             </rect>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>391</height>
+             <height>0</height>
             </size>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_4">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_7">
             <property name="sizeConstraint">
-             <enum>QLayout::SetDefaultConstraint</enum>
+             <enum>QLayout::SetMinAndMaxSize</enum>
             </property>
             <property name="leftMargin">
              <number>9</number>
@@ -585,17 +770,20 @@
              <number>9</number>
             </property>
             <item>
-             <layout class="QVBoxLayout" name="verticalLayout_6">
+             <layout class="QVBoxLayout" name="verticalLayout_8" stretch="0,0,0,0,0,0">
+              <property name="sizeConstraint">
+               <enum>QLayout::SetDefaultConstraint</enum>
+              </property>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_11">
+               <layout class="QHBoxLayout" name="horizontalLayout_18">
                 <property name="sizeConstraint">
                  <enum>QLayout::SetMaximumSize</enum>
                 </property>
                 <item>
-                 <widget class="QLabel" name="label_10">
+                 <widget class="QLabel" name="label_15">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                    <horstretch>150</horstretch>
+                   <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+                    <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
@@ -610,8 +798,26 @@
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="stimPer">
+                <item alignment="Qt::AlignLeft">
+                 <widget class="QDoubleSpinBox" name="stimPer_2">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>100</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                  <property name="wrapping">
+                   <bool>false</bool>
+                  </property>
+                  <property name="frame">
+                   <bool>true</bool>
+                  </property>
                   <property name="value">
                    <double>50.000000000000000</double>
                   </property>
@@ -620,15 +826,15 @@
                </layout>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_15">
+               <layout class="QHBoxLayout" name="horizontalLayout_19">
                 <property name="sizeConstraint">
                  <enum>QLayout::SetMaximumSize</enum>
                 </property>
                 <item>
-                 <widget class="QLabel" name="label_13">
+                 <widget class="QLabel" name="label_16">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                    <horstretch>150</horstretch>
+                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                    <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
@@ -643,18 +849,25 @@
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="endCM"/>
+                <item alignment="Qt::AlignLeft">
+                 <widget class="QDoubleSpinBox" name="endCM_2">
+                  <property name="minimumSize">
+                   <size>
+                    <width>100</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_13">
+               <layout class="QHBoxLayout" name="horizontalLayout_20">
                 <property name="sizeConstraint">
                  <enum>QLayout::SetMaximumSize</enum>
                 </property>
                 <item>
-                 <widget class="QCheckBox" name="bstim_2">
+                 <widget class="QCheckBox" name="bstim_3">
                   <property name="text">
                    <string>Find Stim Time Automatically</string>
                   </property>
@@ -663,15 +876,15 @@
                </layout>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_14">
+               <layout class="QHBoxLayout" name="horizontalLayout_21">
                 <property name="sizeConstraint">
                  <enum>QLayout::SetMaximumSize</enum>
                 </property>
                 <item>
-                 <widget class="QLabel" name="label_12">
+                 <widget class="QLabel" name="label_17">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                    <horstretch>150</horstretch>
+                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                    <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
@@ -686,20 +899,33 @@
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="startCM"/>
+                <item alignment="Qt::AlignLeft">
+                 <widget class="QDoubleSpinBox" name="startCM_2">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>100</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_5">
+               <layout class="QHBoxLayout" name="horizontalLayout_22">
                 <property name="sizeConstraint">
                  <enum>QLayout::SetMaximumSize</enum>
                 </property>
                 <item>
-                 <widget class="QLabel" name="label_9">
+                 <widget class="QLabel" name="label_18">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
@@ -715,21 +941,34 @@
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QLineEdit" name="subthresSweeps"/>
+                <item alignment="Qt::AlignLeft">
+                 <widget class="QLineEdit" name="subthresSweeps_2">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>100</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_16">
+               <layout class="QHBoxLayout" name="horizontalLayout_23">
                 <property name="sizeConstraint">
                  <enum>QLayout::SetMaximumSize</enum>
                 </property>
                 <item>
-                 <widget class="QLabel" name="label_14">
+                 <widget class="QLabel" name="label_19">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                    <horstretch>150</horstretch>
+                    <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
@@ -744,8 +983,20 @@
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="bessel_filt_cm">
+                <item alignment="Qt::AlignLeft">
+                 <widget class="QDoubleSpinBox" name="bessel_filt_cm_2">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>25</height>
+                   </size>
+                  </property>
                   <property name="minimum">
                    <double>-1.000000000000000</double>
                   </property>
@@ -784,6 +1035,86 @@
       </property>
      </widget>
     </item>
+    <item row="0" column="0">
+     <widget class="QPushButton" name="folder_select">
+      <property name="text">
+       <string>Select a Folder</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QFrame" name="frame_2">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Maximum" vsizetype="Minimum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>150</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>600</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QComboBox" name="protocol_selector"/>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="outputTag">
+         <property name="text">
+          <string/>
+         </property>
+         <property name="placeholderText">
+          <string>output_tag</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="run_analysis">
+         <property name="text">
+          <string>Analyze Folder</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="saveCur">
+         <property name="text">
+          <string>Save Current File Analysis</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="3" column="1">
+     <widget class="QWidget" name="sweep_selector" native="true">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>50</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>50</height>
+       </size>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -805,6 +1136,7 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="actionOrganize_Abf"/>
    </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
@@ -843,6 +1175,11 @@
   <action name="actionOpen_Folder">
    <property name="text">
     <string>Open Folder</string>
+   </property>
+  </action>
+  <action name="actionOrganize_Abf">
+   <property name="text">
+    <string>Organize Abf by Protocol</string>
    </property>
   </action>
  </widget>

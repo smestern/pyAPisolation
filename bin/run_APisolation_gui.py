@@ -50,7 +50,7 @@ class analysis_gui(object):
 
     def load_ui(self):
         loader = QUiLoader()
-        path = os.path.join(os.path.dirname(__file__), "mainwindow.ui")
+        path = os.path.join(os.path.dirname(__file__), "mainwindowMDI.ui")
         ui_file = QFile(path)
         ui_file.open(QFile.ReadOnly)
         self.main_widget = loader.load(ui_file)
@@ -136,6 +136,9 @@ class analysis_gui(object):
 
         self.actionOpen_Folder = self.main_widget.findChild(QAction, "actionOpen_Folder")
         self.actionOpen_Folder.triggered.connect(self.file_select)
+
+        self.actionOrganize_Abf = self.main_widget.findChild(QAction, "actionOrganize_Abf")
+        self.actionOrganize_Abf.triggered.connect(lambda x: self._run_script(False, name='actionOrganize_Abf'))
 
     def file_select(self):
         """Opens a file dialog to select a folder of abf files"""
@@ -574,8 +577,6 @@ class analysis_gui(object):
         
         #plot the rejected spikes if they exist
         if self.rejected_spikes is not None:
-            #
-            
             #create a cmap for the labels
             cmap = plt.cm.get_cmap('viridis')
             #create a list of colors for the labels
@@ -592,15 +593,12 @@ class analysis_gui(object):
                 row_dicts = [str(row.to_dict()) for index, row in self.rejected_spikes[sweep].iterrows()]
                 #get the unique labels
                 unique_labels = np.unique(row_dicts)
-
                 for unique_type in unique_labels:
                     #rows that match the unique type
                     rows = self.rejected_spikes[sweep][self.rejected_spikes[sweep].apply(lambda x: str(x.to_dict()) == unique_type, axis=1)]
-
                     #plot the rejected spikes
                     self.axe1.scatter(self.abf.sweepX[rows.index.values], self.abf.sweepY[rows.index.values], color=color_dict[unique_type], s=10, zorder=99,)
-                    
-                    #self.axe1.scatter(self.abf.sweepX[int(index)], self.abf.sweepY[int(index)], c='r', s=10, zorder=99, label=)
+                  
            
             #create a legend for the rejected spikes
             #create a list of patches for the legend
@@ -654,7 +652,10 @@ class analysis_gui(object):
                 
                 avg_min = np.nanmean(dataV[min_point])
                 sag_diff = avg_min - vm
-                sag_diff_plot = np.arange(avg_min, vm, 1)
+                try:
+                    sag_diff_plot = np.arange(avg_min, vm, 1)
+                except:
+                    sag_diff_plot = np.arange(avg_min, 0, 1, dtype=np.float64)
                 self.axe1.scatter(dataT[min_point], dataV[min_point], c='r', marker='x', zorder=99, label="Min Point")
                 self.axe1.scatter(dataT[end_index:upwardinfl], dataV[end_index:upwardinfl], c='g', zorder=99, label="Mean Vm Measured")
                 self.axe1.plot(dataT[np.full(sag_diff_plot.shape[0], min_point, dtype=np.int64)], sag_diff_plot, label=f"Sag of {sag_diff}")
@@ -720,6 +721,20 @@ class analysis_gui(object):
                 if self.spike_df[sweep].empty:
                     continue
                 #self.axe1.scatter(self.spike_df[sweep].loc[:, 'peak_t'], self.spike_df[sweep].loc[:,'peak_v'], color='#FF0000', s=10, zorder=99)
+
+    def _run_script(self, checked=False, name=None):
+        #try to spawn the script in the current terminal
+        #if it fails, spawn a new terminal
+        SCRIPT_PAIRS = {'actionOrganize_Abf': f'python {os.path.dirname(__file__)}/org_by_protocol.py', 'actionRun_APisolation': 'python run_APisolation.py', 'actionRun_APisolation_gui': 'python run_APisolation_gui.py'}
+        
+        try:
+            print(f"Running {SCRIPT_PAIRS[name]}")
+            os.system(SCRIPT_PAIRS[name])
+        except:
+            print(f"Failed to run {SCRIPT_PAIRS[name]}")
+            
+        return
+        
 
 from ipfx import spike_detector,time_series_utils
 def determine_rejected_spikes(spfx, spike_df, v, t, param_dict):
