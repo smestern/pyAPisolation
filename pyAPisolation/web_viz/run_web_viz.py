@@ -17,21 +17,20 @@ import subprocess
 import time
 import argparse
 from pyAPisolation.utils import arg_wrap
+from . import build_database
 from http.server import HTTPServer, CGIHTTPRequestHandler
 
 def run_web_viz(dir_path=None, database_file=None, backend='static'):
     if dir_path is None:
         dir_path = os.getcwd()
     if database_file is None:
+        build_database.main
+
         database_file = os.path.join(dir_path, 'output', 'database.csv')
     if backend == 'static' or backend == 'dynamic':
         run_output_to_web.main(database_file=database_file, static=(backend=='static'))
         return
     elif backend == 'dash':
-        os.chdir("./pyAPisolation/")
-        os.chdir("./web_viz")
-        sys.path.append('..')
-        sys.path.append('')
         app = dash_folder_app.run_app(database_file)
         return app
 
