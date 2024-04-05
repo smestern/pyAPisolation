@@ -15,7 +15,7 @@ import copy
 from functools import partial
 import scipy.signal as signal
 print("Loaded basic libraries; importing QT")
-from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog
+from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog, QMainWindow, QAction
 from PySide2.QtCore import QFile
 from PySide2 import QtGui
 import PySide2.QtCore as QtCore
@@ -39,52 +39,45 @@ from ipfx.feature_extractor import SpikeFeatureExtractor
 PLOT_BACKEND = 'matplotlib'
 ANALYSIS_TABS = {0:'spike', 1:'subthres'}
 
-class analysis_gui(QWidget):
+class analysis_gui(object):
     def __init__(self):
-        super(analysis_gui, self).__init__()
+        #super(analysis_gui, self).__init__()
         self.load_ui()
-        self.main_widget = self.children()[0]
+        #self.main_widget = self.children()[-1]
         self.abf = None
         self.current_filter = 0.
         self.bind_ui()
 
-
     def load_ui(self):
         loader = QUiLoader()
-        path = os.path.join(os.path.dirname(__file__), "form.ui")
-        print(path)
+        path = os.path.join(os.path.dirname(__file__), "mainwindowMDI.ui")
         ui_file = QFile(path)
         ui_file.open(QFile.ReadOnly)
-        loader.load(ui_file, self)
+        self.main_widget = loader.load(ui_file)
         ui_file.close()
 
     def bind_ui(self):
-        children = self.main_widget.children()
         #assign the children to the main object for easy access
-        for child in children:
-            print(child.objectName())
-            if child.objectName() == "folder_select":
-                self.folder_select = child
-                #for the file loader make a folder select
-                child.clicked.connect(self.file_select)
-            elif child.objectName() == "file_list":
-                self.file_list = child
-                child.itemClicked.connect(self.abf_select)
-            elif child.objectName() == "frame":
-                self.frame = child
-                layout =  QVBoxLayout()
-                if PLOT_BACKEND == "pyqtgraph":
-                    plot_widget = pg.GraphicsLayoutWidget()
-                    layout.addWidget(plot_widget)
-                    self.main_view = plot_widget
-                elif PLOT_BACKEND == "matplotlib":
-                    self.main_view = FigureCanvas(Figure(figsize=(15, 5)))
-                    layout.addWidget(self.main_view)
-                    self.toolbar = NavigationToolbar(self.main_view, self.frame)
-                    layout.addWidget(self.toolbar)
-                self.frame.setLayout(layout)
-            elif child.objectName() == "sweep_selector":
-                self.sweep_selector = child
+        self.folder_select = self.main_widget.findChild(QWidget, "folder_select")
+        self.folder_select.clicked.connect(self.file_select)
+        
+        self.file_list = self.main_widget.findChild(QWidget, "file_list")
+        self.file_list.itemClicked.connect(self.abf_select)
+        
+        self.frame = self.main_widget.findChild(QWidget, "mainplot")
+        layout = QVBoxLayout()
+        if PLOT_BACKEND == "pyqtgraph":
+            plot_widget = pg.GraphicsLayoutWidget()
+            layout.addWidget(plot_widget)
+            self.main_view = plot_widget
+        elif PLOT_BACKEND == "matplotlib":
+            self.main_view = FigureCanvas(Figure(figsize=(15, 5)))
+            layout.addWidget(self.main_view)
+            self.toolbar = NavigationToolbar(self.main_view, self.frame)
+            layout.addWidget(self.toolbar)
+        self.frame.setLayout(layout)
+        
+        self.sweep_selector = self.main_widget.findChild(QWidget, "sweep_selector")
         #generate the analysis settings listener for spike finder
         self.dvdt_thres = self.main_widget.findChild(QWidget, "dvdt_thres")
         self.dvdt_thres.textChanged.connect(self.analysis_changed)
@@ -134,10 +127,21 @@ class analysis_gui(QWidget):
         self.besselFilterCM = self.main_widget.findChild(QWidget, "bessel_filt_cm")
         self.besselFilterCM.textChanged.connect(self.analysis_changed)
 
-        
+        #the top dropdowns
+        self.actionEnable_Parallel = self.main_widget.findChild(QAction, "actionEnable_Parallel")
+        self.actionEnable_Parallel.triggered.connect(self.analysis_changed)
+        #self.actionEnable_Parallel.triggered.connect(self.analysis_changed)
+        self.actionShow_Rejected_Spikes = self.main_widget.findChild(QAction, "actionShow_Rejected_Spikes")
+        self.actionShow_Rejected_Spikes.triggered.connect(self.analysis_changed)
 
-    
+        self.actionOpen_Folder = self.main_widget.findChild(QAction, "actionOpen_Folder")
+        self.actionOpen_Folder.triggered.connect(self.file_select)
+
+        self.actionOrganize_Abf = self.main_widget.findChild(QAction, "actionOrganize_Abf")
+        self.actionOrganize_Abf.triggered.connect(lambda x: self._run_script(False, name='actionOrganize_Abf'))
+
     def file_select(self):
+        """Opens a file dialog to select a folder of abf files"""
         self.selected_dir = QFileDialog.getExistingDirectory()
         self.abf_list = glob.glob(self.selected_dir + "/**/*.abf", recursive=True)
         self.abf_list_name = [os.path.basename(x) for x in self.abf_list]
@@ -145,7 +149,7 @@ class analysis_gui(QWidget):
         self.abf_file = self.pairs
         self.selected_sweeps = None
         #create a popup about the scanning the files
-        self.scan_popup = QProgressDialog("Scanning files", "Cancel", 0, len(self.abf_list))
+        self.scan_popup = QProgressDialog("Scanning files", "Cancel", 0, len(self.abf_list), parent=None)
         self.scan_popup.setWindowModality(QtCore.Qt.WindowModal)
         self.scan_popup.forceShow()
         #Generate the protocol list
@@ -161,7 +165,7 @@ class analysis_gui(QWidget):
                 self.protocol_file_pair[name] = 'unknown'
         #we really only care about unique protocols
         #close the popup
-        self.scan_popup.close()
+        self.scan_popup.deleteLater()
         #filter down to unique ones
         self.protocol_list = np.hstack(("[No Filter]", np.unique(self.protocol_list)))
         #clear the file list and protocol select
@@ -278,12 +282,16 @@ class analysis_gui(QWidget):
         return abf
 
     def run_indiv_analysis(self):
-        
         #get the current abf
         self.abf = self.get_selected_abf()
         #get the current sweep(s)
         self.get_selected_sweeps()
         self.get_analysis_params()
+        #create a popup for the analysis to warn the user that it may take a while
+        self.indiv_popup = QProgressDialog("Operation in progress.", "Cancel", 0, len(self.selected_sweeps), parent=None)
+        self.indiv_popup.setWindowModality(QtCore.Qt.WindowModal)
+        self.indiv_popup.forceShow()
+        show_rejected = self.actionShow_Rejected_Spikes.isChecked()
         if self.get_current_analysis() is 'spike':
             self.subthres_df = None
             if self.selected_sweeps is None:
@@ -297,19 +305,22 @@ class analysis_gui(QWidget):
                 start=self.param_dict['start'], end=self.param_dict['end'], thresh_frac=self.param_dict['thresh_frac'])
             #extract the spikes and make a dataframe for each sweep
             self.spike_df = {}
-            self.rejected_spikes = None #{}
+            self.rejected_spikes = {} if show_rejected else None
             for sweep in self.selected_sweeps:
                 self.abf.setSweep(sweep)
                 
                 self.spike_df[sweep] = self.spike_extractor.process(self.abf.sweepX,self.abf.sweepY, self.abf.sweepC)
-                # self.rejected_spikes[sweep] = pd.DataFrame().from_dict(determine_rejected_spikes(self.spike_extractor, self.spike_df[sweep], self.abf.sweepY, self.abf.sweepX, 
-                # self.param_dict)).T
+                if show_rejected:
+                    self.rejected_spikes[sweep] = pd.DataFrame().from_dict(determine_rejected_spikes(self.spike_extractor, self.spike_df[sweep], self.abf.sweepY, self.abf.sweepX, 
+                    self.param_dict)).T 
                 #self.rejected_spikes = None
+                self.indiv_popup.setValue(sweep)
             #self.spike_df = pd.concat(self.spike_df)
         elif self.get_current_analysis() is 'subthres':
             self.spike_df = None
             self.rejected_spikes = None
             self.subthres_df, _ = analyze_subthres(self.abf, **self.subt_param_dict)
+        self.indiv_popup.hide()
             
     
     def get_analysis_params(self):
@@ -445,18 +456,17 @@ class analysis_gui(QWidget):
         df_spike_count = pd.DataFrame()
         df_running_avg_count = pd.DataFrame()
         filelist = glob.glob(folder + "/**/*.abf", recursive=True)
-        popup = QProgressDialog("Operation in progress.", "Cancel", 0, len(filelist), self)
+        popup = QProgressDialog("Running Analysis.", "Cancel", 0, len(filelist), None)
         popup.setWindowModality(QtCore.Qt.WindowModal)
         popup.forceShow()
         spike_count = []
         df_full = []
         df_running_avg = []
-        parallel_processing = False
+        parallel_processing = self.actionEnable_Parallel.isChecked()
         i = 0
 
         if parallel_processing:
             def update_iteration(_, i):
-                
                 popup.setValue(i)
                 popup.setLabelText("Processing file " + str(i) + " of " + str(len(filelist)))
             pool = mp.Pool(mp.cpu_count())
@@ -499,7 +509,7 @@ class analysis_gui(QWidget):
 
     def _inner_analysis_loop_subthres(self, folder, param_dict, protocol_name):
         filelist = glob.glob(folder + "/**/*.abf", recursive=True)
-        popup = QProgressDialog("Operation in progress.", "Cancel", 0, len(filelist), self)
+        popup = QProgressDialog("Operation in progress.", "Cancel", 0, len(filelist), None)
         popup.setWindowModality(QtCore.Qt.WindowModal)
         popup.forceShow()
         dfs = []
@@ -567,8 +577,6 @@ class analysis_gui(QWidget):
         
         #plot the rejected spikes if they exist
         if self.rejected_spikes is not None:
-            #
-            
             #create a cmap for the labels
             cmap = plt.cm.get_cmap('viridis')
             #create a list of colors for the labels
@@ -581,11 +589,16 @@ class analysis_gui(QWidget):
                 self.abf.setSweep(sweep)
                 if self.rejected_spikes[sweep].empty:
                     continue
-                for index, row in self.rejected_spikes[sweep].iterrows():
+                
+                row_dicts = [str(row.to_dict()) for index, row in self.rejected_spikes[sweep].iterrows()]
+                #get the unique labels
+                unique_labels = np.unique(row_dicts)
+                for unique_type in unique_labels:
+                    #rows that match the unique type
+                    rows = self.rejected_spikes[sweep][self.rejected_spikes[sweep].apply(lambda x: str(x.to_dict()) == unique_type, axis=1)]
                     #plot the rejected spikes
-                    self.axe1.scatter(self.abf.sweepX[int(index)], self.abf.sweepY[int(index)], color=color_dict[str(row.to_dict())], s=10, zorder=99,)
-                    
-                    #self.axe1.scatter(self.abf.sweepX[int(index)], self.abf.sweepY[int(index)], c='r', s=10, zorder=99, label=)
+                    self.axe1.scatter(self.abf.sweepX[rows.index.values], self.abf.sweepY[rows.index.values], color=color_dict[unique_type], s=10, zorder=99,)
+                  
            
             #create a legend for the rejected spikes
             #create a list of patches for the legend
@@ -639,14 +652,17 @@ class analysis_gui(QWidget):
                 
                 avg_min = np.nanmean(dataV[min_point])
                 sag_diff = avg_min - vm
-                sag_diff_plot = np.arange(avg_min, vm, 1)
+                try:
+                    sag_diff_plot = np.arange(avg_min, vm, 1)
+                except:
+                    sag_diff_plot = np.arange(avg_min, 0, 1, dtype=np.float64)
                 self.axe1.scatter(dataT[min_point], dataV[min_point], c='r', marker='x', zorder=99, label="Min Point")
                 self.axe1.scatter(dataT[end_index:upwardinfl], dataV[end_index:upwardinfl], c='g', zorder=99, label="Mean Vm Measured")
                 self.axe1.plot(dataT[np.full(sag_diff_plot.shape[0], min_point, dtype=np.int64)], sag_diff_plot, label=f"Sag of {sag_diff}")
 
-        self.axe1.legend( bbox_to_anchor=(1.05, 1),
-                         loc='upper left', borderaxespad=0.)
-        self.axe2.legend(loc='upper right')
+        #self.axe1.legend( bbox_to_anchor=(1.05, 1),
+                       #  loc='upper left', borderaxespad=0.)
+        #self.axe2.legend(loc='upper right')
         #self.axe1.add_artist(reject_spikes_legend)
         #create a span_selector for the time
         #if float(self.start_time.text()) != 0 or float(self.end_time.text()) != 0:
@@ -705,6 +721,20 @@ class analysis_gui(QWidget):
                 if self.spike_df[sweep].empty:
                     continue
                 #self.axe1.scatter(self.spike_df[sweep].loc[:, 'peak_t'], self.spike_df[sweep].loc[:,'peak_v'], color='#FF0000', s=10, zorder=99)
+
+    def _run_script(self, checked=False, name=None):
+        #try to spawn the script in the current terminal
+        #if it fails, spawn a new terminal
+        SCRIPT_PAIRS = {'actionOrganize_Abf': f'python {os.path.dirname(__file__)}/org_by_protocol.py', 'actionRun_APisolation': 'python run_APisolation.py', 'actionRun_APisolation_gui': 'python run_APisolation_gui.py'}
+        
+        try:
+            print(f"Running {SCRIPT_PAIRS[name]}")
+            os.system(SCRIPT_PAIRS[name])
+        except:
+            print(f"Failed to run {SCRIPT_PAIRS[name]}")
+            
+        return
+        
 
 from ipfx import spike_detector,time_series_utils
 def determine_rejected_spikes(spfx, spike_df, v, t, param_dict):
@@ -818,5 +848,10 @@ if __name__ == "__main__":
     mp.freeze_support()
     app = QApplication([])
     widget = analysis_gui()
-    widget.show()
+    widget.main_widget.show()
+    #widget.children()[0].hide()
+    #widget.children()[1].show()
+    #pull focus to the ui
+    #widget.children()[1].raise_()
+
     sys.exit(app.exec_())

@@ -17,7 +17,7 @@ dir_path = filedialog.askdirectory(title="Choose Dir to sort")
 out_path = filedialog.askdirectory(title="Choose output dir")
 
 ##list subfolders
-subfold = os.listdir(dir_path)
+subfold = [x for x in os.listdir(dir_path) if os.path.isdir(os.path.join(dir_path, x))]
 l = tk.Listbox(root, width = 400,
     selectmode='extended')
 l.pack()
@@ -27,7 +27,8 @@ subfolders_to_use = []
 def close():
     global l, root, subfolders_to_use
     subfolders_to_use = l.curselection()
-    
+    if len(subfolders_to_use) == 0:
+        subfolders_to_use = range(len(subfold))
     root.destroy()
 
 b = tk.Button(root, text = "OK", command = close).pack()
@@ -45,6 +46,15 @@ def find_or_create_folder(out_path, label):
 
     return full_path
 
+#spawn a new pop up to tell the user we are working
+root_tk = Tk()
+root_tk.title("Working")
+root_tk.geometry("200x100")
+label = Label(root_tk, text="Working...")
+label.pack()
+root_tk.update()
+
+
 for dir_paths in subfolders_to_use:
     for root,dirs,files in os.walk(dir_paths): 
         for x in files:
@@ -52,6 +62,8 @@ for dir_paths in subfolders_to_use:
 
             if '.abf' in x:
                 print(f"opening {fp}")
+                label.config(text=f"Working on {fp}")
+                root_tk.update()
                 try:
                     abf = pyabf.ABF(fp, loadData=False)
                     proto = abf.protocol
@@ -63,5 +75,11 @@ for dir_paths in subfolders_to_use:
                 except:
                     pass
             
+#tell the user we are done
+label.config(text="Done")
+root_tk.update()
+#root_tk.after(2000, lambda: root_tk.destroy())
+root_tk.mainloop()
+
 
 

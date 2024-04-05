@@ -82,10 +82,10 @@ def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
         spike_dataframe, spikewise_dataframe, running_bin_data_frame : _description_
     """
     try:
-        abf = pyabf.ABF(file_path)           
-        if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
+        abf = pyabf.ABF(file_path, loadData=False)           
+        if protocol_name in abf.protocol: 
             print(file_path + ' import')
-
+            abf = pyabf.ABF(file_path, loadData=True)  #if its the correct protocol, we will reload the abf
             temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
             return temp_spike_df, df, temp_running_bin
         else:
