@@ -10,7 +10,7 @@ import argparse
 import dash
 from dash.dependencies import Input, Output, State
 from dash import dash_table, dcc
-from dash import dcc
+import dash_ag_grid as dag
 
 import dash_bootstrap_components as dbc
 from dash import html
@@ -169,9 +169,9 @@ class live_data_viz():
         self.df_raw = copy.deepcopy(df)
         df = _df_select_by_col(self.df_raw, GLOBAL_VARS.table_vars_rq)
          #add in a column for dropdown:
-        df['showMore'] = [''] * len(df)
+        #df['showMore'] = [''] * len(df)
         #reorder so that the showMore column is first
-        df = df[['showMore'] + df.columns[:-1].tolist()]
+        #df = df[['showMore'] + df.columns[:-1].tolist()]
 
         df_optional = _df_select_by_col(
             self.df_raw, GLOBAL_VARS.table_vars).iloc[:, :GLOBAL_VARS.table_vars_limit]
@@ -180,28 +180,15 @@ class live_data_viz():
         df['id'] = df[GLOBAL_VARS.file_index] if GLOBAL_VARS.file_index in df.columns else df.index
         df.set_index('id', inplace=True, drop=False)
         self.df = df
-        return [dash_table.DataTable(
+        return [dag.AgGrid(
                 id='datatable-row-ids',
-                columns=[
-                    {'name': i, 'id': i, 'deletable': True} for i in self.df.columns
+                columnDefs=[
+                    {"field": i} for i in df.columns
                     # omit the id column
                     if i != 'id'
                 ],
-                data=self.df.to_dict('records'),
-                filter_action="native",
-                sort_action="native",
-                sort_mode='multi',
-                #row_selectable='multi',
-                selected_rows=[],
-                page_action='native',
-                page_current=0,
-                page_size=10,
-                style_cell={
-                    'overflow': 'hidden',
-                    'textOverflow': 'ellipsis',
-                    'maxWidth': 0
-                },
-                style_as_list_view=True
+                rowData=self.df.to_dict('records'),
+                dashGridOptions={'pagination':True},
                 )]
 
     def gen_umap_plots(self, labels=None, label_legend=None, data=None):
@@ -436,3 +423,27 @@ if __name__ == '__main__':
     app = live_data_viz(data_folder, database_file=data_df)
 
     app.app.run(host='0.0.0.0', debug=False)
+
+# [dash_table.DataTable(
+#                 id='datatable-row-ids',
+#                 columns=[
+#                     {'name': i, 'id': i, 'deletable': True} for i in self.df.columns
+#                     # omit the id column
+#                     if i != 'id'
+#                 ],
+#                 data=self.df.to_dict('records'),
+#                 filter_action="native",
+#                 sort_action="native",
+#                 sort_mode='multi',
+#                 #row_selectable='multi',
+#                 selected_rows=[],
+#                 page_action='native',
+#                 page_current=0,
+#                 page_size=10,
+#                 style_cell={
+#                     'overflow': 'hidden',
+#                     'textOverflow': 'ellipsis',
+#                     'maxWidth': 0
+#                 },
+#                 style_as_list_view=True
+#                 )]

@@ -81,8 +81,7 @@ def run_analysis(folder, backend="ipfx", outfile='out.csv', ext="nwb", parallel=
         results = joblib.Parallel(n_jobs=1, backend='multiprocessing')(joblib.delayed(get_data_partial)(specimen_id) for specimen_id in file_idx)
         
     elif backend == "custom":
-        raise(NotImplementedError)
-        # Use custom backend to extract features
+        # Use custom backend to extract features, this uses the spike_finder and patch_utils method, on the very far backend it uses ipfx, so feature values will more or less be the same
         results = []
         for f in files:
             # Extract features from each file
@@ -240,7 +239,7 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
             #if its not current clamp
             if match_unit(data_set.sweepMetadata[sweep]['stim_dict']["unit"]) != "amp":
                 logging.debug(f"sweep {sweep} is not current clamp")
-                #debug_log[sweep] = "not current clamp"
+                debug_log[sweep] = f"not current clamp, found units of {match_unit(data_set.sweepMetadata[sweep]['stim_dict']['unit'])}"
                 continue
             #if the sweep v is in volts, convert to mV, ipfx wants mV
             if match_unit(data_set.sweepMetadata[sweep]['resp_dict']["unit"]) == "volt":
@@ -289,6 +288,8 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
                 
             #plt.legend()
             plt.pause(0.2)
+        if len(sweeps) < 1:
+            return result
         #get the most common start and end times
         start_time = scipy.stats.mode(np.array(start_times))[0][0]
         end_time = scipy.stats.mode(np.array(end_times))[0][0]
@@ -354,7 +355,10 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
         rates = sweep_table.loc[sweep_indexes, "avg_rate"].values
         result.update(run_feature_collection.fi_curve_fit(amps, rates))
 
-        #we should record the name of the stimuli used and the sweeps used
+        #we should record the name of the stimuli used and the sweeps used, for either plotting or debugging
+        result["stimulus_name"] = data_set.sweepMetadata[0]['stim_dict']['description']
+        result["sweeps_used"] = sweep_indexes
+
         
 
         
@@ -500,6 +504,11 @@ def match_ramp_protocol(stimulus_protocol, ontology):
     pass
 
 def match_unit(unit, ontology=_UNIT_ONTOLOGY):
+    #unit should be a string, if its bytes or something else, convert it to a string
+    if isinstance(unit, bytes) or isinstance(unit, np.bytes_):
+        unit = unit.decode('utf-8')
+    elif isinstance(unit, str) != True:
+        unit = str(unit)
     #this function will take a unit and return the unit ontology
     for unit_name in ontology:
         check = [unit.upper() in x.upper() for x in ontology[unit_name]]
@@ -554,7 +563,7 @@ def build_dataset_traces(folder, ext="nwb", parallel=True):
         parallel = joblib.cpu_count()
     results = joblib.Parallel(n_jobs=parallel, backend='multiprocessing')(joblib.delayed(plot_data)(specimen_id, files) for specimen_id in file_idx)
 
-def plot_data(specimen_id, file_list=None, amp_interval=20, max_above_rheo=100, target_amps=[-100, -20, 20, 100], debug=True):
+def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100], debug=True):
     result = {}
     result["specimen_id"] = file_list[specimen_id]
     _, _, _, _, data_set = loadNWB(file_list[specimen_id], return_obj=True)
