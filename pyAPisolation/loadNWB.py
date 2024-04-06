@@ -73,12 +73,12 @@ def loadNWB(file_path, return_obj=False, old=False, load_into_mem=True):
         dataC = []
 
     if return_obj == True:
-        return dataX, dataY, dataC, dt, nwb
+        return dataX, dataY, dataC, nwb
     else:
-        return dataX, dataY, dataC, dt
+        return dataX, dataY, dataC, 
 
     ##Final return incase if statement fails somehow
-    return dataX, dataY, dataC, dt
+    return dataX, dataY, dataC
 
 
 

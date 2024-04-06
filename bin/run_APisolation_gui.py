@@ -15,8 +15,8 @@ import copy
 from functools import partial
 import scipy.signal as signal
 print("Loaded basic libraries; importing QT")
-from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog, QMainWindow, QAction
-from PySide2.QtCore import QFile
+from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog, QMainWindow, QAction, QTableView
+from PySide2.QtCore import QFile, QAbstractTableModel, Qt, QModelIndex
 from PySide2 import QtGui
 import PySide2.QtCore as QtCore
 from PySide2.QtUiTools import QUiLoader
@@ -126,6 +126,13 @@ class analysis_gui(object):
         self.endCM.textChanged.connect(self.analysis_changed)
         self.besselFilterCM = self.main_widget.findChild(QWidget, "bessel_filt_cm")
         self.besselFilterCM.textChanged.connect(self.analysis_changed)
+
+        #Find the table view
+        self.tableView = self.main_widget.findChild(QWidget, "resultsTable")
+        #make sortable
+        self.tableView.setSortingEnabled(True)
+        #bind click events to the table view
+        self.tableView.clicked.connect(self._results_table_select)
 
         #the top dropdowns
         self.actionEnable_Parallel = self.main_widget.findChild(QAction, "actionEnable_Parallel")
@@ -378,14 +385,17 @@ class analysis_gui(object):
             #run the folder analysis
             self.get_analysis_params()
             self.get_selected_protocol()
-            #df = folder_feature_extract(self.selected_dir, self.param_dict, False, self.selected_protocol)
+            
             df = self._inner_analysis_loop(self.selected_dir, self.param_dict,  self.selected_protocol)     
             save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time())+self.outputTag.text(), self.bspikeFind.isChecked()
                              , self.brunningBin.isChecked(), self.brawData.isChecked())
+            self.df = df[1]
         elif self.get_current_analysis() is 'subthres':
             self.get_analysis_params()
             self.get_selected_protocol()
             df = self._inner_analysis_loop_subthres(self.selected_dir, self.subt_param_dict,  self.selected_protocol)
+            self.df = df
+        self.tableView.setModel(PandasModel(self.df, index='filename'))
         
     def get_current_analysis(self):
         index = self.tabselect.currentIndex()
@@ -418,7 +428,6 @@ class analysis_gui(object):
             if (os.path.abspath(self.abf.abfFilePath) == os.path.abspath(self.selected_abf)) and (self.param_dict['bessel_filter'] == self.current_filter):
                 pass
             else:
-                
                 self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
                 self.current_filter = self.param_dict['bessel_filter']
         return self.abf
@@ -496,7 +505,7 @@ class analysis_gui(object):
         df_running_avg_count = pd.concat(df_running_avg, sort=False)
         popup.hide()
         #detect outliers
-        #df_spike_count['outlier'] = self._find_outliers(df_spike_count)
+        df_spike_count['outlier'] = self._find_outliers(df_spike_count)
         #Highlight outliers in filelist
         # for i in np.arange(self.file_list.count()):
         #     f = self.file_list.item(i)
@@ -515,10 +524,10 @@ class analysis_gui(object):
         dfs = []
         for i, f in enumerate(filelist):
             popup.setValue(i)
-            df = preprocess_abf_subthreshold(f, copy.deepcopy(param_dict), protocol_name)
-            dfs.append(df)
+            df = preprocess_abf_subthreshold(f, protocol_name, copy.deepcopy(param_dict))
+            dfs.append(df[1])
         popup.hide()
-        return pd.concat(dfs, axis=1)
+        return pd.concat(dfs, axis=0)
 
 
     def _plot_matplotlib(self):
@@ -665,7 +674,6 @@ class analysis_gui(object):
         #self.axe2.legend(loc='upper right')
         #self.axe1.add_artist(reject_spikes_legend)
         #create a span_selector for the time
-        #if float(self.start_time.text()) != 0 or float(self.end_time.text()) != 0:
         #if the span selector has been created, update the extents
         if hasattr(self, 'span'):
             self.span.new_axes(self.axe1)
@@ -674,11 +682,6 @@ class analysis_gui(object):
             self.span = SpanSelector(self.axe1, self._mpl_span, 'horizontal', useblit=True,
                     props=dict(alpha=0.1, facecolor='red'), handle_props=dict(alpha=0.0), interactive=True)
             self.span.extents = (float(self.start_time.text()), float(self.end_time.text()))
-        # else:
-        #     self.span = SpanSelector(self.axe1, self._mpl_span, 'horizontal', useblit=True,
-        #             rectprops=dict(alpha=0.1, facecolor='red'), interactive=True)
-        #     self.span.extents = (0, 0)
-        
         self.main_view.draw()
 
     def _mpl_span(self, min_value, max_value):
@@ -734,6 +737,20 @@ class analysis_gui(object):
             print(f"Failed to run {SCRIPT_PAIRS[name]}")
             
         return
+    
+    def _results_table_select(self, index):
+        #get the selected row
+        row = index.row()
+        #get the filename;
+        filename = self.df.iloc[row]['filename']+'.abf'
+        #highlight that file in the file list
+        for i in np.arange(self.file_list.count()):
+            item = self.file_list.item(i)
+            if item.text() == filename:
+                item.setSelected(True)
+                self.file_list.setCurrentRow(i)
+                #fire a clicked event
+                self.file_list.itemClicked.emit(item)
         
 
 from ipfx import spike_detector,time_series_utils
@@ -833,7 +850,6 @@ def determine_rejected_spikes(spfx, spike_df, v, t, param_dict):
                 else:
                     # Otherwise, log and get rid of the spike
                     drop_spikes.append(i)
-#                     raise FeatureError("Could not redetermine threshold")
             else:
                 spike_indexes[i] = upstroke_indexes[i] - below_target[0]
         for i in drop_spikes:
@@ -843,6 +859,77 @@ def determine_rejected_spikes(spfx, spike_df, v, t, param_dict):
     return rejected_spikes
 
 
+class PandasModel(QAbstractTableModel):
+    """A model to interface a Qt view with pandas dataframe """
+
+    def __init__(self, dataframe: pd.DataFrame, index=None, parent=None):
+        QAbstractTableModel.__init__(self, parent)
+        if index is not None:
+            #clone the column to the index
+            dataframe['_temp_index'] = dataframe[index].to_numpy()
+            dataframe = dataframe.set_index('_temp_index')
+        self._dataframe = dataframe
+
+    def rowCount(self, parent=QModelIndex()) -> int:
+        """ Override method from QAbstractTableModel
+
+        Return row count of the pandas DataFrame
+        """
+        if parent == QModelIndex():
+            return len(self._dataframe)
+
+        return 0
+
+    def columnCount(self, parent=QModelIndex()) -> int:
+        """Override method from QAbstractTableModel
+
+        Return column count of the pandas DataFrame
+        """
+        if parent == QModelIndex():
+            return len(self._dataframe.columns)
+        return 0
+
+    def data(self, index: QModelIndex, role=Qt.ItemDataRole):
+        """Override method from QAbstractTableModel
+
+        Return data cell from the pandas DataFrame
+        """
+        if not index.isValid():
+            return None
+
+        if role == Qt.DisplayRole:
+            return str(self._dataframe.iloc[index.row(), index.column()])
+        if role == Qt.BackgroundColorRole and 'outlier' in self._dataframe.columns:
+            if self._dataframe.iloc[index.row()]['outlier'] == 1:
+                return QtGui.QColor(255, 0, 0)
+        return None
+
+    def headerData(
+        self, section: int, orientation: Qt.Orientation, role: Qt.ItemDataRole
+    ):
+        """Override method from QAbstractTableModel
+
+        Return dataframe index as vertical header data and columns as horizontal header data.
+        """
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return str(self._dataframe.columns.values[section])
+
+            if orientation == Qt.Vertical:
+                return str(self._dataframe.index.values[section])
+
+        return None
+
+    def sort(self, column: int, order=Qt.SortOrder):
+        """Override method from QAbstractTableModel
+
+        Sort the pandas DataFrame by column
+        """
+        self.layoutAboutToBeChanged.emit()
+        self._dataframe = self._dataframe.sort_values(
+            self._dataframe.columns[column], ascending=order == Qt.AscendingOrder
+        )
+        self.layoutChanged.emit()
 
 if __name__ == "__main__":
     mp.freeze_support()

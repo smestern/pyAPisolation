@@ -25,7 +25,7 @@ IC1_SPECIFIC_FUNCTIONS = True
 parallel = True
 default_dict = {'start': 0, 'end': 0, 'filter': 0, 'stim_find': True}
 
-def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1', para=1):
+def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1'):
     """runs the feature extractor on a folder of abfs.
 
     Args:
@@ -38,8 +38,6 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     Returns:
         _type_: _description_
     """
-    debugplot = 0
-    running_lab = ['Trough', 'Peak', 'Max Rise (upstroke)', 'Max decline (downstroke)', 'Width']
     dfs = pd.DataFrame()
     df_spike_count = pd.DataFrame()
     df_running_avg_count = pd.DataFrame()
@@ -180,9 +178,10 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         elif param_dict['end'] > real_sweep_length:
             param_dict['end'] = real_sweep_length
         
-        spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by 
+        spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by ipfx
         
-        temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict)
+        #build the dataframe, this will be the dataframe that is used for the full data, essentially the sweepwise dataframe, each file will have a dataframe like this
+        temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict) 
         
         #attach the custom features
         custom_features = _custom_sweepwise_features(x[sweepNumber], y[sweepNumber] ,c[sweepNumber] , real_sweep_number, param_dict, temp_spike_df, spike_in_sweep)
@@ -191,7 +190,7 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
     #add the filename and foldername to the temp_running_bin
     temp_running_bin['filename'] = abf.abfID
     temp_running_bin['foldername'] = os.path.dirname(abf.abfFilePath)
-    #compute some final features
+    #compute some final features, here we need all the sweeps etc, so these are computed after the sweepwise features
     temp_spike_df = _custom_full_features(x, y, c, param_dict, temp_spike_df)
     temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
     
@@ -216,7 +215,6 @@ def _custom_sweepwise_features(sweepX, sweepY, sweepC, real_sweep_number, param_
         custom_features['baseline voltage' + real_sweep_number] = subt.baseline_voltage(sweepX, sweepY, start=0.1, filter_frequency=param_dict['filter'])
     except:
         print('Fail to find baseline voltage')
-    
     
     #compute features if there was a spike
     #if spike_df.empty:
@@ -365,18 +363,18 @@ else:
 
 #SUBTHRESHOLD FEATURES
 def preprocess_abf_subthreshold(file_path, protocol_name='', param_dict={}):
-    try:
-        abf = pyabf.ABF(file_path)           
-        if abf.sweepLabelY != 'Clamp Current (pA)' and protocol_name in abf.protocol:
-            print(file_path + ' import')
-
-            df, avg = analyze_subthres(abf, sweeplist=None,  **param_dict)
-            return df, avg
-        else:
-            print('Not correct protocol: ' + abf.protocol)
-            return pd.DataFrame(), pd.DataFrame()
-    except:
-       return pd.DataFrame(), pd.DataFrame()
+    #try:
+    abf = pyabf.ABF(file_path, loadData=False)           
+    if protocol_name in abf.protocol:
+        print(file_path + ' import')
+        abf = pyabf.ABF(file_path)      
+        df, avg = analyze_subthres(abf, **param_dict)
+        return df, avg
+    else:
+        print('Not correct protocol: ' + abf.protocol)
+        return pd.DataFrame(), pd.DataFrame()
+    #except:
+       #return pd.DataFrame(), pd.DataFrame()
 
 def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False):
     filename = abf.abfID
@@ -419,11 +417,11 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
     
     
     temp_df = pd.DataFrame()
-    temp_df['1Afilename'] = [abf.abfID]
-    temp_df['1Afoldername'] = [os.path.dirname(file_path)]
+    temp_df['filename'] = [abf.abfID]
+    temp_df['foldername'] = [os.path.dirname(file_path)]
     temp_avg = pd.DataFrame()
-    temp_avg['1Afilename'] = [abf.abfID]
-    temp_avg['1Afoldername'] = [os.path.dirname(file_path)]
+    temp_avg['filename'] = [abf.abfID]
+    temp_avg['foldername'] = [os.path.dirname(file_path)]
     
     full_dataI = []
     full_dataV = []

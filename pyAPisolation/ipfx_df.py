@@ -85,9 +85,6 @@ def organize_data_frames(dfs, df_spike_count, df_running_avg_count):
 
 
 
-
-
-
 # TODO <--- this is a mess, clean it up
 # Ensure functions do no require the abf object
 # functions should not depend on further analysis, only concat of dataframes
