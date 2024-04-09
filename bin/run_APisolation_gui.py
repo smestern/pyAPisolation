@@ -8,7 +8,7 @@ import pyabf
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
-from sklearn.svm import OneClassSVM
+from sklearn.ensemble import IsolationForest
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelEncoder
 import copy
@@ -395,7 +395,7 @@ class analysis_gui(object):
             self.get_selected_protocol()
             df = self._inner_analysis_loop_subthres(self.selected_dir, self.subt_param_dict,  self.selected_protocol)
             self.df = df
-        self.tableView.setModel(PandasModel(self.df, index='filename'))
+        self.tableView.setModel(PandasModel(self.df, index='filename', parent=self.tableView))
         
     def get_current_analysis(self):
         index = self.tabselect.currentIndex()
@@ -452,7 +452,7 @@ class analysis_gui(object):
             save_data_frames(dfs[1], dfs[0], dfs[2], self.selected_dir, str(time.time())+self.outputTag.text(), self.bspikeFind.isChecked(), self.brunningBin.isChecked(), self.brawData.isChecked())
 
     def _find_outliers(self, df):
-        outlier_dect = OneClassSVM(nu=0.1, kernel="rbf", gamma=0.1)
+        outlier_dect = IsolationForest(contamination='auto',random_state=42, n_jobs=-1)
         temp_df = SimpleImputer(missing_values=np.nan, strategy='mean').fit_transform(df.select_dtypes(include=['float']))
         outlier_dect.fit(temp_df)
         labels = outlier_dect.predict(temp_df)
@@ -740,9 +740,9 @@ class analysis_gui(object):
     
     def _results_table_select(self, index):
         #get the selected row
-        row = index.row()
+        row = index.model()._dataframe.iloc[index.row()]
         #get the filename;
-        filename = self.df.iloc[row]['filename']+'.abf'
+        filename = row['filename']+'.abf'
         #highlight that file in the file list
         for i in np.arange(self.file_list.count()):
             item = self.file_list.item(i)
@@ -899,8 +899,8 @@ class PandasModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             return str(self._dataframe.iloc[index.row(), index.column()])
-        if role == Qt.BackgroundColorRole and 'outlier' in self._dataframe.columns:
-            if self._dataframe.iloc[index.row()]['outlier'] == 1:
+        elif role == Qt.BackgroundColorRole and 'outlier' in self._dataframe.columns:
+            if self._dataframe.iloc[index.row()]['outlier'] == -1:
                 return QtGui.QColor(255, 0, 0)
         return None
 
