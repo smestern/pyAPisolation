@@ -147,6 +147,20 @@ class analysis_gui(object):
         self.actionOrganize_Abf = self.main_widget.findChild(QAction, "actionOrganize_Abf")
         self.actionOrganize_Abf.triggered.connect(lambda x: self._run_script(False, name='actionOrganize_Abf'))
 
+        #for all the windows in the mdi, we want to add a listener for the close event
+        self.mdi = self.main_widget.findChild(QWidget, "mdiArea")
+        #we also want to add a view button to the dropdown for each window in the mdi
+        #eg. view -> window 1, view -> window 2
+        #add it programatically
+        self.topBar = self.main_widget.findChild(QWidget, "menubar")
+        self.viewBar = self.topBar.addMenu("View")
+        for sub in self.mdi.subWindowList():
+            self.viewBar.addAction(sub.windowTitle())
+            self.viewBar.triggered.connect(self._view_window)
+            #add a close listener
+            sub.close.connect(self._close_window)
+
+
     def file_select(self):
         """Opens a file dialog to select a folder of abf files"""
         self.selected_dir = QFileDialog.getExistingDirectory()
@@ -751,7 +765,28 @@ class analysis_gui(object):
                 self.file_list.setCurrentRow(i)
                 #fire a clicked event
                 self.file_list.itemClicked.emit(item)
-        
+    
+    ### window management functions
+    def _view_window(self, action):
+        window_list = [x.windowTitle() for x in self.mdi.subWindowList()]
+        #check if the window is already open
+        if action.text() in window_list:
+            #if it is, show it
+            #get the idx of the window
+            idx = window_list.index(action.text())
+            self.mdi.subWindowList()[idx].showNormal()
+            #also pull it to the front
+            self.mdi.subWindowList()[idx].setFocus()
+        else:
+            #if it is not, create it
+            pass
+
+    #close the view window 
+    def _close_window(self, wind):
+        #don't actually close the window, just hide it
+        wind.hide()
+
+
 
 from ipfx import spike_detector,time_series_utils
 def determine_rejected_spikes(spfx, spike_df, v, t, param_dict):
