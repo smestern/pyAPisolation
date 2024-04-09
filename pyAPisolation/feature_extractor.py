@@ -11,7 +11,7 @@ from ipfx import feature_extractor, spike_detector, time_series_utils
 from ipfx import subthresh_features as subt
 import scipy.signal as signal
 
-from .ipfx_df import _build_full_df, _build_sweepwise_dataframe, save_data_frames
+from .ipfx_df import _build_full_df, _build_sweepwise_dataframe, save_data_frames, save_subthres_data
 from .loadABF import loadABF
 from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_abf
 from .patch_subthres import *

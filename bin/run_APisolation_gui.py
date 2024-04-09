@@ -29,7 +29,8 @@ from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 from matplotlib.widgets import SpanSelector
 print("Loaded external libraries")
-from pyAPisolation.feature_extractor import folder_feature_extract, save_data_frames, preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
+from pyAPisolation.feature_extractor import folder_feature_extract, save_data_frames, save_subthres_data, \
+preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
 from pyAPisolation.patch_utils import load_protocols
 from pyAPisolation.patch_subthres import exp_decay_2p, exp_decay_1p, exp_decay_factor
 
@@ -157,8 +158,10 @@ class analysis_gui(object):
         for sub in self.mdi.subWindowList():
             self.viewBar.addAction(sub.windowTitle())
             self.viewBar.triggered.connect(self._view_window)
-            #add a close listener
-            sub.close.connect(self._close_window)
+            #set hide on close
+            sub.setAttribute(QtCore.Qt.WA_DeleteOnClose, False)
+            #delete the close button
+            sub.setWindowFlags(QtCore.Qt.WindowMinMaxButtonsHint)
 
 
     def file_select(self):
@@ -407,8 +410,9 @@ class analysis_gui(object):
         elif self.get_current_analysis() is 'subthres':
             self.get_analysis_params()
             self.get_selected_protocol()
-            df = self._inner_analysis_loop_subthres(self.selected_dir, self.subt_param_dict,  self.selected_protocol)
-            self.df = df
+            sweepwise_df, avg_df = self._inner_analysis_loop_subthres(self.selected_dir, self.subt_param_dict,  self.selected_protocol)
+            save_subthres_data(avg_df, sweepwise_df, self.selected_dir, str(time.time())+self.outputTag.text())
+            self.df = avg_df
         self.tableView.setModel(PandasModel(self.df, index='filename', parent=self.tableView))
         
     def get_current_analysis(self):
@@ -472,9 +476,7 @@ class analysis_gui(object):
         labels = outlier_dect.predict(temp_df)
         return labels
 
-
     def _inner_analysis_loop(self, folder, param_dict, protocol_name):
-        
         dfs = pd.DataFrame()
         df_spike_count = pd.DataFrame()
         df_running_avg_count = pd.DataFrame()
@@ -539,9 +541,9 @@ class analysis_gui(object):
         for i, f in enumerate(filelist):
             popup.setValue(i)
             df = preprocess_abf_subthreshold(f, protocol_name, copy.deepcopy(param_dict))
-            dfs.append(df[1])
+            dfs.append(df)
         popup.hide()
-        return pd.concat(dfs, axis=0)
+        return pd.concat([x[0] for x in dfs], axis=0), pd.concat([x[1] for x in dfs], axis=0)
 
 
     def _plot_matplotlib(self):
@@ -742,8 +744,8 @@ class analysis_gui(object):
     def _run_script(self, checked=False, name=None):
         #try to spawn the script in the current terminal
         #if it fails, spawn a new terminal
-        SCRIPT_PAIRS = {'actionOrganize_Abf': f'python {os.path.dirname(__file__)}/org_by_protocol.py', 'actionRun_APisolation': 'python run_APisolation.py', 'actionRun_APisolation_gui': 'python run_APisolation_gui.py'}
-        
+        SCRIPT_PAIRS = {'actionOrganize_Abf': f'python {os.path.dirname(__file__)}/org_by_protocol.py', 
+        'actionRun_APisolation': 'python run_APisolation.py', 'actionRun_APisolation_gui': 'python run_APisolation_gui.py'}
         try:
             print(f"Running {SCRIPT_PAIRS[name]}")
             os.system(SCRIPT_PAIRS[name])

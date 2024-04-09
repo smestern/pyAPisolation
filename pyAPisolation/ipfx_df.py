@@ -47,6 +47,20 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
                     temp_df.to_excel(runf, sheet_name=p)
     print("data frames saved to excel")
 
+def save_subthres_data(avg_df, sweepwise_df, root_fold='', tag='', saveRaw=False):
+    
+    #create a dict df
+    subsheets_subthres = {'averages': avg_df, 'sweepwise': sweepwise_df}
+    with pd.ExcelWriter(root_fold + '/subthres_' + tag + '.xlsx') as runf:
+        df_ind = df_select_by_col(avg_df, ['foldername', 'filename'])
+        df_ind = df_ind.loc[:,['foldername', 'filename']]
+        index = pd.MultiIndex.from_frame(df_ind)
+        for key, p in subsheets_subthres.items():
+            p.set_index(index).to_excel(runf, sheet_name=key)
+       
+    print("data frames saved to excel")
+
+
 def organize_data_frames(dfs, df_spike_count, df_running_avg_count):
     #here we will reorder the columns,
     #we want to put the file name and folder name first
