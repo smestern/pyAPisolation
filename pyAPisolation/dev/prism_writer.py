@@ -75,8 +75,9 @@ class PrismFile():
 
         self.template_file = copy.deepcopy(template_file)
         #clear the contents of the template
-        self.main_file =self.clear_template_contents()
-          #copy.copy(self.template_file)
+        if self.template_file is not None:
+            self.main_file =self.clear_template_contents()
+        
 
         pass
 
@@ -157,6 +158,8 @@ class PrismFile():
             num_ycolumns = raveled_data[groupby].unique().shape[0]
             name_ycolumns = raveled_data[groupby].unique().astype(str)
             idxs_per_group = raveled_data.groupby(groupby).groups
+            logging.info(f"Grouping main columns by labels: {groupby}")
+            logging.info(f'num_ycolumns: {num_ycolumns}, name_ycolumns: {name_ycolumns}')
 
 
         #get the num subcolumns by the number of non-groupby columns
@@ -165,19 +168,25 @@ class PrismFile():
         elif subgroupby is None:
             #if there is no subgroupby, then we look at subgroupcols
             if subgroupcols is not None: 
+                
                 num_subcolumns = len(subgroupcols) #this is the number of subcolumns
                 name_subcolumns = subgroupcols #this is the name of the subcolumns
                 subgroupby_func = "col"
+                logging.info(f"Grouping subcolumns by columns: {subgroupcols}")
+                logging.info(f'num_subcolumns: {num_subcolumns}, name_subcolumns: {name_subcolumns}')
             elif rowgroupcols is not None:
                 #if there is no subgroupby, then we look at rowgroupcols
                 #if these are present, then we likely be assigning the subcolumns sequentially
+                logging.info(f"Rowgroupcols present, subcolumns will be assigned sequentially")
                 name_subcolumns = group_values_no_groupby.index #this is the name of the subcolumns
                 num_subcolumns = len(group_values_no_groupby.index) #this is the number of subcolumns
                 subgroupby_func = 'row'
-            else: #if there is no subgroupby or subgroupcols, then we just have one subcolumn
+            else: #if there is no subgroupby or subgroupcols, then we just passed in the data
                 name_subcolumns = raveled_data_no_groupby['col'].unique() #this is the name of the subcolumns
                 num_subcolumns = len(name_subcolumns) #this is the number of subcolumns
                 subgroupby_func = "col"
+                logging.info(f"Grouping subcolumns sequentially")
+                logging.info(f'num_subcolumns: {num_subcolumns}, name_subcolumns: {name_subcolumns}')
         elif isinstance(subgroupby, str):
             #get the number of unique subgroups
             #make the subgroupby column a string
@@ -185,6 +194,8 @@ class PrismFile():
             num_subcolumns = raveled_data[subgroupby].unique().shape[0] #this is the number of subcolumns
             name_subcolumns = raveled_data[subgroupby].unique().astype(str) #this is the name of the subcolumns
             subgroupby_func = subgroupby #this is the function to group by
+            logging.info(f"Grouping subcolumns by labels: {subgroupby}")
+            logging.info(f'num_subcolumns: {num_subcolumns}, name_subcolumns: {name_subcolumns}')
         else:
             raise ValueError('subgroupby must be None, a string')
         
@@ -197,18 +208,29 @@ class PrismFile():
                 num_rows = len(rowgroupcols)
                 name_rows = rowgroupcols
                 rowgroupby_func = 'col'
+                logging.info(f"Grouping rows by columns: {rowgroupcols}")
             else:
                 rowgroupby_func = 'row'
                 name_rows = None
-        else:
+                logging.info(f"Rows placed sequentially")
+        elif isinstance(rowgroupby, str):
             raveled_data[rowgroupby] = raveled_data[rowgroupby].astype(str)
             num_rows = raveled_data[rowgroupby].unique().shape[0]
             name_rows = raveled_data[rowgroupby].unique().astype(str)
             rowgroupby_func = rowgroupby
+            logging.info(f"Grouping rows by labels: {rowgroupby}")
+            logging.info(f'num_rows: {num_rows}, name_rows: {name_rows}')
+        else:  
+            raise ValueError('rowgroupby must be None, a string')
 
         #get the number of groups
         idxs_per_group = raveled_data.groupby([groupby, subgroupby_func, rowgroupby_func]).groups #this is the index of the subcolumns
 
+        #warn the user if the subgroupby_func is a label, and rowgroupby_func is a label, then there should be only one data point per group
+        if (subgroupby_func != 'row' and subgroupby_func != 'col') and (rowgroupby_func != 'row' and rowgroupby_func != 'col'):
+            if np.any([len(x) > 1 for x in idxs_per_group.values()]):
+                logging.warning('If subgroupby_func and rowgroupby_func are both labels, then there should be only one data point per group')
+            
         #make the table definition
         table_def = group_str_template['table_def'].replace('TABLE_NAME', group_name).replace('NUM_REPLICATES', str(num_subcolumns))
         #table_def += group_str_template['table_end']
@@ -267,9 +289,6 @@ class PrismFile():
                 data_point = ET.fromstring(data_point)
                 subcolumn.append(data_point)
 
-            
-
-
         #now add all the subcolumns to their respective ycolumns
         for ycol in ycols_map.values():
             for subcolumn in ycol['subymap'].values():
@@ -316,8 +335,7 @@ if __name__=="__main__":
     #make all Ycol_b values in rnd2 negative
     df.loc[df['labels'] == 'Ycol_b', 'rnd2'] *= -1
     #pass to make
-    
-    out = file.make_group_table('2col grouped by label', df, groupby='labels')
+    out = file.make_group_table('1way_group', df, groupby='labels')
 
     #try a 2way group
     x = np.random.rand(100, 2)
@@ -332,21 +350,8 @@ if __name__=="__main__":
     #multiply the rnd2 values by -1 if they are in sub2
     df.loc[df['labels2'] == 'sub2', 'rnd2'] *= -1
     #pass to make
-    out = file.make_group_table('main_group_subgroup', df, groupby='labels', subgroupby='labels2') 
-
-
-    #try just rowgroupby
-    x = np.random.rand(50, 2)
-    labels = np.random.choice(['Ycol_a', 'Ycol_b'], 50)
-    #turn it into a dataframe
-    df = pd.DataFrame(x, columns=['rnd1', 'rnd2'])
-    df['labels'] = labels
-    labels3 = np.random.choice(['row1', 'row2'], 50)
-    df['labels3'] = labels3
-    #pass to make
-    out = file.make_group_table('rowcols', df, groupby='labels', rowgroupcols=['rnd1', 'rnd2'])
-
-
+    out = file.make_group_table('2way_group', df, groupby='labels', subgroupby='labels2')
+    out = file.make_group_table('2way_group2', df, groupby='labels', rowgroupby='labels2')
 
     #try a 3way group
     x = np.random.rand(50, 2)
@@ -361,41 +366,19 @@ if __name__=="__main__":
     #pass to make
     out = file.make_group_table('3way_group', df, groupby='labels', subgroupby='labels2', rowgroupby='labels3')
 
-
+    #try just rowgroupby
+    x = np.random.rand(50, 2)
+    labels = np.random.choice(['Ycol_a', 'Ycol_b'], 50)
+    #turn it into a dataframe
+    df = pd.DataFrame(x, columns=['rnd1', 'rnd2'])
+    df['labels'] = labels
+    labels3 = np.random.choice(['row1', 'row2'], 50)
+    df['labels3'] = labels3
+    #pass to make
+    out = file.make_group_table('rowcols', df, groupby='labels', rowgroupcols=['rnd1', 'rnd2'])
 
     # #try to write it
     file.write('test.pzfx')
 
 
 
-    # for ycol in np.arange(num_ycolumns):
-    #         #make the ycolumn
-    #         ycolumn = group_str_template['ycolumn'].replace('NUM_REPLICATES', str(num_subcolumns))
-    #         ycolumn = ET.fromstring(ycolumn)
-    #         #add the title as a child
-    #         title = group_str_template['ycolumn_title'].replace('COLUMN_TITLE', name_ycolumns[ycol].astype(str))
-    #         title = ET.fromstring(title)
-    #         ycolumn.append(title)
-            
-    #         #add the subcolumns as children
-    #         for suby in name_subcolumns:
-    #             #make the subcolumn
-    #             subcolumn = group_str_template['subcolumn'].replace('SUBCOLUMN_TITLE', suby)
-    #             subcolumn = ET.fromstring(subcolumn)
-    #             #figure out the data points
-    #             if subgroup_method == 'subgroupcols':
-    #                 #there may still be a rowgroupby
-    #                 if rowgroupby is not None:
-    #                     subcolumn_data = 
-    #             else:
-    #                 #get the index of the subcolumn
-    #                 subcolumn_idx = idxs_per_group[(name_ycolumns[ycol], suby)]
-
-    #             for data_point in subcolumn_data:
-    #                 data_point = group_str_template['data_point'].replace('DATA_POINT', str(data_point))
-    #                 data_point = ET.fromstring(data_point)
-    #                 subcolumn.append(data_point)
-    #             ycolumn.append(subcolumn)
-    #         #add the ycolumn to the table
-    #         new_table.append(ycolumn)
-    #         #close the ycolumn

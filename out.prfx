@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<GraphPadPrismFile xmlns="http://graphpad.com/prism/Prism.htm" PrismXMLVersion="5.00">
+<Created>
+<OriginalVersion CreatedByProgram="GraphPad Prism" CreatedByVersion="10.2.2.397" Login="SMest" DateTime="2024-04-10T08:43:28-05:00" />
+</Created>
+<InfoSequence>
+<Ref ID="Info0" Selected="1" />
+</InfoSequence>
+<Info ID="Info0">
+<Title>Project info 1</Title>
+<Notes />
+<Constant><Name>Experiment Date</Name><Value>2023-10-18</Value></Constant>
+<Constant><Name>Experiment ID</Name><Value /></Constant>
+<Constant><Name>Notebook ID</Name><Value /></Constant>
+<Constant><Name>Project</Name><Value /></Constant>
+<Constant><Name>Experimenter</Name><Value /></Constant>
+<Constant><Name>Protocol</Name><Value /></Constant>
+</Info>
+
+<TableSequence Selected="1">
+</TableSequence>
+</GraphPadPrismFile>
