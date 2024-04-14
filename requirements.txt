@@ -11,7 +11,7 @@ plotly==4.7.1
 pyabf==2.2.8
 jupyter_core==4.6.3
 dash_html_components==1.1.2
-voila==0.2.6
+voila==0.2.17
 andas==1.0.3
 dash==1.19.0
 beautifulsoup4==4.9.3
