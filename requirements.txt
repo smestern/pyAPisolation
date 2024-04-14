@@ -2,7 +2,7 @@ dash_table==4.11.2
 h5py==2.10.0
 dash_core_components==1.15.0
 ipywidgets==7.6.3
-numpy==1.20.0
+numpy==1.22.0
 scipy==1.6.0
 umap_learn==0.5.0
 chart_studio==1.1.0
