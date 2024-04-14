@@ -1,7 +1,7 @@
 import prism_writer
 print("Loaded basic libraries; importing QT")
 from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout,\
-QHBoxLayout, QProgressDialog, QMainWindow, QAction, QTableView, QPushButton, QListWidget, QAbstractItemView, QLabel
+QHBoxLayout, QProgressDialog, QMainWindow, QAction, QTableView, QPushButton, QListWidget, QAbstractItemView, QLabel, QLineEdit
 from PySide2.QtCore import QFile, QAbstractTableModel, Qt, QModelIndex
 from PySide2 import QtGui
 import PySide2.QtCore as QtCore
@@ -22,7 +22,8 @@ class PrismWriterGUI(QWidget):
         self.show()
     
     def createmain(self):
-        self.main_layout = QVBoxLayout()
+        self.main_layout = QHBoxLayout()
+        self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.main_layout)
         self.buttons_layout = QHBoxLayout()
         #make the buttons, first a new file button
@@ -37,12 +38,12 @@ class PrismWriterGUI(QWidget):
         #self.main_layout.addWidget(self.open_file_button)
         self.buttons_layout.addWidget(self.save_file_button)
         #add the layout to the main layout
-        self.main_layout.addLayout(self.buttons_layout)
+        self.left_layout.addLayout(self.buttons_layout)
 
         #create a button to open a csv
         self.open_csv_button = QPushButton("Open CSV", self)
         self.open_csv_button.clicked.connect(self.open_csv)
-        self.main_layout.addWidget(self.open_csv_button)
+        self.left_layout.addWidget(self.open_csv_button)
 
         #create three list widgets, one to group by the main columns, one to group by the sub columns, and one to group by the rows
         self.main_group_list = QListWidget()
@@ -53,32 +54,51 @@ class PrismWriterGUI(QWidget):
         self.sub_group_list.setSelectionMode(QAbstractItemView.MultiSelection)
         self.row_group_list.setSelectionMode(QAbstractItemView.MultiSelection)
         #add them to the main layout, with a label and spacer
-        self.main_layout.addWidget(QLabel("Main Group"))
-        self.main_layout.addWidget(self.main_group_list)
-        self.main_layout.addWidget(QLabel("Sub Group"))
-        self.main_layout.addWidget(self.sub_group_list)
-        self.main_layout.addWidget(QLabel("Row Group"))
-        self.main_layout.addWidget(self.row_group_list)
+        self.left_layout.addWidget(QLabel("Main Group"))
+        self.left_layout.addWidget(self.main_group_list)
+        self.left_layout.addWidget(QLabel("Sub Group"))
+        self.left_layout.addWidget(self.sub_group_list)
+        self.left_layout.addWidget(QLabel("Row Group"))
+        self.left_layout.addWidget(self.row_group_list)
+
+        #creat a text box to name the group table
+        self.group_table_name = QLineEdit("Group Table Name")
+        self.left_layout.addWidget(self.group_table_name)
 
         #finally add a button to create the group table
         self.create_group_table_button = QPushButton("Create Group Table", self)
         self.create_group_table_button.clicked.connect(self.create_group_table)
+        self.left_layout.addWidget(self.create_group_table_button)
+        self.main_layout.addLayout(self.left_layout)
+        #make a right layout for the table view
+        self.right_layout = QVBoxLayout()
+        #make a label that lists the currently open files
+        self.prism_title = QLabel("Prism Writer")
+        self.right_layout.addWidget(self.prism_title)
+        self.table_list_label = QLabel("Tables")
+        self.right_layout.addWidget(self.table_list_label)
+        #make a list widget that lists the currently open files
+        self.table_list = QListWidget()
+        self.right_layout.addWidget(self.table_list)
+        self.main_layout.addLayout(self.right_layout)
+
 
     def new_file(self):
-        self.file_path = QFileDialog.getSaveFileName(self, "Save File", filter="Prism Files (*.prfx)")
+        self.file_path = QFileDialog.getSaveFileName(self, "Save File", filter="Prism Files (*.pzfx)")
         self.file_path = self.file_path[0]
         self.prism_writer = prism_writer.PrismFile()
         self.save_file_button.clicked.connect(self.save_file)
         self.save_file_button.setDisabled(False)
+        self.prism_title.setText(f"Prism Writer - {self.file_path}")
 
     def save_file(self):
         self.prism_writer.save(self.file_path)
 
     def open_csv(self):
         #or open xlsx
-        self.csv_path = QFileDialog.getOpenFileName(self, "Open CSV", filter="CSV Files (*.csv)")
+        self.csv_path = QFileDialog.getOpenFileName(self, "Open CSV", filter="Excel Files (*.csv, *.xlsx)")
         self.csv_path = self.csv_path[0]
-        self.df = pd.read_csv(self.csv_path)
+        self.df = pd.read_csv(self.csv_path) if self.csv_path.endswith('.csv') else pd.read_excel(self.csv_path)
         #in this case, we are just needing the indexs and the columns
         self.rows = self.df.index.values
         self.columns = self.df.columns.values
@@ -91,7 +111,7 @@ class PrismWriterGUI(QWidget):
         self.row_group_list.addItems([f'[COL] - {x}' for x in self.columns])
 
 
-    def create_group_table(self, group_name):
+    def create_group_table(self, _):
         #get the args and pass them to the prism writer
         #find what is selected in each list
         main_group = self.main_group_list.selectedItems()
@@ -105,18 +125,28 @@ class PrismWriterGUI(QWidget):
         if len(sub_group) >1:
             sub_group_cols = copy.copy(sub_group)
             sub_group = None
+        elif len(sub_group) == 1:
+            sub_group_cols = None
+            sub_group = sub_group[0]
         else:
             sub_group_cols = None
+            sub_group = None
+
+
         if len(row_group) >1:
             row_group_cols = copy.copy(row_group)
             row_group = None
+        elif len(row_group) == 1:
+            row_group_cols = None
+            row_group = row_group[0]
         else:
             row_group_cols = None
+            row_group = None
 
-        self.prism_writer.make_group_table("Group Table", self.df, main_group, cols=None, 
+        self.prism_writer.make_group_table(self.group_table_name.text(), self.df, main_group, cols=None, 
                                            subgroupcols=sub_group_cols, rowgroupcols=row_group_cols, subgroupby=sub_group, rowgroupby=row_group)
 
-
+        self.table_list.addItem(f"Group Table - {self.group_table_name.text()}")
 
 
 if __name__ == '__main__':

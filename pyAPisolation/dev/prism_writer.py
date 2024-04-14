@@ -25,20 +25,20 @@ register_all_namespaces(template_path)
 
 
 group_str_template = {
-"table_def": """<Table ID=\"TABLE_NAME\" XFormat=\"none\" YFormat=\"replicates\" 
-Replicates=\"NUM_REPLICATES\" TableType=\"TwoWay\" EVFormat=\"AsteriskAfterNumber\"></Table>""",
-"ycolumn": f"<YColumn Width=\"243\" Decimals=\"10\" Subcolumns=\"NUM_REPLICATES\"></YColumn>",
-"ycolumn_title": "<Title>COLUMN_TITLE</Title>", 
-"subcolumn": "<Subcolumn><Title>SUBCOLUMN_TITLE</Title></Subcolumn>",
-"data_point": "<d>DATA_POINT</d>", 
-"ycolumn_end": "</YColumn>",
-"table_end": "</Table>",
-"table_sequence": "<Ref ID=\"TABLE_NAME\"/>",
-"row_title_decl":"""<RowTitlesColumn Width=\"125\"><Subcolumn></Subcolumn></RowTitlesColumn>""",
-"row_title": "<d>ROW_TITLE</d>",
-"subcol_title_decl" : """<SubColumnTitles OwnSet=\"0\"></SubColumnTitles>""",
-"subcol_title": """<Subcolumn><d><TextAlign align="Center">SUBCOL_TITLE</TextAlign></d></Subcolumn>"""
+"table_def": "<Table ID=\"TABLE_NAME\" XFormat=\"none\" YFormat=\"replicates\" Replicates=\"NUM_REPLICATES\" TableType=\"TwoWay\" EVFormat=\"AsteriskAfterNumber\"></Table> \n ",
+"ycolumn": f"<YColumn Width=\"243\" Decimals=\"10\" Subcolumns=\"NUM_REPLICATES\"></YColumn> \n ",
+"ycolumn_title": "<Title>COLUMN_TITLE</Title> \n ", 
+"subcolumn": "<Subcolumn></Subcolumn> \n ",
+"data_point": "<d>DATA_POINT</d> \n ", 
+"ycolumn_end": "</YColumn> \n ",
+"table_end": "</Table> \n ",
+"table_sequence": "<Ref ID=\"TABLE_NAME\"/> \n ",
+"row_title_decl":"<RowTitlesColumn Width=\"125\"><Subcolumn></Subcolumn></RowTitlesColumn> \n ",
+"row_title": "<d>ROW_TITLE</d> \n ",
+"subcol_title_decl" : "<SubColumnTitles OwnSet=\"1\"></SubColumnTitles> \n ",
+"subcol_title": "<d><TextAlign align=\"Center\">SUBCOL_TITLE</TextAlign></d> \n "
 }
+
 
 
 def backup_prism_file(file_path):
@@ -77,8 +77,6 @@ class PrismFile():
         #clear the contents of the template
         if self.template_file is not None:
             self.main_file =self.clear_template_contents()
-        
-
         pass
 
     def clear_template_contents(self):
@@ -153,6 +151,12 @@ class PrismFile():
             num_ycolumns = 1
             name_ycolumns = group_name
         else:
+            #groupby should be a string, if its a one element list, then just take the element
+            if isinstance(groupby, list):
+                if len(groupby) == 1:
+                    groupby = groupby[0]
+                else:
+                    raise ValueError('groupby must be a string or a one element list')
             #make the groupby column a string
             raveled_data[groupby] = raveled_data[groupby].astype(str)
             num_ycolumns = raveled_data[groupby].unique().shape[0]
@@ -225,7 +229,8 @@ class PrismFile():
 
         #get the number of groups
         idxs_per_group = raveled_data.groupby([groupby, subgroupby_func, rowgroupby_func]).groups #this is the index of the subcolumns
-
+        suby_per_group = raveled_data.groupby([groupby, subgroupby_func]).groups #this is for counting the number of subcolumns per group
+        
         #warn the user if the subgroupby_func is a label, and rowgroupby_func is a label, then there should be only one data point per group
         if (subgroupby_func != 'row' and subgroupby_func != 'col') and (rowgroupby_func != 'row' and rowgroupby_func != 'col'):
             if np.any([len(x) > 1 for x in idxs_per_group.values()]):
@@ -252,8 +257,7 @@ class PrismFile():
         #declare the subcolumn titles
         if name_subcolumns is not None:
             subcol_title_list = ET.fromstring(group_str_template['subcol_title_decl'])
-            [subcol_title_list.append(ET.fromstring(group_str_template['subcol_title'].replace('SUBCOL_TITLE', str(subcol)))) for subcol in name_subcolumns]
-            new_table.append(subcol_title_list)
+            #actually we will handle this later
         #otherwise subcolumns are just sequential
         
         
@@ -262,9 +266,9 @@ class PrismFile():
         for ycol, subycol, row in idxs_per_group:
             if ycol not in ycols_map: #if the ycol is not in the ycols_map
                 #make the ycolumn
-                ycolumn = group_str_template['ycolumn'].replace('NUM_REPLICATES', str(num_subcolumns))
+                ycolumn = group_str_template['ycolumn']
                 ycolumn = ET.fromstring(ycolumn)
-                #add the title as a child
+                #add the title as a child   
                 title = group_str_template['ycolumn_title'].replace('COLUMN_TITLE', str(ycol))
                 title = ET.fromstring(title)
                 ycolumn.append(title)
@@ -277,7 +281,7 @@ class PrismFile():
             
             if f"{subycol}" not in subymap: #if the subcolumn is not in the subcolumn map
                 #make the subcolumn
-                subcolumn = group_str_template['subcolumn'].replace('SUBCOLUMN_TITLE', str(subycol)) #make the subcolumn
+                subcolumn = group_str_template['subcolumn'] #make the subcolumn
                 subcolumn = ET.fromstring(subcolumn) 
                 subymap[f"{subycol}"] = subcolumn
             else:
@@ -293,7 +297,24 @@ class PrismFile():
         for ycol in ycols_map.values():
             for subcolumn in ycol['subymap'].values():
                 ycol['object'].append(subcolumn)
-        
+
+            #update the replicates in the ycolumn
+            ycol['object'].set('Subcolumns', str(len(ycol['subymap'])))
+
+        #add the subcolumn titles
+        #to the subcol_title_list if it exists
+        if subcol_title_list is not None:
+            #spawn a subcolumn title for each subcolumn, up to a max of num_subcolumns
+            [subcol_title_list.append(ET.fromstring(group_str_template['subcolumn'])) for i in range(num_subcolumns)]
+            # we need to iter throught ycols_map and subymap to get the subcolumn titles
+            for ycol in ycols_map.values():
+                for i, (key, subcolumn) in enumerate(ycol['subymap'].items()):
+                    #get the title
+                    title = group_str_template['subcol_title'].replace('SUBCOL_TITLE', str(key))
+                    title = ET.fromstring(title)
+                    subcol_title_list[i].append(title)
+            new_table.append(subcol_title_list)
+
         #once all the ycolumns are made, add them to the table
         for ycolumn in ycols_map.values():
             new_table.append(ycolumn['object'])
@@ -311,7 +332,9 @@ class PrismFile():
         self.main_file.getroot().append(new_table)
         return self.main_file
     
-    def write(self, file_path, xml_declaration=True, encoding='utf-8', method="xml", default_namespace=""):
+    def write(self, file_path, xml_declaration=True, encoding='utf-8', method="xml", default_namespace="", pretty_print=True):
+        if pretty_print:
+            indent(self.main_file.getroot())
         self.main_file.write(file_path, xml_declaration=xml_declaration, encoding=encoding, method=method, default_namespace=default_namespace)
         return None
 
@@ -319,10 +342,28 @@ class PrismFile():
         self.write(file_path, *args, **kwargs)
         return None
     
+def indent(elem, level=0): #from stackoverflow: https://stackoverflow.com/questions/15418509/python-and-elementtree-writing-one-long-line-of-output
+    i = "\n" + level*"  "
+    j = "\n" + (level-1)*"  "
+    if len(elem):
+        if not elem.text or not elem.text.strip():
+            elem.text = i + "  "
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = i
+        for subelem in elem:
+            indent(subelem, level+1)
+        if not elem.tail or not elem.tail.strip():
+            elem.tail = j
+    else:
+        if level and (not elem.tail or not elem.tail.strip()):
+            elem.tail = j
+
+
 
 if __name__=="__main__":
     np.random.seed(42)
     file = PrismFile()
+
    
     #make some random data to test with
     x = np.random.randint(0, 9, size=(100,2))
@@ -377,8 +418,16 @@ if __name__=="__main__":
     #pass to make
     out = file.make_group_table('rowcols', df, groupby='labels', rowgroupcols=['rnd1', 'rnd2'])
 
+    #load the xlsx
+    test_df = pd.read_excel('test.xlsx')
+    rowgroupcols = ['Sweep 001 spike count', 'Sweep 002 spike count', 'Sweep 003 spike count', 'Sweep 004 spike count', 'Sweep 005 spike count', 'Sweep 006 spike count', 'Sweep 007 spike count', 'Sweep 008 spike count', 
+                    'Sweep 009 spike count', 'Sweep 010 spike count', 'Sweep 011 spike count', 'Sweep 012 spike count', 'Sweep 013 spike count', 'Sweep 014 spike count', 'Sweep 015 spike count']
+    #make a group table
+    out = file.make_group_table('test_group', test_df, groupby='foldername.1', subgroupby='filename.1', rowgroupcols=rowgroupcols)
+
     # #try to write it
     file.write('test.pzfx')
+    print('done')
 
 
 
