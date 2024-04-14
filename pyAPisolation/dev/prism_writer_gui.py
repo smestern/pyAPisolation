@@ -77,11 +77,15 @@ class PrismWriterGUI(QWidget):
         self.right_layout.addWidget(self.prism_title)
         self.table_list_label = QLabel("Tables")
         self.right_layout.addWidget(self.table_list_label)
-        #make a list widget that lists the currently open files
+        #make a list widget that lists the currentlt generated tables
         self.table_list = QListWidget()
         self.right_layout.addWidget(self.table_list)
         self.main_layout.addLayout(self.right_layout)
 
+        #make a button to delete the selected table
+        self.delete_table_button = QPushButton("Delete Table", self)
+        self.delete_table_button.clicked.connect(self.delete_table)
+        self.right_layout.addWidget(self.delete_table_button)
 
     def new_file(self):
         self.file_path = QFileDialog.getSaveFileName(self, "Save File", filter="Prism Files (*.pzfx)")
@@ -90,6 +94,7 @@ class PrismWriterGUI(QWidget):
         self.save_file_button.clicked.connect(self.save_file)
         self.save_file_button.setDisabled(False)
         self.prism_title.setText(f"Prism Writer - {self.file_path}")
+        self.table_list.clear()
 
     def save_file(self):
         self.prism_writer.save(self.file_path)
@@ -102,6 +107,12 @@ class PrismWriterGUI(QWidget):
         #in this case, we are just needing the indexs and the columns
         self.rows = self.df.index.values
         self.columns = self.df.columns.values
+
+        #clear the list widgets
+        self.main_group_list.clear()
+        self.sub_group_list.clear()
+        self.row_group_list.clear()
+        
 
         #populate the main group list with the columns
         self.main_group_list.addItems([f'[COL] - {x}' for x in self.columns])
@@ -148,6 +159,12 @@ class PrismWriterGUI(QWidget):
 
         self.table_list.addItem(f"Group Table - {self.group_table_name.text()}")
 
+    def delete_table(self):
+        #get the selected table
+        table = self.table_list.selectedItems()
+        table = table[0].text().split(' - ')[1]
+        self.prism_writer.delete_table(table)
+        self.table_list.takeItem(self.table_list.currentRow())
 
 if __name__ == '__main__':
     app = QApplication([])
