@@ -13,7 +13,7 @@ jupyter_core==4.6.3
 dash_html_components==1.1.2
 voila==0.2.6
 andas==1.0.3
-dash==1.19.0
+dash==2.15.0
 beautifulsoup4==4.9.3
 jupyter==1.0.0
 pandas==1.2.3
