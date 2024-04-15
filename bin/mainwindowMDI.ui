@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Spike Finder</string>
   </property>
   <property name="toolTipDuration">
    <number>-3</number>

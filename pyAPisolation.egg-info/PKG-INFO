@@ -8,3 +8,6 @@ Author-email: SMESTERN@UWO.CA
 License: MIT License
 Platform: any
 License-File: LICENSE
+Requires-Dist: matplotlib>=2.1.0
+Requires-Dist: numpy>=1.17
+Requires-Dist: pyabf>=2.1.9
