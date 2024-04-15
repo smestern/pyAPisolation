@@ -86,19 +86,19 @@ class live_data_viz():
 
         
         
-        col_long = dbc.Col([dbc.Card([
-                dbc.CardHeader("Longitudinal Plot"),
-                dbc.CardBody([dcc.Loading(
-                    id="loading-2", fullscreen=False, type="default",
-                    children=[html.Div(id='datatable-plot-cell', )])])],)]
-                , width=4)
+        # col_long = dbc.Col([dbc.Card([
+        #         dbc.CardHeader("Longitudinal Plot"),
+        #         dbc.CardBody([dcc.Loading(
+        #             id="loading-2", fullscreen=False, type="default",
+        #             children=[html.Div(id='datatable-plot-cell', )])])],)]
+        #         , width=4)
         col_umap = dbc.Col([
             dbc.Card([dbc.CardHeader("UMAP Plot"),
                       dbc.CardBody([umap_fig], id='umap-cardbody',
-                                   style={"min-height": "600px"}),
+                                   style={"min-height": "300px"}),
                       dbc.CardFooter(["Select Color:", self.dropdown]),
                       ])],
-            width=8)
+            width=4)
         col_para = dbc.Col([dbc.Card(
             [dbc.CardHeader(dbc.Button(
                             "Paracoords Plot",
@@ -116,8 +116,7 @@ class live_data_viz():
 
         app.layout = dbc.Container([
             dbc.Row([header, dbc.Col([
-                dbc.Row([col_umap, ]), #col_long
-                dbc.Row([col_para, ]),
+                dbc.Row([col_umap,col_para ]), 
                 dbc.Row([col_datatable]),
                 html.Div(id='datatable-row-ids-store', style={'display': 'none'}),
             ])]),
@@ -218,7 +217,7 @@ class live_data_viz():
             figure=fig,
             style={
                 "width": "100%",
-                "height": "600px"
+                "height": "100%"
             },
             config=dict(
                 autosizable=True,
