@@ -33,7 +33,7 @@ from pyAPisolation.feature_extractor import folder_feature_extract, save_data_fr
 preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
 from pyAPisolation.patch_utils import load_protocols
 from pyAPisolation.patch_subthres import exp_decay_2p, exp_decay_1p, exp_decay_factor
-
+from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
 
@@ -162,6 +162,10 @@ class analysis_gui(object):
             sub.setAttribute(QtCore.Qt.WA_DeleteOnClose, False)
             #delete the close button
             sub.setWindowFlags(QtCore.Qt.WindowMinMaxButtonsHint)
+
+        #add a action here to spawn the prism writer
+        self.actionPrism_Writer = self.viewBar.addAction("Prism Writer")
+        self.actionPrism_Writer.triggered.connect(self._prism_writer)
 
 
     def file_select(self):
@@ -768,6 +772,12 @@ class analysis_gui(object):
                 #fire a clicked event
                 self.file_list.itemClicked.emit(item)
     
+    def _prism_writer(self):
+        #prismwritegui is a qwidget
+        self.prismwritegui = PrismWriterGUI()
+        self.prismwritegui.show()
+        self.prismwritegui.raise_()
+
     ### window management functions
     def _view_window(self, action):
         window_list = [x.windowTitle() for x in self.mdi.subWindowList()]

@@ -1,4 +1,4 @@
-import prism_writer
+from . import prism_writer
 print("Loaded basic libraries; importing QT")
 from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout,\
 QHBoxLayout, QProgressDialog, QMainWindow, QAction, QTableView, QPushButton, QListWidget, QAbstractItemView, QLabel, QLineEdit
