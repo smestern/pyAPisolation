@@ -5,7 +5,7 @@ from pyAPisolation.patch_ml import *
 import os
 import sys
 import argparse
-
+from . import web_viz_config
 # dash / plotly imports
 import dash
 from dash.dependencies import Input, Output, State
@@ -20,7 +20,7 @@ from plotly.subplots import make_subplots
 # data science imports
 import pandas as pd
 import numpy as np
-
+import json
 
 sys.path.append('..')
 sys.path.append('')
@@ -31,20 +31,8 @@ file_path = os.path.dirname(os.path.realpath(__file__))
 #change working directory to file path
 # pyAPisolation imports
 
-class analysis_fields():
-    def __init__(self, **kwargs):
-        self.file_index = 'filename'
-        self.file_path = "foldername"
-        self.table_vars_rq = ['filename', 'foldername']
-        self.table_vars = ["rheo", "QC", 'label_c']
-        self.para_vars = ["rheo", 'CRH' 'label_c']
-        self.para_var_colors = 'rheobase_width'
-        self.umap_labels = ['label', 'CRH', 'AVP']
-        self.para_vars_limit = 10
-        self.table_vars_limit = 5
-        self.__dict__.update(kwargs)
 
-GLOBAL_VARS = analysis_fields()
+GLOBAL_VARS = web_viz_config.web_viz_config()
 
 
 def _df_select_by_col(df, string_to_find):
@@ -83,15 +71,6 @@ class live_data_viz():
         # Make grid ui
         # make the header descibing the app
         header = self._generate_header()
-
-        
-        
-        # col_long = dbc.Col([dbc.Card([
-        #         dbc.CardHeader("Longitudinal Plot"),
-        #         dbc.CardBody([dcc.Loading(
-        #             id="loading-2", fullscreen=False, type="default",
-        #             children=[html.Div(id='datatable-plot-cell', )])])],)]
-        #         , width=4)
         col_umap = dbc.Col([
             dbc.Card([dbc.CardHeader("UMAP Plot"),
                       dbc.CardBody([umap_fig], id='umap-cardbody',
@@ -111,12 +90,13 @@ class live_data_viz():
                  para_fig,
                  id="para-collapse",
                  is_open=True,
-             )])])], width=12)
+             )])])
+             ])  #col for the paracoords plot
         col_datatable = dbc.Col(datatable, id='data-table-col')
 
         app.layout = dbc.Container([
             dbc.Row([header, dbc.Col([
-                dbc.Row([col_umap,col_para ]), 
+                dbc.Row([col_umap, col_para]), 
                 dbc.Row([col_datatable]),
                 html.Div(id='datatable-row-ids-store', style={'display': 'none'}),
             ])]),
@@ -126,15 +106,15 @@ class live_data_viz():
         
         self.app = app
         # Define Callbacks
-        app.callback(
-            Output('datatable-row-ids-store', 'children'),
-            State('datatable-row-ids', 'derived_virtual_row_ids'),
-            State('data-table-col', 'children'),
-            State('datatable-row-ids', 'selected_row_ids'),
-            Input('datatable-row-ids', 'active_cell'),
-            State('datatable-row-ids', 'data'), prevent_intial_call=True)(self.update_cell_plot)
+        # app.callback(
+        #     Output('datatable-row-ids-store', 'children'),
+        #     State('datatable-row-ids', 'derived_virtual_row_ids'),
+        #     State('data-table-col', 'children'),
+        #     State('datatable-row-ids', 'selected_row_ids'),
+        #     Input('datatable-row-ids', 'active_cell'),
+        #     State('datatable-row-ids', 'data'), prevent_intial_call=True)(self.update_cell_plot)
 
-        app.callback(Output('datatable-row-ids', 'data'),
+        app.callback(Output('datatable-row-ids', "rowData"),
                      Input('UMAP-graph', 'selectedData'),
                      Input('UMAP-graph', 'figure'),
                      Input('para-graph', 'restyleData'),
@@ -145,16 +125,22 @@ class live_data_viz():
                      State('umap-cardbody', 'children'),
                      Input('dropdown', 'value'))(self.alter_umap_color)
 
+        #app.callback(
+        #     Output("para-collapse", "is_open"),
+        #     [Input("para-collapse-button", "n_clicks")],
+        #     [State("para-collapse", "is_open")],
+        # )(self.toggle_collapse)
+
         app.callback(
-            Output("para-collapse", "is_open"),
-            [Input("para-collapse-button", "n_clicks")],
-            [State("para-collapse", "is_open")],
-        )(self.toggle_collapse)
+            Output('datatable-row-ids-store', 'children'),
+            Input("datatable-row-ids", "cellRendererData")
+        )(self.graphClickData)        
 
     def _gen_abf_list(self, dir):
         # os.path.abspath(dir)
         pass
 
+    ## DATATABLE FUNCTIONS
     def _run_analysis(self, dir=None, df=None):
         if df is None:
             if dir is not None:
@@ -164,13 +150,14 @@ class live_data_viz():
                 _, df, _ = folder_feature_extract(os.path.abspath(
                     '../data/'), default_dict, protocol_name='')
         else:
-            df = pd.read_csv(df)
+            if isinstance(df, pd.DataFrame):
+                pass
+            else:
+                df = pd.read_csv(df) if df.endswith('.csv') else pd.read_excel(df)
         self.df_raw = copy.deepcopy(df)
         df = _df_select_by_col(self.df_raw, GLOBAL_VARS.table_vars_rq)
          #add in a column for dropdown:
-        #df['showMore'] = [''] * len(df)
-        #reorder so that the showMore column is first
-        #df = df[['showMore'] + df.columns[:-1].tolist()]
+        
 
         df_optional = _df_select_by_col(
             self.df_raw, GLOBAL_VARS.table_vars).iloc[:, :GLOBAL_VARS.table_vars_limit]
@@ -179,16 +166,28 @@ class live_data_viz():
         df['id'] = df[GLOBAL_VARS.file_index] if GLOBAL_VARS.file_index in df.columns else df.index
         df.set_index('id', inplace=True, drop=False)
         self.df = df
+        return self.gen_datatable(df)
+
+    def add_show_more(self, df):
+        #df will already be in records format
+        #$for row in df:
+        #    row['show_more'] = '+'
+        return df
+
+    def gen_datatable(self, df):
+        col_defs = []
+        for col in ['show_more', *df.columns.values]:
+            if col != 'id':
+                if col =='show_more':
+                    col_defs.append({"field": col, "cellRenderer": "expandRow"})
+                else:
+                    col_defs.append({"field": col,})
         return [dag.AgGrid(
-                id='datatable-row-ids',
-                columnDefs=[
-                    {"field": i} for i in df.columns
-                    # omit the id column
-                    if i != 'id'
-                ],
-                rowData=self.df.to_dict('records'),
-                dashGridOptions={'pagination':True},
-                )]
+            id='datatable-row-ids',
+            columnDefs=col_defs,
+            rowData=self.add_show_more(self.df.to_dict('records')),
+            dashGridOptions={'pagination':True, 'onRowSelected': 'expandRow',"isFullWidthRow": {"function": "params.rowNode.data.id.includes('graph')"},  "getRowNodeId": "function(data) { return data.id; }"},
+        )]#"isFullWidthRow": {"function": "params.rowNode.data.id"},
 
     def gen_umap_plots(self, labels=None, label_legend=None, data=None):
         umap_labels_df, labels_df = _df_select_by_col(
@@ -257,12 +256,13 @@ class live_data_viz():
                 autosizable=True,
             ),
             responsive=True
-
         )
 
+    ##INTERNAL FILTER FUNCT
     def _filter_datatable_para(self, selectedData, fig):
         def bool_multi_filter(df, kwargs):
-            return ' & '.join([f'{key} >= {i[0]} & {key} <= {i[1]}' for key, i in kwargs.items()])
+            
+            return ' & '.join([f'{key} >= {i[0]} & {key} <= {i[1]}' for key, i in kwargs.items() if key in df.columns])
 
         if selectedData is None:
             out_data = self.df.to_dict('records')
@@ -276,6 +276,16 @@ class live_data_viz():
                     constraints[row['label']] = [-9999, 9999]
             out = bool_multi_filter(self.df, constraints)
             filtered_df = self.df.query(out)
+            out_data = filtered_df.to_dict('records')
+        return out_data
+
+    def _filter_datatable_umap(self, selectedData, fig):
+        if selectedData is None:
+            out_data = self.df.to_dict('records')
+        else:
+            selected_ids = [x['hovertext'] for x in selectedData['points']]
+
+            filtered_df = self.df.loc[selected_ids]
             out_data = filtered_df.to_dict('records')
         return out_data
 
@@ -302,22 +312,19 @@ class live_data_viz():
         if umap_selectedData is not None and para_selectedData is not None:
             combined =  para_out_data.append(umap_out_data)
         #combined = None
+
         return combined
 
-    def _filter_datatable_umap(self, selectedData, fig):
+
+    def graphClickData(self, d):
+        if d is None:
+            return dash.no_update
+        fig = self.update_cell_plot(d['value']['filename'], None, None, None, self.df)
+
+        return dash.html.A(id=f"graph{d['rowId']}", children=fig.to_json(), style={'display': 'none'})
+
+    def update_cell_plot(self, row_ids, selected_row_ids, data, selected_cell, df):
         
-
-        if selectedData is None:
-            out_data = self.df.to_dict('records')
-        else:
-            selected_ids = [x['hovertext'] for x in selectedData['points']]
-
-            filtered_df = self.df.loc[selected_ids]
-            out_data = filtered_df.to_dict('records')
-        return out_data
-
-    def update_cell_plot(self, row_ids, selected_row_ids, data):
-        raise print("this function is deprecated")
         selected_id_set = set(selected_row_ids or [])
 
         if row_ids is None:
@@ -361,20 +368,7 @@ class live_data_viz():
             fig.update_yaxes(automargin=True)
             fig.layout.autosize = True
 
-            return dcc.Graph(
-                id="file_plot",
-                figure=fig,
-                style={
-                    "width": "100%",
-                    "height": "100%"
-                },
-                config=dict(
-                    autosizable=True, edits=dict(titleText=active_row_id),
-                    
-                frameMargins=0,
-                ),
-                responsive=True
-            )
+            return fig
 
     def _find_label_cols(self, df):
         label_cols = {}
@@ -403,7 +397,7 @@ class live_data_viz():
         return dbc.Col([html.H1("pyAPisolation", className="text-center"), html.H3("Live Data Visualization",
                     className="text-center"),html.H5("Select a file to view",
                     className="text-center")
-        ], className="col-xl-4", style={"max-width": "20%"})
+        ], className="col-xl-4", style={"max-width": "10%"})
 
 if __name__ == '__main__':
     # make an argparse to parse the command line arguments. command line args should be the path to the data folder, or

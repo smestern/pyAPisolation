@@ -21,19 +21,6 @@ arr = imputer.fit_transform(arr)
 arr = np.hsplit(arr, arr.shape[1])
 
 test_res = []
-
-
-
-
-
-
-
-
-
-
-
-
-
 tukey_res = []
 
 for i, col in enumerate(arr):
