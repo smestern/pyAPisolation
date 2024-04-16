@@ -13,7 +13,7 @@
 *.csv
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
-*.png
+
 # Build results
 nwb-cache/
 dist/

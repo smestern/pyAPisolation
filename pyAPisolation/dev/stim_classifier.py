@@ -6,7 +6,12 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import torch
+try:
+    import torch
+    from torch.nn import Module
+except:
+    print('torch not installed, please install torch')
+    Module = object
 import os
 from scipy.signal import resample, decimate
 STIM_ENCODING = {'long_square': 0, 'short_square': 1, 'ramp': 2, 'sine': 3}
@@ -116,7 +121,7 @@ def plot_examples(dataset, labels, num_examples=8):
         ax[i//subplots, i%subplots].set_ylim([-1.1, 1.1])
     plt.show()
 
-class LSTM(torch.nn.Module):
+class LSTM(Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers=1):
         super(LSTM, self).__init__()
         self.hidden_size = hidden_size
@@ -140,7 +145,7 @@ class LSTM(torch.nn.Module):
         return (torch.zeros(self.num_layers, 1, self.hidden_size),
                 torch.zeros(self.num_layers, 1, self.hidden_size))
 
-class dense(torch.nn.Module):
+class dense(Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers=1):
         super(dense, self).__init__()
         self.hidden_size = hidden_size

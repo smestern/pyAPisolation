@@ -332,7 +332,27 @@ class PrismFile():
         self.main_file.getroot().append(new_table)
         return self.main_file
     
+    def delete_table(self, table_name):
+        #find the table in the table sequence
+        table_sequence = self.main_file.findall('{http://graphpad.com/prism/Prism.htm}TableSequence', ns)[0]
+        table_refs = table_sequence.iter()
+        for table_ref in table_refs:
+            if 'ID' in table_ref.attrib:
+                if table_ref.attrib['ID'] == table_name:
+                    logging.info(f"Removing table {table_name} from table sequence")
+                    table_sequence.remove(table_ref)
+                    break
+        #find the table in the main file
+        tables = self.main_file.findall('Table', ns)
+        for table in tables:
+            if 'ID' in table.attrib:
+                if table.attrib['ID'] == table_name:
+                    logging.info(f"Removing table {table_name} from main file")
+                    self.main_file.getroot().remove(table)
+                    break
+    
     def write(self, file_path, xml_declaration=True, encoding='utf-8', method="xml", default_namespace="", pretty_print=True):
+        logging.info(f"Writing to {file_path}")
         if pretty_print:
             indent(self.main_file.getroot())
         self.main_file.write(file_path, xml_declaration=xml_declaration, encoding=encoding, method=method, default_namespace=default_namespace)

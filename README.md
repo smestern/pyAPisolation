@@ -1,5 +1,7 @@
 # pyAPisolation
 This package facilitates batch feature extraction and data dashboarding of ABF files. Primarily written for Inoue Lab @ western university. The package is able to output feature arrays and/or raw current traces from the file(s). The module piggy backs off of some of the excellent work found in the pyABF & ipfx packages.
+![](PVN_CLAMP.PNG)
+
 ### Installation
 To install run
   `pip install git+https://github.com/smestern/pyAPisolation`
@@ -14,7 +16,6 @@ This will prompt you to select your files for analysis. The script will create a
 To run simple analysis with gui on your files. navigate to the /bin folder and run:
   
   `python run_APisolation_GUI.py`
-![](PVN_CLAMP.PNG)
 
 ### Advanced use
 //todo

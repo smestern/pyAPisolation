@@ -145,8 +145,15 @@ class analysis_gui(object):
         self.actionOpen_Folder = self.main_widget.findChild(QAction, "actionOpen_Folder")
         self.actionOpen_Folder.triggered.connect(self.file_select)
 
+        self.actionOrganize_Subthres = self.main_widget.findChild(QAction, "actionOpen_Results")
+        self.actionOrganize_Subthres.triggered.connect(self.results_select)
+
+        self.actionOpen_Results = self.main_widget.findChild(QAction, "actionExit")
+        self.actionOpen_Results.triggered.connect(self.exit)
+
         self.actionOrganize_Abf = self.main_widget.findChild(QAction, "actionOrganize_Abf")
         self.actionOrganize_Abf.triggered.connect(lambda x: self._run_script(False, name='actionOrganize_Abf'))
+
 
         #for all the windows in the mdi, we want to add a listener for the close event
         self.mdi = self.main_widget.findChild(QWidget, "mdiArea")
@@ -218,6 +225,11 @@ class analysis_gui(object):
                     item.setHidden(False)
         self.analysis_changed()
         
+    def results_select(self):
+        self.selected_file = QFileDialog.getOpenFileName(self.main_widget, "Open Excel", filter="Excel Files (*.csv, *.xlsx)")
+        self.selected_file = self.selected_file[0]
+        self.df = pd.read_csv(self.selected_file) if self.selected_file.endswith('.csv') else pd.read_excel(self.selected_file)
+        self.tableView.setModel(PandasModel(self.df, index='filename', parent=self.tableView))
 
     def abf_select(self, item):
         self.selected_abf = self.abf_file[self.file_list.currentRow()][1]
@@ -798,6 +810,9 @@ class analysis_gui(object):
         #don't actually close the window, just hide it
         wind.hide()
 
+    def exit(self):
+        self.close()
+        sys.exit()
 
 
 from ipfx import spike_detector,time_series_utils
