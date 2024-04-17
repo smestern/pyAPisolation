@@ -126,6 +126,17 @@ def main(database_file=None, config=None, static=False):
     if static:
         for i, dict_data in enumerate(parsed):
             dict_data['y'] = plot_data[i]
+            for key, value in dict_data.items():
+                if isinstance(value, np.int64):
+                    dict_data[key] = int(value)
+                elif isinstance(value, str):
+                    dict_data[key] = value
+                elif np.isscalar(value):
+                    if value < 1 and value > -1:
+                        dict_data[key] = round(value, 4)
+                    else:
+                        dict_data[key] = round(value, 2)
+
             parsed[i] = dict_data
     json_str = json.dumps(parsed)
 
@@ -156,7 +167,9 @@ def main(database_file=None, config=None, static=False):
 
     #copy over the js and css files
     #shutil.copy(os.path.join(_LOCAL_PATH, "bootstrap.min.css"), "bootstrap.min.css") #Now served via CDN
-    shutil.copy(os.path.join(_LOCAL_PATH, "template.js"), "template.js")
+    #copy the 'assets' folder
+    shutil.copytree(os.path.join(_LOCAL_PATH, "assets"), "assets", dirs_exist_ok=True)
+    #shutil.copy(os.path.join(_LOCAL_PATH, "template.js"), "template.js")
         
     print("=== Running Server ===")
     #Create server object listening the port 80
