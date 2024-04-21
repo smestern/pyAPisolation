@@ -37,7 +37,10 @@ from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
 
-PLOT_BACKEND = 'matplotlib'
+PLOT_BACKEND = 'pyqtgraph'
+if PLOT_BACKEND == "pyqtgraph":
+    import pyqtgraph as pg
+    pg.setConfigOptions(imageAxisOrder='row-major', background='w', useNumba=True, useOpenGL=True)
 ANALYSIS_TABS = {0:'spike', 1:'subthres'}
 
 class analysis_gui(object):
@@ -726,24 +729,25 @@ class analysis_gui(object):
         '''TODO'''
         self.main_view.clear()
         #self.main_view.figure.canvas.setFixedWidth(900)
-        self.axe1 = self.main_view.addPlot(1,1)
+        self.axe1 = self.main_view.addPlot(1,1, )
         self.axe2 = self.main_view.addPlot(2,1)
-        #self.main_view.figure.set_facecolor('#F0F0F0')
-        #self.main_view.figure.set_edgecolor('#F0F0F0')
-       # self.main_view.figure.set_dpi(100)
-        #s#elf.main_view.figure.set_tight_layout(True)
-        #self.main_view.figure.set_facecolor('#F0F0F0')
+        self.axe1.addLegend()
+        self.axe2.setXLink(self.axe1)
         self.get_selected_abf()
         self.get_selected_sweeps()
         #for the chosen sweeps
         if self.selected_sweeps == None:
             self.selected_sweeps = self.abf.sweepList
 
-        for sweep in self.selected_sweeps:
+        #create a list of colors for the sweeps, in tab10
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+
+       
+        for i, sweep in enumerate(self.selected_sweeps):
             self.abf.setSweep(sweep)
-            self.axe1.plot(self.abf.sweepX, self.abf.sweepY, color='#000000')
+            self.axe1.plot(self.abf.sweepX, self.abf.sweepY, pen=pg.mkPen(colors[i], width=3), name="Sweep_" + str(sweep))
             #plot the dvdt
-            self.axe2.plot(self.abf.sweepX[:-1], (np.diff(self.abf.sweepY)/np.diff(self.abf.sweepX))/1000)
+            self.axe2.plot(self.abf.sweepX[:-1], (np.diff(self.abf.sweepY)/np.diff(self.abf.sweepX))/1000,pen=pg.mkPen(colors[i]), name="Sweep_" + str(sweep))
         #self.axe1.set_title(self.selected_abf_name)
 
         #draw the dvdt threshold

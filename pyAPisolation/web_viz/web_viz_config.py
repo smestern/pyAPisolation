@@ -12,6 +12,7 @@ class web_viz_config():
         self.para_vars_limit = 10
         self.table_vars_limit = 5
         self.plots_path = None
+        self.output_path = './'
         self.__dict__.update(kwargs)
         if file:
             with open(file, 'r') as f:

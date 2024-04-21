@@ -33,30 +33,36 @@
 <body>
 
 
-<div class="container">
+<div class="fluid-container">
 
-<div  class="row d-flex align-items-stretch", style="flex-wrap: nowrap;">
+<div class="row d-flex align-items-stretch nowrap" style="min-height: 1200px;">
     <!--Side navbar-->
-    <div class="col-xl-3" style="max-width: 20%">
-        <div class="card flex-grow-1" style="box-shadow: 0px 0px 2px;">
-            <div class="card-header" style="background: rgba(0,0,0,0.02);">
-                <h2 id="electrophystitle">Electrophysiology</h2>
-            </div>
-            <div class="card-body">
-                <p class="card-text">Text</p>
+    <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0 bg-dark">
+        <div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark">
+            <div class="flex-grow-1" style="box-shadow: 0px 0px 2px;">
+                <div class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none" style="background: rgba(0,0,0,0.02);">
+                    <h4 id="electrophystitle">Electrophysiology</h2>
+                </div>
+                <div class="nav nav-pills flex-column mb-auto">
+                    <p class="description">Text</p>
+                </div>
             </div>
         </div>
     </div>
     <!--Main content--> 
     <div class="col" style="max-width: 80%">
         <span id = "Filter" class="text-center" style="display: relative">
-                <button id = "filter_btn" class="btn btn-primary" data-toggle="collapse" href="#ScatterFilter" role="button" aria-expanded="false" aria-controls="ScatterFilter" >Filter</button>
+                <button id = "filter_btn" class="btn btn-primary" data-bs-toggle="collapse" href="#ScatterFilter" role="button" aria-expanded="true" aria-controls="ScatterFilter">Filter</button>
                 <!-----<button id = "filter_btn2" class="btn btn-primary" data-toggle="collapse" href="#Scatter2Filter" role="button" aria-expanded="false" aria-controls="Scatter2Filter" >Filter - Scatter</button>-->
         </span>
-        <div class="collapse multi-collapse" id="ScatterFilter">
-        <div class="card card-body" style="width: 100%">
-            <div id="graphDiv" style="width:900px;height:450px;"></div>
-        </div>
+        <div class="row d-flex align-items-stretch nowrap" >
+            <div class="col-auto px-0 bg-dark">
+                <div class="collapse multi-collapse" id="ScatterFilter">
+                    <div class="card card-body" style="width: 100%">
+                        <div id="graphDiv" style="width:900px;height:300px;"></div>
+                    </div>
+                </div>
+            </div>
         </div>
         <table id="table"
             data-toggle="table"
@@ -65,7 +71,7 @@
             data-show-columns="true"
             data-search="true"
             data-resizable="true"
-            table-responsive
+            data-pagination="true"
             data-classes="table table-card-like table-borderless table-striped table-responsive">
             <thead>
                 <tr>

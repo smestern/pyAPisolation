@@ -22,7 +22,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     data_folder = args.data_folder
     data_df = args.data_df
+    backend = args.backend
 
-    app = run_web_viz.run_web_viz(data_folder, database_file=data_df)
+    app = run_web_viz.run_web_viz(data_folder, database_file=data_df, backend=backend)
     if backend == 'dash':
         app.app.run(host='0.0.0.0', debug=False)
+    

@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import anndata as ad
 from .web_viz_config import web_viz_config
 import shutil
+from .flask_app import traceserver
 
 _LOCAL_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -116,7 +117,7 @@ def main(database_file=None, config=None, static=False):
     #Fix foldernames by truncating
     new_names = []
     for name in full_dataframe[config.file_path].to_numpy():
-        temp = os.path.split(name)[0]
+        temp = name#os.path.split(name)[0]
         new_names.append(temp)
     full_dataframe['foldername'] = new_names #add the new foldername column
 
@@ -162,20 +163,41 @@ def main(database_file=None, config=None, static=False):
         test = gen_table_head_str_(col, soup)
         table_head.insert_after(test)
 
-    with open("output.html", "w") as outf:
+    if not static:
+        #replace the template.js import in the html with 
+        #template_dyn.js import
+        script_tag = soup.find_all('script')
+        for tag in script_tag:
+            if tag['src'] == './assets/template.js':
+                tag['src'] = './assets/template_dyn.js'
+                break
+
+    #export everything tot he out_path_folder
+    if not os.path.exists(config.output_path):
+        os.makedirs(config.output_path)
+    
+    with open(os.path.join(config.output_path, "output.html"), "w") as outf:
         outf.write(str(soup))
 
-    #copy over the js and css files
-    #shutil.copy(os.path.join(_LOCAL_PATH, "bootstrap.min.css"), "bootstrap.min.css") #Now served via CDN
     #copy the 'assets' folder
-    shutil.copytree(os.path.join(_LOCAL_PATH, "assets"), "assets", dirs_exist_ok=True)
-    #shutil.copy(os.path.join(_LOCAL_PATH, "template.js"), "template.js")
+    shutil.copytree(os.path.join(_LOCAL_PATH, "assets"), os.path.join(config.output_path,"assets"), dirs_exist_ok=True)
         
-    print("=== Running Server ===")
-    #Create server object listening the port 80
-    server_object = HTTPServer(server_address=('', 80), RequestHandlerClass=CGIHTTPRequestHandler)
-    #Start the web server
-    server_object.serve_forever()
+    if static:
+        print("=== Running Server ===")
+        #Create server object listening the port 80
+        server_object = HTTPServer(server_address=('', 80), RequestHandlerClass=CGIHTTPRequestHandler)
+        #spawn a new thread for the server to run on
+        server_object.server_activate()
+        
+        
+        #start the server
+        server_object.serve_forever()
+    else:
+        print("=== Running Server ===")
+        traceserver(config=config, static=False).run()
+
+
+
 
 
 if __name__ == '__main__':
