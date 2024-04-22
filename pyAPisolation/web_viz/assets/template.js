@@ -67,6 +67,99 @@ window.onload = function() {
         filterByPlot(keys, ranges)
     }); 
 
+    //umap plot
+    function generate_umap(rows) {
+        data = []
+        m_trace_x = []
+        m_trace_y = []
+        h_trace_x = []
+        h_trace_y = []
+        var colors = ['#f59582', '#f0320c', '#274f1b', '#d6b376', '#18c912', '#58d4d6', '#071aeb', '#000000']
+        rows.forEach(function (row) {
+            var rowdata = Object.keys(row).map(function (e) {
+                return row[e]
+            })
+            var timeseries = Object.keys(row);
+
+            if ((row.labels.includes("Macaca") != true) && (row.labels.includes("Callithrix") != true)) {
+                m_trace_y = m_trace_y.concat([row.X2])
+                m_trace_x = m_trace_x.concat([row.X1])
+
+
+            } else if (row.labels.includes("Macaca") || row.labels.includes("Callithrix")) {
+                var sweepname = row.IDs
+                var trace = {
+                    type: 'scatter',                    // set the chart type
+                    mode: 'markers',                      // connect points with lines
+                    name: sweepname,
+                    y: [row.X2],
+                    x: [row.X1],
+
+                };
+                data.push(trace);
+            }
+
+
+
+        });
+        var m_trace = {
+            type: 'scatter',                    // set the chart type
+            mode: 'markers',                      // connect points with lines
+            name: 'mouse data',
+            y: m_trace_y,
+            x: m_trace_x,
+            marker: {
+                color: '#D3D3D3',
+                opacity: 0.55,
+            },
+
+        };
+        var h_trace = {
+            type: 'scatter',                    // set the chart type
+            mode: 'markers',                      // connect points with lines
+            name: 'human data',
+            y: h_trace_y,
+            x: h_trace_x,
+            marker: {
+                color: '#707070',
+                opacity: 0.55,
+            }
+
+        };
+        data = data.concat(m_trace, h_trace);
+
+        var layout = {
+            dragmode: 'lasso',
+            autosize: true,
+            margin: {                           // update the left, bottom, right, top margin
+                b: 20, r: 10, t: 20
+            },
+
+        };
+
+        Plotly.react('graphDiv_scatter4', data, layout, { displaylogo: false }, { responsive: true });
+        var graphDiv5 = document.getElementById("graphDiv_scatter4")
+        graphDiv5.on('plotly_selected', function (eventData) {
+            var ids = []
+            var ranges = []
+            if (typeof eventData !== 'undefined') {
+
+                eventData.points.forEach(function (pt) {
+
+
+                    ids.push(parseInt(pt.data.name));
+                });
+            }
+            else {
+                console.log(ids)
+                ids = undefined
+            }
+            filterByID(ids);
+        });
+    });
+
+
+
 
     //table functions
     function traceFormatter(index, row) {

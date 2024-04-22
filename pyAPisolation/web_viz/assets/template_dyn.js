@@ -7,6 +7,21 @@ window.onload = function() {
         });
     }
 
+    function filterByID(ids) {
+        if (typeof ids !== 'undefined') {
+            $table.bootstrapTable('filterBy', { 'cellID': ids })
+        }
+        else {
+            jQuery.get("data/box2_ephys.json").done(function (data) {
+                ids = data.map(function (a) { return a.cellID })
+                $table.bootstrapTable('filterBy', { 'cellID': ids })
+            })
+
+
+        }
+    }
+
+
     //create out plotly fr
     var data = [{
         type: 'parcoords',
@@ -35,7 +50,10 @@ window.onload = function() {
     }]; // create the data object
     
     var layout = {
-        width: 1200
+        autosize: true,
+        margin: {                           // update the left, bottom, right, top margin
+            b: 20, r: 10, t: 20
+        },
     };
     
     Plotly.newPlot('graphDiv', data, layout, {displaylogo: false}, {responsive: true}); // create the plot
@@ -66,6 +84,57 @@ window.onload = function() {
         filterByPlot(keys, ranges)
     }); 
 
+    function generate_umap(rows) {
+        data = []
+        m_trace_x = []
+        m_trace_y = []
+        h_trace_x = []
+        h_trace_y = []
+        var colors = ['#f59582', '#f0320c', '#274f1b', '#d6b376', '#18c912', '#58d4d6', '#071aeb', '#000000']
+        rows.forEach(function (row) {
+            var sweepname = row.IDs0
+            var trace = {
+                type: 'scatter',                    // set the chart type
+                mode: 'markers',                    
+                name: sweepname,
+                y: [row['Umap Y']],
+                x: [row['Umap X']],
+
+            };
+            data.push(trace);
+        });
+   
+        var layout = {
+            dragmode: 'lasso',
+            autosize: true,
+            margin: {                           // update the left, bottom, right, top margin
+                b: 20, r: 10, t: 20
+            },
+
+        };
+
+        Plotly.react('graphDiv_scatter', data, layout, { displaylogo: false }, { responsive: true });
+        var graphDiv5 = document.getElementById("graphDiv_scatter")
+        graphDiv5.on('plotly_selected', function (eventData) {
+            var ids = []
+            var ranges = []
+            if (typeof eventData !== 'undefined') {
+
+                eventData.points.forEach(function (pt) {
+
+
+                    ids.push(parseInt(pt.data.name));
+                });
+            }
+            else {
+                console.log(ids)
+                ids = undefined
+            }
+            filterByID(ids);
+        });
+    };
+
+    generate_umap(data_tb);
 
     //table functions
     function traceFormatter(index, row) {

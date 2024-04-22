@@ -363,3 +363,4 @@ pyAPisolation.egg-info/requires.txt
 pyAPisolation.egg-info/SOURCES.txt
 pyAPisolation.egg-info/top_level.txt
 pyAPisolation.egg-info/*
+assets/*

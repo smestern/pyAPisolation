@@ -51,34 +51,39 @@
     </div>
     <!--Main content--> 
     <div class="col" style="max-width: 80%">
-        <span id = "Filter" class="text-center" style="display: relative">
+        <!-- <span id = "Filter" class="text-center" style="display: relative">
                 <button id = "filter_btn" class="btn btn-primary" data-bs-toggle="collapse" href="#ScatterFilter" role="button" aria-expanded="true" aria-controls="ScatterFilter">Filter</button>
-                <!-----<button id = "filter_btn2" class="btn btn-primary" data-toggle="collapse" href="#Scatter2Filter" role="button" aria-expanded="false" aria-controls="Scatter2Filter" >Filter - Scatter</button>-->
-        </span>
+                <button id = "filter_btn2" class="btn btn-primary" data-toggle="collapse" href="#Scatter2Filter" role="button" aria-expanded="false" aria-controls="Scatter2Filter" >Filter - Scatter</button></span> -->
+
         <div class="row d-flex align-items-stretch nowrap" >
             <div class="col-auto px-0 bg-dark">
-                <div class="collapse multi-collapse" id="ScatterFilter">
-                    <div class="card card-body" style="width: 100%">
-                        <div id="graphDiv" style="width:900px;height:300px;"></div>
-                    </div>
+                <div class="card card-body">
+                    <div id="graphDiv_scatter"></div>
+                </div>
+            </div>
+            <div class="col-auto px-0 bg-dark flex-grow-1"  style="max-width: 80%">
+                <div class="card card-body">
+                    <div id="graphDiv"></div>
                 </div>
             </div>
         </div>
-        <table id="table"
-            data-toggle="table"
-            data-detail-view="true"
-            data-show-export="false"
-            data-show-columns="true"
-            data-search="true"
-            data-resizable="true"
-            data-pagination="true"
-            data-classes="table table-card-like table-borderless table-striped table-responsive">
-            <thead>
-                <tr>
-                    <th data-field="filename">Cell ID</th> 
-                </tr>
-            </thead>
-        </table>
+        <div class="row d-flex align-items-stretch nowrap" >
+            <table id="table"
+                data-toggle="table"
+                data-detail-view="true"
+                data-show-export="false"
+                data-show-columns="true"
+                data-search="true"
+                data-resizable="true"
+                data-pagination="true"
+                data-classes="table table-card-like table-borderless table-striped table-responsive">
+                <thead>
+                    <tr>
+                        <th data-field="filename">Cell ID</th> 
+                    </tr>
+                </thead>
+            </table>
+        </div>
 	<script>
 	
 

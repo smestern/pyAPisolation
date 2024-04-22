@@ -8,6 +8,7 @@ class web_viz_config():
         self.table_vars = ["rheo", "QC", 'label_c']
         self.para_vars = ["rheo", 'CRH', 'label_c']
         self.para_var_colors = 'rheobase_width'
+        self.umap_cols = ['Umap X', 'Umap Y']
         self.umap_labels = ['label', 'CRH', 'AVP', 'foldername.1']
         self.para_vars_limit = 10
         self.table_vars_limit = 5

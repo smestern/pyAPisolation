@@ -108,6 +108,21 @@ def main(database_file=None, config=None, static=False):
     pred_col, labels = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]), ret_labels=True, labels=labels)
     full_dataframe['label'] = labels
 
+    #check if the umap_cols are present in the dataframe
+    if not all([x in full_dataframe.columns for x in config.umap_cols]):
+        print("Umap columns not present in the dataframe, generating...")
+        #make the umap columns
+        data, outlier_idx = preprocess_df(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]))
+        umap_data = dense_umap(data)
+        #insert nan values for the outliers
+        for idx in outlier_idx:
+            umap_data = np.insert(umap_data, idx, np.nan, axis=0)
+        full_dataframe['Umap X'] = umap_data[:, 0]
+        full_dataframe['Umap Y'] = umap_data[:, 1]
+        print("Umap columns generated")
+    else:
+        umap_data = full_dataframe[config.umap_cols].to_numpy()
+
     ## handle plots
     if config.plots_path: #if the user has already pregeneated the plots
         plot_data = [os.path.join(config.plots_path, x+".csv") for x in full_dataframe['ID'].to_numpy()]
