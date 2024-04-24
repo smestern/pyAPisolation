@@ -1,4 +1,3 @@
-
 // This script is used to generate the table and parallel coordinates plot in the web application
 // wrap this in a on load function to ensure the page is loaded before the script runs
 window.onload = function() {
@@ -7,6 +6,21 @@ window.onload = function() {
         return row[key]; 
         });
     }
+
+    function filterByID(ids) {
+        if (typeof ids !== 'undefined') {
+            $table.bootstrapTable('filterBy', { 'cellID': ids })
+        }
+        else {
+            jQuery.get("data/box2_ephys.json").done(function (data) {
+                ids = data.map(function (a) { return a.cellID })
+                $table.bootstrapTable('filterBy', { 'cellID': ids })
+            })
+
+
+        }
+    }
+
 
     //create out plotly fr
     var data = [{
@@ -35,9 +49,14 @@ window.onload = function() {
         ]
     }]; // create the data object
     
-    //var layout = {
-    //    width: 1200
-    //};
+    var layout = {
+        autosize: true,
+        responsive: true,
+        useResizeHandler: true,
+        margin: {                           // update the left, bottom, right, top margin
+            b: 20, r: 10, t: 20
+        },
+    };
     
     Plotly.newPlot('graphDiv', data, layout, {displaylogo: false}, {responsive: true}); // create the plot
     var graphDiv = document.getElementById("graphDiv") // get the plot div
@@ -66,98 +85,6 @@ window.onload = function() {
 
         filterByPlot(keys, ranges)
     }); 
-
-    //umap plot
-    function generate_umap(rows) {
-        data = []
-        m_trace_x = []
-        m_trace_y = []
-        h_trace_x = []
-        h_trace_y = []
-        var colors = ['#f59582', '#f0320c', '#274f1b', '#d6b376', '#18c912', '#58d4d6', '#071aeb', '#000000']
-        rows.forEach(function (row) {
-            var rowdata = Object.keys(row).map(function (e) {
-                return row[e]
-            })
-            var timeseries = Object.keys(row);
-
-            if ((row.labels.includes("Macaca") != true) && (row.labels.includes("Callithrix") != true)) {
-                m_trace_y = m_trace_y.concat([row.X2])
-                m_trace_x = m_trace_x.concat([row.X1])
-
-
-            } else if (row.labels.includes("Macaca") || row.labels.includes("Callithrix")) {
-                var sweepname = row.IDs
-                var trace = {
-                    type: 'scatter',                    // set the chart type
-                    mode: 'markers',                      // connect points with lines
-                    name: sweepname,
-                    y: [row.X2],
-                    x: [row.X1],
-
-                };
-                data.push(trace);
-            }
-
-
-
-        });
-        var m_trace = {
-            type: 'scatter',                    // set the chart type
-            mode: 'markers',                      // connect points with lines
-            name: 'mouse data',
-            y: m_trace_y,
-            x: m_trace_x,
-            marker: {
-                color: '#D3D3D3',
-                opacity: 0.55,
-            },
-
-        };
-        var h_trace = {
-            type: 'scatter',                    // set the chart type
-            mode: 'markers',                      // connect points with lines
-            name: 'human data',
-            y: h_trace_y,
-            x: h_trace_x,
-            marker: {
-                color: '#707070',
-                opacity: 0.55,
-            }
-
-        };
-        data = data.concat(m_trace, h_trace);
-
-        var layout = {
-            dragmode: 'lasso',
-            autosize: true,
-            margin: {                           // update the left, bottom, right, top margin
-                b: 20, r: 10, t: 20
-            },
-
-        };
-
-        Plotly.react('graphDiv_scatter4', data, layout, { displaylogo: false }, { responsive: true });
-        var graphDiv5 = document.getElementById("graphDiv_scatter4")
-        graphDiv5.on('plotly_selected', function (eventData) {
-            var ids = []
-            var ranges = []
-            if (typeof eventData !== 'undefined') {
-
-                eventData.points.forEach(function (pt) {
-
-
-                    ids.push(parseInt(pt.data.name));
-                });
-            }
-            else {
-                console.log(ids)
-                ids = undefined
-            }
-            filterByID(ids);
-        });
-    });
-
 
 
 
@@ -233,44 +160,44 @@ window.onload = function() {
         });
     };
     function filterByPlot(keys, ranges){		
-    var ids = []
-    var fildata = data
-    var newArray = data_tb.filter(function (el) {
-            return el.rheobase_thres <= ranges[0][1] &&
-        el.rheobase_thres >= ranges[0][0] &&
-        el.rheobase_width <= ranges[1][1] &&
-        el.rheobase_width >= ranges[1][0] &&
-        el.rheobase_latency <= ranges[2][1] &&
-        el.rheobase_latency >= ranges[2][0] &&
-        el.label <= ranges[3][1] &&
-        el.label >= ranges[3][0];	
+        var ids = []
+        var fildata = data
+        var newArray = data_tb.filter(function (el) {
+                return el.rheobase_thres <= ranges[0][1] &&
+            el.rheobase_thres >= ranges[0][0] &&
+            el.rheobase_width <= ranges[1][1] &&
+            el.rheobase_width >= ranges[1][0] &&
+            el.rheobase_latency <= ranges[2][1] &&
+            el.rheobase_latency >= ranges[2][0] &&
+            el.label <= ranges[3][1] &&
+            el.label >= ranges[3][0];	
 
-        });
-    let result = newArray.map(function(a) { return a.ID; });
+            });
+        let result = newArray.map(function(a) { return a.ID; });
 
-    $('#table').bootstrapTable('filterBy',{'ID': result})
+        $('#table').bootstrapTable('filterBy',{'ID': result})
     };
     function cellStyle(value, row, index) {
-    var classes = [
-    'bg-blue',
-    'bg-green',
-    'bg-orange',
-    'bg-yellow',
-    'bg-red'
-    ]
+        var classes = [
+        'bg-blue',
+        'bg-green',
+        'bg-orange',
+        'bg-yellow',
+        'bg-red'
+        ]
 
-    if (value > 0) {
-        return {
-            css: {
-                'background-color': 'hsla(0, 100%, 50%,' + (value/40) + ')'
+        if (value > 0) {
+            return {
+                css: {
+                    'background-color': 'hsla(0, 100%, 50%,' + (value/40) + ')'
+                }
             }
         }
-    }
-    return {
-        css: {
-            color: 'black'
+        return {
+            css: {
+                color: 'black'
+            }
         }
-    }
     }
 
 

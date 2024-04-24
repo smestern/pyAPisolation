@@ -55,16 +55,19 @@
                 <button id = "filter_btn" class="btn btn-primary" data-bs-toggle="collapse" href="#ScatterFilter" role="button" aria-expanded="true" aria-controls="ScatterFilter">Filter</button>
                 <button id = "filter_btn2" class="btn btn-primary" data-toggle="collapse" href="#Scatter2Filter" role="button" aria-expanded="false" aria-controls="Scatter2Filter" >Filter - Scatter</button></span> -->
 
-        <div class="row d-flex align-items-stretch nowrap" >
-            <div class="col-auto px-0 bg-dark">
-                <div class="card card-body">
-                    <div id="graphDiv_scatter"></div>
+        <div class="row d-flex align-items-stretch flex-nowrap" style="max-width: 80%" >
+            <div class="col-auto px-3 bg-dark ">
+                <div class="card card-body bg-dark" style="height: 100%;">
+                    <h5 class="card-title">Scatter Plot</h5>
+
+                    <div id="graphDiv_scatter" style="width: 100%; height: 100%;"></div>
                 </div>
             </div>
-            <div class="col-auto px-0 bg-dark flex-grow-1"  style="max-width: 80%">
-                <div class="card card-body">
-                    <div id="graphDiv"></div>
-                </div>
+            <div class="col-auto px-3 bg-dark flex-shrink-1 ">
+                <div class="card card-body bg-dark" style="height: 100%;">
+                    <h5 class="card-title">Scatter Plot 2</h5>
+                <div id="graphDiv" style="width: 100%; height: 100%;"></div>
+                </div>  
             </div>
         </div>
         <div class="row d-flex align-items-stretch nowrap" >
