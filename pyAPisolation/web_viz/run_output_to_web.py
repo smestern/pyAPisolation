@@ -18,6 +18,8 @@ import anndata as ad
 from .web_viz_config import web_viz_config
 import shutil
 from .flask_app import traceserver
+import logging
+logger = logging.getLogger(__name__)
 
 _LOCAL_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -172,9 +174,10 @@ def main(database_file=None, config=None, static=False):
 
     #column tags
     table_head= soup.find('th')
-    pred_col = np.hstack((pred_col[:10], 'foldername'))
+    pred_col = np.hstack((pred_col[:10], 'foldername', *config.table_vars_rq, *config.table_vars))
     print(pred_col)
     for col in pred_col:
+        logger.info(f"Adding column {col}")
         test = gen_table_head_str_(col, soup)
         table_head.insert_after(test)
 

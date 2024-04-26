@@ -35,1083 +35,515 @@
     </Constant>
   </Info>
 <TableSequence Selected="1">
-    <Ref ID="1way_group" />
-  <Ref ID="2way_group" />
-  <Ref ID="2way_group2" />
-  <Ref ID="3way_group" />
-  <Ref ID="rowcols" />
+    <Ref ID="Group Table Name" />
   </TableSequence>
-<Table ID="1way_group" XFormat="none" YFormat="replicates" Replicates="2" TableType="TwoWay" EVFormat="AsteriskAfterNumber">
-    <Title>1way_group</Title>
-  <SubColumnTitles OwnSet="1">
-      <Subcolumn>
-        <d>
-          <TextAlign align="Center">rnd1</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">rnd1</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">rnd2</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">rnd2</TextAlign>
-        </d>
-      </Subcolumn>
-    </SubColumnTitles>
-  <YColumn Width="243" Decimals="10" Subcolumns="2">
-      <Title>Ycol_a</Title>
-    <Subcolumn>
-        <d>106</d>
-      <d>107</d>
-      <d>106</d>
-      <d>104</d>
-      <d>102</d>
-      <d>104</d>
-      <d>100</d>
-      <d>108</d>
-      <d>104</d>
-      <d>101</d>
-      <d>103</d>
-      <d>103</d>
-      <d>105</d>
-      <d>101</d>
-      <d>103</d>
-      <d>106</d>
-      <d>107</d>
-      <d>101</d>
-      <d>107</d>
-      <d>108</d>
-      <d>100</d>
-      <d>107</d>
-      <d>100</d>
-      <d>104</d>
-      <d>100</d>
-      <d>103</d>
-      <d>106</d>
-      <d>103</d>
-      <d>108</d>
-      <d>102</d>
-      <d>105</d>
-      <d>100</d>
-      <d>107</d>
-      <d>100</d>
-      <d>101</d>
-      <d>106</d>
-      <d>100</d>
-      <d>104</d>
-      <d>100</d>
-      <d>107</d>
-      <d>105</d>
-      <d>106</d>
-      <d>108</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>3</d>
-      <d>4</d>
-      <d>7</d>
-      <d>3</d>
-      <d>5</d>
-      <d>1</d>
-      <d>5</d>
-      <d>0</d>
-      <d>8</d>
-      <d>8</d>
-      <d>6</d>
-      <d>1</d>
-      <d>5</d>
-      <d>1</d>
-      <d>7</d>
-      <d>8</d>
-      <d>4</d>
-      <d>4</d>
-      <d>8</d>
-      <d>7</d>
-      <d>4</d>
-      <d>1</d>
-      <d>6</d>
-      <d>6</d>
-      <d>3</d>
-      <d>4</d>
-      <d>6</d>
-      <d>6</d>
-      <d>8</d>
-      <d>6</d>
-      <d>7</d>
-      <d>2</d>
-      <d>8</d>
-      <d>3</d>
-      <d>5</d>
-      <d>4</d>
-      <d>0</d>
-      <d>5</d>
-      <d>5</d>
-      <d>4</d>
-      <d>5</d>
-      <d>3</d>
-      <d>0</d>
-      </Subcolumn>
-    </YColumn>
-  <YColumn Width="243" Decimals="10" Subcolumns="2">
-      <Title>Ycol_b</Title>
-    <Subcolumn>
-        <d>6</d>
-      <d>7</d>
-      <d>7</d>
-      <d>1</d>
-      <d>2</d>
-      <d>3</d>
-      <d>2</d>
-      <d>2</d>
-      <d>6</d>
-      <d>3</d>
-      <d>4</d>
-      <d>7</d>
-      <d>0</d>
-      <d>1</d>
-      <d>3</d>
-      <d>8</d>
-      <d>8</d>
-      <d>0</d>
-      <d>7</d>
-      <d>0</d>
-      <d>2</d>
-      <d>6</d>
-      <d>6</d>
-      <d>6</d>
-      <d>4</d>
-      <d>7</d>
-      <d>2</d>
-      <d>2</d>
-      <d>2</d>
-      <d>6</d>
-      <d>2</d>
-      <d>2</d>
-      <d>1</d>
-      <d>4</d>
-      <d>3</d>
-      <d>8</d>
-      <d>0</d>
-      <d>3</d>
-      <d>8</d>
-      <d>7</d>
-      <d>3</d>
-      <d>6</d>
-      <d>2</d>
-      <d>4</d>
-      <d>7</d>
-      <d>0</d>
-      <d>2</d>
-      <d>6</d>
-      <d>6</d>
-      <d>3</d>
-      <d>0</d>
-      <d>5</d>
-      <d>3</d>
-      <d>2</d>
-      <d>2</d>
-      <d>7</d>
-      <d>1</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>-2</d>
-      <d>-7</d>
-      <d>-5</d>
-      <d>-4</d>
-      <d>-6</d>
-      <d>-8</d>
-      <d>-4</d>
-      <d>-6</d>
-      <d>-1</d>
-      <d>-8</d>
-      <d>-1</d>
-      <d>-2</d>
-      <d>-3</d>
-      <d>-7</d>
-      <d>-5</d>
-      <d>0</d>
-      <d>-6</d>
-      <d>-7</d>
-      <d>-2</d>
-      <d>-7</d>
-      <d>-2</d>
-      <d>-8</d>
-      <d>-8</d>
-      <d>-7</d>
-      <d>-2</d>
-      <d>-5</d>
-      <d>0</d>
-      <d>-4</d>
-      <d>0</d>
-      <d>-8</d>
-      <d>-6</d>
-      <d>-5</d>
-      <d>-8</d>
-      <d>-5</d>
-      <d>-6</d>
-      <d>-6</d>
-      <d>0</d>
-      <d>-8</d>
-      <d>-4</d>
-      <d>-5</d>
-      <d>0</d>
-      <d>-1</d>
-      <d>0</d>
-      <d>0</d>
-      <d>0</d>
-      <d>-1</d>
-      <d>-1</d>
-      <d>-3</d>
-      <d>-7</d>
-      <d>-1</d>
-      <d>-8</d>
-      <d>-2</d>
-      <d>-3</d>
-      <d>-2</d>
-      <d>-3</d>
-      <d>-6</d>
-      <d>-7</d>
-      </Subcolumn>
-    </YColumn>
-  </Table>
-<Table ID="2way_group" XFormat="none" YFormat="replicates" Replicates="2" TableType="TwoWay" EVFormat="AsteriskAfterNumber">
-    <Title>2way_group</Title>
-  <SubColumnTitles OwnSet="1">
-      <Subcolumn>
-        <d>
-          <TextAlign align="Center">sub1</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">sub1</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">sub2</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">sub2</TextAlign>
-        </d>
-      </Subcolumn>
-    </SubColumnTitles>
-  <YColumn Width="243" Decimals="10" Subcolumns="2">
-      <Title>Ycol_a</Title>
-    <Subcolumn>
-        <d>50.26370931051921</d>
-      <d>0.5769038846263591</d>
-      <d>72.24521152615053</d>
-      <d>0.2807723624408558</d>
-      <d>37.01587002554444</d>
-      <d>0.015456616528867428</d>
-      <d>92.83185625877253</d>
-      <d>0.42818414831731433</d>
-      <d>9.717649377076853</d>
-      <d>0.6150072266991697</d>
-      <d>7.845638134226595</d>
-      <d>0.02535074341545751</d>
-      <d>25.024289816459532</d>
-      <d>0.5492266647061205</d>
-      <d>71.45959227000624</d>
-      <d>0.6601973767177313</d>
-      <d>61.17207462343522</d>
-      <d>0.4196000624277899</d>
-      <d>11.607264050691624</d>
-      <d>0.04600264202175275</d>
-      <d>4.072880231897013</d>
-      <d>0.8554605840110072</d>
-      <d>16.29344270814297</d>
-      <d>0.07056874740042984</d>
-      <d>64.24192782063156</d>
-      <d>0.026511310541621813</d>
-      <d>1.8221825651549728</d>
-      <d>0.0944429607559284</d>
-      <d>68.30067734163569</d>
-      <d>0.07118864846022899</d>
-      <d>2.3271935735825866</d>
-      <d>0.8144684825889358</d>
-      <d>17.743954377972283</d>
-      <d>0.7506147516408583</d>
-      <d>75.45428740846823</d>
-      <d>0.10312386883593261</d>
-      <d>82.64574661077417</d>
-      <d>0.32004960103061175</d>
-      <d>89.55232284962005</d>
-      <d>0.3892016787341631</d>
-      <d>95.0061967050805</d>
-      <d>0.9506071469375561</d>
-      <d>32.8664545369916</d>
-      <d>0.6725184560770384</d>
-      <d>78.96181427945538</d>
-      <d>0.09120610304869037</d>
-      <d>49.442030470258146</d>
-      <d>0.057558760016644284</d>
-      <d>88.77041827582998</d>
-      <d>0.3509150125520787</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>0.8530094554673601</d>
-      <d>-0.2944488920695857</d>
-      <d>0.31692200515627766</d>
-      <d>-0.1694927466860925</d>
-      <d>0.5183296523637367</d>
-      <d>-0.8773730719279554</d>
-      <d>0.29359184426449336</d>
-      <d>-0.8093611554785136</d>
-      <d>0.8101133946791808</d>
-      <d>-0.8670723185801037</d>
-      <d>0.9132405525564713</d>
-      <d>-0.5113423988609378</d>
-      <d>0.6499639307777652</d>
-      <d>-0.7019668772577033</d>
-      <d>0.093981939840869</d>
-      <d>-0.578280140996174</d>
-      <d>0.035942273796742086</d>
-      <d>-0.46559801813246016</d>
-      <d>0.03734818874921442</d>
-      <d>-0.8226005606596583</d>
-      <d>0.3601906414112629</d>
-      <d>-0.12706051265188478</d>
-      <d>0.5222432600548044</d>
-      <d>-0.7699935530986108</d>
-      <d>0.21582102749684318</d>
-      <d>-0.6228904758190003</d>
-      <d>0.085347464993768</d>
-      <d>-0.0516817211686077</d>
-      <d>0.2708322512620742</d>
-      <d>-0.4389714207056361</d>
-      <d>0.9626484146779251</d>
-      <d>-0.8359801205122058</d>
-      <d>0.24773098950115746</d>
-      <d>-0.3559726786512616</d>
-      <d>0.7036578593800237</d>
-      <d>-0.4741738290873252</d>
-      <d>0.5857755812734633</d>
-      <d>-0.9402302414249576</d>
-      <d>0.575474177875879</d>
-      <d>-0.3881699262065219</d>
-      <d>0.6432882184423532</d>
-      <d>-0.45825289049151663</d>
-      <d>0.5456167893159349</d>
-      <d>-0.9414648087765252</d>
-      <d>0.38610263780077425</d>
-      <d>-0.9611905638239142</d>
-      <d>0.28185477477339993</d>
-      <d>-0.11816482762165625</d>
-      <d>0.877472013527053</d>
-      <d>-0.7350710438038858</d>
-      <d>0.9307573256035647</d>
-      <d>-0.8584127518430118</d>
-      <d>0.9025529066795667</d>
-      <d>-0.5052523724478571</d>
-      <d>0.5734378881232861</d>
-      <d>-0.6318372121697993</d>
-      </Subcolumn>
-    </YColumn>
-  <YColumn Width="243" Decimals="10" Subcolumns="2">
-      <Title>Ycol_b</Title>
-    <Subcolumn>
-        <d>49.25176938188639</d>
-      <d>0.1952429877980445</d>
-      <d>17.711067940704893</d>
-      <d>0.9404585843529143</d>
-      <d>95.39285770025873</d>
-      <d>0.9148643902204485</d>
-      <d>38.50977286019253</d>
-      <d>0.8511366715168569</d>
-      <d>55.68012624583501</d>
-      <d>0.936154774160781</d>
-      <d>69.6029796674973</d>
-      <d>0.570061170089365</d>
-      <d>79.57926694361011</d>
-      <d>0.8900053418175663</d>
-      <d>63.742990149820656</d>
-      <d>0.7260913337226615</d>
-      <d>97.58520794625346</d>
-      <d>0.5163003483011953</d>
-      <d>69.59742060936979</d>
-      <d>0.4089529444142699</d>
-      <d>17.329432007084577</d>
-      <d>0.15643704267108605</d>
-      <d>27.993389694594285</d>
-      <d>0.9548652806631941</d>
-      <d>9.783416065100148</d>
-      <d>0.49161587511683236</d>
-      <d>47.34717707805657</d>
-      <d>0.17320186991001518</d>
-      <d>4.530400977204452</d>
-      <d>0.3746126146264712</d>
-      <d>85.64898411883223</d>
-      <d>0.658693631618945</d>
-      <d>90.53506419560637</d>
-      <d>0.19579113478929644</d>
-      <d>6.9361300875165455</d>
-      <d>0.10077800137742665</d>
-      <d>69.67371653641507</d>
-      <d>0.628942846779884</d>
-      <d>80.6834739267264</d>
-      <d>0.9905051420006733</d>
-      <d>41.26176769114265</d>
-      <d>0.37201808579278317</d>
-      <d>77.64129607419969</d>
-      <d>0.34080354025301784</d>
-      <d>42.89940273750184</d>
-      <d>0.7508710677914974</d>
-      <d>1.083765148029836</d>
-      <d>0.9053819764192637</d>
-      <d>9.128667678613356</d>
-      <d>0.31931363759041487</d>
-      <d>44.84455219783198</d>
-      <d>0.29321077169806453</d>
-      <d>75.237452943768</d>
-      <d>0.7915790437258485</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>0.6311386259972629</d>
-      <d>-0.7948113035416484</d>
-      <d>0.02431596643145384</d>
-      <d>-0.6454722959071678</d>
-      <d>0.9666548190436696</d>
-      <d>-0.9636199770892528</d>
-      <d>0.9900538501042633</d>
-      <d>-0.14008401523652403</d>
-      <d>0.7407686177542044</d>
-      <d>-0.697015740995268</d>
-      <d>0.7024840839871093</d>
-      <d>-0.35949115121975517</d>
-      <d>0.5015162946871996</d>
-      <d>-0.7982951789667752</d>
-      <d>0.3379951568515358</d>
-      <d>-0.375582952639944</d>
-      <d>0.5426446347075766</d>
-      <d>-0.2865412521282844</d>
-      <d>0.5908332605690108</d>
-      <d>-0.03050024993904943</d>
-      <d>0.531354631568148</d>
-      <d>-0.5406351216101065</d>
-      <d>0.32295647294124596</d>
-      <d>-0.7951861947687037</d>
-      <d>0.7378969166957685</d>
-      <d>-0.5543540525114007</d>
-      <d>0.7578461104643691</d>
-      <d>-0.014393488629755868</d>
-      <d>0.43385164923797304</d>
-      <d>-0.39850473439737344</d>
-      <d>0.6158500980522165</d>
-      <d>-0.6350936508676438</d>
-      <d>0.6258599157142364</d>
-      <d>-0.5031362585800877</d>
-      <d>0.3189756302937613</d>
-      <d>-0.8448753109694546</d>
-      <d>0.8034809303848486</d>
-      <d>-0.2820345725713065</d>
-      <d>0.5495288823237355</d>
-      <d>-0.441530501373377</d>
-      </Subcolumn>
-    </YColumn>
-  </Table>
-<Table ID="2way_group2" XFormat="none" YFormat="replicates" Replicates="2" TableType="TwoWay" EVFormat="AsteriskAfterNumber">
-    <Title>2way_group2</Title>
+<Table ID="Group Table Name" XFormat="none" YFormat="replicates" Replicates="111" TableType="TwoWay" EVFormat="AsteriskAfterNumber">
+    <Title>Group Table Name</Title>
   <RowTitlesColumn Width="125">
       <Subcolumn>
-        <d>sub2</d>
-      <d>sub1</d>
+        <d>Sweep 015 spike count</d>
+      <d>Sweep 001 spike count</d>
+      <d>Sweep 002 spike count</d>
+      <d>Sweep 003 spike count</d>
+      <d>Sweep 004 spike count</d>
+      <d>Sweep 005 spike count</d>
+      <d>Sweep 006 spike count</d>
+      <d>Sweep 014 spike count</d>
+      <d>Sweep 013 spike count</d>
+      <d>Sweep 012 spike count</d>
+      <d>Sweep 011 spike count</d>
+      <d>Sweep 010 spike count</d>
+      <d>Sweep 009 spike count</d>
+      <d>Sweep 008 spike count</d>
+      <d>Sweep 007 spike count</d>
       </Subcolumn>
     </RowTitlesColumn>
   <SubColumnTitles OwnSet="1">
       <Subcolumn>
         <d>
-          <TextAlign align="Center">rnd1</TextAlign>
+          <TextAlign align="Center">17911000</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">rnd1</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">rnd2</TextAlign>
+          <TextAlign align="Center">17o02000</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">rnd2</TextAlign>
+          <TextAlign align="Center">17o05000</TextAlign>
         </d>
       </Subcolumn>
-    </SubColumnTitles>
-  <YColumn Width="243" Decimals="10" Subcolumns="2">
-      <Title>Ycol_a</Title>
     <Subcolumn>
-        <d>50.26370931051921</d>
-      <d>72.24521152615053</d>
-      <d>37.01587002554444</d>
-      <d>92.83185625877253</d>
-      <d>9.717649377076853</d>
-      <d>7.845638134226595</d>
-      <d>25.024289816459532</d>
-      <d>71.45959227000624</d>
-      <d>61.17207462343522</d>
-      <d>11.607264050691624</d>
-      <d>4.072880231897013</d>
-      <d>16.29344270814297</d>
-      <d>64.24192782063156</d>
-      <d>1.8221825651549728</d>
-      <d>68.30067734163569</d>
-      <d>2.3271935735825866</d>
-      <d>17.743954377972283</d>
-      <d>75.45428740846823</d>
-      <d>82.64574661077417</d>
-      <d>89.55232284962005</d>
-      <d>95.0061967050805</d>
-      <d>32.8664545369916</d>
-      <d>78.96181427945538</d>
-      <d>49.442030470258146</d>
-      <d>88.77041827582998</d>
-      <d>0.8530094554673601</d>
-      <d>0.31692200515627766</d>
-      <d>0.5183296523637367</d>
-      <d>0.29359184426449336</d>
-      <d>0.8101133946791808</d>
-      <d>0.9132405525564713</d>
-      <d>0.6499639307777652</d>
-      <d>0.093981939840869</d>
-      <d>0.035942273796742086</d>
-      <d>0.03734818874921442</d>
-      <d>0.3601906414112629</d>
-      <d>0.5222432600548044</d>
-      <d>0.21582102749684318</d>
-      <d>0.085347464993768</d>
-      <d>0.2708322512620742</d>
-      <d>0.9626484146779251</d>
-      <d>0.24773098950115746</d>
-      <d>0.7036578593800237</d>
-      <d>0.5857755812734633</d>
-      <d>0.575474177875879</d>
-      <d>0.6432882184423532</d>
-      <d>0.5456167893159349</d>
-      <d>0.38610263780077425</d>
-      <d>0.28185477477339993</d>
-      <d>0.877472013527053</d>
-      <d>0.9307573256035647</d>
-      <d>0.9025529066795667</d>
-      <d>0.5734378881232861</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>0.5769038846263591</d>
-      <d>0.2807723624408558</d>
-      <d>0.015456616528867428</d>
-      <d>0.42818414831731433</d>
-      <d>0.6150072266991697</d>
-      <d>0.02535074341545751</d>
-      <d>0.5492266647061205</d>
-      <d>0.6601973767177313</d>
-      <d>0.4196000624277899</d>
-      <d>0.04600264202175275</d>
-      <d>0.8554605840110072</d>
-      <d>0.07056874740042984</d>
-      <d>0.026511310541621813</d>
-      <d>0.0944429607559284</d>
-      <d>0.07118864846022899</d>
-      <d>0.8144684825889358</d>
-      <d>0.7506147516408583</d>
-      <d>0.10312386883593261</d>
-      <d>0.32004960103061175</d>
-      <d>0.3892016787341631</d>
-      <d>0.9506071469375561</d>
-      <d>0.6725184560770384</d>
-      <d>0.09120610304869037</d>
-      <d>0.057558760016644284</d>
-      <d>0.3509150125520787</d>
-      <d>-0.2944488920695857</d>
-      <d>-0.1694927466860925</d>
-      <d>-0.8773730719279554</d>
-      <d>-0.8093611554785136</d>
-      <d>-0.8670723185801037</d>
-      <d>-0.5113423988609378</d>
-      <d>-0.7019668772577033</d>
-      <d>-0.578280140996174</d>
-      <d>-0.46559801813246016</d>
-      <d>-0.8226005606596583</d>
-      <d>-0.12706051265188478</d>
-      <d>-0.7699935530986108</d>
-      <d>-0.6228904758190003</d>
-      <d>-0.0516817211686077</d>
-      <d>-0.4389714207056361</d>
-      <d>-0.8359801205122058</d>
-      <d>-0.3559726786512616</d>
-      <d>-0.4741738290873252</d>
-      <d>-0.9402302414249576</d>
-      <d>-0.3881699262065219</d>
-      <d>-0.45825289049151663</d>
-      <d>-0.9414648087765252</d>
-      <d>-0.9611905638239142</d>
-      <d>-0.11816482762165625</d>
-      <d>-0.7350710438038858</d>
-      <d>-0.8584127518430118</d>
-      <d>-0.5052523724478571</d>
-      <d>-0.6318372121697993</d>
-      </Subcolumn>
-    </YColumn>
-  <YColumn Width="243" Decimals="10" Subcolumns="2">
-      <Title>Ycol_b</Title>
-    <Subcolumn>
-        <d>49.25176938188639</d>
-      <d>17.711067940704893</d>
-      <d>95.39285770025873</d>
-      <d>38.50977286019253</d>
-      <d>55.68012624583501</d>
-      <d>69.6029796674973</d>
-      <d>79.57926694361011</d>
-      <d>63.742990149820656</d>
-      <d>97.58520794625346</d>
-      <d>69.59742060936979</d>
-      <d>17.329432007084577</d>
-      <d>27.993389694594285</d>
-      <d>9.783416065100148</d>
-      <d>47.34717707805657</d>
-      <d>4.530400977204452</d>
-      <d>85.64898411883223</d>
-      <d>90.53506419560637</d>
-      <d>6.9361300875165455</d>
-      <d>69.67371653641507</d>
-      <d>80.6834739267264</d>
-      <d>41.26176769114265</d>
-      <d>77.64129607419969</d>
-      <d>42.89940273750184</d>
-      <d>1.083765148029836</d>
-      <d>9.128667678613356</d>
-      <d>44.84455219783198</d>
-      <d>75.237452943768</d>
-      <d>0.6311386259972629</d>
-      <d>0.02431596643145384</d>
-      <d>0.9666548190436696</d>
-      <d>0.9900538501042633</d>
-      <d>0.7407686177542044</d>
-      <d>0.7024840839871093</d>
-      <d>0.5015162946871996</d>
-      <d>0.3379951568515358</d>
-      <d>0.5426446347075766</d>
-      <d>0.5908332605690108</d>
-      <d>0.531354631568148</d>
-      <d>0.32295647294124596</d>
-      <d>0.7378969166957685</d>
-      <d>0.7578461104643691</d>
-      <d>0.43385164923797304</d>
-      <d>0.6158500980522165</d>
-      <d>0.6258599157142364</d>
-      <d>0.3189756302937613</d>
-      <d>0.8034809303848486</d>
-      <d>0.5495288823237355</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>0.1952429877980445</d>
-      <d>0.9404585843529143</d>
-      <d>0.9148643902204485</d>
-      <d>0.8511366715168569</d>
-      <d>0.936154774160781</d>
-      <d>0.570061170089365</d>
-      <d>0.8900053418175663</d>
-      <d>0.7260913337226615</d>
-      <d>0.5163003483011953</d>
-      <d>0.4089529444142699</d>
-      <d>0.15643704267108605</d>
-      <d>0.9548652806631941</d>
-      <d>0.49161587511683236</d>
-      <d>0.17320186991001518</d>
-      <d>0.3746126146264712</d>
-      <d>0.658693631618945</d>
-      <d>0.19579113478929644</d>
-      <d>0.10077800137742665</d>
-      <d>0.628942846779884</d>
-      <d>0.9905051420006733</d>
-      <d>0.37201808579278317</d>
-      <d>0.34080354025301784</d>
-      <d>0.7508710677914974</d>
-      <d>0.9053819764192637</d>
-      <d>0.31931363759041487</d>
-      <d>0.29321077169806453</d>
-      <d>0.7915790437258485</d>
-      <d>-0.7948113035416484</d>
-      <d>-0.6454722959071678</d>
-      <d>-0.9636199770892528</d>
-      <d>-0.14008401523652403</d>
-      <d>-0.697015740995268</d>
-      <d>-0.35949115121975517</d>
-      <d>-0.7982951789667752</d>
-      <d>-0.375582952639944</d>
-      <d>-0.2865412521282844</d>
-      <d>-0.03050024993904943</d>
-      <d>-0.5406351216101065</d>
-      <d>-0.7951861947687037</d>
-      <d>-0.5543540525114007</d>
-      <d>-0.014393488629755868</d>
-      <d>-0.39850473439737344</d>
-      <d>-0.6350936508676438</d>
-      <d>-0.5031362585800877</d>
-      <d>-0.8448753109694546</d>
-      <d>-0.2820345725713065</d>
-      <d>-0.441530501373377</d>
-      </Subcolumn>
-    </YColumn>
-  </Table>
-<Table ID="3way_group" XFormat="none" YFormat="replicates" Replicates="2" TableType="TwoWay" EVFormat="AsteriskAfterNumber">
-    <Title>3way_group</Title>
-  <RowTitlesColumn Width="125">
-      <Subcolumn>
-        <d>row2</d>
-      <d>row1</d>
-      </Subcolumn>
-    </RowTitlesColumn>
-  <SubColumnTitles OwnSet="1">
-      <Subcolumn>
         <d>
-          <TextAlign align="Center">sub1</TextAlign>
+          <TextAlign align="Center">17911004</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">sub1</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">sub2</TextAlign>
+          <TextAlign align="Center">17o02022</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">sub2</TextAlign>
+          <TextAlign align="Center">17o05007</TextAlign>
         </d>
       </Subcolumn>
-    </SubColumnTitles>
-  <YColumn Width="243" Decimals="10" Subcolumns="2">
-      <Title>Ycol_a</Title>
     <Subcolumn>
-        <d>0.24734810174319766</d>
-      <d>0.4505441353100935</d>
-      <d>0.21296416150891073</d>
-      <d>0.13637147558676976</d>
-      <d>0.43747492202372906</d>
-      <d>0.9041586944937484</d>
-      <d>0.9265876251614944</d>
-      <d>0.4921162930795382</d>
-      <d>0.46077876803272577</d>
-      <d>0.2063337184057925</d>
-      <d>0.36426986104807546</d>
-      <d>0.5034172708548569</d>
-      <d>0.2768776481472037</d>
-      <d>0.8062012797930613</d>
-      <d>0.5554317056026274</d>
-      <d>0.7689874151805105</d>
-      <d>0.12915941515149498</d>
-      <d>0.9540510272587224</d>
-      <d>0.028782676313338973</d>
-      <d>0.755137255673619</d>
-      <d>0.5899176868546331</d>
-      <d>0.3922440450997323</d>
-      <d>0.3456672833238632</d>
-      <d>0.8967884099060118</d>
-      <d>0.04086861626647886</d>
-      <d>0.16893506307216455</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>0.9997176732861306</d>
-      <d>0.9966368370739054</d>
-      <d>0.3581627180328405</d>
-      <d>0.11355759219962902</d>
-      <d>0.7723183917356393</d>
-      <d>0.5201635011119934</d>
-      <d>0.980032575285477</d>
-      <d>0.4926180939928696</d>
-      <d>0.6408747448032146</d>
-      <d>0.18188008439914483</d>
-      <d>0.08175903194887191</d>
-      <d>0.8735786241067772</d>
-      <d>0.944765729882428</d>
-      <d>0.8496473906774115</d>
-      <d>0.6717006844058567</d>
-      <d>0.6181282404578958</d>
-      <d>0.6203095513534647</d>
-      <d>0.7040797680992236</d>
-      <d>0.34825546702330035</d>
-      <d>0.5139894891598108</d>
-      <d>0.9495206236576421</d>
-      <d>0.14707348092903794</d>
-      <d>0.25824438829895835</d>
-      <d>0.4591357562382613</d>
-      <d>0.47396164026287235</d>
-      <d>0.6675577385210272</d>
-      <d>0.6903948286293653</d>
-      <d>0.039312139841098936</d>
-      <d>0.4845229851910213</d>
-      <d>0.618254771530296</d>
-      </Subcolumn>
-    </YColumn>
-  <YColumn Width="243" Decimals="10" Subcolumns="2">
-      <Title>Ycol_b</Title>
-    <Subcolumn>
-        <d>0.40348286621239704</d>
-      <d>0.13401522845064073</d>
-      <d>0.014544665667881929</d>
-      <d>0.350587558806597</d>
-      <d>0.24014561877819307</d>
-      <d>0.07586332810866392</d>
-      <d>0.2785903390319586</d>
-      <d>0.17701048427674682</d>
-      <d>0.7994103989090426</d>
-      <d>0.6279003894909078</d>
-      <d>0.7474709381337565</d>
-      <d>0.0366832028905979</d>
-      <d>0.8647223762550532</d>
-      <d>0.8129010091300776</d>
-      <d>0.8521815003185401</d>
-      <d>0.5519068387744855</d>
-      <d>0.7836530127411431</d>
-      <d>0.39654278232127016</d>
-      <d>0.17231987120162984</d>
-      <d>0.19228901880867078</d>
-      <d>0.08870253375705561</d>
-      <d>0.12063587110060081</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>0.5609379715353863</d>
-      <d>0.876653602658345</d>
-      <d>0.15190269351229435</d>
-      <d>0.13882717264941014</d>
-      <d>0.9208724005318132</d>
-      <d>0.06107795985486375</d>
-      <d>0.60617463445088</d>
-      <d>0.22864280550346272</d>
-      <d>0.6715731955927996</d>
-      <d>0.5203077009037933</d>
-      <d>0.6220867002278735</d>
-      <d>0.8623637087467452</d>
-      <d>0.3287516102875082</d>
-      <d>0.6334008543167258</d>
-      <d>0.12887972191064923</d>
-      <d>0.12804583895777244</d>
-      <d>0.7482596903836584</d>
-      <d>0.18452101935637732</d>
-      <d>0.2093493233367103</d>
-      <d>0.370472102791382</d>
-      <d>0.3689136395697724</d>
-      <d>0.4625347161331479</d>
-      </Subcolumn>
-    </YColumn>
-  </Table>
-<Table ID="rowcols" XFormat="none" YFormat="replicates" Replicates="50" TableType="TwoWay" EVFormat="AsteriskAfterNumber">
-    <Title>rowcols</Title>
-  <RowTitlesColumn Width="125">
-      <Subcolumn>
-        <d>rnd1</d>
-      <d>rnd2</d>
-      </Subcolumn>
-    </RowTitlesColumn>
-  <SubColumnTitles OwnSet="1">
-      <Subcolumn>
         <d>
-          <TextAlign align="Center">1</TextAlign>
+          <TextAlign align="Center">17911008</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">0</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">2</TextAlign>
+          <TextAlign align="Center">17o02029</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">3</TextAlign>
+          <TextAlign align="Center">17o05013</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">5</TextAlign>
+          <TextAlign align="Center">17911012</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">4</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">7</TextAlign>
+          <TextAlign align="Center">17o02035</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">6</TextAlign>
+          <TextAlign align="Center">17o05020</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">8</TextAlign>
+          <TextAlign align="Center">17911014</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">10</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">9</TextAlign>
+          <TextAlign align="Center">17o02041</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">13</TextAlign>
+          <TextAlign align="Center">17o05027</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">11</TextAlign>
+          <TextAlign align="Center">17911018</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">14</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">12</TextAlign>
+          <TextAlign align="Center">17o02047</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">15</TextAlign>
+          <TextAlign align="Center">17o05031</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">17</TextAlign>
+          <TextAlign align="Center">17911022</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">16</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">18</TextAlign>
+          <TextAlign align="Center">17o02058</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">21</TextAlign>
+          <TextAlign align="Center">17o05037</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">19</TextAlign>
+          <TextAlign align="Center">17911027</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">24</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">20</TextAlign>
+          <TextAlign align="Center">17o02064</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">31</TextAlign>
+          <TextAlign align="Center">17o05043</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">22</TextAlign>
+          <TextAlign align="Center">17911031</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">32</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">23</TextAlign>
+          <TextAlign align="Center">17o02070</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">35</TextAlign>
+          <TextAlign align="Center">17o05049</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">25</TextAlign>
+          <TextAlign align="Center">17911035</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">39</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">26</TextAlign>
+          <TextAlign align="Center">17o02076</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">41</TextAlign>
+          <TextAlign align="Center">17o05056</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">27</TextAlign>
+          <TextAlign align="Center">17911039</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">43</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">28</TextAlign>
+          <TextAlign align="Center">17o02088</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">44</TextAlign>
+          <TextAlign align="Center">17o05062</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">29</TextAlign>
+          <TextAlign align="Center">17912000</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">46</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">30</TextAlign>
+          <TextAlign align="Center">17o02095</TextAlign>
         </d>
       <d>
-          <TextAlign align="Center">48</TextAlign>
+          <TextAlign align="Center">17o05068</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">33</TextAlign>
+          <TextAlign align="Center">17912005</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o02101</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o05074</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">34</TextAlign>
+          <TextAlign align="Center">17912009</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o02107</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">36</TextAlign>
+          <TextAlign align="Center">17912013</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03000</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">37</TextAlign>
+          <TextAlign align="Center">17912019</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03012</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">38</TextAlign>
+          <TextAlign align="Center">17912023</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03018</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">40</TextAlign>
+          <TextAlign align="Center">17912027</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03024</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">42</TextAlign>
+          <TextAlign align="Center">17912031</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03037</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">45</TextAlign>
+          <TextAlign align="Center">17912035</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03043</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">47</TextAlign>
+          <TextAlign align="Center">17912039</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03050</TextAlign>
         </d>
       </Subcolumn>
     <Subcolumn>
         <d>
-          <TextAlign align="Center">49</TextAlign>
+          <TextAlign align="Center">17912043</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03057</TextAlign>
         </d>
       </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17912047</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03063</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17912051</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03074</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17912055</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03081</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17000</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03087</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17018</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o03094</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17024</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o04000</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17037</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o04033</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17042</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o04060</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17062</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o06000</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17075</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o06006</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17081</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o06013</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17087</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o06019</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17093</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o06032</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17099</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o06039</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o17105</TextAlign>
+        </d>
+      <d>
+          <TextAlign align="Center">17o06045</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18000</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18007</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18014</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18021</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18025</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18032</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18039</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18046</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18053</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18060</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18067</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o18068</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20000</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20007</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20014</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20021</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20028</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20035</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20043</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20050</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20051</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20064</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20065</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>
+          <TextAlign align="Center">17o20071</TextAlign>
+        </d>
+      </Subcolumn>
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
+    <Subcolumn />
     <Subcolumn />
     <Subcolumn />
     <Subcolumn />
@@ -1133,210 +565,1900 @@
     <Subcolumn />
     <Subcolumn />
     </SubColumnTitles>
-  <YColumn Width="243" Decimals="10" Subcolumns="30">
-      <Title>Ycol_a</Title>
+  <YColumn Width="243" Decimals="10" Subcolumns="61">
+      <Title>CONTROL</Title>
     <Subcolumn>
-        <d>0.32235384497472297</d>
-      <d>0.8098744458546349</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>8.0</d>
+      <d>13.0</d>
+      <d>15.0</d>
+      <d>18.0</d>
+      <d>21.0</d>
+      <d>24.0</d>
+      <d>32.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>14.0</d>
+      <d>6.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.25464065476376385</d>
-      <d>0.6815027222239293</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>1.0</d>
+      <d>7.0</d>
+      <d>11.0</d>
+      <d>14.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>21.0</d>
+      <d>17.0</d>
+      <d>13.0</d>
+      <d>11.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.3488682665429953</d>
-      <d>0.9295291442478258</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>6.0</d>
+      <d>13.0</d>
+      <d>18.0</d>
+      <d>21.0</d>
+      <d>25.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>32.0</d>
+      <d>33.0</d>
+      <d>35.0</d>
+      <d>35.0</d>
+      <d>37.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.12429722348554473</d>
-      <d>0.7308674752036443</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>9.0</d>
+      <d>12.0</d>
+      <d>14.0</d>
+      <d>17.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>25.0</d>
+      <d>24.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.9383404568210378</d>
-      <d>0.18123306616566015</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>1.0</d>
+      <d>8.0</d>
+      <d>13.0</d>
+      <d>16.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
+      <d>21.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>23.0</d>
+      <d>23.0</d>
+      <d>17.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.0664962673667775</d>
-      <d>0.741120649290059</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>10.0</d>
+      <d>16.0</d>
+      <d>20.0</d>
+      <d>23.0</d>
+      <d>26.0</d>
+      <d>22.0</d>
+      <d>15.0</d>
+      <d>11.0</d>
+      <d>9.0</d>
+      <d>8.0</d>
+      <d>8.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.1397723766262895</d>
-      <d>0.7952673118598902</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>9.0</d>
+      <d>13.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>14.0</d>
+      <d>12.0</d>
+      <d>4.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.20162732004774453</d>
-      <d>0.1636559428657045</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>14.0</d>
+      <d>18.0</d>
+      <d>22.0</d>
+      <d>25.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>29.0</d>
+      <d>29.0</d>
+      <d>15.0</d>
+      <d>11.0</d>
+      <d>12.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.4391349085702184</d>
-      <d>0.3769444294249076</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>10.0</d>
+      <d>13.0</d>
+      <d>17.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>26.0</d>
+      <d>28.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>29.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.46267978566960644</d>
-      <d>0.3013778741641421</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>1.0</d>
+      <d>7.0</d>
+      <d>12.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>18.0</d>
+      <d>10.0</d>
+      <d>5.0</d>
+      <d>6.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.7476093801762511</d>
-      <d>0.5027203900924792</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>11.0</d>
+      <d>14.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>16.0</d>
+      <d>9.0</d>
+      <d>7.0</d>
+      <d>9.0</d>
+      <d>6.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.2322126951468173</d>
-      <d>0.8995745732745685</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>8.0</d>
+      <d>13.0</d>
+      <d>17.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>30.0</d>
+      <d>31.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.9064721109645469</d>
-      <d>0.6242379959139921</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>1.0</d>
+      <d>10.0</d>
+      <d>14.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>20.0</d>
+      <d>17.0</d>
+      <d>14.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.11689804070836407</d>
-      <d>0.9398321236134751</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>4.0</d>
+      <d>7.0</d>
+      <d>9.0</d>
+      <d>10.0</d>
+      <d>12.0</d>
+      <d>14.0</d>
+      <d>15.0</d>
+      <d>16.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.13927207266338726</d>
-      <d>0.794025189270296</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>12.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>21.0</d>
+      <d>13.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.6200727559285135</d>
-      <d>0.5334610919763215</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>10.0</d>
+      <d>16.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>21.0</d>
+      <d>nan</d>
+      <d>nan</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.8938925830509576</d>
-      <d>0.7885972112245307</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>10.0</d>
+      <d>14.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>17.0</d>
+      <d>11.0</d>
+      <d>8.0</d>
+      <d>7.0</d>
+      <d>5.0</d>
+      <d>5.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.15167487973275118</d>
-      <d>0.31172206779554823</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>7.0</d>
+      <d>13.0</d>
+      <d>16.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      <d>8.0</d>
+      <d>4.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.24848913981446574</d>
-      <d>0.743946292572677</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>9.0</d>
+      <d>11.0</d>
+      <d>13.0</d>
+      <d>15.0</d>
+      <d>16.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>19.0</d>
+      <d>13.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.03353243473577938</d>
-      <d>0.5698896848713165</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>9.0</d>
+      <d>12.0</d>
+      <d>14.0</d>
+      <d>16.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.11063173695520723</d>
-      <d>0.8464522917345182</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>10.0</d>
+      <d>18.0</d>
+      <d>23.0</d>
+      <d>27.0</d>
+      <d>30.0</d>
+      <d>34.0</d>
+      <d>36.0</d>
+      <d>38.0</d>
+      <d>40.0</d>
+      <d>41.0</d>
+      <d>42.0</d>
+      <d>44.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.12748866233198242</d>
-      <d>0.39728729056036727</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>6.0</d>
+      <d>11.0</d>
+      <d>14.0</d>
+      <d>17.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>16.0</d>
+      <d>15.0</d>
+      <d>14.0</d>
+      <d>9.0</d>
+      <d>5.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.22925139523264149</d>
-      <d>0.7222525683930663</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>10.0</d>
+      <d>15.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>23.0</d>
+      <d>14.0</d>
+      <d>7.0</d>
+      <d>8.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.7200365365460744</d>
-      <d>0.6411476328852973</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>6.0</d>
+      <d>12.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.6939484444671</d>
-      <d>0.5427244433475962</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>1.0</d>
+      <d>8.0</d>
+      <d>12.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>17.0</d>
+      <d>17.0</d>
+      <d>7.0</d>
+      <d>8.0</d>
+      <d>4.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.18159771680142567</d>
-      <d>0.9084505613336283</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>8.0</d>
+      <d>14.0</d>
+      <d>20.0</d>
+      <d>24.0</d>
+      <d>27.0</d>
+      <d>29.0</d>
+      <d>24.0</d>
+      <d>19.0</d>
+      <d>14.0</d>
+      <d>12.0</d>
+      <d>10.0</d>
+      <d>10.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.4620058036441327</d>
-      <d>0.9472833396118153</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>10.0</d>
+      <d>16.0</d>
+      <d>19.0</d>
+      <d>23.0</d>
+      <d>26.0</d>
+      <d>28.0</d>
+      <d>30.0</d>
+      <d>32.0</d>
+      <d>34.0</d>
+      <d>36.0</d>
+      <d>37.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.01811018382084051</d>
-      <d>0.8721239089441515</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>11.0</d>
+      <d>15.0</d>
+      <d>19.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>29.0</d>
+      <d>24.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.6966508238768923</d>
-      <d>0.9224993811772957</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>9.0</d>
+      <d>13.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>27.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.5762883601668132</d>
-      <d>0.6067150463828559</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>12.0</d>
+      <d>17.0</d>
+      <d>20.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>26.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
+      <d>31.0</d>
+      <d>26.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>8.0</d>
+      <d>11.0</d>
+      <d>13.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>21.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>1.0</d>
+      <d>12.0</d>
+      <d>18.0</d>
+      <d>22.0</d>
+      <d>27.0</d>
+      <d>31.0</d>
+      <d>33.0</d>
+      <d>34.0</d>
+      <d>37.0</d>
+      <d>38.0</d>
+      <d>38.0</d>
+      <d>33.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>12.0</d>
+      <d>17.0</d>
+      <d>21.0</d>
+      <d>24.0</d>
+      <d>27.0</d>
+      <d>30.0</d>
+      <d>32.0</d>
+      <d>33.0</d>
+      <d>35.0</d>
+      <d>34.0</d>
+      <d>31.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>1.0</d>
+      <d>9.0</d>
+      <d>15.0</d>
+      <d>19.0</d>
+      <d>22.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>30.0</d>
+      <d>30.0</d>
+      <d>32.0</d>
+      <d>30.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>8.0</d>
+      <d>12.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>28.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>9.0</d>
+      <d>13.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>23.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>10.0</d>
+      <d>15.0</d>
+      <d>18.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>24.0</d>
+      <d>24.0</d>
+      <d>23.0</d>
+      <d>15.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>7.0</d>
+      <d>10.0</d>
+      <d>12.0</d>
+      <d>15.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>10.0</d>
+      <d>15.0</d>
+      <d>18.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>26.0</d>
+      <d>28.0</d>
+      <d>30.0</d>
+      <d>31.0</d>
+      <d>31.0</d>
+      <d>28.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>9.0</d>
+      <d>13.0</d>
+      <d>16.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>27.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>11.0</d>
+      <d>16.0</d>
+      <d>20.0</d>
+      <d>23.0</d>
+      <d>26.0</d>
+      <d>29.0</d>
+      <d>31.0</d>
+      <d>32.0</d>
+      <d>33.0</d>
+      <d>35.0</d>
+      <d>36.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>10.0</d>
+      <d>20.0</d>
+      <d>26.0</d>
+      <d>31.0</d>
+      <d>35.0</d>
+      <d>38.0</d>
+      <d>40.0</d>
+      <d>42.0</d>
+      <d>43.0</d>
+      <d>37.0</d>
+      <d>33.0</d>
+      <d>20.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>9.0</d>
+      <d>13.0</d>
+      <d>16.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>30.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>11.0</d>
+      <d>16.0</d>
+      <d>19.0</d>
+      <d>22.0</d>
+      <d>26.0</d>
+      <d>27.0</d>
+      <d>30.0</d>
+      <d>31.0</d>
+      <d>32.0</d>
+      <d>24.0</d>
+      <d>15.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>11.0</d>
+      <d>16.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>26.0</d>
+      <d>27.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
+      <d>32.0</d>
+      <d>33.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>11.0</d>
+      <d>14.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
+      <d>30.0</d>
+      <d>32.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>9.0</d>
+      <d>13.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>18.0</d>
+      <d>11.0</d>
+      <d>5.0</d>
+      <d>5.0</d>
+      <d>4.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>9.0</d>
+      <d>13.0</d>
+      <d>14.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      <d>26.0</d>
+      <d>27.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>1.0</d>
+      <d>1.0</d>
+      <d>1.0</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>6.0</d>
+      <d>11.0</d>
+      <d>15.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>26.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>31.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>9.0</d>
+      <d>15.0</d>
+      <d>20.0</d>
+      <d>23.0</d>
+      <d>26.0</d>
+      <d>28.0</d>
+      <d>30.0</d>
+      <d>32.0</d>
+      <d>34.0</d>
+      <d>34.0</d>
+      <d>35.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>10.0</d>
+      <d>15.0</d>
+      <d>18.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>26.0</d>
+      <d>27.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
+      <d>32.0</d>
+      <d>33.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>10.0</d>
+      <d>15.0</d>
+      <d>19.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>28.0</d>
+      <d>25.0</d>
+      <d>22.0</d>
+      <d>14.0</d>
+      <d>17.0</d>
+      <d>13.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>9.0</d>
+      <d>14.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>23.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
+      <d>31.0</d>
+      <d>33.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>7.0</d>
+      <d>11.0</d>
+      <d>13.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>13.0</d>
+      <d>18.0</d>
+      <d>23.0</d>
+      <d>26.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
+      <d>32.0</d>
+      <d>32.0</d>
+      <d>35.0</d>
+      <d>36.0</d>
+      <d>34.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>1.0</d>
+      <d>6.0</d>
+      <d>10.0</d>
+      <d>12.0</d>
+      <d>15.0</d>
+      <d>16.0</d>
+      <d>16.0</d>
+      <d>13.0</d>
+      <d>13.0</d>
+      <d>10.0</d>
+      <d>9.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>1.0</d>
+      <d>0.0</d>
+      <d>1.0</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>6.0</d>
+      <d>13.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      <d>nan</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>9.0</d>
+      <d>13.0</d>
+      <d>16.0</d>
+      <d>19.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      <d>26.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
       </Subcolumn>
     </YColumn>
-  <YColumn Width="243" Decimals="10" Subcolumns="20">
-      <Title>Ycol_b</Title>
+  <YColumn Width="243" Decimals="10" Subcolumns="37">
+      <Title>RRS</Title>
     <Subcolumn>
-        <d>0.06337497047276774</d>
-      <d>0.9899602323899452</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>7.0</d>
+      <d>10.0</d>
+      <d>12.0</d>
+      <d>13.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.7602278598896866</d>
-      <d>0.5956387406078443</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>9.0</d>
+      <d>12.0</d>
+      <d>14.0</d>
+      <d>15.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.47157618855015837</d>
-      <d>0.41184091414726853</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>9.0</d>
+      <d>16.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>17.0</d>
+      <d>17.0</d>
+      <d>12.0</d>
+      <d>13.0</d>
+      <d>7.0</d>
+      <d>7.0</d>
+      <d>6.0</d>
+      <d>6.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.8306194077877291</d>
-      <d>0.9650269106665126</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>9.0</d>
+      <d>13.0</d>
+      <d>16.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>16.0</d>
+      <d>11.0</d>
+      <d>2.0</d>
+      <d>3.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.5744731131799119</d>
-      <d>0.8418287767582721</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>12.0</d>
+      <d>14.0</d>
+      <d>14.0</d>
+      <d>18.0</d>
+      <d>18.0</d>
+      <d>12.0</d>
+      <d>9.0</d>
+      <d>10.0</d>
+      <d>6.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.16426579793099294</d>
-      <d>0.8145747202313821</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>7.0</d>
+      <d>11.0</d>
+      <d>14.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>19.0</d>
+      <d>14.0</d>
+      <d>10.0</d>
+      <d>10.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.6651972206962001</d>
-      <d>0.5230654247691193</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>8.0</d>
+      <d>15.0</d>
+      <d>20.0</d>
+      <d>24.0</d>
+      <d>28.0</d>
+      <d>31.0</d>
+      <d>33.0</d>
+      <d>35.0</d>
+      <d>36.0</d>
+      <d>38.0</d>
+      <d>31.0</d>
+      <d>21.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.3588304841235025</d>
-      <d>0.8772005408131083</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>13.0</d>
+      <d>18.0</d>
+      <d>21.0</d>
+      <d>24.0</d>
+      <d>26.0</d>
+      <d>28.0</d>
+      <d>30.0</d>
+      <d>32.0</d>
+      <d>34.0</d>
+      <d>nan</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.3924451074226354</d>
-      <d>0.8165994394715771</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>7.0</d>
+      <d>12.0</d>
+      <d>15.0</d>
+      <d>18.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.3838912213732114</d>
-      <d>0.5435528611139886</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>16.0</d>
+      <d>21.0</d>
+      <d>24.0</d>
+      <d>27.0</d>
+      <d>29.0</d>
+      <d>31.0</d>
+      <d>33.0</d>
+      <d>25.0</d>
+      <d>23.0</d>
+      <d>14.0</d>
+      <d>11.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.6277080530714179</d>
-      <d>0.3349056146570861</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>11.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      <d>26.0</d>
+      <d>25.0</d>
+      <d>22.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.7624586857406905</d>
-      <d>0.8767656367617495</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>8.0</d>
+      <d>10.0</d>
+      <d>13.0</d>
+      <d>14.0</d>
+      <d>16.0</d>
+      <d>13.0</d>
+      <d>10.0</d>
+      <d>10.0</d>
+      <d>11.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.34208174871590746</d>
-      <d>0.8212573046720129</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>7.0</d>
+      <d>11.0</d>
+      <d>13.0</d>
+      <d>15.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.7972953657795536</d>
-      <d>0.14991742734877378</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>9.0</d>
+      <d>14.0</d>
+      <d>18.0</d>
+      <d>21.0</d>
+      <d>25.0</d>
+      <d>23.0</d>
+      <d>19.0</d>
+      <d>12.0</d>
+      <d>12.0</d>
+      <d>11.0</d>
+      <d>10.0</d>
+      <d>13.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.25179905890695276</d>
-      <d>0.34569599350391944</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>11.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>26.0</d>
+      <d>26.0</d>
+      <d>27.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.5833917947661205</d>
-      <d>0.4008514167636399</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>11.0</d>
+      <d>13.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.1533514031160802</d>
-      <d>0.5862298320167972</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>11.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
+      <d>21.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>25.0</d>
+      <d>26.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.505888678884466</d>
-      <d>0.6114542354346478</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>8.0</d>
+      <d>15.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>17.0</d>
+      <d>12.0</d>
+      <d>11.0</d>
+      <d>8.0</d>
+      <d>8.0</d>
+      <d>7.0</d>
+      <d>5.0</d>
+      <d>5.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.9321182824836124</d>
-      <d>0.5651331835892089</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>9.0</d>
+      <d>12.0</d>
+      <d>14.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>21.0</d>
+      <d>17.0</d>
       </Subcolumn>
     <Subcolumn>
-        <d>0.7072386343133986</d>
-      <d>0.15253904291426135</d>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>8.0</d>
+      <d>10.0</d>
+      <d>13.0</d>
+      <d>15.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>11.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>17.0</d>
+      <d>17.0</d>
+      <d>17.0</d>
+      <d>12.0</d>
+      <d>12.0</d>
+      <d>9.0</d>
+      <d>9.0</d>
+      <d>8.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>6.0</d>
+      <d>13.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
+      <d>31.0</d>
+      <d>32.0</d>
+      <d>33.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>12.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>26.0</d>
+      <d>27.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>8.0</d>
+      <d>10.0</d>
+      <d>12.0</d>
+      <d>13.0</d>
+      <d>15.0</d>
+      <d>16.0</d>
+      <d>17.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
+      <d>18.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>10.0</d>
+      <d>14.0</d>
+      <d>16.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      <d>26.0</d>
+      <d>27.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>2.0</d>
+      <d>9.0</d>
+      <d>12.0</d>
+      <d>14.0</d>
+      <d>17.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>11.0</d>
+      <d>13.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>8.0</d>
+      <d>12.0</d>
+      <d>14.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>23.0</d>
+      <d>23.0</d>
+      <d>17.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>11.0</d>
+      <d>16.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
+      <d>31.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>12.0</d>
+      <d>16.0</d>
+      <d>19.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>26.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>31.0</d>
+      <d>32.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>14.0</d>
+      <d>18.0</d>
+      <d>22.0</d>
+      <d>25.0</d>
+      <d>26.0</d>
+      <d>28.0</d>
+      <d>29.0</d>
+      <d>31.0</d>
+      <d>33.0</d>
+      <d>34.0</d>
+      <d>23.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>9.0</d>
+      <d>12.0</d>
+      <d>14.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>24.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>1.0</d>
+      <d>4.0</d>
+      <d>6.0</d>
+      <d>8.0</d>
+      <d>9.0</d>
+      <d>10.0</d>
+      <d>11.0</d>
+      <d>11.0</d>
+      <d>11.0</d>
+      <d>13.0</d>
+      <d>13.0</d>
+      <d>14.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>8.0</d>
+      <d>11.0</d>
+      <d>12.0</d>
+      <d>12.0</d>
+      <d>12.0</d>
+      <d>9.0</d>
+      <d>10.0</d>
+      <d>9.0</d>
+      <d>10.0</d>
+      <d>9.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>8.0</d>
+      <d>10.0</d>
+      <d>12.0</d>
+      <d>14.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>6.0</d>
+      <d>9.0</d>
+      <d>12.0</d>
+      <d>13.0</d>
+      <d>15.0</d>
+      <d>16.0</d>
+      <d>13.0</d>
+      <d>11.0</d>
+      <d>10.0</d>
+      <d>7.0</d>
+      <d>7.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>9.0</d>
+      <d>12.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      <d>22.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>24.0</d>
+      </Subcolumn>
+    </YColumn>
+  <YColumn Width="243" Decimals="10" Subcolumns="13">
+      <Title>RRS+RS</Title>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>7.0</d>
+      <d>9.0</d>
+      <d>11.0</d>
+      <d>13.0</d>
+      <d>14.0</d>
+      <d>16.0</d>
+      <d>17.0</d>
+      <d>18.0</d>
+      <d>19.0</d>
+      <d>20.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>10.0</d>
+      <d>17.0</d>
+      <d>21.0</d>
+      <d>24.0</d>
+      <d>15.0</d>
+      <d>16.0</d>
+      <d>12.0</d>
+      <d>11.0</d>
+      <d>10.0</d>
+      <d>9.0</d>
+      <d>8.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>8.0</d>
+      <d>13.0</d>
+      <d>17.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>26.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>26.0</d>
+      <d>20.0</d>
+      <d>16.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>9.0</d>
+      <d>12.0</d>
+      <d>15.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      <d>26.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>11.0</d>
+      <d>14.0</d>
+      <d>16.0</d>
+      <d>18.0</d>
+      <d>20.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>24.0</d>
+      <d>25.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>10.0</d>
+      <d>15.0</d>
+      <d>21.0</d>
+      <d>24.0</d>
+      <d>26.0</d>
+      <d>29.0</d>
+      <d>31.0</d>
+      <d>33.0</d>
+      <d>34.0</d>
+      <d>36.0</d>
+      <d>37.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>4.0</d>
+      <d>14.0</d>
+      <d>13.0</d>
+      <d>17.0</d>
+      <d>20.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>26.0</d>
+      <d>28.0</d>
+      <d>31.0</d>
+      <d>32.0</d>
+      <d>33.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>9.0</d>
+      <d>13.0</d>
+      <d>18.0</d>
+      <d>22.0</d>
+      <d>26.0</d>
+      <d>30.0</d>
+      <d>34.0</d>
+      <d>37.0</d>
+      <d>40.0</d>
+      <d>43.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>11.0</d>
+      <d>14.0</d>
+      <d>17.0</d>
+      <d>19.0</d>
+      <d>21.0</d>
+      <d>23.0</d>
+      <d>24.0</d>
+      <d>22.0</d>
+      <d>20.0</d>
+      <d>14.0</d>
+      <d>11.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>1.0</d>
+      <d>8.0</d>
+      <d>14.0</d>
+      <d>17.0</d>
+      <d>23.0</d>
+      <d>28.0</d>
+      <d>26.0</d>
+      <d>26.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
+      <d>30.0</d>
+      <d>20.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>7.0</d>
+      <d>13.0</d>
+      <d>16.0</d>
+      <d>19.0</d>
+      <d>22.0</d>
+      <d>24.0</d>
+      <d>26.0</d>
+      <d>27.0</d>
+      <d>28.0</d>
+      <d>30.0</d>
+      <d>31.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>3.0</d>
+      <d>9.0</d>
+      <d>13.0</d>
+      <d>17.0</d>
+      <d>20.0</d>
+      <d>23.0</d>
+      <d>25.0</d>
+      <d>27.0</d>
+      <d>29.0</d>
+      <d>30.0</d>
+      <d>32.0</d>
+      <d>34.0</d>
+      </Subcolumn>
+    <Subcolumn>
+        <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>0.0</d>
+      <d>5.0</d>
+      <d>15.0</d>
+      <d>20.0</d>
+      <d>23.0</d>
+      <d>26.0</d>
+      <d>28.0</d>
+      <d>30.0</d>
+      <d>33.0</d>
+      <d>33.0</d>
+      <d>35.0</d>
+      <d>36.0</d>
       </Subcolumn>
     </YColumn>
   </Table>

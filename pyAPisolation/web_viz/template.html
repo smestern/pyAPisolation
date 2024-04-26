@@ -56,13 +56,20 @@
                 <button id = "filter_btn2" class="btn btn-primary" data-toggle="collapse" href="#Scatter2Filter" role="button" aria-expanded="false" aria-controls="Scatter2Filter" >Filter - Scatter</button></span> -->
 
         <div class="row d-flex align-items-stretch nowrap" >
-            <div class="col-auto px-0 bg-dark">
-                <div class="card card-body">
+            <div class="col-auto px-0 bg-dark"style="max-width: 40%; min-width: 40%;">
+                <div class="card card-body" style=" min-height: 100%">
                     <div id="graphDiv_scatter"></div>
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          Dropdown
+                        </button>
+                        <ul class="dropdown-menu">
+                        </ul>
+                      </div>
                 </div>
             </div>
-            <div class="col-auto px-0 bg-dark flex-grow-1"  style="max-width: 80%">
-                <div class="card card-body">
+            <div class="col-auto px-0 bg-dark flex-grow-1"  style="max-width: 60%">
+                <div class="card card-body" style=" min-height: 100%">
                     <div id="graphDiv"></div>
                 </div>
             </div>

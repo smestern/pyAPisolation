@@ -37,7 +37,7 @@ from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
 
-PLOT_BACKEND = 'pyqtgraph'
+PLOT_BACKEND = 'matplotlib'
 if PLOT_BACKEND == "pyqtgraph":
     import pyqtgraph as pg
     pg.setConfigOptions(imageAxisOrder='row-major', background='w', useNumba=True, useOpenGL=True)
