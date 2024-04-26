@@ -51,6 +51,8 @@ window.onload = function() {
     
     var layout = {
         autosize: true,
+        responsive: true,
+        useResizeHandler: true,
         margin: {                           // update the left, bottom, right, top margin
             b: 20, r: 10, t: 20
         },
@@ -184,8 +186,8 @@ window.onload = function() {
                     
 
                         var layout = {
-                        width: 950,
-                        height: 500,
+                        width: "100%",
+                        height: "100%",
                         yaxis: {title: "mV",
                                 },       // set the y axis title
                         xaxis: {

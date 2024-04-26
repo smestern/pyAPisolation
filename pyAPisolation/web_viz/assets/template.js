@@ -1,4 +1,3 @@
-
 // This script is used to generate the table and parallel coordinates plot in the web application
 // wrap this in a on load function to ensure the page is loaded before the script runs
 window.onload = function() {
@@ -7,6 +6,21 @@ window.onload = function() {
         return row[key]; 
         });
     }
+
+    function filterByID(ids) {
+        if (typeof ids !== 'undefined') {
+            $table.bootstrapTable('filterBy', { 'cellID': ids })
+        }
+        else {
+            jQuery.get("data/box2_ephys.json").done(function (data) {
+                ids = data.map(function (a) { return a.cellID })
+                $table.bootstrapTable('filterBy', { 'cellID': ids })
+            })
+
+
+        }
+    }
+
 
     function filterByID(ids) {
         if (typeof ids !== 'undefined') {
@@ -208,44 +222,44 @@ window.onload = function() {
         });
     };
     function filterByPlot(keys, ranges){		
-    var ids = []
-    var fildata = data
-    var newArray = data_tb.filter(function (el) {
-            return el.rheobase_thres <= ranges[0][1] &&
-        el.rheobase_thres >= ranges[0][0] &&
-        el.rheobase_width <= ranges[1][1] &&
-        el.rheobase_width >= ranges[1][0] &&
-        el.rheobase_latency <= ranges[2][1] &&
-        el.rheobase_latency >= ranges[2][0] &&
-        el.label <= ranges[3][1] &&
-        el.label >= ranges[3][0];	
+        var ids = []
+        var fildata = data
+        var newArray = data_tb.filter(function (el) {
+                return el.rheobase_thres <= ranges[0][1] &&
+            el.rheobase_thres >= ranges[0][0] &&
+            el.rheobase_width <= ranges[1][1] &&
+            el.rheobase_width >= ranges[1][0] &&
+            el.rheobase_latency <= ranges[2][1] &&
+            el.rheobase_latency >= ranges[2][0] &&
+            el.label <= ranges[3][1] &&
+            el.label >= ranges[3][0];	
 
-        });
-    let result = newArray.map(function(a) { return a.ID; });
+            });
+        let result = newArray.map(function(a) { return a.ID; });
 
-    $('#table').bootstrapTable('filterBy',{'ID': result})
+        $('#table').bootstrapTable('filterBy',{'ID': result})
     };
     function cellStyle(value, row, index) {
-    var classes = [
-    'bg-blue',
-    'bg-green',
-    'bg-orange',
-    'bg-yellow',
-    'bg-red'
-    ]
+        var classes = [
+        'bg-blue',
+        'bg-green',
+        'bg-orange',
+        'bg-yellow',
+        'bg-red'
+        ]
 
-    if (value > 0) {
-        return {
-            css: {
-                'background-color': 'hsla(0, 100%, 50%,' + (value/40) + ')'
+        if (value > 0) {
+            return {
+                css: {
+                    'background-color': 'hsla(0, 100%, 50%,' + (value/40) + ')'
+                }
             }
         }
-    }
-    return {
-        css: {
-            color: 'black'
+        return {
+            css: {
+                color: 'black'
+            }
         }
-    }
     }
 
 

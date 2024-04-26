@@ -26,5 +26,5 @@ if __name__ == '__main__':
 
     app = run_web_viz.run_web_viz(data_folder, database_file=data_df, backend=backend)
     if backend == 'dash':
-        app.app.run(host='0.0.0.0', debug=False)
+        app.app.run(host='0.0.0.0', debug=False)                 
     
