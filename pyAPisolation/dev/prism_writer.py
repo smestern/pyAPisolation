@@ -124,6 +124,7 @@ class PrismFile():
         
         #easiest way is to brute force ravel the data, the data is a 1d array of the data points, then seperate columns
         #grab the data columns 
+        logging.info(f"Grouping data by {groupby}, {subgroupby}, {rowgroupby}")
         data_cols = [x for x in (cols, subgroupcols, rowgroupcols) if x is not None]
         if len(data_cols) == 0:
             #the datacolumns will be all the columns that are not groupby, subgroupby, or rowgroupby
@@ -131,6 +132,7 @@ class PrismFile():
         else:
             data_cols = np.hstack(data_cols)
         raveled_data = []
+        logging.info(f"Raveling data...")
         for i, row in group_values.iterrows():
             for col in data_cols:
                 data_point = row[col]
@@ -144,7 +146,7 @@ class PrismFile():
         raveled_data_no_groupby = raveled_data.drop(groupby, axis=1) if groupby is not None else raveled_data
         raveled_data_no_groupby = raveled_data_no_groupby.drop(subgroupby, axis=1) if subgroupby is not None else raveled_data_no_groupby
         raveled_data_no_groupby = raveled_data_no_groupby.drop(rowgroupby, axis=1) if rowgroupby is not None else raveled_data_no_groupby
-
+        logging.info(f"Data raveled, shape: {raveled_data.shape}")
 
         #get the number of ycolumns by the number of unique groups
         if groupby is None:
@@ -313,6 +315,10 @@ class PrismFile():
                     title = group_str_template['subcol_title'].replace('SUBCOL_TITLE', str(key))
                     title = ET.fromstring(title)
                     subcol_title_list[i].append(title)
+                if i < num_subcolumns - 1:
+                    #we need to add empty subcolumns with just </d>
+                    for j in range(i+1, num_subcolumns):
+                        subcol_title_list[j].append(ET.fromstring("<d></d>"))
             new_table.append(subcol_title_list)
 
         #once all the ycolumns are made, add them to the table

@@ -101,7 +101,7 @@ class PrismWriterGUI(QWidget):
 
     def open_csv(self):
         #or open xlsx
-        self.csv_path = QFileDialog.getOpenFileName(self, "Open CSV", filter="Excel Files (*.csv, *.xlsx)")
+        self.csv_path = QFileDialog.getOpenFileName(self, "Open CSV", filter="Excel Files (*.csv *.xlsx)")
         self.csv_path = self.csv_path[0]
         self.df = pd.read_csv(self.csv_path) if self.csv_path.endswith('.csv') else pd.read_excel(self.csv_path)
         #in this case, we are just needing the indexs and the columns
