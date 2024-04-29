@@ -137,10 +137,12 @@ class PrismWriterGUI(QWidget):
         main_group = self.main_group_list.selectedItems()
         sub_group = self.sub_group_list.selectedItems()
         row_group = self.row_group_list.selectedItems()
+        col_group = self.data_col_list.selectedItems()
         #get the indexes
         main_group = [x.text().split(' - ')[1] for x in main_group]
         sub_group = [x.text().split(' - ')[1] for x in sub_group]
         row_group = [x.text().split(' - ')[1] for x in row_group]
+        col_group = [x.text().split(' - ')[1] for x in col_group]
         #add the group to the prism writer
         if len(sub_group) >1:
             sub_group_cols = copy.copy(sub_group)
@@ -162,8 +164,16 @@ class PrismWriterGUI(QWidget):
         else:
             row_group_cols = None
             row_group = None
+        
+        if len(col_group) >1:
+            pass
+        elif len(col_group) == 1:
+            col_group = col_group[0]
+        else:
+            col_group = None
 
-        self.prism_writer.make_group_table(self.group_table_name.text(), self.df, main_group, cols=None, 
+
+        self.prism_writer.make_group_table(self.group_table_name.text(), self.df, main_group, cols=col_group, 
                                            subgroupcols=sub_group_cols, rowgroupcols=row_group_cols, subgroupby=sub_group, rowgroupby=row_group)
 
         self.table_list.addItem(f"Group Table - {self.group_table_name.text()}")
