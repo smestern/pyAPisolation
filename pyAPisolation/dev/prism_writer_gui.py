@@ -49,10 +49,14 @@ class PrismWriterGUI(QWidget):
         self.main_group_list = QListWidget()
         self.sub_group_list = QListWidget()
         self.row_group_list =QListWidget()
+        self.data_col_list = QListWidget()
         #make them multi select
         #self.main_group_list.setSelectionMode(QAbstractItemView.MultiSelection)
         self.sub_group_list.setSelectionMode(QAbstractItemView.MultiSelection)
         self.row_group_list.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.data_col_list.setSelectionMode(QAbstractItemView.MultiSelection)
+       
+        
         #add them to the main layout, with a label and spacer
         self.left_layout.addWidget(QLabel("Main Group"))
         self.left_layout.addWidget(self.main_group_list)
@@ -60,6 +64,8 @@ class PrismWriterGUI(QWidget):
         self.left_layout.addWidget(self.sub_group_list)
         self.left_layout.addWidget(QLabel("Row Group"))
         self.left_layout.addWidget(self.row_group_list)
+        self.left_layout.addWidget(QLabel("Data Columns"))
+        self.left_layout.addWidget(self.data_col_list)
 
         #creat a text box to name the group table
         self.group_table_name = QLineEdit("Group Table Name")
@@ -112,6 +118,7 @@ class PrismWriterGUI(QWidget):
         self.main_group_list.clear()
         self.sub_group_list.clear()
         self.row_group_list.clear()
+        self.data_col_list.clear()
         
 
         #populate the main group list with the columns
@@ -120,6 +127,8 @@ class PrismWriterGUI(QWidget):
         self.sub_group_list.addItems([f'[COL] - {x}' for x in self.columns])
         #populate the row group list with the rows
         self.row_group_list.addItems([f'[COL] - {x}' for x in self.columns])
+        #populate the data column list with the columns
+        self.data_col_list.addItems([f'[COL] - {x}' for x in self.columns])
 
 
     def create_group_table(self, _):
