@@ -1,6 +1,4 @@
 # This Python file uses the following encoding: utf-8
-import matplotlib
-matplotlib.use('Qtagg')
 import sys
 import os
 import glob
@@ -8,14 +6,16 @@ import pyabf
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
+import matplotlib
+matplotlib.use('Qtagg')
+
 from sklearn.ensemble import IsolationForest
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import LabelEncoder
 import copy
 from functools import partial
 import scipy.signal as signal
 print("Loaded basic libraries; importing QT")
-from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog, QMainWindow, QAction, QTableView
+from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog, QAction
 from PySide2.QtCore import QFile, QAbstractTableModel, Qt, QModelIndex
 from PySide2 import QtGui
 import PySide2.QtCore as QtCore
@@ -29,10 +29,9 @@ from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 from matplotlib.widgets import SpanSelector
 print("Loaded external libraries")
-from pyAPisolation.feature_extractor import folder_feature_extract, save_data_frames, save_subthres_data, \
+from pyAPisolation.feature_extractor import save_data_frames, save_subthres_data, \
 preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
-from pyAPisolation.patch_utils import load_protocols
-from pyAPisolation.patch_subthres import exp_decay_2p, exp_decay_1p, exp_decay_factor
+from pyAPisolation.patch_subthres import exp_decay_2p
 from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
@@ -157,6 +156,8 @@ class analysis_gui(object):
         self.actionOrganize_Abf = self.main_widget.findChild(QAction, "actionOrganize_Abf")
         self.actionOrganize_Abf.triggered.connect(lambda x: self._run_script(False, name='actionOrganize_Abf'))
 
+        #tools menu
+        self.tools_menu = self.main_widget.findChild(QWidget, "toolsMenu")
 
         #for all the windows in the mdi, we want to add a listener for the close event
         self.mdi = self.main_widget.findChild(QWidget, "mdiArea")
@@ -175,7 +176,9 @@ class analysis_gui(object):
 
         #add a action here to spawn the prism writer
         self.actionPrism_Writer = self.viewBar.addAction("Prism Writer")
+        self.actionPrism_Writer2 = self.tools_menu.addAction("Prism Writer")
         self.actionPrism_Writer.triggered.connect(self._prism_writer)
+        self.actionPrism_Writer2.triggered.connect(self._prism_writer)
 
 
     def file_select(self):
