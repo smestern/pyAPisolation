@@ -11,37 +11,37 @@ from ipfx import feature_extractor, spike_detector, time_series_utils
 from ipfx import subthresh_features as subt
 import scipy.signal as signal
 
+#Local imports
 from .ipfx_df import _build_full_df, _build_sweepwise_dataframe, save_data_frames, save_subthres_data
-from .loadABF import loadABF
+from .loadFile import loadABF
 from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_abf
-from .patch_subthres import *
+from .patch_subthres import exp_decay_factor, membrane_resistance, mem_cap, mem_cap_alt, \
+    rmp_mode, compute_sag, exp_decay_factor_alt, exp_growth_factor, determine_subt, df_select_by_col
 from .QC import run_qc
 print("feature extractor loaded")
 
 #this is here, to swap functions in the feature extractor for ones specfic to the INOUE lab IC1 standard protocol
 IC1_SPECIFIC_FUNCTIONS = True
-
-
-parallel = True
 default_dict = {'start': 0, 'end': 0, 'filter': 0, 'stim_find': True}
 
 def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1'):
-    """runs the feature extractor on a folder of abfs.
-
+    """
+    Runs the full ipfx / smestern feature extraction pipeline over a folder of files, list of files, or a list of cellData objects.
+    Returns a dataframe of the full data as returned by the ipfx feature extractor. Consists of all the sweeps in the files stacked on top of each other.
     Args:
         files (list): _description_
         param_dict (dict): _description_
         plot_sweeps (int, bool, optional): _description_. Defaults to -1.
         protocol_name (str, optional): _description_. Defaults to 'IC1'.
-        para (int, optional): _description_. Defaults to 1.
 
     Returns:
-        _type_: _description_
+        df_raw_out: A dataframe of the full data as returned by the ipfx feature extractor. Consists of all the sweeps in the files stacked on top of each other.
+        df_spike_count: The standard dataframe of the spike count data. As designed at the inoue lab. Each cell will have a row in this dataframe. returns not only
+            the spike count, but also subthreshold features and suprathreshold features.
+        df_running_avg_count: The running average of the spike count data. This is a sweepwise dataframe, where each row is the running average of several features.
     """
-    dfs = pd.DataFrame()
-    df_spike_count = pd.DataFrame()
-    df_running_avg_count = pd.DataFrame()
-    filelist = glob.glob(files + "/**/*.abf", recursive=True)
+    if isinstance(files, str) or not isinstance(files, list):
+        filelist = glob.glob(files + "/**/*.abf", recursive=True)
     spike_count = []
     df_full = []
     df_running_avg = []
@@ -63,9 +63,9 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
             df_full.append(temp_full_df)
             df_running_avg.append(temp_running_bin)
     df_spike_count = pd.concat(spike_count, sort=True)
-    dfs = pd.concat(df_full, sort=True)
+    df_raw_out = pd.concat(df_full, sort=True)
     df_running_avg_count = pd.concat(df_running_avg, sort=False)
-    return dfs, df_spike_count, df_running_avg_count
+    return df_raw_out, df_spike_count, df_running_avg_count
 
 def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
     """Takes an abf file and runs the feature extractor on it. Filters the ABF by protocol etc.

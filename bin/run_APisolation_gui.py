@@ -156,8 +156,7 @@ class analysis_gui(object):
         self.actionOrganize_Abf = self.main_widget.findChild(QAction, "actionOrganize_Abf")
         self.actionOrganize_Abf.triggered.connect(lambda x: self._run_script(False, name='actionOrganize_Abf'))
 
-        #tools menu
-        self.tools_menu = self.main_widget.findChild(QWidget, "toolsMenu")
+        
 
         #for all the windows in the mdi, we want to add a listener for the close event
         self.mdi = self.main_widget.findChild(QWidget, "mdiArea")
@@ -166,6 +165,10 @@ class analysis_gui(object):
         #add it programatically
         self.topBar = self.main_widget.findChild(QWidget, "menubar")
         self.viewBar = self.topBar.addMenu("View")
+        #tools menu
+        self.tools_menu = self.topBar.findChild(QWidget, "menuTools")
+        #add a seperator
+        self.viewBar.addSeparator()
         for sub in self.mdi.subWindowList():
             self.viewBar.addAction(sub.windowTitle())
             self.viewBar.triggered.connect(self._view_window)
@@ -173,7 +176,7 @@ class analysis_gui(object):
             sub.setAttribute(QtCore.Qt.WA_DeleteOnClose, False)
             #delete the close button
             sub.setWindowFlags(QtCore.Qt.WindowMinMaxButtonsHint)
-
+        self.viewBar.addSeparator()
         #add a action here to spawn the prism writer
         self.actionPrism_Writer = self.viewBar.addAction("Prism Writer")
         self.actionPrism_Writer2 = self.tools_menu.addAction("Prism Writer")
@@ -544,13 +547,7 @@ class analysis_gui(object):
         popup.hide()
         #detect outliers
         df_spike_count['outlier'] = self._find_outliers(df_spike_count)
-        #Highlight outliers in filelist
-        # for i in np.arange(self.file_list.count()):
-        #     f = self.file_list.item(i)
-        #     if df_spike_count['outlier'].to_numpy()[i] == 1:
-        #         f.setBackgroundColor(QtGui.QColor(255, 255, 255))
-        #     else:
-        #         f.setBackgroundColor(QtGui.QColor(255, 0, 0))
+       
 
         return dfs, df_spike_count, df_running_avg_count
 

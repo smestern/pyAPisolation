@@ -8,7 +8,7 @@ block_cipher = None
 pf_foldr='C:/Users/SMest/.conda/envs/pyinstaller/Library/plugins/platforms/'
 
 shiboken2_files = glob.glob('C:/Users/SMest/.conda/envs/pyinstaller/Lib\\site-packages\\shiboken2\\**\\*', recursive=False)
-shiboken2_files = [(file, '.\\shiboken2\\files.dir\\'+os.path.basename(file)) for file in shiboken2_files]
+shiboken2_files = [(file, '.\\shiboken2\\'+os.path.basename(file)) for file in shiboken2_files]
 
 a = Analysis(['run_APisolation_gui.py'],
              pathex=['C:\\Users\\SMest\\source\\repos\\smestern\\pyAPisolation\\pyAPisolation\\dev', "C:/Users/SMest/.conda/envs/pyinstaller/Lib\\site-packages\\shiboken2\\",
@@ -18,7 +18,7 @@ a = Analysis(['run_APisolation_gui.py'],
              (pf_foldr+'qdirect2d.dll', 'qdirect.dll'),
              (pf_foldr+'qoffscreen.dll', 'qoffscreen.dll'),
              (pf_foldr+'qwebgl.dll', 'qwebgl.dll')],
-             datas=[('./form.ui', '.'), *shiboken2_files],
+             datas=[('./mainwindowMDI.ui', '.'), *shiboken2_files],
              hiddenimports=['openpyxl.cell._writer'],
              hookspath=[],
              runtime_hooks=['runqthook.py'],
