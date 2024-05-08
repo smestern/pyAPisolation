@@ -1,0 +1,9 @@
+{"file_index": "filename", 
+"file_path": "foldername", 
+"table_vars_rq": ["filename", "foldername"],
+"table_vars": ["rheo", "QC", "label_c"], 
+"para_vars": ["rheo", "CRH", "label_c"], 
+"para_var_colors": "rheobase_width", 
+"umap_labels": ["label", "CRH", "AVP", "foldername.1"],
+"para_vars_limit": 10,
+"table_vars_limit": 5}

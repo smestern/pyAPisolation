@@ -1,4 +1,4 @@
-import prism_writer
+from . import prism_writer
 print("Loaded basic libraries; importing QT")
 from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout,\
 QHBoxLayout, QProgressDialog, QMainWindow, QAction, QTableView, QPushButton, QListWidget, QAbstractItemView, QLabel, QLineEdit
@@ -49,10 +49,14 @@ class PrismWriterGUI(QWidget):
         self.main_group_list = QListWidget()
         self.sub_group_list = QListWidget()
         self.row_group_list =QListWidget()
+        self.data_col_list = QListWidget()
         #make them multi select
         #self.main_group_list.setSelectionMode(QAbstractItemView.MultiSelection)
         self.sub_group_list.setSelectionMode(QAbstractItemView.MultiSelection)
         self.row_group_list.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.data_col_list.setSelectionMode(QAbstractItemView.MultiSelection)
+       
+        
         #add them to the main layout, with a label and spacer
         self.left_layout.addWidget(QLabel("Main Group"))
         self.left_layout.addWidget(self.main_group_list)
@@ -60,6 +64,8 @@ class PrismWriterGUI(QWidget):
         self.left_layout.addWidget(self.sub_group_list)
         self.left_layout.addWidget(QLabel("Row Group"))
         self.left_layout.addWidget(self.row_group_list)
+        self.left_layout.addWidget(QLabel("Data Columns"))
+        self.left_layout.addWidget(self.data_col_list)
 
         #creat a text box to name the group table
         self.group_table_name = QLineEdit("Group Table Name")
@@ -101,7 +107,7 @@ class PrismWriterGUI(QWidget):
 
     def open_csv(self):
         #or open xlsx
-        self.csv_path = QFileDialog.getOpenFileName(self, "Open CSV", filter="Excel Files (*.csv, *.xlsx)")
+        self.csv_path = QFileDialog.getOpenFileName(self, "Open CSV", filter="Excel Files (*.csv *.xlsx)")
         self.csv_path = self.csv_path[0]
         self.df = pd.read_csv(self.csv_path) if self.csv_path.endswith('.csv') else pd.read_excel(self.csv_path)
         #in this case, we are just needing the indexs and the columns
@@ -112,6 +118,7 @@ class PrismWriterGUI(QWidget):
         self.main_group_list.clear()
         self.sub_group_list.clear()
         self.row_group_list.clear()
+        self.data_col_list.clear()
         
 
         #populate the main group list with the columns
@@ -120,6 +127,8 @@ class PrismWriterGUI(QWidget):
         self.sub_group_list.addItems([f'[COL] - {x}' for x in self.columns])
         #populate the row group list with the rows
         self.row_group_list.addItems([f'[COL] - {x}' for x in self.columns])
+        #populate the data column list with the columns
+        self.data_col_list.addItems([f'[COL] - {x}' for x in self.columns])
 
 
     def create_group_table(self, _):
@@ -128,10 +137,12 @@ class PrismWriterGUI(QWidget):
         main_group = self.main_group_list.selectedItems()
         sub_group = self.sub_group_list.selectedItems()
         row_group = self.row_group_list.selectedItems()
+        col_group = self.data_col_list.selectedItems()
         #get the indexes
         main_group = [x.text().split(' - ')[1] for x in main_group]
         sub_group = [x.text().split(' - ')[1] for x in sub_group]
         row_group = [x.text().split(' - ')[1] for x in row_group]
+        col_group = [x.text().split(' - ')[1] for x in col_group]
         #add the group to the prism writer
         if len(sub_group) >1:
             sub_group_cols = copy.copy(sub_group)
@@ -153,8 +164,16 @@ class PrismWriterGUI(QWidget):
         else:
             row_group_cols = None
             row_group = None
+        
+        if len(col_group) >1:
+            pass
+        elif len(col_group) == 1:
+            col_group = col_group[0]
+        else:
+            col_group = None
 
-        self.prism_writer.make_group_table(self.group_table_name.text(), self.df, main_group, cols=None, 
+
+        self.prism_writer.make_group_table(self.group_table_name.text(), self.df, main_group, cols=col_group, 
                                            subgroupcols=sub_group_cols, rowgroupcols=row_group_cols, subgroupby=sub_group, rowgroupby=row_group)
 
         self.table_list.addItem(f"Group Table - {self.group_table_name.text()}")

@@ -13,7 +13,7 @@
 *.csv
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
-*.png
+
 # Build results
 nwb-cache/
 dist/
@@ -363,3 +363,4 @@ pyAPisolation.egg-info/requires.txt
 pyAPisolation.egg-info/SOURCES.txt
 pyAPisolation.egg-info/top_level.txt
 pyAPisolation.egg-info/*
+assets/*

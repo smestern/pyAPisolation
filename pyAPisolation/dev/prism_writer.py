@@ -124,6 +124,7 @@ class PrismFile():
         
         #easiest way is to brute force ravel the data, the data is a 1d array of the data points, then seperate columns
         #grab the data columns 
+        logging.info(f"Grouping data by {groupby}, {subgroupby}, {rowgroupby}")
         data_cols = [x for x in (cols, subgroupcols, rowgroupcols) if x is not None]
         if len(data_cols) == 0:
             #the datacolumns will be all the columns that are not groupby, subgroupby, or rowgroupby
@@ -131,6 +132,7 @@ class PrismFile():
         else:
             data_cols = np.hstack(data_cols)
         raveled_data = []
+        logging.info(f"Raveling data...")
         for i, row in group_values.iterrows():
             for col in data_cols:
                 data_point = row[col]
@@ -144,7 +146,7 @@ class PrismFile():
         raveled_data_no_groupby = raveled_data.drop(groupby, axis=1) if groupby is not None else raveled_data
         raveled_data_no_groupby = raveled_data_no_groupby.drop(subgroupby, axis=1) if subgroupby is not None else raveled_data_no_groupby
         raveled_data_no_groupby = raveled_data_no_groupby.drop(rowgroupby, axis=1) if rowgroupby is not None else raveled_data_no_groupby
-
+        logging.info(f"Data raveled, shape: {raveled_data.shape}")
 
         #get the number of ycolumns by the number of unique groups
         if groupby is None:
@@ -313,6 +315,10 @@ class PrismFile():
                     title = group_str_template['subcol_title'].replace('SUBCOL_TITLE', str(key))
                     title = ET.fromstring(title)
                     subcol_title_list[i].append(title)
+                if i < num_subcolumns - 1:
+                    #we need to add empty subcolumns with just </d>
+                    for j in range(i+1, num_subcolumns):
+                        subcol_title_list[j].append(ET.fromstring("<d></d>"))
             new_table.append(subcol_title_list)
 
         #once all the ycolumns are made, add them to the table
@@ -381,73 +387,8 @@ def indent(elem, level=0): #from stackoverflow: https://stackoverflow.com/questi
 
 
 if __name__=="__main__":
-    np.random.seed(42)
-    file = PrismFile()
-
-   
-    #make some random data to test with
-    x = np.random.randint(0, 9, size=(100,2))
-    labels = np.random.choice(['Ycol_a', 'Ycol_b'], 100)
-    #turn it into a dataframe
-    df = pd.DataFrame(x, columns=['rnd1', 'rnd2'])
-    df['labels'] = labels
-    #too double check the groupby, add 100 to all Ycol_a values in rnd1
-    df.loc[df['labels'] == 'Ycol_a', 'rnd1'] += 100
-    #make all Ycol_b values in rnd2 negative
-    df.loc[df['labels'] == 'Ycol_b', 'rnd2'] *= -1
-    #pass to make
-    out = file.make_group_table('1way_group', df, groupby='labels')
-
-    #try a 2way group
-    x = np.random.rand(100, 2)
-    labels = np.random.choice(['Ycol_a', 'Ycol_b'], 100)
-    #turn it into a dataframe
-    df = pd.DataFrame(x, columns=['rnd1', 'rnd2'])
-    df['labels'] = labels
-    labels2 = np.random.choice(['sub1', 'sub2'], 100)
-    df['labels2'] = labels2
-    #multiply the rnd1 values by 100 if they are in sub1
-    df.loc[df['labels2'] == 'sub1', 'rnd1'] *= 100
-    #multiply the rnd2 values by -1 if they are in sub2
-    df.loc[df['labels2'] == 'sub2', 'rnd2'] *= -1
-    #pass to make
-    out = file.make_group_table('2way_group', df, groupby='labels', subgroupby='labels2')
-    out = file.make_group_table('2way_group2', df, groupby='labels', rowgroupby='labels2')
-
-    #try a 3way group
-    x = np.random.rand(50, 2)
-    labels = np.random.choice(['Ycol_a', 'Ycol_b'], 50)
-    #turn it into a dataframe
-    df = pd.DataFrame(x, columns=['rnd1', 'rnd2'])
-    df['labels'] = labels
-    labels2 = np.random.choice(['sub1', 'sub2'], 50)
-    df['labels2'] = labels2
-    labels3 = np.random.choice(['row1', 'row2'], 50)
-    df['labels3'] = labels3
-    #pass to make
-    out = file.make_group_table('3way_group', df, groupby='labels', subgroupby='labels2', rowgroupby='labels3')
-
-    #try just rowgroupby
-    x = np.random.rand(50, 2)
-    labels = np.random.choice(['Ycol_a', 'Ycol_b'], 50)
-    #turn it into a dataframe
-    df = pd.DataFrame(x, columns=['rnd1', 'rnd2'])
-    df['labels'] = labels
-    labels3 = np.random.choice(['row1', 'row2'], 50)
-    df['labels3'] = labels3
-    #pass to make
-    out = file.make_group_table('rowcols', df, groupby='labels', rowgroupcols=['rnd1', 'rnd2'])
-
-    #load the xlsx
-    test_df = pd.read_excel('test.xlsx')
-    rowgroupcols = ['Sweep 001 spike count', 'Sweep 002 spike count', 'Sweep 003 spike count', 'Sweep 004 spike count', 'Sweep 005 spike count', 'Sweep 006 spike count', 'Sweep 007 spike count', 'Sweep 008 spike count', 
-                    'Sweep 009 spike count', 'Sweep 010 spike count', 'Sweep 011 spike count', 'Sweep 012 spike count', 'Sweep 013 spike count', 'Sweep 014 spike count', 'Sweep 015 spike count']
-    #make a group table
-    out = file.make_group_table('test_group', test_df, groupby='foldername.1', subgroupby='filename.1', rowgroupcols=rowgroupcols)
-
-    # #try to write it
-    file.write('test.pzfx')
-    print('done')
+    #todo cli
+    pass
 
 
 

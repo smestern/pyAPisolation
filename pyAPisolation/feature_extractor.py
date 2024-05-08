@@ -10,43 +10,61 @@ import multiprocessing as mp
 from ipfx import feature_extractor, spike_detector, time_series_utils
 from ipfx import subthresh_features as subt
 import scipy.signal as signal
+import logging
 
+#Local imports
 from .ipfx_df import _build_full_df, _build_sweepwise_dataframe, save_data_frames, save_subthres_data
-from .loadABF import loadABF
+from .loadFile import loadFile
+from .dataset import cellData
 from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_abf
-from .patch_subthres import *
+from .patch_subthres import exp_decay_factor, membrane_resistance, mem_cap, mem_cap_alt, \
+    rmp_mode, compute_sag, exp_decay_factor_alt, exp_growth_factor, determine_subt, df_select_by_col
 from .QC import run_qc
-print("feature extractor loaded")
+
+#set up the logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.info('Feature extractor loaded')
 
 #this is here, to swap functions in the feature extractor for ones specfic to the INOUE lab IC1 standard protocol
 IC1_SPECIFIC_FUNCTIONS = True
-
-
-parallel = True
 default_dict = {'start': 0, 'end': 0, 'filter': 0, 'stim_find': True}
 
-def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1'):
-    """runs the feature extractor on a folder of abfs.
-
+def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1', n_jobs=1):
+    """
+    Runs the full ipfx / smestern feature extraction pipeline over a folder of files, list of files, or a list of cellData objects.
+    Returns a dataframe of the full data as returned by the ipfx feature extractor. Consists of all the sweeps in the files stacked on top of each other.
     Args:
         files (list): _description_
         param_dict (dict): _description_
         plot_sweeps (int, bool, optional): _description_. Defaults to -1.
         protocol_name (str, optional): _description_. Defaults to 'IC1'.
-        para (int, optional): _description_. Defaults to 1.
 
     Returns:
-        _type_: _description_
+        df_raw_out: A dataframe of the full data as returned by the ipfx feature extractor. Consists of all the sweeps in the files stacked on top of each other.
+        df_spike_count: The standard dataframe of the spike count data. As designed at the inoue lab. Each cell will have a row in this dataframe. returns not only
+            the spike count, but also subthreshold features and suprathreshold features.
+        df_running_avg_count: The running average of the spike count data. This is a sweepwise dataframe, where each row is the running average of several features.
     """
-    dfs = pd.DataFrame()
-    df_spike_count = pd.DataFrame()
-    df_running_avg_count = pd.DataFrame()
-    filelist = glob.glob(files + "/**/*.abf", recursive=True)
+    if isinstance(files, str) or not isinstance(files, list):
+        filelist = glob.glob(files + "/**/*.abf", recursive=True)
+    elif isinstance(files, list):
+        #check if the files are strings or cellData objects
+        if isinstance(files[0], str):
+            filelist = files
+        elif isinstance(files[0], cellData):
+            filelist = [x.file for x in files]
+    else:
+        logger.error('Files must be a list of strings, a string, or a list of cellData objects')
+        return None, None, None
+    
+    #create our output dataframes
     spike_count = []
     df_full = []
     df_running_avg = []
-    if parallel:
-        pool = mp.Pool()
+    #run the feature extractor
+    if n_jobs > 1: #if we are using multiprocessing
+        pool = mp.Pool(processes=n_jobs)
         results = [pool.apply(preprocess_abf, args=(file, param_dict, plot_sweeps, protocol_name)) for file in filelist]
         pool.close()
         ##split out the results
@@ -56,16 +74,19 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
             df_running_avg.append(temp_res[2])
             spike_count.append(temp_res[0])
         pool.join()
+    #if we are not using multiprocessing
     else:
         for f in filelist:
             temp_df_spike_count, temp_full_df, temp_running_bin = preprocess_abf(f, copy.deepcopy(param_dict), plot_sweeps, protocol_name)
             spike_count.append(temp_df_spike_count)
             df_full.append(temp_full_df)
             df_running_avg.append(temp_running_bin)
+
+    #concatenate the dataframes
     df_spike_count = pd.concat(spike_count, sort=True)
-    dfs = pd.concat(df_full, sort=True)
+    df_raw_out = pd.concat(df_full, sort=True)
     df_running_avg_count = pd.concat(df_running_avg, sort=False)
-    return dfs, df_spike_count, df_running_avg_count
+    return df_raw_out, df_spike_count, df_running_avg_count
 
 def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
     """Takes an abf file and runs the feature extractor on it. Filters the ABF by protocol etc.
@@ -92,32 +113,6 @@ def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
     except:
        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-def analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=None):
-    """_summary_
-
-    Args:
-        abf (_type_): _description_
-        sweepNumber (_type_): _description_
-        param_dict (_type_): _description_
-        bessel_filter (_type_, optional): _description_. Defaults to None.
-
-    Returns:
-        _type_: _description_
-    """
-    abf.setSweep(sweepNumber)
-    spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
-    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])  
-    dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
-    #if the user asks for a filter, apply it
-    if bessel_filter is not None:
-        if bessel_filter != -1:
-            dataV = filter_abf(dataV, abf, bessel_filter)
-    if dataI.shape[0] < dataV.shape[0]:
-                dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
-    spike_in_sweep = spikext.process(dataT, dataV, dataI)
-    spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep)
-    return spike_in_sweep, spike_train
-
 
 def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
     """_summary_
@@ -132,7 +127,6 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         _type_: _description_
     """    
     np.nan_to_num(abf.data, nan=-9999, copy=False)
-
 
     #load the data 
     x, y ,c = loadABF(abf.abfFilePath)
@@ -196,6 +190,32 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
     
     return temp_spike_df, df, temp_running_bin
 
+def analyze_spike_sweep(x, y, c, sweepNumber, param_dict, bessel_filter=None):
+    """_summary_
+
+    Args:
+        abf (_type_): _description_
+        sweepNumber (_type_): _description_
+        param_dict (_type_): _description_
+        bessel_filter (_type_, optional): _description_. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """
+    abf.setSweep(sweepNumber)
+    spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
+    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])  
+    dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+    #if the user asks for a filter, apply it
+    if bessel_filter is not None:
+        if bessel_filter != -1:
+            dataV = filter_abf(dataV, abf, bessel_filter)
+    if dataI.shape[0] < dataV.shape[0]:
+                dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
+    spike_in_sweep = spikext.process(dataT, dataV, dataI) #returns the default Dataframe Returned by ipfx
+    spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep) #additional dataframe returned by ipfx, contains the features related to consecutive spikes
+    return spike_in_sweep, spike_train
+
 def sweepNumber_to_real_sweep_number(sweepNumber):
     if sweepNumber < 9:
             real_sweep_number = '00' + str(sweepNumber + 1)
@@ -245,6 +265,17 @@ def _custom_full_features(x,y,c, param_dict, spike_df):
 
 
 def _merge_current_injection_features(sweepX, sweepY, sweepC, spike_df):
+    """
+    This function will compute the current injection features for a given sweep. It will return a dictionary of the features, which will be appended to the dataframe.
+    Tries to capture the current injection features of the sweep, such as the current at each epoch, the delta between epochs, the stimuli length, and the sample rates.
+    takes:
+        sweepX (np.array): The time array of the sweep
+        sweepY (np.array): The voltage array of the sweep
+        sweepC (np.array): The current array of the sweep
+        spike_df (pd.DataFrame): The dataframe that will be appended with the new features
+    returns:
+        spike_df (pd.DataFrame): The dataframe that has been appended with the new features
+    """
     new_current_injection_features = {}
     #first we want to compute the number of epochs, take the diff along the columns and count the number of nonzero rows
     diffC = np.diff(sweepC, axis=1)
@@ -285,6 +316,19 @@ def _merge_current_injection_features(sweepX, sweepY, sweepC, spike_df):
 
 
 def _merge_current_injection_features_IC1(sweepX, sweepY, sweepC, spike_df):
+    """
+    This function will compute the current injection features for a given sweep. It will return a dictionary of the features, which will be appended to the dataframe.
+    THIS FUNCTION IS SPECIFIC TO THE INOUE LAB IC1 PROTOCOL. Which consists of a hyperpolarizing current injection followed by a depolarizing current injection.
+    Tries to capture the current injection features of the sweep, such as the current at each epoch, the delta between epochs, the stimuli length, and the sample rates.
+    takes:
+        sweepX (np.array): The time array of the sweep
+        sweepY (np.array): The voltage array of the sweep
+        sweepC (np.array): The current array of the sweep
+        spike_df (pd.DataFrame): The dataframe that will be appended with the new features
+    returns:
+        spike_df (pd.DataFrame): The dataframe that has been appended with the new features
+    """
+
     new_current_injection_features = {}
     #first we want to compute the number of epochs, take the diff along the columns and count the number of nonzero rows
     diffC = np.diff(sweepC, axis=1)
@@ -526,42 +570,6 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
     return temp_df, temp_avg
     
 
-class FeatExtractor(object):
-    """TODO """
-    def __init__(self, abf, start=None, end=None, filter=10.,
-                 dv_cutoff=20., max_interval=0.005, min_height=2., min_peak=-30.,
-                 thresh_frac=0.05, reject_at_stim_start_interval=0):
-        """Initialize SweepFeatures object.-
-        Parameters
-        ----------
-        t : ndarray of times (seconds)
-        v : ndarray of voltages (mV)
-        i : ndarray of currents (pA)
-        start : start of time window for feature analysis (optional)
-        end : end of time window for feature analysis (optional)
-        filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz (optional, default 10)
-        dv_cutoff : minimum dV/dt to qualify as a spike in V/s (optional, default 20)
-        max_interval : maximum acceptable time between start of spike and time of peak in sec (optional, default 0.005)
-        min_height : minimum acceptable height from threshold to peak in mV (optional, default 2)
-        min_peak : minimum acceptable absolute peak level in mV (optional, default -30)
-        thresh_frac : fraction of average upstroke for threshold calculation (optional, default 0.05)
-        reject_at_stim_start_interval : duration of window after start to reject potential spikes (optional, default 0)
-        """
-        if isinstance(abf, pyabf.ABF):
-            self.abf = abf
-        elif isinstance(abf, str) or isinstance(abf, os.path.abspath):
-            self.abf = pyabf.ABF
-        self.start = start
-        self.end = end
-        self.filter = filter
-        self.dv_cutoff = dv_cutoff
-        self.max_interval = max_interval
-        self.min_height = min_height
-        self.min_peak = min_peak
-        self.thresh_frac = thresh_frac
-        self.reject_at_stim_start_interval = reject_at_stim_start_interval
-        self.spikefeatureextractor = feature_extractor.SpikeFeatureExtractor(start=start, end=end, filter=filter, dv_cutoff=dv_cutoff, max_interval=max_interval, min_height=min_height, min_peak=min_peak, thresh_frac=thresh_frac, reject_at_stim_start_interval=reject_at_stim_start_interval)
-        self.spiketrainextractor = feature_extractor.SpikeTrainFeatureExtractor(start=start, end=end)
 
 if __name__ == '__main__':
 

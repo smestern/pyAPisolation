@@ -1,6 +1,4 @@
 # This Python file uses the following encoding: utf-8
-import matplotlib
-matplotlib.use('Qtagg')
 import sys
 import os
 import glob
@@ -8,14 +6,16 @@ import pyabf
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
+import matplotlib
+matplotlib.use('Qtagg')
+
 from sklearn.ensemble import IsolationForest
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import LabelEncoder
 import copy
 from functools import partial
 import scipy.signal as signal
 print("Loaded basic libraries; importing QT")
-from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog, QMainWindow, QAction, QTableView
+from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog, QAction
 from PySide2.QtCore import QFile, QAbstractTableModel, Qt, QModelIndex
 from PySide2 import QtGui
 import PySide2.QtCore as QtCore
@@ -29,15 +29,17 @@ from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 from matplotlib.widgets import SpanSelector
 print("Loaded external libraries")
-from pyAPisolation.feature_extractor import folder_feature_extract, save_data_frames, save_subthres_data, \
+from pyAPisolation.feature_extractor import save_data_frames, save_subthres_data, \
 preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
-from pyAPisolation.patch_utils import load_protocols
-from pyAPisolation.patch_subthres import exp_decay_2p, exp_decay_1p, exp_decay_factor
-
+from pyAPisolation.patch_subthres import exp_decay_2p
+from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
 
 PLOT_BACKEND = 'matplotlib'
+if PLOT_BACKEND == "pyqtgraph":
+    import pyqtgraph as pg
+    pg.setConfigOptions(imageAxisOrder='row-major', background='w', useNumba=True, useOpenGL=True)
 ANALYSIS_TABS = {0:'spike', 1:'subthres'}
 
 class analysis_gui(object):
@@ -145,8 +147,16 @@ class analysis_gui(object):
         self.actionOpen_Folder = self.main_widget.findChild(QAction, "actionOpen_Folder")
         self.actionOpen_Folder.triggered.connect(self.file_select)
 
+        self.actionOrganize_Subthres = self.main_widget.findChild(QAction, "actionOpen_Results")
+        self.actionOrganize_Subthres.triggered.connect(self.results_select)
+
+        self.actionOpen_Results = self.main_widget.findChild(QAction, "actionExit")
+        self.actionOpen_Results.triggered.connect(self.exit)
+
         self.actionOrganize_Abf = self.main_widget.findChild(QAction, "actionOrganize_Abf")
         self.actionOrganize_Abf.triggered.connect(lambda x: self._run_script(False, name='actionOrganize_Abf'))
+
+        
 
         #for all the windows in the mdi, we want to add a listener for the close event
         self.mdi = self.main_widget.findChild(QWidget, "mdiArea")
@@ -155,6 +165,10 @@ class analysis_gui(object):
         #add it programatically
         self.topBar = self.main_widget.findChild(QWidget, "menubar")
         self.viewBar = self.topBar.addMenu("View")
+        #tools menu
+        self.tools_menu = self.topBar.findChild(QWidget, "menuTools")
+        #add a seperator
+        self.viewBar.addSeparator()
         for sub in self.mdi.subWindowList():
             self.viewBar.addAction(sub.windowTitle())
             self.viewBar.triggered.connect(self._view_window)
@@ -162,6 +176,12 @@ class analysis_gui(object):
             sub.setAttribute(QtCore.Qt.WA_DeleteOnClose, False)
             #delete the close button
             sub.setWindowFlags(QtCore.Qt.WindowMinMaxButtonsHint)
+        self.viewBar.addSeparator()
+        #add a action here to spawn the prism writer
+        self.actionPrism_Writer = self.viewBar.addAction("Prism Writer")
+        self.actionPrism_Writer2 = self.tools_menu.addAction("Prism Writer")
+        self.actionPrism_Writer.triggered.connect(self._prism_writer)
+        self.actionPrism_Writer2.triggered.connect(self._prism_writer)
 
 
     def file_select(self):
@@ -214,6 +234,11 @@ class analysis_gui(object):
                     item.setHidden(False)
         self.analysis_changed()
         
+    def results_select(self):
+        self.selected_file = QFileDialog.getOpenFileName(self.main_widget, "Open Excel", filter="Excel Files (*.csv, *.xlsx)")
+        self.selected_file = self.selected_file[0]
+        self.df = pd.read_csv(self.selected_file) if self.selected_file.endswith('.csv') else pd.read_excel(self.selected_file)
+        self.tableView.setModel(PandasModel(self.df, index='filename', parent=self.tableView))
 
     def abf_select(self, item):
         self.selected_abf = self.abf_file[self.file_list.currentRow()][1]
@@ -522,13 +547,7 @@ class analysis_gui(object):
         popup.hide()
         #detect outliers
         df_spike_count['outlier'] = self._find_outliers(df_spike_count)
-        #Highlight outliers in filelist
-        # for i in np.arange(self.file_list.count()):
-        #     f = self.file_list.item(i)
-        #     if df_spike_count['outlier'].to_numpy()[i] == 1:
-        #         f.setBackgroundColor(QtGui.QColor(255, 255, 255))
-        #     else:
-        #         f.setBackgroundColor(QtGui.QColor(255, 0, 0))
+       
 
         return dfs, df_spike_count, df_running_avg_count
 
@@ -710,24 +729,25 @@ class analysis_gui(object):
         '''TODO'''
         self.main_view.clear()
         #self.main_view.figure.canvas.setFixedWidth(900)
-        self.axe1 = self.main_view.addPlot(1,1)
+        self.axe1 = self.main_view.addPlot(1,1, )
         self.axe2 = self.main_view.addPlot(2,1)
-        #self.main_view.figure.set_facecolor('#F0F0F0')
-        #self.main_view.figure.set_edgecolor('#F0F0F0')
-       # self.main_view.figure.set_dpi(100)
-        #s#elf.main_view.figure.set_tight_layout(True)
-        #self.main_view.figure.set_facecolor('#F0F0F0')
+        self.axe1.addLegend()
+        self.axe2.setXLink(self.axe1)
         self.get_selected_abf()
         self.get_selected_sweeps()
         #for the chosen sweeps
         if self.selected_sweeps == None:
             self.selected_sweeps = self.abf.sweepList
 
-        for sweep in self.selected_sweeps:
+        #create a list of colors for the sweeps, in tab10
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+
+       
+        for i, sweep in enumerate(self.selected_sweeps):
             self.abf.setSweep(sweep)
-            self.axe1.plot(self.abf.sweepX, self.abf.sweepY, color='#000000')
+            self.axe1.plot(self.abf.sweepX, self.abf.sweepY, pen=pg.mkPen(colors[i], width=3), name="Sweep_" + str(sweep))
             #plot the dvdt
-            self.axe2.plot(self.abf.sweepX[:-1], (np.diff(self.abf.sweepY)/np.diff(self.abf.sweepX))/1000)
+            self.axe2.plot(self.abf.sweepX[:-1], (np.diff(self.abf.sweepY)/np.diff(self.abf.sweepX))/1000,pen=pg.mkPen(colors[i]), name="Sweep_" + str(sweep))
         #self.axe1.set_title(self.selected_abf_name)
 
         #draw the dvdt threshold
@@ -768,6 +788,12 @@ class analysis_gui(object):
                 #fire a clicked event
                 self.file_list.itemClicked.emit(item)
     
+    def _prism_writer(self):
+        #prismwritegui is a qwidget
+        self.prismwritegui = PrismWriterGUI()
+        self.prismwritegui.show()
+        self.prismwritegui.raise_()
+
     ### window management functions
     def _view_window(self, action):
         window_list = [x.windowTitle() for x in self.mdi.subWindowList()]
@@ -788,6 +814,9 @@ class analysis_gui(object):
         #don't actually close the window, just hide it
         wind.hide()
 
+    def exit(self):
+        self.close()
+        sys.exit()
 
 
 from ipfx import spike_detector,time_series_utils

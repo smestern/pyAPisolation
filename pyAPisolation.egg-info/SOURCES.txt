@@ -47,22 +47,16 @@ pyAPisolation.egg-info/SOURCES.txt
 pyAPisolation.egg-info/dependency_links.txt
 pyAPisolation.egg-info/requires.txt
 pyAPisolation.egg-info/top_level.txt
-pyAPisolation/deprecated/abfanalysis.ipynb
-pyAPisolation/deprecated/abfanalysis_local-checkpoint.ipynb
-pyAPisolation/deprecated/abfanalysis_local.ipynb
-pyAPisolation/deprecated/abfderivative.py
-pyAPisolation/deprecated/ephy_view_extension.py
-pyAPisolation/deprecated/run_APisolation.py
-pyAPisolation/deprecated/run_APisolation_dir.py
 pyAPisolation/deprecated/run_CM_CALC_para.py
-pyAPisolation/deprecated/run_output_to_web_qc.py
-pyAPisolation/deprecated/run_web_gui.py
 pyAPisolation/dev/__init__.py
 pyAPisolation/dev/abf_chirp.py
+pyAPisolation/dev/anova_and_tukey.py
 pyAPisolation/dev/grow.py
 pyAPisolation/dev/main.spec
+pyAPisolation/dev/miniPSC_subsample_concat.py
 pyAPisolation/dev/model.pt
 pyAPisolation/dev/prism_writer.py
+pyAPisolation/dev/prism_writer_gui.py
 pyAPisolation/dev/run_APisolation_ipfx_fv_ic1.py
 pyAPisolation/dev/run_FV_SPCA.py
 pyAPisolation/dev/run_GROW_ANALYSIS copy.ipynb
@@ -79,6 +73,7 @@ pyAPisolation/dev/runqthook.py
 pyAPisolation/dev/stim_classifier.py
 pyAPisolation/dev/test_feature_change.spec
 pyAPisolation/dev/vc_K_channel.ipynb
+pyAPisolation/dev/vc_subsampler.py
 pyAPisolation/dev/.ipynb_checkpoints/run_GROW_ANALYSIS-checkpoint.ipynb
 pyAPisolation/tests/test_feature_change.py
 pyAPisolation/tests/test_feature_extractor.py

@@ -1,9 +1,8 @@
 import pandas as pd
 import numpy as np
 import logging
-import pyabf
-from ipfx.sweep import Sweep,SweepSet
-from . import loadNWB, loadABF
+from ipfx.sweep import Sweep, SweepSet
+from .loadFile import loadFile
 try:
     from ipfx.dataset.ephys_data_set import EphysDataSet
     from ipfx.stimulus import StimulusOntology
@@ -13,26 +12,51 @@ except ImportError:
     print(f"Error importing from ipfx.dataset.ephys_data_set, ipfx.stimulus, ipfx.dataset.ephys_nwb_data, ipfx.dataset.hbg_nwb_data")
     print(f"Likely not an issue, this message is for Sam")
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 class cellData(object):
-    def __init__(self, file=None, dataX=None, dataY=None, dataC=None, name=None, clampMode=None, stimUnits='pA', respUnits='mV'):
+    """
+    A celldata object, that stores the data for a single cell, and allows for easy access to the data. This allows the data to be easily passed around and manipulated
+    The data is stored in the dataX, dataY, and dataC arrays, which are the stimulus, response, and command arrays respectively.
+    The object follows pyABF conventions, where the dataX array is the time array, the dataY array is the response array, and the dataC array is the command array.
+    One of file, or (dataX, dataY, dataC) must be provided. 
+    If file is provided, the data will be loaded from the file, otherwise the data will be loaded from the dataX, dataY, and dataC arrays
+    Takes:
+        file (optional): str, path to the file to load the data from
+        dataX (optional): np.array, the time data
+        dataY (optional): np.array, the response data
+        dataC (optional): np.array, the command data
+        name (optional): str, the name of the data  (default: generated from the dataY array)
+        clampMode (optional): str, the clamp mode of the data (default: None)
+        stimUnits (optional): str, the units of the stimulus data (default: 'pA')
+        respUnits (optional): str, the units of the response data (default: 'mV')
+    returns:
+        cellData object
+    """
 
-        #if the file is not none, then we are loading from a file
+    def __init__(self, file=None, dataX=None, dataY=None, dataC=None, name=None, protocolList=None, clampMode=None, stimUnits='pA', respUnits='mV'):
+        logger.info(f"Creating cellData object")
+        # if the file is not none, then we are loading from a file
         if file is not None:
-            self.data, self._file_obj = loadNWB.loadFile(file)
-            
+            logger.info(f"Loading data from file: {file}")
+            self.data, self._file_obj = loadFile(file)
+
             self.file = file
             self.fileName = file.split('/')[-1]
             self.name = name
             self._load_from_file()
         else:
+            logger.info(f"Loading data from arrays")
             self.data = None
             self.file = None
             self.fileName = None
             if name is not None:
                 self.name = name
             else:
-                #create a unique name by hashing the data
+                logger.info(f"Generating name from data")
+                # create a unique name by hashing the data
                 self.name = "unamed_" + str(hash(dataY[0].tostring()))
 
             self.dataX = dataX
@@ -41,366 +65,51 @@ class cellData(object):
             self.clampMode = clampMode
             self.stimUnits = stimUnits
             self.respUnits = respUnits
-        
+
+        #default values
+        self.setSweep(0)
+
+        self.protocolList = protocolList
+        self.protocol = None
+
     def _load_from_file(self):
         self.dataX = self.data[0]
         self.dataY = self.data[1]
         self.dataC = self.data[2]
 
+    def setProtocol(self, protocol):
+        """ Some files / datasets may have multiple protocols, this allows the user to set the protocol for the data.
+        This is useful for when the data is loaded from a file, and the protocol is not known
+        """
+        self.protocol = protocol
+
+    #pyABF.abf like properties
     def setSweep(self, sweep):
         self.sweep = sweep
-        #index into the dataX, dataY, and dataC arrays to get the sweep data
+        # index into the dataX, dataY, and dataC arrays to get the sweep data
         self.sweepX = self.dataX[sweep]
         self.sweepY = self.dataY[sweep]
         self.sweepC = self.dataC[sweep]
         
-
-## def deprecated
-# class ABFDataSet(EphysDataSet):
-#     def __init__(self, sweep_info=None, abf_file=None, ontology=None, api_sweeps=True, validate_stim=True):
-#         super(ABFDataSet, self).__init__(ontology, validate_stim)
-#         self._abf_data = pyabf.ABF(abf_file)
-
-
-#         if sweep_info is None:
-#             sweep_info = self.extract_sweep_stim_info()
-
-#         self.build_sweep_table(sweep_info)
-
-#     @property
-#     def abf_data(self):
-#         return self._abf_data
-
-
-#     def extract_sweep_stim_info(self):
-
-#         logging.debug("Build sweep table")
-
-#         sweep_info = []
-
-#         def get_finite_or_none(d, key):
-
-#             try:
-#                 value = d[key]
-#             except KeyError:
-#                 return None
-
-#             if np.isnan(value):
-#                 return None
-
-#             return value
-
-#         for index, sweep_map in enumerate(self._abf_data.sweepList):
-#             self._abf_data.setSweep(sweep_map)
-#             sweep_record = {}
-#             sweep_num = index + 1
-#             sweep_record["sweep_number"] = sweep_num
-
-#             #attrs = self.nwb_data.get_sweep_attrs(sweep_num)
-
-#             sweep_record["stimulus_units"] = self.get_stimulus_units(sweep_num)
-
-#             sweep_record["bridge_balance_mohm"] = np.nan
-#             sweep_record["leak_pa"] = np.nan
-#             sweep_record["stimulus_scale_factor"] = np.nan
-
-#             sweep_record["stimulus_code"] = self.get_stimulus_code(sweep_num)
-#             sweep_record["stimulus_code_ext"] = self.get_stimulus_code_ext(sweep_num)
-
-#             if self.ontology:
-#                 sweep_record["stimulus_name"] = self.get_stimulus_code(sweep_num)
-
-#             sweep_info.append(sweep_record)
-
-#         return sweep_info
-
-#     def get_stimulus_units(self, sweep_num):
-
-#         unit_str = self.abf_data.sweepUnitsC
-#         return unit_str
-
-#     def get_clamp_mode(self, sweep_num):
-
-#         #attrs = self.nwb_data.get_sweep_attrs(sweep_num)
-#         timeSeriesType = self.abf_data.sweepUnitsY
-
-#         if "mV" in timeSeriesType:
-#             clamp_mode = self.CURRENT_CLAMP
-#         elif "pA" in timeSeriesType:
-#             clamp_mode = self.VOLTAGE_CLAMP
-#         else:
-#             raise ValueError("Unexpected TimeSeries type {}.".format(timeSeriesType))
-
-#         return clamp_mode
-
-#     def get_stimulus_code(self, sweep_num):
-
-#         stim_code_ext = self.abf_data.protocol
-
-#         return stim_code_ext
-
-#     def get_stimulus_code_ext(self, sweep_num):
-
-#         return self.abf_data.protocol
-
-#     def get_recording_date(self):
-#         return self.abf_data.abfDateTime
-
-#     def build_sweep_table(self, sweep_info=None):
-
-#         if sweep_info:
-#             self.add_clamp_mode(sweep_info)
-#             self.sweep_table = pd.DataFrame.from_records(sweep_info)
-#         else:
-#             self.sweep_table = pd.DataFrame(columns=self.COLUMN_NAMES)
-
-#     def add_clamp_mode(self, sweep_info):
-#         """
-#         Check if clamp mode is available and otherwise detect it
-#         Parameters
-#         ----------
-#         sweep_info
-#         Returns
-#         -------
-#         """
-
-#         for sweep_record in sweep_info:
-#             sweep_number = sweep_record["sweep_number"]
-#             sweep_record[self.CLAMP_MODE] = self.get_clamp_mode(sweep_number)
-
-#     def filtered_sweep_table(self,
-#                              clamp_mode=None,
-#                              stimuli=None,
-#                              stimuli_exclude=None,
-#                              ):
-
-#         st = self.sweep_table
-
-#         if clamp_mode:
-#             mask = st[self.CLAMP_MODE] == clamp_mode
-#             st = st[mask.astype(bool)]
-
-#         if stimuli:
-#             mask = st[self.STIMULUS_CODE].apply(
-#                 self.ontology.stimulus_has_any_tags, args=(stimuli,), tag_type="code")
-#             st = st[mask.astype(bool)]
-
-#         if stimuli_exclude:
-#             mask = ~st[self.STIMULUS_CODE].apply(
-#                 self.ontology.stimulus_has_any_tags, args=(stimuli_exclude,), tag_type="code")
-#             st = st[mask.astype(bool)]
-
-#         return st
-
-#     def get_sweep_number(self, stimuli, clamp_mode=None):
-
-#         sweeps = self.filtered_sweep_table(clamp_mode=clamp_mode,
-#                                            stimuli=stimuli).sort_values(by=self.SWEEP_NUMBER)
-
-#         if len(sweeps) > 1:
-#             logging.warning(
-#                 "Found multiple sweeps for stimulus %s: using largest sweep number" % str(stimuli))
-
-#         if len(sweeps) == 0:
-#             raise IndexError("Cannot find {} sweeps with clamp mode: {} found ".format(stimuli,clamp_mode))
-
-#         return sweeps.sweep_number.values[-1]
-
-#     def get_sweep_record(self, sweep_number):
-#         """
-#         Parameters
-#         ----------
-#         sweep_number: int sweep number
-#         Returns
-#         -------
-#         sweep_record: dict of sweep properties
-#         """
-
-#         st = self.sweep_table
-
-#         if sweep_number is not None:
-#             mask = st[self.SWEEP_NUMBER] == sweep_number
-#             st = st[mask]
-
-#         return st.to_dict(orient='records')[0]
-
-#     def sweep(self, sweep_number):
-
-#         """
-#         Create an instance of the Sweep class with the data loaded from the from a file
-#         Parameters
-#         ----------
-#         sweep_number: int
-#         Returns
-#         -------
-#         sweep: Sweep object
-#         """
-
-#         sweep_data = self.get_sweep_data(sweep_number)
-#         sweep_record = self.get_sweep_record(sweep_number)
-#         sampling_rate = sweep_data['sampling_rate']
-#         dt = 1. / sampling_rate
-#         t = np.arange(0, len(sweep_data['stimulus'])) * dt
-
-#         epochs = sweep_data.get('epochs')
-#         clamp_mode = sweep_record['clamp_mode']
-
-#         if clamp_mode == "VoltageClamp":
-#             v = sweep_data['stimulus']
-#             i = sweep_data['response']
-#         elif clamp_mode == "CurrentClamp":
-#             v = sweep_data['response']
-#             i = sweep_data['stimulus']
-#         else:
-#             raise Exception("Unable to determine clamp mode for sweep " + sweep_number)
-
-#         v *= 1.0e3    # convert units V->mV
-#         i *= 1.0e12   # convert units A->pA
-
-#         if len(sweep_data['stimulus']) != len(sweep_data['response']):
-#             warnings.warn("Stimulus duration {} is not equal reponse duration {}".
-#                           format(len(sweep_data['stimulus']),len(sweep_data['response'])))
-
-#         try:
-#             sweep = Sweep(t=t,
-#                           v=v,
-#                           i=i,
-#                           sampling_rate=sampling_rate,
-#                           sweep_number=sweep_number,
-#                           clamp_mode=clamp_mode,
-#                           epochs=epochs,
-#                           )
-
-#         except Exception:
-#             logging.warning("Error reading sweep %d" % sweep_number)
-#             raise
-
-#         return sweep
-
-#     def sweep_set(self, sweep_numbers):
-#         try:
-#             return SweepSet([self.sweep(sn) for sn in sweep_numbers])
-#         except TypeError:  # not iterable
-#             return SweepSet([self.sweep(sweep_numbers)])
-
-#     def aligned_sweeps(self, sweep_numbers, stim_onset_delta):
-#         raise NotImplementedError
-
-
-#     def get_sweep_data(self, sweep_number):
-#         """
-#         Read sweep data from the nwb file
-#         Substitute trailing zeros in the response for np.nan
-#         because trailing zeros occur after the end of recording
-#         Parameters
-#         ----------
-#         sweep_number
-#         Returns
-#         -------
-#         dict in the format:
-#         {
-#             'stimulus': np.ndarray,
-#             'response': np.ndarray,
-#             'stimulus_unit': string,
-#             'sampling_rate': float
-#         }
-#         """
-#         self.abf_data.setSweep(sweep_number)
-#         sweep_data = {'stimulus': self.abf_data.sweepC, 'response': self.abf_data.sweepY, 'stimulus_unit': self.abf_data.sweepUnitsC, 'sampling_rate': self.abf_data.dataRate}
-
-#         response = sweep_data['response']
-
-#         if len(np.flatnonzero(response)) == 0:
-#             recording_end_idx = 0
-#             sweep_end_idx = 0
-#         else:
-#             recording_end_idx = np.flatnonzero(response)[-1]
-#             sweep_end_idx = len(response)-1
-
-#         if recording_end_idx < sweep_end_idx:
-#             response[recording_end_idx+1:] = np.nan
-
-#         return sweep_data
-
-# class flexNWBData(HBGNWBData):
-#     """
-#     a flexible NWB data class that allows for the use of the NWBData class, 
-#     but allows for flexibility in NWB loading and validation
-
-#     """
-
-#     def __init__(self,
-#                  nwb_file: str,
-#                  ontology: None,
-#                  load_into_memory: bool = True,
-#                  validate_stim: bool = True
-#                  ):
-#         super(flexNWBData, self).__init__(
-#             nwb_file=nwb_file,
-#             ontology=ontology,
-#             load_into_memory=load_into_memory,
-#             validate_stim=validate_stim
-#         )
-
-#     def get_stimulus_code_ext(self, sweep_number):
-#         return super().get_stimulus_code(sweep_number)
-
-#     def get_sweep_metadata(self, sweep_number: int):
-#         attrs = self.get_sweep_attrs(sweep_number)
-
-#         sweep_record = {
-#             "sweep_number": sweep_number,
-#             "stimulus_units": self.get_stimulus_unit(sweep_number),
-#             "bridge_balance_mohm": get_finite_or_none(attrs, "bridge_balance"),
-#             "leak_pa": get_finite_or_none(attrs, "bias_current"),
-#             "stimulus_scale_factor": get_finite_or_none(attrs, "gain"),
-#             "stimulus_code": self.get_stimulus_code(sweep_number),
-#             "stimulus_code_ext": self.get_stimulus_code_ext(sweep_number),
-#             "clamp_mode": self.get_clamp_mode(sweep_number),
-#         }
-
-#         if self.ontology:
-#             sweep_record["stimulus_name"] = self.get_stimulus_name(
-#                 sweep_record["stimulus_code"]
-#             )
-
-#         return sweep_record
-#     def _get_series(self, sweep_number: int,
-#                     series_class):
-#         """
-#         Get Time Series of a specified class
-#         Parameters
-#         ----------
-#         sweep_number: int sweep number
-#         series_class: pynwb.PatchClampSeries
-
-#         Returns
-#         -------
-#         series: pynwb.PatchClampSeries
-#         """
-#         series = self.nwb.sweep_table.get_series(sweep_number)
-
-#         if series is None:
-#             raise ValueError("No TimeSeries found for sweep number {}.".format(sweep_number))
-
-#         matching_series = []
-
-#         for s in series:
-#             if isinstance(s,series_class):
-#                 matching_series.append(s)
-
-#         if len(matching_series) == 1:
-#             return matching_series[0]
-#         elif len(matching_series) == 0:
-#             raise ValueError("No TimeSeries found for sweep number {}.".format(sweep_number))
-#         else:
-#             return matching_series[0]
-#             raise ValueError("Found multiple stimulus series "
-#                              "{[s.name for s in matching_series]} "
-#                              "for sweep number {sweep_number}")
-
-# def flexNWBDataset(self, nwb_path,  ontology=None, load_into_memory=True, validate_stim=True, sweep_info=[]):
-
-#     nwb_data = flexNWBData(nwb_path, ontology, load_into_memory, validate_stim)
-#     return EphysDataSet(nwb_data, sweep_info)
-        
+    @property
+    def sweepList(self):
+        return list(range(len(self.dataX)))
+
+    @property
+    def sweepCount(self):
+        return len(self.dataX)
+    
+    @property
+    def sweepNumber(self):
+        return self.sweep
+
+    def __str__(self):
+        return f"cellData object: {self.name}, loaded from {self.file}"
+    
+    def __repr__(self):
+        return f"cellData object: {self.name}, loaded from {self.file}"
+    
+    def __getitem__(self, key):
+        return self.data[key]
+    
+    

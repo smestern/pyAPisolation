@@ -7,61 +7,97 @@
     <title>Cell Database</title>
     <!-- Bootstrap -->
     
-	
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link href="./assets/bootstrapcust.css" rel="stylesheet" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 	<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
 	<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-	<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <link href="https://unpkg.com/bootstrap-table@1.18.2/dist/bootstrap-table.min.css" rel="stylesheet">
-
-	<script src="https://unpkg.com/bootstrap-table@1.18.2/dist/bootstrap-table.min.js"></script>
 	
-	<script src="./template.js"></script>
+	<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.22.4/dist/bootstrap-table.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-table@1.22.4/dist/bootstrap-table.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.22.4/dist/extensions/resizable/bootstrap-table-resizable.min.js"></script>
+
+
+	
+	<script src="./assets/template.js"></script>
+    <link rel="stylesheet" href="./assets/template.css">
 	  
 <!-- NAV BAR AND HEADING -->
 	  
 </head>
 <body>
-<section>
-		<h2 Class = "text-center" id= "electrophystitle">Electrophysiology</h2>
-</section>
 
 
+<div class="fluid-container">
 
-<span id = "Filter" class="text-center" style="display: relative">
-		<button id = "filter_btn" class="btn btn-primary" data-toggle="collapse" href="#ScatterFilter" role="button" aria-expanded="false" aria-controls="ScatterFilter" >Filter</button>
-		<!-----<button id = "filter_btn2" class="btn btn-primary" data-toggle="collapse" href="#Scatter2Filter" role="button" aria-expanded="false" aria-controls="Scatter2Filter" >Filter - Scatter</button>-->
-</span>
-<div class="collapse multi-collapse" id="ScatterFilter">
-<div class="card card-body" style="width: 100%">
+<div class="row d-flex align-items-stretch nowrap" style="min-height: 1200px;">
+    <!--Side navbar-->
+    <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0 bg-dark">
+        <div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark">
+            <div class="flex-grow-1" style="box-shadow: 0px 0px 2px;">
+                <div class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none" style="background: rgba(0,0,0,0.02);">
+                    <h4 id="electrophystitle">Electrophysiology</h2>
+                </div>
+                <div class="nav nav-pills flex-column mb-auto">
+                    <p class="description">Text</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--Main content--> 
+    <div class="col" style="max-width: 80%">
+        <!-- <span id = "Filter" class="text-center" style="display: relative">
+                <button id = "filter_btn" class="btn btn-primary" data-bs-toggle="collapse" href="#ScatterFilter" role="button" aria-expanded="true" aria-controls="ScatterFilter">Filter</button>
+                <button id = "filter_btn2" class="btn btn-primary" data-toggle="collapse" href="#Scatter2Filter" role="button" aria-expanded="false" aria-controls="Scatter2Filter" >Filter - Scatter</button></span> -->
 
-	<div id="graphDiv" style="width:1200px;height:450px;"></div>
-</div>
-</div>
-
-
-	<table id="table"
-	data-toggle="table"
-	data-detail-view="true"
-	data-height="960"
-	data-detail-formatter="detailFormatter"
-	data-show-export="false"
-	data-show-columns="true"
-	data-search="true"
-	data-classes="table table-card-like table-borderless table-striped">
-		<thead>
-			<tr>
-				<th data-field="filename">Cell ID</th> 
-			</tr>
-		</thead>
-	</table>
+        <div class="row d-flex align-items-stretch nowrap" >
+            <div class="col-auto px-0 bg-dark"style="max-width: 40%; min-width: 40%;">
+                <div class="card card-body" style=" min-height: 100%">
+                    <div id="graphDiv_scatter"></div>
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          Dropdown
+                        </button>
+                        <ul class="dropdown-menu">
+                        </ul>
+                      </div>
+                </div>
+            </div>
+            <div class="col-auto px-0 bg-dark flex-grow-1"  style="max-width: 60%">
+                <div class="card card-body" style=" min-height: 100%">
+                    <div id="graphDiv"></div>
+                </div>
+            </div>
+        </div>
+        <div class="row d-flex align-items-stretch nowrap" >
+            <table id="table"
+                data-toggle="table"
+                data-detail-view="true"
+                data-show-export="false"
+                data-show-columns="true"
+                data-search="true"
+                data-resizable="true"
+                data-pagination="true"
+                data-classes="table table-card-like table-borderless table-striped table-responsive">
+                <thead>
+                    <tr>
+                        <th data-field="filename">Cell ID</th> 
+                    </tr>
+                </thead>
+            </table>
+        </div>
 	<script>
 	
 
 	</script>
-	
+    </div>
+</div> 
+</div>
 </body>
 
 
