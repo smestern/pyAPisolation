@@ -48,6 +48,7 @@ if __name__ == '__main__':
                        help='path to the data folder containing the ABF files')
     group.add_argument('--data_df', type=str,
                        help='path to the pregenerated database')
+    group.add_argument('--database_config', type=str,)
     
     #parser = arg_wrap(parser)
 

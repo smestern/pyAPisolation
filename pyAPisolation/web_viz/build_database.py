@@ -570,7 +570,7 @@ def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100], deb
     if data_set is None or len(data_set.dataY)<1:
         return result
     #here we are going to perform long square analysis on the data,
-            #hopefully this will be fixed in the future and we can use ipfx for this
+    #hopefully this will be fixed in the future and we can use ipfx for this
     sweeps = []
     start_times = []
     end_times = []
