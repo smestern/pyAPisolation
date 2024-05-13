@@ -16,9 +16,9 @@ import logging
 from .ipfx_df import _build_full_df, _build_sweepwise_dataframe, save_data_frames, save_subthres_data
 from .loadFile import loadFile, loadABF
 from .dataset import cellData
-from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_abf
+from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_bessel
 from .patch_subthres import exp_decay_factor, membrane_resistance, mem_cap, mem_cap_alt, \
-    rmp_mode, compute_sag, exp_decay_factor_alt, exp_growth_factor, determine_subt, df_select_by_col
+    rmp_mode, compute_sag, exp_decay_factor_alt, exp_growth_factor, determine_subt, df_select_by_col, subthres_a
 from .QC import run_qc
 
 #set up the logger
@@ -100,18 +100,18 @@ def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
     Returns:
         spike_dataframe, spikewise_dataframe, running_bin_data_frame : _description_
     """
-    try:
-        abf = pyabf.ABF(file_path, loadData=False)           
-        if protocol_name in abf.protocol: 
-            print(file_path + ' import')
-            abf = pyabf.ABF(file_path, loadData=True)  #if its the correct protocol, we will reload the abf
-            temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
-            return temp_spike_df, df, temp_running_bin
-        else:
-            print('Not correct protocol: ' + abf.protocol)
-            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-    except:
-       return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    #try:
+    abf = pyabf.ABF(file_path, loadData=False)           
+    if protocol_name in abf.protocol: 
+        print(file_path + ' import')
+        abf = pyabf.ABF(file_path, loadData=True)  #if its the correct protocol, we will reload the abf
+        temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
+        return temp_spike_df, df, temp_running_bin
+    else:
+        print('Not correct protocol: ' + abf.protocol)
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    #except:
+    return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 
 def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
@@ -172,7 +172,7 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         elif param_dict['end'] > real_sweep_length:
             param_dict['end'] = real_sweep_length
         
-        spike_in_sweep, spike_train = analyze_spike_sweep(abf, sweepNumber, param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by ipfx
+        spike_in_sweep, spike_train = analyze_spike_sweep(x[sweepNumber], y[sweepNumber] ,c[sweepNumber], param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by ipfx
         
         #build the dataframe, this will be the dataframe that is used for the full data, essentially the sweepwise dataframe, each file will have a dataframe like this
         temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict) 
@@ -190,7 +190,7 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
     
     return temp_spike_df, df, temp_running_bin
 
-def analyze_spike_sweep(x, y, c, sweepNumber, param_dict, bessel_filter=None):
+def analyze_spike_sweep(x, y, c, param_dict, bessel_filter=None):
     """_summary_
 
     Args:
@@ -202,18 +202,16 @@ def analyze_spike_sweep(x, y, c, sweepNumber, param_dict, bessel_filter=None):
     Returns:
         _type_: _description_
     """
-    abf.setSweep(sweepNumber)
     spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
     spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])  
-    dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
     #if the user asks for a filter, apply it
     if bessel_filter is not None:
         if bessel_filter != -1:
-            dataV = filter_abf(dataV, abf, bessel_filter)
-    if dataI.shape[0] < dataV.shape[0]:
-                dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
-    spike_in_sweep = spikext.process(dataT, dataV, dataI) #returns the default Dataframe Returned by ipfx
-    spike_train = spiketxt.process(dataT, dataV, dataI, spike_in_sweep) #additional dataframe returned by ipfx, contains the features related to consecutive spikes
+            dataV = filter_bessel(y, 1/10000, bessel_filter)
+    if c.shape[0] < y.shape[0]:
+                c = np.hstack((c, np.full(y.shape[0] - c.shape[0], 0)))
+    spike_in_sweep = spikext.process(x, y, c) #returns the default Dataframe Returned by ipfx
+    spike_train = spiketxt.process(x, y, c, spike_in_sweep) #additional dataframe returned by ipfx, contains the features related to consecutive spikes
     return spike_in_sweep, spike_train
 
 def sweepNumber_to_real_sweep_number(sweepNumber):
@@ -226,7 +224,6 @@ def sweepNumber_to_real_sweep_number(sweepNumber):
 #CUSTOM FEATURES
 def _custom_sweepwise_features(sweepX, sweepY, sweepC, real_sweep_number, param_dict, spike_df, rawspike_df):
     custom_features = {}
-
     sag, taum, voltage = subthres_a(sweepX, sweepY, sweepC, param_dict['start'], param_dict['end'])
     custom_features["Sag Ratio " + real_sweep_number + ""] = sag
     custom_features["Taum " + real_sweep_number + ""] = taum

@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": true,
+            "justMyCode": false,
             "args": ["--data_df", "C:/Users/SMest/Dropbox/sara_cell_v2/spike_count_1712533162.9597082filtered.xlsx"],
             //"sudo": true,
         }

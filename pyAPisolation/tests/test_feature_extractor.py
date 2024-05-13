@@ -18,7 +18,7 @@ def test_feature_extractor():
     df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
 
     # Run the feature extractor
-    _, feat_df,_ = folder_feature_extract(f'/media/smestern/Expansion/IC1 Files_220106_183 cells', default_dict)
+    _, feat_df,_ = folder_feature_extract(f'/home/smestern/Dropbox/sara_cell_v2', default_dict)
     
     # Compare the two dataframes
     if feat_df.equals(df):
