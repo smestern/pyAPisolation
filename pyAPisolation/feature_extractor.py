@@ -14,7 +14,7 @@ import logging
 
 #Local imports
 from .ipfx_df import _build_full_df, _build_sweepwise_dataframe, save_data_frames, save_subthres_data
-from .loadFile import loadFile
+from .loadFile import loadFile, loadABF
 from .dataset import cellData
 from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_abf
 from .patch_subthres import exp_decay_factor, membrane_resistance, mem_cap, mem_cap_alt, \
