@@ -185,7 +185,12 @@ class analysis_gui(object):
 
 
     def file_select(self):
-        """Opens a file dialog to select a folder of abf files"""
+        """Opens a file dialog to select a folder of abf files
+        Takes:
+            files: list of abf files
+        Returns:
+            None
+        """
         self.selected_dir = QFileDialog.getExistingDirectory()
         self.abf_list = glob.glob(self.selected_dir + "/**/*.abf", recursive=True)
         self.abf_list_name = [os.path.basename(x) for x in self.abf_list]

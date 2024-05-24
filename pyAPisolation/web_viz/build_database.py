@@ -40,7 +40,7 @@ import ipfx.feature_vectors as fv
 # Import custom functions
 from pyAPisolation import patch_utils
 from pyAPisolation.utils import arg_wrap
-from pyAPisolation.loadNWB import loadNWB, GLOBAL_STIM_NAMES
+from pyAPisolation.loadFile.loadNWB import loadNWB, GLOBAL_STIM_NAMES
 try:
     from pyAPisolation.dev import stim_classifier as sc
 except:
@@ -48,7 +48,9 @@ except:
 
 # ==== GLOBALS =====
 _ONTOLOGY = ju.read(StimulusOntology.DEFAULT_STIMULUS_ONTOLOGY_FILE)
-_UNIT_ONTOLOGY = {'amp': ['amp', 'ampere', 'amps', 'amperes', 'A'],'volt': ['volt', 'v', 'volts', 'V'], 'sec': ['sec', 's', 'second', 'seconds', 'secs', 'sec']}
+_UNIT_ONTOLOGY = {'amp': ['amp', 'ampere', 'amps', 'amperes', 'A'],
+                  'volt': ['volt', 'v', 'volts', 'V'], 
+                  'sec': ['sec', 's', 'second', 'seconds', 'secs', 'sec']}
 log = logging.getLogger(__name__)
 
 
@@ -61,7 +63,6 @@ def glob_files(folder, ext="nwb"):
 
 
 def run_analysis(folder, backend="ipfx", outfile='out.csv', ext="nwb", parallel=False):
-
     files = glob_files(folder)[::-1]
     file_idx = np.arange(len(files))
      

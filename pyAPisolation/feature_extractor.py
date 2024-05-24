@@ -14,7 +14,6 @@ import logging
 
 #Local imports
 from .ipfx_df import _build_full_df, _build_sweepwise_dataframe, save_data_frames, save_subthres_data
-from .loadFile import loadFile
 from .dataset import cellData
 from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_abf
 from .patch_subthres import exp_decay_factor, membrane_resistance, mem_cap, mem_cap_alt, \
@@ -65,7 +64,7 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     #run the feature extractor
     if n_jobs > 1: #if we are using multiprocessing
         pool = mp.Pool(processes=n_jobs)
-        results = [pool.apply(preprocess_abf, args=(file, param_dict, plot_sweeps, protocol_name)) for file in filelist]
+        results = [pool.apply(process_file, args=(file, param_dict, plot_sweeps, protocol_name)) for file in filelist]
         pool.close()
         ##split out the results
         for result in results:
@@ -77,7 +76,7 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     #if we are not using multiprocessing
     else:
         for f in filelist:
-            temp_df_spike_count, temp_full_df, temp_running_bin = preprocess_abf(f, copy.deepcopy(param_dict), plot_sweeps, protocol_name)
+            temp_df_spike_count, temp_full_df, temp_running_bin = process_file(f, copy.deepcopy(param_dict), plot_sweeps, protocol_name)
             spike_count.append(temp_df_spike_count)
             df_full.append(temp_full_df)
             df_running_avg.append(temp_running_bin)
@@ -88,8 +87,8 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     df_running_avg_count = pd.concat(df_running_avg, sort=False)
     return df_raw_out, df_spike_count, df_running_avg_count
 
-def preprocess_abf(file_path, param_dict, plot_sweeps, protocol_name):
-    """Takes an abf file and runs the feature extractor on it. Filters the ABF by protocol etc.
+def process_file(file_path, param_dict, plot_sweeps, protocol_name):
+    """Takes an file and runs the feature extractor on it. Filters the protocol etc.
     Essentially a wrapper for the feature extractor. As when there is an error we dont want to stop the whole program, we just want to skip the abf.
     Args:
         file_path (str, os.path): _description_

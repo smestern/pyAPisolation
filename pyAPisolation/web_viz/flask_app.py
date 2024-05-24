@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, render_template, request, send_from_directory
-from .. import loadABF
+from .. import loadFile
 import os
 from scipy.signal import resample, decimate
 import numpy as np
@@ -7,9 +7,9 @@ import numpy as np
 class traceserver:
     def __init__(self, config, static=False):
         self.app = Flask(__name__,
-                         root_path=config.output_path,
+                        root_path=config.output_path,
                         static_url_path='',
-                         static_folder='',
+                        static_folder='',
                         template_folder='web/templates')
         self.setup_routes()
 
@@ -17,7 +17,7 @@ class traceserver:
         @self.app.route('/api/<string:data_id>')
         def get_data(data_id):
             foldername = request.args.get('foldername')
-            x, y, z = loadABF.loadABF(os.path.join(foldername, data_id+'.abf'))
+            x, y, z = loadFile.loadABF(os.path.join(foldername, data_id+'.abf'))
             y = decimate(y, 4, axis=1)
             x = decimate(x, 4, axis=1)
             idx = np.argmin(np.abs(x-2.5))
