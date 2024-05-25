@@ -101,21 +101,20 @@ def process_file(file_path, param_dict, plot_sweeps, protocol_name):
     Returns:
         spike_dataframe, spikewise_dataframe, running_bin_data_frame : _description_
     """
-    try:
-        abf = pyabf.ABF(file_path, loadData=False)           
-        if protocol_name in abf.protocol: 
-            print(file_path + ' import')
-            abf = pyabf.ABF(file_path, loadData=True)  #if its the correct protocol, we will reload the abf
-            temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
-            return temp_spike_df, df, temp_running_bin
-        else:
-            print('Not correct protocol: ' + abf.protocol)
-            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-    except:
+    #try:
+    file = cellData(file=file_path)   
+    if protocol_name in file.protocol: 
+        print(file_path + ' import')
+        temp_spike_df, df, temp_running_bin = analyze_cell(file, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
+        return temp_spike_df, df, temp_running_bin
+    else:
+        print('Not correct protocol: ' + file.protocol)
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    #except:
+    return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 
-def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
+def analyze_cell(abf, sweeplist=None, plot=-1, param_dict=None):
     """_summary_
 
     Args:
@@ -130,7 +129,7 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
     np.nan_to_num(abf.data, nan=-9999, copy=False)
 
     #load the data 
-    x, y ,c = loadABF(abf.abfFilePath)
+    x, y ,c = abf.data
 
     #If there is more than one sweep, we need to ensure we dont iterate out of range
     if sweeplist == None:
@@ -142,8 +141,8 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
     #Now we walk through the sweeps looking for action potentials
     df = pd.DataFrame()
     temp_spike_df = pd.DataFrame()
-    temp_spike_df['filename'] = [abf.abfID]
-    temp_spike_df['foldername'] = [os.path.dirname(abf.abfFilePath)]
+    temp_spike_df['filename'] = [abf.name]
+    temp_spike_df['foldername'] = [os.path.dirname(abf.filePath)]
     temp_running_bin = pd.DataFrame()
     
     
@@ -183,8 +182,8 @@ def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
         temp_spike_df = temp_spike_df.assign(**custom_features)
 
     #add the filename and foldername to the temp_running_bin
-    temp_running_bin['filename'] = abf.abfID
-    temp_running_bin['foldername'] = os.path.dirname(abf.abfFilePath)
+    temp_running_bin['filename'] = abf.name
+    temp_running_bin['foldername'] = os.path.dirname(abf.filePath)
     #compute some final features, here we need all the sweeps etc, so these are computed after the sweepwise features
     temp_spike_df = _custom_full_features(x, y, c, param_dict, temp_spike_df)
     temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
@@ -419,10 +418,10 @@ def preprocess_abf_subthreshold(file_path, protocol_name='', param_dict={}):
        #return pd.DataFrame(), pd.DataFrame()
 
 def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False):
-    filename = abf.abfID
+    filename = abf.name
     
     print(filename + ' import')
-    file_path = abf.abfID
+    file_path = abf.name
     root_fold = os.path.dirname(file_path)
     np.nan_to_num(abf.data, nan=-9999, copy=False)
     if savfilter >0:
@@ -459,10 +458,10 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
     
     
     temp_df = pd.DataFrame()
-    temp_df['filename'] = [abf.abfID]
+    temp_df['filename'] = [abf.name]
     temp_df['foldername'] = [os.path.dirname(file_path)]
     temp_avg = pd.DataFrame()
-    temp_avg['filename'] = [abf.abfID]
+    temp_avg['filename'] = [abf.name]
     temp_avg['foldername'] = [os.path.dirname(file_path)]
     
     full_dataI = []
@@ -483,7 +482,7 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
         dataT = dataT - dataT[0]
         
 
-        decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.abfID)
+        decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.name)
         
         resist = membrane_resistance(dataT, dataV, dataI)
         Cm2, Cm1 = mem_cap(resist, decay_slow)
@@ -516,11 +515,11 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
             dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
     
     if bplot == True:
-            plt.title(abf.abfID)
+            plt.title(abf.name)
             plt.ylim(top=-40)
             plt.xlim(right=0.6)
             #plt.legend()
-            plt.savefig(root_fold+'//cm_plots//sagfit'+abf.abfID+'sweep'+real_sweep_number+'.png')
+            plt.savefig(root_fold+'//cm_plots//sagfit'+abf.name+'sweep'+real_sweep_number+'.png')
     
     full_dataI = np.vstack(full_dataI) 
     indices_of_same = np.arange(full_dataI.shape[0])
@@ -529,7 +528,7 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
         if not os.path.exists(root_fold+'//cm_plots//'):
                 os.mkdir(root_fold+'//cm_plots//')   
     print("Fitting Decay")
-    decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=root_fold)
+    decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.name, plot=bplot, root_fold=root_fold)
     print("Computing Sag")
     grow = exp_growth_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), 1/decay_slow)
     temp_avg[f"Voltage sag mean"], temp_avg["Voltage Min point"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, plot=bplot)
@@ -553,7 +552,7 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
         temp_avg["AverageD Best Fit"] = [1]
     print(f"fitting Membrane resist")
     resist = membrane_resistance(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0))
-    resist_alt = exp_rm_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, decay_slow, abf_id=abf.abfID,  root_fold=root_fold)
+    resist_alt = exp_rm_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, decay_slow, abf_id=abf.name,  root_fold=root_fold)
     Cm2, Cm1 = mem_cap(resist, decay_slow, p_decay)
     Cm3 = mem_cap_alt(resist, decay_slow, curve[3], np.amin(np.nanmean(full_dataI[indices_of_same,:],axis=0)))
     rm_alt = mem_resist_alt(Cm3, decay_slow)
@@ -566,14 +565,6 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
     temp_avg["Averaged 1 phase Cm"] =  Cm1 * 1000000000000
     print(f"Computed a membrane resistance of {(resist  / 1000000000)} giga ohms, and a capatiance of {Cm2 * 1000000000000} pF, and tau of {decay_slow*1000} ms")
     return temp_df, temp_avg
-    
-
-
-if __name__ == '__main__':
-
-
-    mp.freeze_support()
-
 
 ### IPFX FIXES
 # here we have a few functions that are used to fix the IPFX package, since there is a few errors
@@ -581,56 +572,56 @@ if __name__ == '__main__':
 # the current version of the package. The functions are:
 # find_downstroke_indexes
 
-# def find_downstroke_indexes(v, t, peak_indexes, trough_indexes, clipped=None, filter=10., dvdt=None):
-#     """Find indexes of minimum voltage (troughs) between spikes.
+def find_downstroke_indexes(v, t, peak_indexes, trough_indexes, clipped=None, filter=10., dvdt=None):
+    """Find indexes of minimum voltage (troughs) between spikes.
 
-#     Parameters
-#     ----------
-#     v : numpy array of voltage time series in mV
-#     t : numpy array of times in seconds
-#     peak_indexes : numpy array of spike peak indexes
-#     trough_indexes : numpy array of threshold indexes
-#     clipped: boolean array - False if spike not clipped by edge of window
-#     filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz (optional, default 10)
-#     dvdt : pre-calculated time-derivative of voltage (optional)
+    Parameters
+    ----------
+    v : numpy array of voltage time series in mV
+    t : numpy array of times in seconds
+    peak_indexes : numpy array of spike peak indexes
+    trough_indexes : numpy array of threshold indexes
+    clipped: boolean array - False if spike not clipped by edge of window
+    filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz (optional, default 10)
+    dvdt : pre-calculated time-derivative of voltage (optional)
 
-#     Returns
-#     -------
-#     downstroke_indexes : numpy array of downstroke indexes
-#     """
+    Returns
+    -------
+    downstroke_indexes : numpy array of downstroke indexes
+    """
 
-#     if not trough_indexes.size:
-#         return np.array([])
+    if not trough_indexes.size:
+        return np.array([])
 
-#     if dvdt is None:
-#         dvdt = tsu.calculate_dvdt(v, t, filter)
+    if dvdt is None:
+        dvdt = tsu.calculate_dvdt(v, t, filter)
 
-#     if clipped is None:
-#         clipped = np.zeros_like(peak_indexes, dtype=bool)
+    if clipped is None:
+        clipped = np.zeros_like(peak_indexes, dtype=bool)
 
-#     if len(peak_indexes) < len(trough_indexes):
-#         raise er.FeatureError("Cannot have more troughs than peaks")
-#     # Taking this out...with clipped info, should always have the same number of points
-#     #     peak_indexes = peak_indexes[:len(trough_indexes)]
+    if len(peak_indexes) < len(trough_indexes):
+        raise er.FeatureError("Cannot have more troughs than peaks")
+    # Taking this out...with clipped info, should always have the same number of points
+    #     peak_indexes = peak_indexes[:len(trough_indexes)]
 
-#     valid_peak_indexes = peak_indexes[~clipped].astype(int)
-#     valid_trough_indexes = trough_indexes[~clipped].astype(int)
+    valid_peak_indexes = peak_indexes[~clipped].astype(int)
+    valid_trough_indexes = trough_indexes[~clipped].astype(int)
 
-#     downstroke_indexes = np.zeros_like(peak_indexes) * np.nan
+    downstroke_indexes = np.zeros_like(peak_indexes) * np.nan
 
-#     #handle argmin of empty array
-#     zipped_idxs = []
-#     for i,j in zip(valid_peak_indexes, valid_trough_indexes):
-#         #if j is less than i just add one
-#         if j <= i:
-#             j = i+1
-#         zipped_idxs.append((i, j))
+    #handle argmin of empty array
+    zipped_idxs = []
+    for i,j in zip(valid_peak_indexes, valid_trough_indexes):
+        #if j is less than i just add one
+        if j <= i:
+            j = i+1
+        zipped_idxs.append((i, j))
 
-#     downstroke_index_values = [np.argmin(dvdt[peak:trough]) + peak for peak, trough
-#                          in zipped_idxs]
-#     downstroke_indexes[~clipped] = downstroke_index_values
+    downstroke_index_values = [np.argmin(dvdt[peak:trough]) + peak for peak, trough
+                         in zipped_idxs]
+    downstroke_indexes[~clipped] = downstroke_index_values
 
-#     return downstroke_indexes
+    return downstroke_indexes
 
 #override
-#ipfx.spike_detector.find_downstroke_indexes = find_downstroke_indexes
+ipfx.spike_detector.find_downstroke_indexes = find_downstroke_indexes

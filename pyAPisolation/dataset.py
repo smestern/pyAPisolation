@@ -3,6 +3,7 @@ import numpy as np
 import logging
 from ipfx.sweep import Sweep, SweepSet
 from .loadFile import loadFile
+import os
 try:
     from ipfx.dataset.ephys_data_set import EphysDataSet
     from ipfx.stimulus import StimulusOntology
@@ -39,19 +40,25 @@ class cellData(object):
     def __init__(self, file=None, dataX=None, dataY=None, dataC=None, name=None, protocolList=None, clampMode=None, stimUnits='pA', respUnits='mV'):
         logger.info(f"Creating cellData object")
         # if the file is not none, then we are loading from a file
+        self.protocolList = protocolList
+        self.protocol = None
         if file is not None:
             logger.info(f"Loading data from file: {file}")
-            self.data, self._file_obj = loadFile(file)
-
+            #if protocol list is provided, set the protocol
+            self.dataX, self.dataY, self.dataC, self._file_obj = loadFile(file, return_obj=True)
+            self.data = [self.dataX, self.dataY, self.dataC]
             self.file = file
             self.fileName = file.split('/')[-1]
-            self.name = name
+            self.filePath = os.path.abspath(file)
+            self.name = os.path.basename(file)
             self._load_from_file()
+            self.protocol = self._file_obj.protocol
         else:
             logger.info(f"Loading data from arrays")
             self.data = None
             self.file = None
-            self.fileName = None
+            self.fileName = ''
+            self.filePath = ''
             if name is not None:
                 self.name = name
             else:
@@ -62,6 +69,7 @@ class cellData(object):
             self.dataX = dataX
             self.dataY = dataY
             self.dataC = dataC
+            self.data = [self.dataX, self.dataY, self.dataC]
             self.clampMode = clampMode
             self.stimUnits = stimUnits
             self.respUnits = respUnits
@@ -69,8 +77,6 @@ class cellData(object):
         #default values
         self.setSweep(0)
 
-        self.protocolList = protocolList
-        self.protocol = None
 
     def _load_from_file(self):
         self.dataX = self.data[0]
@@ -102,6 +108,10 @@ class cellData(object):
     @property
     def sweepNumber(self):
         return self.sweep
+    
+    @property
+    def sweepLengthSec(self):
+        return self.dataX[0,-1]
 
     def __str__(self):
         return f"cellData object: {self.name}, loaded from {self.file}"

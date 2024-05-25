@@ -26,10 +26,9 @@ def test_feature_extractor():
     # Run the feature extractor
     _, feat_df,_ = folder_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), default_dict)
     
-
-    #sort both by filename
-    df = df.sort_values(by='filename').reset_index(drop=True)
-    feat_df = feat_df.sort_values(by='filename').reset_index(drop=True)
+    #sort both by filename, index by filename
+    df = df.sort_values(by='filename').set_index('filename')
+    feat_df = feat_df.sort_values(by='filename').set_index('filename')
 
     # Drop the columns that are not tested against
     df = df.drop(columns=COLS_TO_SKIP)

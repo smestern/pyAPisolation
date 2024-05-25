@@ -473,7 +473,7 @@ class analysis_gui(object):
             self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
             self.current_filter = self.param_dict['bessel_filter']
         else:
-            if (os.path.abspath(self.abf.abfFilePath) == os.path.abspath(self.selected_abf)) and (self.param_dict['bessel_filter'] == self.current_filter):
+            if (os.path.abspath(self.abf.filePath) == os.path.abspath(self.selected_abf)) and (self.param_dict['bessel_filter'] == self.current_filter):
                 pass
             else:
                 self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
@@ -496,7 +496,7 @@ class analysis_gui(object):
         #for the current abf run the analysis and save the csv
         self.run_indiv_analysis()
         if self.get_current_analysis() is 'spike':
-            dfs = preprocess_abf(self.abf.abfFilePath, copy.deepcopy(self.param_dict), False, '')
+            dfs = preprocess_abf(self.abf.filePath, copy.deepcopy(self.param_dict), False, '')
             save_data_frames(dfs[1], dfs[0], dfs[2], self.selected_dir, str(time.time())+self.outputTag.text(), self.bspikeFind.isChecked(), self.brunningBin.isChecked(), self.brawData.isChecked())
 
     def _find_outliers(self, df):
@@ -668,7 +668,7 @@ class analysis_gui(object):
                 if len(cols_for_sweep) == 0:
                     continue
                 temp_df = self.subthres_df[cols_for_sweep]
-                #decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.abfID)
+                #decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.name)
                 #pull out the params, we want the decay, A1, b1, b2
                 decay_fast = 1/temp_df[f"fast 2 phase decay {real_sweep_number}"].to_numpy()[0]
                 decay_slow = 1/temp_df[f"slow 2 phase decay {real_sweep_number}"].to_numpy()[0]

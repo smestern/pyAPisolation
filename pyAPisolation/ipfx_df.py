@@ -199,7 +199,7 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
 
         spike_in_sweep = spike_in_sweep.join(spike_train_df)
         print("Processed Sweep " + str(real_sweep_number) + " with " + str(spike_count) + " aps")
-        df = df.append(spike_in_sweep, ignore_index=True, sort=True)
+        df = pd.concat([df, spike_in_sweep], ignore_index=True, sort=True)
     else:
         sweep_running_bin = pd.DataFrame(data=nan_row_run, columns=_run_labels, index=[real_sweep_number])
         print("Processed Sweep " + str(real_sweep_number) + " with " + str(spike_count) + " aps")
@@ -232,72 +232,85 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
     sweep_running_bin['Sweep Number'] = [real_sweep_number]
     
   
-    temp_running_bin = temp_running_bin.append(sweep_running_bin)
+    temp_running_bin = pd.concat([temp_running_bin, sweep_running_bin], ignore_index=True)
     #append the dict as new columns to the temp_spike_df
     temp_spike_df = temp_spike_df.assign(**dict_spike_df)
     return temp_spike_df, df, temp_running_bin
 
 
 def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
-        temp_spike_df['protocol'] = [abf.protocol]
-        if df.empty:
-            df = df.assign(file_name=np.full(1,abf.abfID))
-            df = df.assign(__fold_name=np.full(1,os.path.dirname(abf.abfFilePath)))
-            print('no spikes found')
-        else:
-            df = df.assign(file_name=np.full(len(df.index),abf.abfID))
-            df = df.assign(__fold_name=np.full(len(df.index),os.path.dirname(abf.abfFilePath)))
-            rheo_sweep = df['sweep Number'].to_numpy()[0]
-            abf.setSweep(int(rheo_sweep - 1))
-            rheobase_current = abf.sweepC[np.argmax(abf.sweepC)]
-            temp_spike_df["rheobase_current"] = [rheobase_current]
-                    
-            temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
-            temp_spike_df["rheobase_thres"] = [df['threshold_v'].to_numpy()[0]]
-            temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]] 
-            temp_spike_df["rheobase_heightPT"] = [abs(df['peak_v'].to_numpy()[0] - df['fast_trough_v'].to_numpy()[0])]
-            temp_spike_df["rheobase_heightTP"] = [abs(df['threshold_v'].to_numpy()[0] - df['peak_v'].to_numpy()[0])]
+    """
+    takes a dataframe of spikes and builds a full dataframe with all the features, including means and rheobase features
+    takes:
+        abf (_type_): _description_
+        temp_spike_df (_type_): _description_
+        df (_type_): _description_
+        temp_running_bin (_type_): _description_
+        sweepList (_type_): _description_
+    returns:
+        _type_: _description_
+    
+    """
+    temp_spike_df['protocol'] = [abf.protocol]
+    if df.empty:
+        df = df.assign(file_name=np.full(1,abf.name))
+        df = df.assign(__fold_name=np.full(1,os.path.dirname(abf.filePath)))
+        print('no spikes found')
+    else:
+        df = df.assign(file_name=np.full(len(df.index),abf.name))
+        df = df.assign(__fold_name=np.full(len(df.index),os.path.dirname(abf.filePath)))
+        rheo_sweep = df['sweep Number'].to_numpy()[0]
+        abf.setSweep(int(rheo_sweep - 1))
+        rheobase_current = abf.sweepC[np.argmax(abf.sweepC)]
+        temp_spike_df["rheobase_current"] = [rheobase_current]
                 
-            temp_spike_df["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
-            temp_spike_df["rheobase_downstroke"] = [df['downstroke'].to_numpy()[0]]
-            temp_spike_df["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
-            temp_spike_df["rheobase_slow_trough"] = [df['slow_trough_v'].to_numpy()[0] if 'slow_trough_v' in df.columns else np.nan]
-            for key in ipfx_train_feature_labels:
-                temp_spike_df[f"mean_{key}"] = [np.nanmean(df[key].to_numpy())]
-            temp_spike_df["mean_current"] = [np.nanmean(df['peak_i'].to_numpy())]
-            temp_spike_df["mean_latency"] = [np.nanmean(df['latency'].to_numpy())]
-            temp_spike_df["mean_thres"] = [np.nanmean(df['threshold_v'].to_numpy())]
-            temp_spike_df["mean_width"] = [np.nanmean(df['width'].to_numpy())]
-            temp_spike_df["mean_heightPT"] = [np.nanmean(abs(df['peak_v'].to_numpy() - df['fast_trough_v'].to_numpy()))]
-            temp_spike_df["mean_heightTP"] = [np.nanmean(abs(df['threshold_v'].to_numpy() - df['peak_v'].to_numpy()))]
-            temp_spike_df["mean_upstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
-            temp_spike_df["mean_downstroke"] = [np.nanmean(df['downstroke'].to_numpy())]
-            temp_spike_df["mean_fast_trough"] = [np.nanmean(df['fast_trough_v'].to_numpy())]
-            temp_spike_df["mean_slow_trough"] = [np.nanmean(df['slow_trough_v'].to_numpy()) if 'slow_trough_v' in df.columns else np.nan]
-            spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
-           
+        temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
+        temp_spike_df["rheobase_thres"] = [df['threshold_v'].to_numpy()[0]]
+        temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]] 
+        temp_spike_df["rheobase_heightPT"] = [abs(df['peak_v'].to_numpy()[0] - df['fast_trough_v'].to_numpy()[0])]
+        temp_spike_df["rheobase_heightTP"] = [abs(df['threshold_v'].to_numpy()[0] - df['peak_v'].to_numpy()[0])]
+            
+        temp_spike_df["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
+        temp_spike_df["rheobase_downstroke"] = [df['downstroke'].to_numpy()[0]]
+        temp_spike_df["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
+        temp_spike_df["rheobase_slow_trough"] = [df['slow_trough_v'].to_numpy()[0] if 'slow_trough_v' in df.columns else np.nan]
+        for key in ipfx_train_feature_labels:
+            temp_spike_df[f"mean_{key}"] = [np.nanmean(df[key].to_numpy())]
+        temp_spike_df["mean_current"] = [np.nanmean(df['peak_i'].to_numpy())]
+        temp_spike_df["mean_latency"] = [np.nanmean(df['latency'].to_numpy())]
+        temp_spike_df["mean_thres"] = [np.nanmean(df['threshold_v'].to_numpy())]
+        temp_spike_df["mean_width"] = [np.nanmean(df['width'].to_numpy())]
+        temp_spike_df["mean_heightPT"] = [np.nanmean(abs(df['peak_v'].to_numpy() - df['fast_trough_v'].to_numpy()))]
+        temp_spike_df["mean_heightTP"] = [np.nanmean(abs(df['threshold_v'].to_numpy() - df['peak_v'].to_numpy()))]
+        temp_spike_df["mean_upstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
+        temp_spike_df["mean_downstroke"] = [np.nanmean(df['downstroke'].to_numpy())]
+        temp_spike_df["mean_fast_trough"] = [np.nanmean(df['fast_trough_v'].to_numpy())]
+        temp_spike_df["mean_slow_trough"] = [np.nanmean(df['slow_trough_v'].to_numpy()) if 'slow_trough_v' in df.columns else np.nan]
+        spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
+        
 
-        full_dataI = []
-        full_dataV = []
-        full_subt = []
-        for x in sweepList:
-            abf.setSweep(x)
-            full_dataI.append(abf.sweepC)
-            full_dataV.append(abf.sweepY)
-        full_dataI = np.vstack(full_dataI) 
-        full_dataV = np.vstack(full_dataV) 
-        decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, _ = exp_decay_factor(abf.sweepX, np.nanmean(full_dataV,axis=0), np.nanmean(full_dataI,axis=0), 3000, abf_id=abf.abfID)
-        temp_spike_df["Taum (Fast)"] = [decay_fast]
-        temp_spike_df["Taum (Slow)"] = [decay_slow]
-        temp_spike_df["Curve fit A"] = [curve[0]]
-        temp_spike_df["Curve fit b1"] = [curve[1]]
-        temp_spike_df["Curve fit b2"] = [curve[3]]
-        temp_spike_df["R squared 2 phase"] = [r_squared_2p]
-        temp_spike_df["R squared 1 phase"] = [r_squared_1p]
-        if r_squared_2p > r_squared_1p:
-            temp_spike_df["Best Fit"] = [2]
-        else:
-            temp_spike_df["Best Fit"] = [1]
-        return  temp_spike_df, df, temp_running_bin
+    full_dataI = []
+    full_dataV = []
+    full_subt = []
+    for x in sweepList:
+        abf.setSweep(x)
+        full_dataI.append(abf.sweepC)
+        full_dataV.append(abf.sweepY)
+    full_dataI = np.vstack(full_dataI) 
+    full_dataV = np.vstack(full_dataV) 
+    #calculate the sag
+    decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, _ = exp_decay_factor(abf.sweepX, np.nanmean(full_dataV,axis=0), np.nanmean(full_dataI,axis=0), 3000, abf_id=abf.name)
+    temp_spike_df["Taum (Fast)"] = [decay_fast]
+    temp_spike_df["Taum (Slow)"] = [decay_slow]
+    temp_spike_df["Curve fit A"] = [curve[0]]
+    temp_spike_df["Curve fit b1"] = [curve[1]]
+    temp_spike_df["Curve fit b2"] = [curve[3]]
+    temp_spike_df["R squared 2 phase"] = [r_squared_2p]
+    temp_spike_df["R squared 1 phase"] = [r_squared_1p]
+    if r_squared_2p > r_squared_1p:
+        temp_spike_df["Best Fit"] = [2]
+    else:
+        temp_spike_df["Best Fit"] = [1]
+    return  temp_spike_df, df, temp_running_bin
                 
 
