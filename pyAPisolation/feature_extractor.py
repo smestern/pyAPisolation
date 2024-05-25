@@ -7,7 +7,8 @@ import pandas as pd
 import pyabf
 import copy
 import multiprocessing as mp
-from ipfx import feature_extractor, spike_detector, time_series_utils
+import ipfx.spike_detector
+from ipfx import feature_extractor
 from ipfx import subthresh_features as subt
 import scipy.signal as signal
 import logging
@@ -100,18 +101,18 @@ def process_file(file_path, param_dict, plot_sweeps, protocol_name):
     Returns:
         spike_dataframe, spikewise_dataframe, running_bin_data_frame : _description_
     """
-    #try:
-    abf = pyabf.ABF(file_path, loadData=False)           
-    if protocol_name in abf.protocol: 
-        print(file_path + ' import')
-        abf = pyabf.ABF(file_path, loadData=True)  #if its the correct protocol, we will reload the abf
-        temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
-        return temp_spike_df, df, temp_running_bin
-    else:
-        print('Not correct protocol: ' + abf.protocol)
+    try:
+        abf = pyabf.ABF(file_path, loadData=False)           
+        if protocol_name in abf.protocol: 
+            print(file_path + ' import')
+            abf = pyabf.ABF(file_path, loadData=True)  #if its the correct protocol, we will reload the abf
+            temp_spike_df, df, temp_running_bin = analyze_abf(abf, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
+            return temp_spike_df, df, temp_running_bin
+        else:
+            print('Not correct protocol: ' + abf.protocol)
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    except:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-    #except:
-    return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 
 def analyze_abf(abf, sweeplist=None, plot=-1, param_dict=None):
@@ -574,29 +575,62 @@ if __name__ == '__main__':
     mp.freeze_support()
 
 
+### IPFX FIXES
+# here we have a few functions that are used to fix the IPFX package, since there is a few errors
+# in the original code. The functions are copied from the IPFX package and modified to work with
+# the current version of the package. The functions are:
+# find_downstroke_indexes
 
+# def find_downstroke_indexes(v, t, peak_indexes, trough_indexes, clipped=None, filter=10., dvdt=None):
+#     """Find indexes of minimum voltage (troughs) between spikes.
 
-# def compute_sweepwise_current_injection_features(sweepC, real_sweep_number):
-#     current_injection_features = {}
-#     #
-#     #get the unique current injections, only nonzero
-#     unique_current_injections = np.unique(sweepC[np.flatnonzero(sweepC)])
-#     #figure out how many current injections there are, if there are more than 6, we will only take the first 3 and last 3
-#     if len(unique_current_injections) > 6:
-#         unique_current_injections = np.hstack((unique_current_injections[:3], unique_current_injections[-3:]))
-#     #append them in the order they appear in the sweepC array
-#     unique_negative_current_injections = unique_current_injections[unique_current_injections<0]
-#     unique_positive_current_injections = unique_current_injections[unique_current_injections>0]
-#     if len(unique_negative_current_injections) > 0:
-#         for i, current_injection in enumerate(unique_negative_current_injections[:1]): #here we are only using the first hyperpolarizing current injection
-#             #THIS IS basically a special case for INOUE lab standard. However, we are neglecting information about the other hyperpolarizing current injections
-#             current_injection_features[f"sweep_{real_sweep_number}_hyperpolarizing_{str(i)}_current"] = current_injection
-#          #if there are current injections that are non-positive and have not been accounted for
-#         #stack the remaining current injections
-#         if len(unique_negative_current_injections) > 1:
-#             unique_positive_current_injections = np.hstack((unique_positive_current_injections, unique_negative_current_injections[1:]))
+#     Parameters
+#     ----------
+#     v : numpy array of voltage time series in mV
+#     t : numpy array of times in seconds
+#     peak_indexes : numpy array of spike peak indexes
+#     trough_indexes : numpy array of threshold indexes
+#     clipped: boolean array - False if spike not clipped by edge of window
+#     filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz (optional, default 10)
+#     dvdt : pre-calculated time-derivative of voltage (optional)
 
-#     if len(unique_positive_current_injections) > 0:
-#         for i, current_injection in enumerate(unique_positive_current_injections):
-#             current_injection_features[f"sweep_{real_sweep_number}_{str(i)}_current"] = current_injection
-#     return current_injection_features
+#     Returns
+#     -------
+#     downstroke_indexes : numpy array of downstroke indexes
+#     """
+
+#     if not trough_indexes.size:
+#         return np.array([])
+
+#     if dvdt is None:
+#         dvdt = tsu.calculate_dvdt(v, t, filter)
+
+#     if clipped is None:
+#         clipped = np.zeros_like(peak_indexes, dtype=bool)
+
+#     if len(peak_indexes) < len(trough_indexes):
+#         raise er.FeatureError("Cannot have more troughs than peaks")
+#     # Taking this out...with clipped info, should always have the same number of points
+#     #     peak_indexes = peak_indexes[:len(trough_indexes)]
+
+#     valid_peak_indexes = peak_indexes[~clipped].astype(int)
+#     valid_trough_indexes = trough_indexes[~clipped].astype(int)
+
+#     downstroke_indexes = np.zeros_like(peak_indexes) * np.nan
+
+#     #handle argmin of empty array
+#     zipped_idxs = []
+#     for i,j in zip(valid_peak_indexes, valid_trough_indexes):
+#         #if j is less than i just add one
+#         if j <= i:
+#             j = i+1
+#         zipped_idxs.append((i, j))
+
+#     downstroke_index_values = [np.argmin(dvdt[peak:trough]) + peak for peak, trough
+#                          in zipped_idxs]
+#     downstroke_indexes[~clipped] = downstroke_index_values
+
+#     return downstroke_indexes
+
+#override
+#ipfx.spike_detector.find_downstroke_indexes = find_downstroke_indexes

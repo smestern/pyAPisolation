@@ -13,13 +13,28 @@ from joblib import dump, load
 from pyAPisolation.feature_extractor import folder_feature_extract, save_data_frames, default_dict
 from pyAPisolation.patch_utils import load_protocols
 
+
+COLS_TO_SKIP = ['Best Fit', 'Curve fit b1', #random / moving api
+                 'foldername', 'protocol', #not a feature
+                 ]
+
+
 def test_feature_extractor():
     # Load the known good df
     df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
 
     # Run the feature extractor
-    _, feat_df,_ = folder_feature_extract(f'/home/smestern/Dropbox/sara_cell_v2', default_dict)
+    _, feat_df,_ = folder_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), default_dict)
     
+
+    #sort both by filename
+    df = df.sort_values(by='filename').reset_index(drop=True)
+    feat_df = feat_df.sort_values(by='filename').reset_index(drop=True)
+
+    # Drop the columns that are not tested against
+    df = df.drop(columns=COLS_TO_SKIP)
+    feat_df = feat_df.drop(columns=COLS_TO_SKIP)
+
     # Compare the two dataframes
     if feat_df.equals(df):
         print("Dataframes are equal")
@@ -34,6 +49,9 @@ def test_feature_extractor():
                 if np.issubdtype(df[col].dtype, np.number):
                     col1 = df[col].to_numpy()
                     col2 = feat_df[col].to_numpy()
+                    #nan_to_num the data to -999
+                    col1 = np.nan_to_num(col1, nan=-999)
+                    col2 = np.nan_to_num(col2, nan=-999)
                     #compute the mean perecentage error
                     mpe = np.nanmean(np.abs(col1 - col2)/col1)
                     if mpe < 0.01:
@@ -57,6 +75,20 @@ def test_feature_extractor():
         print("Dataframes are equal")
         return
     else:
+        #write to excel for manual inspection
+        with pd.ExcelWriter('diffs.xlsx') as writer:
+            df.to_excel(writer, sheet_name='known_good_df')
+            feat_df.to_excel(writer, sheet_name='feat_df')
+            #also write the differences
+            diff_df = pd.DataFrame({'col': unequal_cols, 'diff': diff})
+            diff_df.to_excel(writer, sheet_name='diffs')
+
+            df_unequal = df[unequal_cols]
+            feat_df_unequal = feat_df[unequal_cols]
+
+            df_unequal.join(feat_df_unequal, lsuffix='_known_good', rsuffix='_feat').to_excel(writer, sheet_name='unequal_cols')
+
+
         assert False, f"Dataframes are not equal, mean percent error is {np.nanmean(diff)*100}"
 
 if __name__ == '__main__':
