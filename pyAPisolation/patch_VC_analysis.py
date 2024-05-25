@@ -13,9 +13,6 @@ from ipfx import subthresh_features as subt
 from patch_utils import find_stim_changes, time_to_idx
 import pyabf
 
-#def _x_inter(res):
-
-
 def vc_sweepwise_linregress(dataX, dataY, dataC, tstart=None, tend=None):
     if tstart is None:
         stim_ = find_stim_changes(dataC)
@@ -23,7 +20,7 @@ def vc_sweepwise_linregress(dataX, dataY, dataC, tstart=None, tend=None):
     else:
         idx_on = time_to_idx(dataX, start)
     
-    baseline_I = np.nanmean(dataY[:, :idx_on]S, axis=1)
+    baseline_I = np.nanmean(dataY[:, :idx_on], axis=1)
     resp_I = np.amax(dataY[:, idx_on:], axis=1)
     holding_v = np.nanmean(dataC[:, :idx_on])
     res = stats.linregress()
