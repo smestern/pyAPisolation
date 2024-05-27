@@ -16,8 +16,9 @@ from http.server import HTTPServer, CGIHTTPRequestHandler
 import matplotlib.pyplot as plt
 import anndata as ad
 from .web_viz_config import web_viz_config
+from .tsdatabase import tsDatabase
 import shutil
-from .flask_app import traceserver
+from .flask_app import tsServer
 import logging
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,18 @@ def generate_plots(df, static, filename='filename', foldername='foldername.1'):
             
             full_y.append(fp)
     return full_y
+
+
+
+class ephysDatabase (tsDatabase):
+    def __init__(self, database_file, config=None, **kwargs):
+        self.super().__init__(database_file, config, **kwargs)
+
+
+
+
+
+
 
 
 def main(database_file=None, config=None, static=False):
@@ -212,7 +225,7 @@ def main(database_file=None, config=None, static=False):
         server_object.serve_forever()
     else:
         print("=== Running Server ===")
-        traceserver(config=config, static=False).run()
+        tsServer(config=config, static=False).run()
 
 
 

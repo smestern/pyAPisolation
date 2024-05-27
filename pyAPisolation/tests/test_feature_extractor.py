@@ -1,5 +1,5 @@
 ###############################################################################
-# This script will ensure that feature extration is working properly
+# This script will ensure that feature extraction is working properly
 #
 # Path: pyAPisolation/tests/test_feature_extractor.py
 # We want to compare the output df to a known good df
@@ -19,12 +19,19 @@ COLS_TO_SKIP = ['Best Fit', 'Curve fit b1', #random / moving api
                  ]
 
 
+def test_dataframe_save():
+    # Run the feature extractor
+    spike, feat_df, running = folder_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), default_dict)
+    #also test the save_data_frames function
+    save_data_frames(spike, feat_df, running, root_fold=os.path.dirname(__file__))
+    #checked manually later
+
 def test_feature_extractor():
     # Load the known good df
     df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
 
     # Run the feature extractor
-    _, feat_df,_ = folder_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), default_dict)
+    spike, feat_df, running = folder_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), default_dict)
     
     #sort both by filename, index by filename
     df = df.sort_values(by='filename').set_index('filename')
@@ -90,5 +97,8 @@ def test_feature_extractor():
 
         assert False, f"Dataframes are not equal, mean percent error is {np.nanmean(diff)*100}"
 
+
+
 if __name__ == '__main__':
+    test_dataframe_save()
     test_feature_extractor()

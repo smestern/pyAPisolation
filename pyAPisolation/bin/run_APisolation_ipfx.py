@@ -69,13 +69,6 @@ def main():
         tag = str(tag)
     except:
         tag = ""
-    plot_sweeps = input("Enter the sweep Numbers to plot [seperated by a comma] (0 to plot all sweeps, -1 to plot no sweeps): ")
-    try:
-        plot_sweeps = np.fromstring(plot_sweeps, dtype=int, sep=',')
-        if plot_sweeps.shape[0] < 1:
-            plot_sweeps = np.array([-1])
-    except:
-        plot_sweeps = -1
 
     
     if proto == -1:
@@ -142,7 +135,7 @@ def main():
     print(f"Running analysis with, dVdt thresh: {dv_cut}mV/s, thresh to peak max: {tp_cut}s, thresh to peak min height: {min_cut}mV, and min peak voltage: {min_peak}mV")
     param_dict = {'filter': filter, 'dv_cutoff':dv_cut, 'start': lowerlim, 'end': upperlim, 'max_interval': tp_cut, 'min_height': min_cut, 'min_peak': min_peak, 'thresh_frac': percent, 
     'stim_find': bstim_find, 'bessel_filter': savfilter}
-    df = folder_feature_extract(files, param_dict, plot_sweeps, protocol_name)
+    df = folder_feature_extract(files, param_dict,  protocol_name)
     print(f"Ran analysis with, dVdt thresh: {dv_cut}mV/s, thresh to peak max: {tp_cut}s, thresh to peak min height: {min_cut}mV, and min peak voltage: {min_peak}mV")
     save_data_frames(df[0], df[1], df[2], root_fold, tag)
     settings_col = ['dvdt Threshold', 'threshold to peak max time','threshold to peak min height', 'min peak voltage', 'allen filter', 'sav filter', 'protocol_name']

@@ -50,7 +50,7 @@ class cellData(object):
             self.file = file
             self.fileName = file.split('/')[-1]
             self.filePath = os.path.abspath(file)
-            self.name = os.path.basename(file)
+            self.name = '.'.join(os.path.basename(file).split('.')[:-1])
             self._load_from_file()
             self.protocol = self._file_obj.protocol
         else:

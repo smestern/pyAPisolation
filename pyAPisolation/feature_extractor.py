@@ -31,16 +31,15 @@ logger.info('Feature extractor loaded')
 IC1_SPECIFIC_FUNCTIONS = True
 default_dict = {'start': 0, 'end': 0, 'filter': 0, 'stim_find': True}
 
-def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1', n_jobs=1):
+def folder_feature_extract(files, param_dict=None, protocol_name='IC1', n_jobs=1):
     """
     Runs the full ipfx / smestern feature extraction pipeline over a folder of files, list of files, or a list of cellData objects.
     Returns a dataframe of the full data as returned by the ipfx feature extractor. Consists of all the sweeps in the files stacked on top of each other.
     Args:
-        files (list): _description_
+        files (list, str, cellData): The list of files, the folder of files, or the list of cellData objects to be analyzed.
         param_dict (dict): _description_
         plot_sweeps (int, bool, optional): _description_. Defaults to -1.
         protocol_name (str, optional): _description_. Defaults to 'IC1'.
-
     Returns:
         df_raw_out: A dataframe of the full data as returned by the ipfx feature extractor. Consists of all the sweeps in the files stacked on top of each other.
         df_spike_count: The standard dataframe of the spike count data. As designed at the inoue lab. Each cell will have a row in this dataframe. returns not only
@@ -66,7 +65,7 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     #run the feature extractor
     if n_jobs > 1: #if we are using multiprocessing
         pool = mp.Pool(processes=n_jobs)
-        results = [pool.apply(process_file, args=(file, param_dict, plot_sweeps, protocol_name)) for file in filelist]
+        results = [pool.apply(process_file, args=(file, param_dict, protocol_name)) for file in filelist]
         pool.close()
         ##split out the results
         for result in results:
@@ -78,7 +77,7 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     #if we are not using multiprocessing
     else:
         for f in filelist:
-            temp_df_spike_count, temp_full_df, temp_running_bin = process_file(f, copy.deepcopy(param_dict), plot_sweeps, protocol_name)
+            temp_df_spike_count, temp_full_df, temp_running_bin = process_file(f, copy.deepcopy(param_dict), protocol_name)
             spike_count.append(temp_df_spike_count)
             df_full.append(temp_full_df)
             df_running_avg.append(temp_running_bin)
@@ -89,7 +88,7 @@ def folder_feature_extract(files, param_dict, plot_sweeps=-1, protocol_name='IC1
     df_running_avg_count = pd.concat(df_running_avg, sort=False)
     return df_raw_out, df_spike_count, df_running_avg_count
 
-def process_file(file_path, param_dict, plot_sweeps, protocol_name):
+def process_file(file_path, param_dict, protocol_name):
     """Takes an file and runs the feature extractor on it. Filters the protocol etc.
     Essentially a wrapper for the feature extractor. As when there is an error we dont want to stop the whole program, we just want to skip the abf.
     Args:
@@ -105,7 +104,7 @@ def process_file(file_path, param_dict, plot_sweeps, protocol_name):
     file = cellData(file=file_path)   
     if protocol_name in file.protocol: 
         print(file_path + ' import')
-        temp_spike_df, df, temp_running_bin = analyze_cell(file, sweeplist=None, plot=plot_sweeps, param_dict=param_dict)
+        temp_spike_df, df, temp_running_bin = analyze_cell(file, sweeplist=None, param_dict=param_dict)
         return temp_spike_df, df, temp_running_bin
     else:
         print('Not correct protocol: ' + file.protocol)
@@ -114,7 +113,7 @@ def process_file(file_path, param_dict, plot_sweeps, protocol_name):
     return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 
-def analyze_cell(abf, sweeplist=None, plot=-1, param_dict=None):
+def analyze_cell(abf, sweeplist=None, param_dict=None):
     """_summary_
 
     Args:
@@ -191,16 +190,16 @@ def analyze_cell(abf, sweeplist=None, plot=-1, param_dict=None):
     return temp_spike_df, df, temp_running_bin
 
 def analyze_spike_sweep(x, y, c, param_dict, bessel_filter=None):
-    """_summary_
-
-    Args:
-        abf (_type_): _description_
-        sweepNumber (_type_): _description_
-        param_dict (_type_): _description_
-        bessel_filter (_type_, optional): _description_. Defaults to None.
-
-    Returns:
-        _type_: _description_
+    """ This function will run the ipfx feature extractor on a single sweep. It will return the spike_in_sweep and spike_train dataframes.
+    takes:
+        x (np.array): The time array of the sweep
+        y (np.array): The voltage array of the sweep
+        c (np.array): The current array of the sweep
+        param_dict (dict): The dictionary of parameters that will be passed to the feature extractor. defaults to the default_dict
+        bessel_filter (int): The cutoff frequency of the bessel filter. If -1, no filter will be applied. Defaults to None.
+    returns:
+        spike_in_sweep (pd.DataFrame): The dataframe that contains the standard ipfx features for the sweep
+        spike_train (pd.DataFrame): The dataframe that contains the standard ipfx features for the consecutive spikes in the sweep
     """
     spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
     spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])  

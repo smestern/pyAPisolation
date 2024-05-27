@@ -4,7 +4,7 @@ import os
 from scipy.signal import resample, decimate
 import numpy as np
 
-class traceserver:
+class tsServer:
     def __init__(self, config, static=False):
         self.app = Flask(__name__,
                         root_path=config.output_path,
@@ -37,4 +37,4 @@ class traceserver:
         self.app.run()
 
 if __name__ == '__main__':
-    traceserver(config=None, static=False).run()
+    tsServer(config=None, static=False).run()
