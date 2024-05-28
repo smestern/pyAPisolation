@@ -40,7 +40,6 @@ window.onload = function() {
     //create out plotly fr
     var data = [{
         type: 'parcoords',
-        pad: [80,80,80,80],
         line: {
         colorscale: 'Plotly',
         color: unpack(data_tb, 'label')
@@ -67,7 +66,7 @@ window.onload = function() {
     var layout = {
         autosize: true,
         margin: {                           // update the left, bottom, right, top margin
-            b: 20, r: 10, t: 20
+            b: 20, r: 20, t: 60
         },
     };
     

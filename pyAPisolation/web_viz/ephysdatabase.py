@@ -57,16 +57,9 @@ def generate_plots(df, static, filename='filename', foldername='foldername.1'):
     return full_y
 
 
-
 class ephysDatabase (tsDatabase):
     def __init__(self, database_file, config=None, **kwargs):
         self.super().__init__(database_file, config, **kwargs)
-
-
-
-
-
-
 
 
 def main(database_file=None, config=None, static=False):
@@ -197,11 +190,12 @@ def main(database_file=None, config=None, static=False):
     if not static:
         #replace the template.js import in the html with 
         #template_dyn.js import
-        script_tag = soup.find_all('script')
-        for tag in script_tag:
-            if tag['src'] == './assets/template.js':
-                tag['src'] = './assets/template_dyn.js'
-                break
+        script_tag = soup.find_all('head')[0]
+        #add a new script tag onto the end of the list
+        new_tag = soup.new_tag('script')
+        new_tag['src'] = 'assets/template_dyn.js'
+        script_tag.append(new_tag)
+
 
     #export everything tot he out_path_folder
     if not os.path.exists(config.output_path):

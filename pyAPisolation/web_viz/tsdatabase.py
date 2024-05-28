@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import tkinter as tk
 from tkinter import filedialog
+import glob
 import bs4
 import json
 import sys
@@ -44,6 +45,7 @@ class tsDatabase:
         self.database = None
         self._raw_database = database_file
         self._load_data()
+        self._search_for_raw_data()
         
     def export(self):
         #todo
@@ -93,13 +95,24 @@ class tsDatabase:
 
     def _search_for_raw_data(self):
         #check for raw data. If the raw data is not present, search for it in the folder path
+        globbed_files = np.array([glob.glob(os.path.join(x, '*'+self.config.ext)) for x in self.database[self.config.folder_path].unique()])
+
         logger.info("Searching for raw data")
         for idx, row in self.database.iterrows():
             if not os.path.exists(row[self.config.file_path]):
                 raw_data = os.path.join(row[self.config.folder_path], row[self.config.file_index]+self.config.ext)
                 if os.path.exists(raw_data):
                     self.database.at[idx, self.config.file_path] = raw_data
+                    logger.info(f"Raw data found for {row[self.config.file_index]}")
                 else:
+                    #if the abs path was not found, search the globbed files
+                    found = False
+                    for files in globbed_files:
+                        if row[self.config.file_index]+self.config.ext in files:
+                            self.database.at[idx, self.config.file_path] = files[0]
+                            logger.info(f"Raw data found for {row[self.config.file_index]} in the globbed files")
+                            found = True
+                            break
                     logger.warning(f"Raw data not found for {row[self.config.file_index]}")
         logger.info("Raw data search complete")
         

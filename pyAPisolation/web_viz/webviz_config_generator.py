@@ -3,7 +3,7 @@ import os
 import sys
 import time
 import argparse
-import run_output_to_web
+import pyAPisolation.web_viz.ephysdatabase as ephysdatabase
 import build_database
 import dash_folder_app
 import PySide2.QtWidgets as QtWidgets
@@ -51,7 +51,7 @@ class WebVizConfigGenerator(QtWidgets.QWidget):
         self.filename_column = column
     
     def run_web_viz(self):
-        run_output_to_web.main(database_file=self.data_df, static=(self.backend=='static'))
+        ephysdatabase.main(database_file=self.data_df, static=(self.backend=='static'))
         if self.backend == 'dash':
             app = dash_folder_app.run_app(self.data_df)
             return app
