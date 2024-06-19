@@ -30,7 +30,7 @@ from matplotlib import patches as mpatches
 from matplotlib.widgets import SpanSelector
 print("Loaded external libraries")
 from pyAPisolation.feature_extractor import save_data_frames, save_subthres_data, \
-preprocess_abf, analyze_subthres, preprocess_abf_subthreshold
+process_file, analyze_subthres, preprocess_abf_subthreshold
 from pyAPisolation.patch_subthres import exp_decay_2p
 from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
 import time
@@ -473,7 +473,7 @@ class analysis_gui(object):
             self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
             self.current_filter = self.param_dict['bessel_filter']
         else:
-            if (os.path.abspath(self.abf.filePath) == os.path.abspath(self.selected_abf)) and (self.param_dict['bessel_filter'] == self.current_filter):
+            if (os.path.abspath(self.abf.abfFilePath) == os.path.abspath(self.selected_abf)) and (self.param_dict['bessel_filter'] == self.current_filter):
                 pass
             else:
                 self.abf = self.filter_abf(pyabf.ABF(self.selected_abf))
@@ -526,7 +526,7 @@ class analysis_gui(object):
                 popup.setLabelText("Processing file " + str(i) + " of " + str(len(filelist)))
             pool = mp.Pool(mp.cpu_count())
 
-            results = [pool.apply_async(preprocess_abf, args=(file, copy.deepcopy(param_dict), False, protocol_name), callback=partial(update_iteration, i=i)) for (i, file) in enumerate(filelist)]
+            results = [pool.apply_async(process_file, args=(file, copy.deepcopy(param_dict), protocol_name), callback=partial(update_iteration, i=i)) for (i, file) in enumerate(filelist)]
             
             ##split out the results
             pool.close()
@@ -542,7 +542,7 @@ class analysis_gui(object):
         else:
             for i, f in enumerate(filelist):
                 popup.setValue(i)
-                temp_df_spike_count, temp_full_df, temp_running_bin = preprocess_abf(f, copy.deepcopy(param_dict), False, protocol_name)
+                temp_df_spike_count, temp_full_df, temp_running_bin = process_file(f, copy.deepcopy(param_dict),protocol_name)
                 spike_count.append(temp_df_spike_count)
                 df_full.append(temp_full_df)
                 df_running_avg.append(temp_running_bin)
