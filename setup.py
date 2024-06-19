@@ -27,7 +27,7 @@ setup(
     },
     package_data={'': ['*.pt']},
     packages=find_packages(
-        include=['pyAPisolation', 'pyAPisolation.dev', 'web_viz'],
+        include=['pyAPisolation', 'pyAPisolation.dev', 'web_viz', 'loadFile'],
         exclude=["tests", "build", "dist"]
     ),
 )
