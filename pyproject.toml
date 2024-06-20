@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyAPisolation"
+version = "0.7.0"
+dependencies = [
+    "numpy>=1.21.0, <1.24",
+    "h5py>=2.10",
+    "pyabf",
+    "matplotlib",
+    "pandas",
+    "scipy",
+    "anndata",
+    "scikit-learn",
+    "joblib",
+    "allensdk"
+]
+
+
+[tool.setuptools.packages.find]
+where = ["."]  # list of folders that contain the packages (["."] by default)
+include = ["pyAPisolation"]  # package names should match these glob patterns (["*"] by default)
+exclude = ["tests"]  # exclude packages matching these glob patterns (empty by default)
+namespaces = false  # to disable scanning PEP 420 namespaces (true by default)s
+
+[project.gui-scripts]
+spike_finder = "pyAPisolation.bin:run_APisolation_gui"
+
+[project.optional-dependencies]
+gui = ["PySide2", "pyqtgraph"]
+web = ["dash", 
+        "flask",
+        "dash_ag_grid",
+        "dash_bootstrap_components",
+        "beautifulsoup4",]
+dev = ["torch"]
+full = ["PySide2", "pyqtgraph", "dash", 
+        "flask",
+        "dash_ag_grid",
+        "dash_bootstrap_components",
+        "beautifulsoup4",
+        ]
