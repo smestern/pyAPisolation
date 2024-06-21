@@ -1002,7 +1002,7 @@ class PandasModel(QAbstractTableModel):
         )
         self.layoutChanged.emit()
 
-if __name__ == "__main__":
+def main():
     mp.freeze_support()
     app = QApplication([])
     widget = analysis_gui()
@@ -1013,3 +1013,8 @@ if __name__ == "__main__":
     #widget.children()[1].raise_()
 
     sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()
+

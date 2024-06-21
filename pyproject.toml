@@ -21,12 +21,14 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]  # list of folders that contain the packages (["."] by default)
-include = ["pyAPisolation"]  # package names should match these glob patterns (["*"] by default)
+include = ["pyAPisolation.*"]  # package names should match these glob patterns (["*"] by default)
 exclude = ["tests"]  # exclude packages matching these glob patterns (empty by default)
-namespaces = false  # to disable scanning PEP 420 namespaces (true by default)s
 
-[project.gui-scripts]
-spike_finder = "pyAPisolation.bin:run_APisolation_gui"
+[project.scripts]
+spike_finder = "pyAPisolation.bin:run_APisolation_gui.main"
+
+[tool.setuptools.package-data]
+"*" = ["*.pzfx", "*.ui"]
 
 [project.optional-dependencies]
 gui = ["PySide2", "pyqtgraph"]
