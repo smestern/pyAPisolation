@@ -47,5 +47,5 @@ def test_x_y_c():
 
     
 
-
-test_x_y_c()
+if __name__ == "__main__":
+    test_x_y_c()

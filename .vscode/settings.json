@@ -1,15 +1,8 @@
 {
     "python.pythonPath": "C:\\Users\\Smestern\\Anaconda3\\envs\\Ipfx\\python.exe",
     "python.testing.pytestArgs": [
-        "pyAPisolation"
+        "tests"
     ],
-    "python.testing.unittestEnabled": true,
-    "python.testing.pytestEnabled": false,
-    "python.testing.unittestArgs": [
-        "-v",
-        "-s",
-        "./tests",
-        "-p",
-        "*test*.py"
-    ]
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
 }
