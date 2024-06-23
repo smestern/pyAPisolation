@@ -1,6 +1,4 @@
-name = 'pyAPisolation'
-version = '0.1.0'
-## we need to post install hook to install ipfx, since its a bit of a nightmare
+
 ## to install.
 import os
 import sys
@@ -14,5 +12,10 @@ def install_ipfx():
 #only call if ipfx is not installed
 try:
     import ipfx
-except ImportError:
+except:
     install_ipfx()
+
+from . import patch_utils
+from . import dataset
+from . import feature_extractor
+from . import ipfx_df
