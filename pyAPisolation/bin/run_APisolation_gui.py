@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import multiprocessing as mp
 import matplotlib
-matplotlib.use('Qtagg')
+matplotlib.use('QtAgg')
 
 from sklearn.ensemble import IsolationForest
 from sklearn.impute import SimpleImputer
