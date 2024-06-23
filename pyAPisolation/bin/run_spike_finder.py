@@ -29,6 +29,7 @@ from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 from matplotlib.widgets import SpanSelector
 print("Loaded external libraries")
+#import pyAPisolation
 from pyAPisolation.feature_extractor import save_data_frames, save_subthres_data, \
 process_file, analyze_subthres, preprocess_abf_subthreshold
 from pyAPisolation.patch_subthres import exp_decay_2p
@@ -1002,7 +1003,7 @@ class PandasModel(QAbstractTableModel):
         )
         self.layoutChanged.emit()
 
-if __name__ == "__main__":
+def main():
     mp.freeze_support()
     app = QApplication([])
     widget = analysis_gui()
@@ -1013,3 +1014,8 @@ if __name__ == "__main__":
     #widget.children()[1].raise_()
 
     sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()
+

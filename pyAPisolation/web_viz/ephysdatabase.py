@@ -197,7 +197,7 @@ def main(database_file=None, config=None, static=False):
         script_tag.append(new_tag)
 
 
-    #export everything tot he out_path_folder
+    #export everything to the out_path_folder
     if not os.path.exists(config.output_path):
         os.makedirs(config.output_path)
     

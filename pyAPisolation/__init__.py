@@ -1,2 +1,21 @@
-name = 'pyAPisolation'
-from . import dev
+
+## to install.
+import os
+import sys
+import subprocess
+
+# install ipfx without deps
+def install_ipfx():
+    subprocess.run([sys.executable, "-m", "pip", "install", "ipfx", "--no-deps"])
+
+    
+#only call if ipfx is not installed
+try:
+    import ipfx
+except:
+    install_ipfx()
+
+from . import patch_utils
+from . import dataset
+from . import feature_extractor
+from . import ipfx_df
