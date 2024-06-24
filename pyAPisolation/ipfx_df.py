@@ -8,8 +8,8 @@ import numpy as np
 import os
 import pandas as pd
 
-from .patch_utils import *
-from .patch_subthres import *
+from .patch_utils import df_select_by_col, build_running_bin
+from .patch_subthres import exp_decay_factor
 
 ipfx_train_feature_labels =['adapt',  'isi_cv', 'mean_isi', 'median_isi', 
        'avg_rate']
@@ -138,7 +138,6 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
 
 
     if spike_count > 0:
-        
         # Calculate running averages
         trough_average = build_running_bin(spike_in_sweep['fast_trough_v'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
         peak_average = build_running_bin(spike_in_sweep['peak_v'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
@@ -225,13 +224,7 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
         dict_spike_df["spike_AHP height 1" + real_sweep_number + " "] = np.nan
         dict_spike_df["latency_all_spikes" + real_sweep_number + ""] = np.nan
         dict_spike_df["spike_width" + real_sweep_number + "1"] = np.nan
-
-
-
-    
     sweep_running_bin['Sweep Number'] = [real_sweep_number]
-    
-  
     temp_running_bin = pd.concat([temp_running_bin, sweep_running_bin], ignore_index=True)
     #append the dict as new columns to the temp_spike_df
     temp_spike_df = temp_spike_df.assign(**dict_spike_df)
@@ -286,31 +279,8 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
         temp_spike_df["mean_downstroke"] = [np.nanmean(df['downstroke'].to_numpy())]
         temp_spike_df["mean_fast_trough"] = [np.nanmean(df['fast_trough_v'].to_numpy())]
         temp_spike_df["mean_slow_trough"] = [np.nanmean(df['slow_trough_v'].to_numpy()) if 'slow_trough_v' in df.columns else np.nan]
-        spiketimes = np.transpose(np.vstack((np.ravel(df['peak_index'].to_numpy()), np.ravel(df['sweep Number'].to_numpy()))))
         
 
-    full_dataI = []
-    full_dataV = []
-    full_subt = []
-    for x in sweepList:
-        abf.setSweep(x)
-        full_dataI.append(abf.sweepC)
-        full_dataV.append(abf.sweepY)
-    full_dataI = np.vstack(full_dataI) 
-    full_dataV = np.vstack(full_dataV) 
-    #calculate the sag
-    decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, _ = exp_decay_factor(abf.sweepX, np.nanmean(full_dataV,axis=0), np.nanmean(full_dataI,axis=0), 3000, abf_id=abf.name)
-    temp_spike_df["Taum (Fast)"] = [decay_fast]
-    temp_spike_df["Taum (Slow)"] = [decay_slow]
-    temp_spike_df["Curve fit A"] = [curve[0]]
-    temp_spike_df["Curve fit b1"] = [curve[1]]
-    temp_spike_df["Curve fit b2"] = [curve[3]]
-    temp_spike_df["R squared 2 phase"] = [r_squared_2p]
-    temp_spike_df["R squared 1 phase"] = [r_squared_1p]
-    if r_squared_2p > r_squared_1p:
-        temp_spike_df["Best Fit"] = [2]
-    else:
-        temp_spike_df["Best Fit"] = [1]
     return  temp_spike_df, df, temp_running_bin
                 
 

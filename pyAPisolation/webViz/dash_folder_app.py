@@ -1,6 +1,6 @@
 # os sys imports
 from pyAPisolation.loadFile import loadFile
-from pyAPisolation.feature_extractor import *
+from pyAPisolation.featureExtractor import *
 from pyAPisolation.patch_ml import *
 import os
 import sys
@@ -144,10 +144,10 @@ class live_data_viz():
     def _run_analysis(self, dir=None, df=None):
         if df is None:
             if dir is not None:
-                _, df, _ = folder_feature_extract(
+                _, df, _ = batch_feature_extract(
                     os.path.abspath(dir), default_dict, protocol_name='')
             else:
-                _, df, _ = folder_feature_extract(os.path.abspath(
+                _, df, _ = batch_feature_extract(os.path.abspath(
                     '../data/'), default_dict, protocol_name='')
         else:
             if isinstance(df, pd.DataFrame):

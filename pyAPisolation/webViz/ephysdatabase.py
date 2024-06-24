@@ -9,7 +9,7 @@ import sys
 from scipy.signal import resample, decimate
 from pyAPisolation.patch_ml import *
 from pyAPisolation.patch_utils import *
-from pyAPisolation.feature_extractor import *
+from pyAPisolation.featureExtractor import *
 from pyAPisolation.loadFile import loadABF
 import pyabf
 from http.server import HTTPServer, CGIHTTPRequestHandler

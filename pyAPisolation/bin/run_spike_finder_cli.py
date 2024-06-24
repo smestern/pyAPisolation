@@ -16,7 +16,7 @@ import pyabf
 
 from numpy import genfromtxt
 print("Loaded external libraries")
-from pyAPisolation.feature_extractor import folder_feature_extract, save_data_frames
+from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames
 from pyAPisolation.patch_utils import load_protocols
 
 
@@ -135,7 +135,7 @@ def main():
     print(f"Running analysis with, dVdt thresh: {dv_cut}mV/s, thresh to peak max: {tp_cut}s, thresh to peak min height: {min_cut}mV, and min peak voltage: {min_peak}mV")
     param_dict = {'filter': filter, 'dv_cutoff':dv_cut, 'start': lowerlim, 'end': upperlim, 'max_interval': tp_cut, 'min_height': min_cut, 'min_peak': min_peak, 'thresh_frac': percent, 
     'stim_find': bstim_find, 'bessel_filter': savfilter}
-    df = folder_feature_extract(files, param_dict,  protocol_name)
+    df = batch_feature_extract(files, param_dict,  protocol_name)
     print(f"Ran analysis with, dVdt thresh: {dv_cut}mV/s, thresh to peak max: {tp_cut}s, thresh to peak min height: {min_cut}mV, and min peak voltage: {min_peak}mV")
     save_data_frames(df[0], df[1], df[2], root_fold, tag)
     settings_col = ['dvdt Threshold', 'threshold to peak max time','threshold to peak min height', 'min peak voltage', 'allen filter', 'sav filter', 'protocol_name']

@@ -15,7 +15,7 @@ import pyabf
 import logging
 from pyAPisolation.patch_subthres import *
 from pyAPisolation.QC import *
-from pyAPisolation.feature_extractor import _merge_current_injection_features
+from pyAPisolation.featureExtractor import _merge_current_injection_features
 print("Load finished")
 def main():
     

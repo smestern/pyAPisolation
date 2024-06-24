@@ -30,9 +30,11 @@ logger.info('Feature extractor loaded')
 IC1_SPECIFIC_FUNCTIONS = True
 default_dict = {'start': 0, 'end': 0, 'filter': 0, 'stim_find': True}
 
-def folder_feature_extract(files, param_dict=None, protocol_name='IC1', n_jobs=1):
+#=== functional interface for programmatic use ===
+
+def batch_feature_extract(files, param_dict=None, protocol_name='IC1', n_jobs=1):
     """
-    Runs the full ipfx / smestern feature extraction pipeline over a folder of files, list of files, or a list of cellData objects.
+    Runs the full ipfx feature extraction pipeline over a folder of files, list of files, or a list of cellData objects.
     Returns a dataframe of the full data as returned by the ipfx feature extractor. Consists of all the sweeps in the files stacked on top of each other.
     Args:
         files (list, str, cellData): The list of files, the folder of files, or the list of cellData objects to be analyzed.
@@ -87,32 +89,34 @@ def folder_feature_extract(files, param_dict=None, protocol_name='IC1', n_jobs=1
     df_running_avg_count = pd.concat(df_running_avg, sort=False)
     return df_raw_out, df_spike_count, df_running_avg_count
 
-def process_file(file_path, param_dict, protocol_name):
-    """Takes an file and runs the feature extractor on it. Filters the protocol etc.
-    Essentially a wrapper for the feature extractor. As when there is an error we dont want to stop the whole program, we just want to skip the abf.
-    Args:
-        file_path (str, os.path): _description_
-        param_dict (dict): _description_
-        plot_sweeps (bool): _description_
-        protocol_name (str): _description_
+def analyze(file, x,y,c, param_dict):
 
-    Returns:
-        spike_dataframe, spikewise_dataframe, running_bin_data_frame : _description_
+def analyze_sweep(x, y, c, param_dict, bessel_filter=None):
+    """ This function will run the ipfx feature extractor on a single sweep. It will return the spike_in_sweep and spike_train dataframes.
+    takes:
+        x (np.array): The time array of the sweep (1d array)
+        y (np.array): The voltage array of the sweep (1d array)
+        c (np.array): The current array of the sweep (1d array)
+        param_dict (dict): The dictionary of parameters that will be passed to the feature extractor. defaults to the default_dict
+        bessel_filter (int): The cutoff frequency of the bessel filter. If -1, no filter will be applied. Defaults to None.
+    returns:
+        spike_in_sweep (pd.DataFrame): The dataframe that contains the standard ipfx features for the sweep
+        spike_train (pd.DataFrame): The dataframe that contains the standard ipfx features for the consecutive spikes in the sweep
     """
-    #try:
-    file = cellData(file=file_path)   
-    if protocol_name in file.protocol: 
-        print(file_path + ' import')
-        temp_spike_df, df, temp_running_bin = analyze_cell(file, sweeplist=None, param_dict=param_dict)
-        return temp_spike_df, df, temp_running_bin
-    else:
-        print('Not correct protocol: ' + file.protocol)
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-    #except:
-    return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
+    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])  
+    #if the user asks for a filter, apply it
+    if bessel_filter is not None:
+        if bessel_filter != -1:
+            y = filter_bessel(y, 1/10000, bessel_filter)
+    if c.shape[0] < y.shape[0]:
+                c = np.hstack((c, np.full(y.shape[0] - c.shape[0], 0)))
+    spike_in_sweep = spikext.process(x, y, c) #returns the default Dataframe Returned by ipfx
+    spike_train = spiketxt.process(x, y, c, spike_in_sweep) #additional dataframe returned by ipfx, contains the features related to consecutive spikes
+    return spike_in_sweep, spike_train
 
 
-def analyze_cell(abf, sweeplist=None, param_dict=None):
+def analyze_(abf, sweeplist=None, param_dict=None):
     """_summary_
 
     Args:
@@ -170,7 +174,7 @@ def analyze_cell(abf, sweeplist=None, param_dict=None):
         elif param_dict['end'] > real_sweep_length:
             param_dict['end'] = real_sweep_length
         
-        spike_in_sweep, spike_train = analyze_spike_sweep(x[sweepNumber], y[sweepNumber] ,c[sweepNumber], param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by ipfx
+        spike_in_sweep, spike_train = analyze_sweep(x[sweepNumber], y[sweepNumber] ,c[sweepNumber], param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by ipfx
         
         #build the dataframe, this will be the dataframe that is used for the full data, essentially the sweepwise dataframe, each file will have a dataframe like this
         temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict) 
@@ -188,29 +192,29 @@ def analyze_cell(abf, sweeplist=None, param_dict=None):
     
     return temp_spike_df, df, temp_running_bin
 
-def analyze_spike_sweep(x, y, c, param_dict, bessel_filter=None):
-    """ This function will run the ipfx feature extractor on a single sweep. It will return the spike_in_sweep and spike_train dataframes.
-    takes:
-        x (np.array): The time array of the sweep
-        y (np.array): The voltage array of the sweep
-        c (np.array): The current array of the sweep
-        param_dict (dict): The dictionary of parameters that will be passed to the feature extractor. defaults to the default_dict
-        bessel_filter (int): The cutoff frequency of the bessel filter. If -1, no filter will be applied. Defaults to None.
-    returns:
-        spike_in_sweep (pd.DataFrame): The dataframe that contains the standard ipfx features for the sweep
-        spike_train (pd.DataFrame): The dataframe that contains the standard ipfx features for the consecutive spikes in the sweep
+def process_file(file_path, param_dict, protocol_name):
+    """Takes an file and runs the feature extractor on it. Filters the protocol etc.
+    Essentially a wrapper for the feature extractor. As when there is an error we dont want to stop the whole program, we just want to skip the abf.
+    Args:
+        file_path (str, os.path): _description_
+        param_dict (dict): _description_
+        plot_sweeps (bool): _description_
+        protocol_name (str): _description_
+
+    Returns:
+        spike_dataframe, spikewise_dataframe, running_bin_data_frame : _description_
     """
-    spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
-    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])  
-    #if the user asks for a filter, apply it
-    if bessel_filter is not None:
-        if bessel_filter != -1:
-            dataV = filter_bessel(y, 1/10000, bessel_filter)
-    if c.shape[0] < y.shape[0]:
-                c = np.hstack((c, np.full(y.shape[0] - c.shape[0], 0)))
-    spike_in_sweep = spikext.process(x, y, c) #returns the default Dataframe Returned by ipfx
-    spike_train = spiketxt.process(x, y, c, spike_in_sweep) #additional dataframe returned by ipfx, contains the features related to consecutive spikes
-    return spike_in_sweep, spike_train
+    #try:
+    file = cellData(file=file_path)   
+    if protocol_name in file.protocol: 
+        print(file_path + ' import')
+        temp_spike_df, df, temp_running_bin = analyze_cell(file, sweeplist=None, param_dict=param_dict)
+        return temp_spike_df, df, temp_running_bin
+    else:
+        print('Not correct protocol: ' + file.protocol)
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    #except:
+    return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 def sweepNumber_to_real_sweep_number(sweepNumber):
     if sweepNumber < 9:
@@ -256,6 +260,21 @@ def _custom_full_features(x,y,c, param_dict, spike_df):
     except:
         spike_df['QC Mean RMS'] = np.nan
         spike_df['QC Mean Sweep Drift'] = np.nan
+
+    #compute (or try to) some subthreshold features
+    #calculate the sag
+    decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, _ = exp_decay_factor(x[0], np.nanmean(y, axis=0), np.nanmean(c, axis=0), 3000)
+    spike_df["Taum (Fast)"] = [decay_fast]
+    spike_df["Taum (Slow)"] = [decay_slow]
+    spike_df["Curve fit A"] = [curve[0]]
+    spike_df["Curve fit b1"] = [curve[1]]
+    spike_df["Curve fit b2"] = [curve[3]]
+    spike_df["R squared 2 phase"] = [r_squared_2p]
+    spike_df["R squared 1 phase"] = [r_squared_1p]
+    if r_squared_2p > r_squared_1p:
+        spike_df["Best Fit"] = [2]
+    else:
+        spike_df["Best Fit"] = [1]
     return spike_df
 
 
