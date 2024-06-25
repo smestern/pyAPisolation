@@ -351,7 +351,8 @@ pyAPisolation/web_viz/output.html
 /pyAPisolation/web_viz/out.json
 pyAPisolation/web_viz/table.html
 *.xlsx
-*.html
+#*.html
+output.html
 .vscode/settings.json
 .vscode/settings.json
 pyAPisolation.egg-info/SOURCES.txt
