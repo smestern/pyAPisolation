@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import anndata as ad
 from .web_viz_config import web_viz_config
 import shutil
-from .flask_app import tsServer
+from .flaskApp import tsServer
 import logging
 
 logger = logging.getLogger(__name__)

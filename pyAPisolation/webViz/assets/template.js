@@ -6,6 +6,7 @@ window.onload = function() {
         return row[key]; 
         });
     }
+    
 
     function filterByID(ids) {
         if (typeof ids !== 'undefined') {
@@ -21,109 +22,108 @@ window.onload = function() {
         }
     }
 
-
-    function filterByID(ids) {
-        if (typeof ids !== 'undefined') {
-            $table.bootstrapTable('filterBy', { 'cellID': ids })
-        }
-        else {
-            jQuery.get("data/box2_ephys.json").done(function (data) {
-                ids = data.map(function (a) { return a.cellID })
-                $table.bootstrapTable('filterBy', { 'cellID': ids })
-            })
-
-
-        }
-    }
-
-
-    //create out plotly fr
-    var data = [{
-        type: 'parcoords',
-        line: {
-        colorscale: 'Plotly',
-        color: unpack(data_tb, 'label')
-        },
-    
-        dimensions: [{
-        label: 'rheobase_thres',
-        values: unpack(data_tb, 'rheobase_thres')
-        }, {
-        label: 'rheobase_width',
-        values: unpack(data_tb, 'rheobase_width')
-        },{
-        label: 'rheobase_latency',
-        values: unpack(data_tb, 'rheobase_latency')
-        },{
-        label: 'label',
-        values: unpack(data_tb, 'label')
-        }
+    function generate_paracoords(){
+        //create out plotly fr
+        var data = [{
+            type: 'parcoords',
+            line: {
+            colorscale: 'Plotly',
+            color: unpack(data_tb, 'label')
+            },
         
+            dimensions: [{
+            label: 'rheobase_thres',
+            values: unpack(data_tb, 'rheobase_thres')
+            }, {
+            label: 'rheobase_width',
+            values: unpack(data_tb, 'rheobase_width')
+            },{
+            label: 'rheobase_latency',
+            values: unpack(data_tb, 'rheobase_latency')
+            },{
+            label: 'label',
+            values: unpack(data_tb, 'label')
+            }
+            
+            
+            ]
+        }]; // create the data object
         
-        ]
-    }]; // create the data object
-    
-    var layout = {
-        autosize: true,
-        margin: {                           // update the left, bottom, right, top margin
-            b: 20, r: 20, t: 60
-        },
-    };
-    
-    Plotly.newPlot('graphDiv', data, layout, {displaylogo: false}, {responsive: true}); // create the plot
-    var graphDiv = document.getElementById("graphDiv") // get the plot div
-    graphDiv.on('plotly_restyle', function(data){
-        var keys = []
-        var ranges = []
-
-        graphDiv.data[0].dimensions.forEach(function(d) {
-                if (d.constraintrange === undefined){
-                    keys.push(d.label);
-                    ranges.push([-9999,9999]);
-                }
-                else{
-                    keys.push(d.label);
-                    var allLengths = d.constraintrange.flat();
-                    if (allLengths.length > 2){
-                        ranges.push([d.constraintrange[0][0],d.constraintrange[0][1]]); //return only the first filter applied per feature
-
-                    }else{
-                        ranges.push(d.constraintrange);
-                    }
-                    
-                    
-                } // => use this to find values are selected
-        })
-
-        filterByPlot(keys, ranges)
-    }); 
-
-    //umap plot
-    function generate_umap(rows) {
-        data = []
-        var colors = ['#f59582', '#f0320c', '#274f1b', '#d6b376', '#18c912', '#58d4d6', '#071aeb', '#000000']
-        rows.forEach(function (row) {
-            var sweepname = row.IDs0
-            var trace = {
-                type: 'scatter',                    // set the chart type
-                mode: 'markers',                    
-                name: sweepname,
-                y: [row['Umap Y']],
-                x: [row['Umap X']],
-                color: colors[row['label']],
-
-            };
-            data.push(trace);
-        });
-   
         var layout = {
-            dragmode: 'lasso',
             autosize: true,
             margin: {                           // update the left, bottom, right, top margin
-                b: 20, r: 10, t: 20
+                b: 20, r: 20, t: 60
             },
-
         };
+        
+        Plotly.newPlot('graphDiv', data, layout, {displaylogo: false}, {responsive: true}); // create the plot
+        var graphDiv = document.getElementById("graphDiv") // get the plot div
+        graphDiv.on('plotly_restyle', function(data){
+            var keys = []
+            var ranges = []
+
+            graphDiv.data[0].dimensions.forEach(function(d) {
+                    if (d.constraintrange === undefined){
+                        keys.push(d.label);
+                        ranges.push([-9999,9999]);
+                    }
+                    else{
+                        keys.push(d.label);
+                        var allLengths = d.constraintrange.flat();
+                        if (allLengths.length > 2){
+                            ranges.push([d.constraintrange[0][0],d.constraintrange[0][1]]); //return only the first filter applied per feature
+
+                        }else{
+                            ranges.push(d.constraintrange);
+                        }
+                        
+                        
+                    } // => use this to find values are selected
+            })
+
+            filterByPlot(keys, ranges)
+        }); 
+    };
+
+    //encode labels
+    function encode_labels(data, label) {
+        var labels = data.map(function (a) { return a[label] });
+        var unique_labels = [...new Set(labels)];
+        var encoded_labels = labels.map(function (a) { return unique_labels.indexOf(a) });
+        return [encoded_labels, unique_labels];
+    };
+
+
+    //umap plot
+    function generate_umap(rows, keys=['Umap X', 'Umap Y', 'label']) {
+        data = []
+        var colors = ['#f59582', '#f0320c', '#274f1b', '#d6b376', '#18c912', '#58d4d6', '#071aeb', '#000000']
+        var encoded_labels = encode_labels(rows, keys[2]);
+        // make a trace array for each label
+        var x = unpack(rows, keys[0]);
+        var y = unpack(rows, keys[1]); 
+        var trace = {
+            x: x,
+            y: y,
+            mode: 'markers',
+            type: 'scatter',
+            marker: {
+                color: encoded_labels[0],
+                colorscale: colors,
+                size: 10,
+                opacity: 0.8
+            },
+            text: unpack(rows, 'ID'),
+            name: keys[2],
+            hovertemplate: '%{text}',
+            showlegend: true
+        };
+            
+        data.push(trace);
+        var layout = {dragmode: 'lasso',autosize: true,
+            margin: {                           // update the left, bottom, right, top margin
+                b: 20, r: 10, t: 20
+            },};
 
         Plotly.react('graphDiv_scatter', data, layout, { displaylogo: false }, { responsive: true });
         var graphDiv5 = document.getElementById("graphDiv_scatter")
@@ -131,10 +131,7 @@ window.onload = function() {
             var ids = []
             var ranges = []
             if (typeof eventData !== 'undefined') {
-
-                eventData.points.forEach(function (pt) {
-
-
+                eventData.points.forEach(function (pt) { 
                     ids.push(parseInt(pt.data.name));
                 });
             }
@@ -145,10 +142,6 @@ window.onload = function() {
             filterByID(ids);
         });
     };
-
-    generate_umap(data_tb);
-
-
     //table functions
     function traceFormatter(index, row) {
         var html = []
@@ -232,7 +225,6 @@ window.onload = function() {
             el.rheobase_latency >= ranges[2][0] &&
             el.label <= ranges[3][1] &&
             el.label >= ranges[3][0];	
-
             });
         let result = newArray.map(function(a) { return a.ID; });
 
@@ -261,9 +253,6 @@ window.onload = function() {
         }
     }
 
-
-
-
     // create the table
     var data = data_tb
     // find the table div
@@ -276,6 +265,25 @@ window.onload = function() {
     // set the table to be responsive
     $table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
     $table.bootstrapTable('refresh')
+    
+    // generate the parallel coordinates plot
+    generate_paracoords();
+
+    // generate the umap plot as basic plot
+    generate_umap(data_tb, ['Umap X', 'Umap Y', 'label']);
+
+    //find the elements of 
+    var drop_parent = document.getElementById("umap-drop-menu");
+    //get the children and add the event listener
+    var drop_children = drop_parent.children;
+    for (var i = 0; i < drop_children.length; i++) {
+        drop_children[i].addEventListener('click', function (e) {
+            var selected = e.target.innerHTML
+            var keys = ['Umap X', 'Umap Y', selected]
+            generate_umap(data_tb, keys);
+        });
+    }
+
     
 
 };

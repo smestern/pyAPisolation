@@ -45,7 +45,7 @@ def _df_select_by_col(df, string_to_find):
     return df[out]
 
 
-class live_data_viz():
+class dashBackend():
     def __init__(self, dir_path=None, database_file=None):
 
         #either load the database or generate it
@@ -413,7 +413,7 @@ if __name__ == '__main__':
     data_folder = args.data_folder
     data_df = args.data_df
 
-    app = live_data_viz(data_folder, database_file=data_df)
+    app = dashBackend(data_folder, database_file=data_df)
 
     app.app.run(host='0.0.0.0', debug=False)
 

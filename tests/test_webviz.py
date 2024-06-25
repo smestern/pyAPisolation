@@ -1,5 +1,5 @@
-from pyAPisolation.web_viz.tsdatabase import tsDatabase
-from pyAPisolation.web_viz.ephysdatabase import ephysDatabase
+from pyAPisolation.webViz.tsdatabase import tsDatabase
+from pyAPisolation.webViz.ephysdatabase import ephysDatabase
 import pandas as pd
 from joblib import load
 import os

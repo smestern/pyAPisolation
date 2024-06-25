@@ -9,7 +9,7 @@
 
 import os
 from pyAPisolation.utils import arg_wrap
-from . import build_database, ephysdatabase, web_viz_config, dash_folder_app
+from . import build_database, dashApp, ephysDatabase, web_viz_config
 from http.server import HTTPServer, CGIHTTPRequestHandler
 
 def run_web_viz(dir_path=None, database_file=None, config=None, backend='static'):
@@ -28,10 +28,10 @@ def run_web_viz(dir_path=None, database_file=None, config=None, backend='static'
         config = web_viz_config.web_viz_config(**config)
 
     if backend == 'static' or backend == 'dynamic':
-        ephysdatabase.main(database_file=database_file, config=config, static=(backend=='static'))
+        ephysDatabase.main(database_file=database_file, config=config, static=(backend=='static'))
         return
     elif backend == 'dash':
-        app = dash_folder_app.run_app(database_file)
+        app = dashApp.run_app(database_file)
         return app
 
 

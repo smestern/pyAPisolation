@@ -5,7 +5,7 @@ import time
 import argparse
 import pyAPisolation.web_viz.ephysdatabase as ephysdatabase
 import build_database
-import dash_folder_app
+import pyAPisolation.webViz.dashApp as dashApp
 import PySide2.QtWidgets as QtWidgets
 import pandas as pd
 
@@ -53,7 +53,7 @@ class WebVizConfigGenerator(QtWidgets.QWidget):
     def run_web_viz(self):
         ephysdatabase.main(database_file=self.data_df, static=(self.backend=='static'))
         if self.backend == 'dash':
-            app = dash_folder_app.run_app(self.data_df)
+            app = dashApp.run_app(self.data_df)
             return app
         
 

@@ -6,6 +6,7 @@ from tkinter import filedialog
 import bs4
 import json
 import sys
+import logging
 from scipy.signal import resample, decimate
 from pyAPisolation.patch_ml import *
 from pyAPisolation.patch_utils import *
@@ -15,11 +16,13 @@ import pyabf
 from http.server import HTTPServer, CGIHTTPRequestHandler
 import matplotlib.pyplot as plt
 import anndata as ad
-from .web_viz_config import web_viz_config
-from .tsdatabase import tsDatabase
+
+
 import shutil
-from .flask_app import tsServer
-import logging
+from .flaskApp import tsServer
+from .tsDatabase import tsDatabase
+from .web_viz_config import web_viz_config
+
 logger = logging.getLogger(__name__)
 
 _LOCAL_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -88,6 +91,12 @@ def main(database_file=None, config=None, static=False):
     files = list(files)
     fileList = files
 
+    TEMPLATE = os.path.join(_LOCAL_PATH, "template.html")# if not static else os.path.join(_LOCAL_PATH, "template_static.html")
+    with open(TEMPLATE) as inf:
+        txt = inf.read()
+        soup = bs4.BeautifulSoup(txt, 'html.parser')
+
+
     #load the data
     full_dataframe = pd.DataFrame()
     for x in fileList:
@@ -131,6 +140,12 @@ def main(database_file=None, config=None, static=False):
     else:
         umap_data = full_dataframe[config.umap_cols].to_numpy()
 
+    #populate umap-drop-menu 
+    for label in config.umap_labels:
+        full_dataframe[label] = full_dataframe[label].astype(str)
+        umap_drop = soup.find('ul', {'id': 'umap-drop-menu'})
+        temp_opt = f"""<button id="{label}" class="dropdown-item" type="button")">{label}</button>"""
+        umap_drop.append(bs4.BeautifulSoup(temp_opt, 'html.parser'))
     ## handle plots
     if config.plots_path: #if the user has already pregeneated the plots
         plot_data = [os.path.join(config.plots_path, x+".csv") for x in full_dataframe['ID'].to_numpy()]
@@ -165,11 +180,6 @@ def main(database_file=None, config=None, static=False):
     json_str = json.dumps(parsed)
 
     #open our template, and insert the json data
-    TEMPLATE = os.path.join(_LOCAL_PATH, "template.html")# if not static else os.path.join(_LOCAL_PATH, "template_static.html")
-    with open(TEMPLATE) as inf:
-        txt = inf.read()
-        soup = bs4.BeautifulSoup(txt, 'html.parser')
-
     json_var = '  var data_tb = ' + json_str + ' '
 
     tag = soup.new_tag("script")
