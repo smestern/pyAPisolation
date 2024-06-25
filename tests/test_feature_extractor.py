@@ -10,9 +10,9 @@ import os
 import pandas as pd
 import numpy as np
 from joblib import dump, load
-from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, default_dict
+from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, default_dict, analyze_spike_times
 from pyAPisolation.patch_utils import load_protocols
-
+import glob
 
 COLS_TO_SKIP = ['Best Fit', 'Curve fit b1', #random / moving api
                  'foldername', 'protocol', #not a feature
@@ -97,8 +97,16 @@ def test_feature_extractor():
 
         assert False, f"Dataframes are not equal, mean percent error is {np.nanmean(diff)*100}"
 
+def test_analyze_funcs():
+    files = glob.glob(os.path.expanduser('~/Dropbox/sara_cell_v2') + '/**/*.abf', recursive=True)
+    #load the protocols
+    #try to load the protocols
+    spike_times = analyze_spike_times(file=files[1])
+    
+
 
 
 if __name__ == '__main__':
+    test_analyze_funcs()
     test_dataframe_save()
     test_feature_extractor()

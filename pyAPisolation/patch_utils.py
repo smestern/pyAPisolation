@@ -1,10 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import logging
 import pyabf
 from scipy import interpolate
 from scipy.optimize import curve_fit
 import scipy.signal as signal
+from .dataset import cellData
+
+logger = logging.getLogger(__name__)
+
 
 def load_protocols(path):
     protocol = []
@@ -150,5 +155,40 @@ def filter_bessel(data_V, fs, cutoff):
         dataV = data_V
     return dataV
 
-
+def parse_user_input(x=None, y=None, c=None, file=None):
+    """ Try to parse the user input and return the parsed values. The user may pass in a single sweep, a list of sweeps, or a range of sweeps. or a file containing the sweeps. 
+    The function will return the parsed input as a cellData object.
+    """
+    #check if any of the inputs are not None
+    for val in [x, y, c, file]:
+        if val is not None:
+            if isinstance(val, cellData):
+                return val
+            
+    if file is not None:
+        #if file is a cellData object, return it
+        if isinstance(file, cellData):
+            return file
+        logger.info(f"Loading data from file {file}")
+        data = cellData(file)
+        return data
+    elif x is not None and y is not None and c is not None:
+        #try to figure out if its a single sweep, a list of sweeps, or a range of sweeps
+        if isinstance(x, np.ndarray) and isinstance(y, np.ndarray) and isinstance(c, np.ndarray):
+            #check if its a single sweep
+            if x.ndim == 1 and y.ndim == 1 and c.ndim == 1:
+                logger.info("User passed in a single sweep")
+                data = cellData(dataX=x.reshape(1, -1), dataY=y.reshape(1, -1), dataC=c.reshape(1, -1))
+            else:
+                logger.info("User passed in ndarray")
+                data = cellData(dataX=x, dataY=y, dataC=c)
+            return data
+        elif isinstance(x, list) and isinstance(y, list) and isinstance(c, list):
+            logger.info("User passed in a list of sweeps")
+            data = cellData(dataX=x, dataY=y, dataC=c)
+            return data
+        else:
+            raise ValueError("No valid input was passed to the function. Please pass in a file or the dataX, dataY, and dataC arrays")
+    else:
+        raise ValueError("No valid input was passed to the function. Please pass in a file or the dataX, dataY, and dataC arrays")
 

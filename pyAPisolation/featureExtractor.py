@@ -1,5 +1,6 @@
 import glob
 import os
+import functools
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -16,7 +17,7 @@ import logging
 from .ipfx_df import _build_full_df, _build_sweepwise_dataframe, save_data_frames, save_subthres_data
 from .loadFile import loadFile, loadABF
 from .dataset import cellData
-from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_bessel
+from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_bessel, parse_user_input
 from .patch_subthres import exp_decay_factor, membrane_resistance, mem_cap, mem_cap_alt, \
     rmp_mode, compute_sag, exp_decay_factor_alt, exp_growth_factor, determine_subt, df_select_by_col, subthres_a
 from .QC import run_qc
@@ -31,13 +32,133 @@ IC1_SPECIFIC_FUNCTIONS = True
 default_dict = {'start': 0, 'end': 0, 'filter': 0, 'stim_find': True}
 
 #=== functional interface for programmatic use ===
+def analyze(x=None, y=None, c=None, file=None, param_dict=None, return_summary_frames=False):
+    """ Runs the ipfx feature extractor over a single sweep, set of sweeps, or file. Returns the standard ipfx dataframe, and summary dataframes (if requested).
+    Args:
+        x (np.array, optional): The time array of the sweep. Defaults to None.
+        y (np.array, optional): The voltage array of the sweep. Defaults to None.
+        c (np.array, optional): The current array of the sweep. Defaults to None.
+        file (str, optional): The file path of the sweep. Defaults to None.
+        param_dict (dict, optional): The dictionary of parameters that will be passed to the feature extractor. Defaults to None.
+        return_summary_frames (bool, optional): If True, will return the summary dataframes. Defaults to False.
+    Returns:
+        df_raw_out: A dataframe of the full data as returned by the ipfx feature extractor. Consists of all the sweeps in the files stacked on top of each other.
+        (optional) df_spike_count (pd.DataFrame): The dataframe that contains the standard ipfx features for the sweep, oriented sweepwise
+        (optional) df_running_avg_count (pd.DataFrame): The dataframe that contains the standard ipfx features for the consecutive spikes in the sweep
+    """
+    data = parse_user_input(x, y, c, file)
+    #determine what we should return
+    temp_spike_df, df, temp_running_bin = analyze_sweepset(data, sweeplist=None, param_dict=param_dict)
+
+#cache the function
+def analyze_sweep(x=None, y=None, c=None, param_dict=None, bessel_filter=None):
+    """ This function will run the ipfx feature extractor on a single sweep. It will return the spike_in_sweep and spike_train dataframes as returned by the ipfx feature extractor.
+    takes:
+        x (np.array): The time array of the sweep (1d array)
+        y (np.array): The voltage array of the sweep (1d array)
+        c (np.array): The current array of the sweep (1d array)
+        param_dict (dict): The dictionary of parameters that will be passed to the feature extractor. defaults to the default_dict
+        bessel_filter (int): The cutoff frequency of the bessel filter. If -1, no filter will be applied. Defaults to None.
+    returns:
+        spike_in_sweep (pd.DataFrame): The dataframe that contains the standard ipfx features for the sweep
+        spike_train (pd.DataFrame): The dataframe that contains the standard ipfx features for the consecutive spikes in the sweep
+    """ 
+    spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
+    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])  
+    #if the user asks for a filter, apply it
+    if bessel_filter is not None:
+        if bessel_filter != -1:
+            y = filter_bessel(y, 1/10000, bessel_filter)
+    if c.shape[0] < y.shape[0]:
+                c = np.hstack((c, np.full(y.shape[0] - c.shape[0], 0)))
+    spike_in_sweep = spikext.process(x, y, c) #returns the default Dataframe Returned by ipfx
+    spike_train = spiketxt.process(x, y, c, spike_in_sweep) #additional dataframe returned by ipfx, contains the features related to consecutive spikes
+    return spike_in_sweep, spike_train
+
+def analyze_sweepset(x=None, y=None, c=None, file=None, sweeplist=None, param_dict=None):
+    """ Runs the ifpx feature extractor over a set of sweeps. Returns the standard ipfx dataframe, and summary dataframes.
+    Args:
+        file (_type_): _description_
+        sweeplist (_type_, optional): _description_. Defaults to None.
+        plot (int, optional): _description_. Defaults to -1.
+        param_dict (_type_, optional): _description_. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """    
+    data = parse_user_input(x, y, c, file)
+
+    np.nan_to_num(data.data, nan=-9999, copy=False)
+
+    #load the data 
+    x, y ,c = file.data
+
+    #If there is more than one sweep, we need to ensure we dont iterate out of range
+    if sweeplist == None:
+        if file.sweepCount > 1:
+            sweepcount = file.sweepList
+        else:
+            sweepcount = [0]
+    
+    #Now we walk through the sweeps looking for action potentials
+    df = pd.DataFrame()
+    temp_spike_df = pd.DataFrame()
+    temp_spike_df['filename'] = [file.name]
+    temp_spike_df['foldername'] = [os.path.dirname(file.filePath)]
+    temp_running_bin = pd.DataFrame()
+    
+    
+    #for now if user wants to filter by stim time we will just use the first sweep
+    stim_find = param_dict.pop('stim_find')
+    if stim_find:
+        file.setSweep(file.sweepList[-1])
+        start, end = find_non_zero_range(file.sweepX, file.sweepC)
+        param_dict['end'] = end
+        param_dict['start'] = start
+        print('Stimulation time found: ' + str(start) + ' to ' + str(end))
+
+    #if the user wants a bessel filter pop it out of the param_dict
+    if 'bessel_filter' in param_dict:
+        bessel_filter = param_dict.pop('bessel_filter')
+    else:
+        bessel_filter = None
+
+    #iterate through the sweeps
+    for sweepNumber in sweepcount: 
+        real_sweep_length = file.sweepLengthSec - 0.0001
+        file.setSweep(sweepNumber)
+        #here we just make sure the sweep number is in the correct format for the dataframe
+        real_sweep_number = sweepNumber_to_real_sweep_number(sweepNumber)
+        if param_dict['start'] == 0 and param_dict['end'] == 0: 
+            param_dict['end']= real_sweep_length
+        elif param_dict['end'] > real_sweep_length:
+            param_dict['end'] = real_sweep_length
+        
+        spike_in_sweep, spike_train = analyze_sweep(x[sweepNumber], y[sweepNumber] ,c[sweepNumber], param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by ipfx
+        
+        #build the dataframe, this will be the dataframe that is used for the full data, essentially the sweepwise dataframe, each file will have a dataframe like this
+        temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict) 
+        
+        #attach the custom features
+        custom_features = _custom_sweepwise_features(x[sweepNumber], y[sweepNumber] ,c[sweepNumber] , real_sweep_number, param_dict, temp_spike_df, spike_in_sweep)
+        temp_spike_df = temp_spike_df.assign(**custom_features)
+
+    #add the filename and foldername to the temp_running_bin
+    temp_running_bin['filename'] = file.name
+    temp_running_bin['foldername'] = os.path.dirname(file.filePath)
+    #compute some final features, here we need all the sweeps etc, so these are computed after the sweepwise features
+    temp_spike_df = _custom_full_features(x, y, c, param_dict, temp_spike_df)
+    temp_spike_df, df, temp_running_bin = _build_full_df(file, temp_spike_df, df, temp_running_bin, sweepcount)
+    
+    return temp_spike_df, df, temp_running_bin
+
 
 def batch_feature_extract(files, param_dict=None, protocol_name='IC1', n_jobs=1):
     """
     Runs the full ipfx feature extraction pipeline over a folder of files, list of files, or a list of cellData objects.
     Returns a dataframe of the full data as returned by the ipfx feature extractor. Consists of all the sweeps in the files stacked on top of each other.
     Args:
-        files (list, str, cellData): The list of files, the folder of files, or the list of cellData objects to be analyzed.
+        files (list, str, cellData, list of arrays): The list of files, the folder of files, or the list of cellData objects to be analyzed.
         param_dict (dict): _description_
         plot_sweeps (int, bool, optional): _description_. Defaults to -1.
         protocol_name (str, optional): _description_. Defaults to 'IC1'.
@@ -55,6 +176,10 @@ def batch_feature_extract(files, param_dict=None, protocol_name='IC1', n_jobs=1)
             filelist = files
         elif isinstance(files[0], cellData):
             filelist = [x.file for x in files]
+        elif isinstance(files[0], pyabf.ABF):
+            filelist = [x.name for x in files]
+        elif isinstance(files[0], np.ndarray):
+            filelist = files
     else:
         logger.error('Files must be a list of strings, a string, or a list of cellData objects')
         return None, None, None
@@ -89,112 +214,41 @@ def batch_feature_extract(files, param_dict=None, protocol_name='IC1', n_jobs=1)
     df_running_avg_count = pd.concat(df_running_avg, sort=False)
     return df_raw_out, df_spike_count, df_running_avg_count
 
-def analyze(file, x,y,c, param_dict):
-
-def analyze_sweep(x, y, c, param_dict, bessel_filter=None):
-    """ This function will run the ipfx feature extractor on a single sweep. It will return the spike_in_sweep and spike_train dataframes.
-    takes:
-        x (np.array): The time array of the sweep (1d array)
-        y (np.array): The voltage array of the sweep (1d array)
-        c (np.array): The current array of the sweep (1d array)
-        param_dict (dict): The dictionary of parameters that will be passed to the feature extractor. defaults to the default_dict
-        bessel_filter (int): The cutoff frequency of the bessel filter. If -1, no filter will be applied. Defaults to None.
-    returns:
-        spike_in_sweep (pd.DataFrame): The dataframe that contains the standard ipfx features for the sweep
-        spike_train (pd.DataFrame): The dataframe that contains the standard ipfx features for the consecutive spikes in the sweep
-    """
-    spikext = feature_extractor.SpikeFeatureExtractor(**param_dict)
-    spiketxt = feature_extractor.SpikeTrainFeatureExtractor(start=param_dict['start'], end=param_dict['end'])  
-    #if the user asks for a filter, apply it
-    if bessel_filter is not None:
-        if bessel_filter != -1:
-            y = filter_bessel(y, 1/10000, bessel_filter)
-    if c.shape[0] < y.shape[0]:
-                c = np.hstack((c, np.full(y.shape[0] - c.shape[0], 0)))
-    spike_in_sweep = spikext.process(x, y, c) #returns the default Dataframe Returned by ipfx
-    spike_train = spiketxt.process(x, y, c, spike_in_sweep) #additional dataframe returned by ipfx, contains the features related to consecutive spikes
-    return spike_in_sweep, spike_train
 
 
-def analyze_(abf, sweeplist=None, param_dict=None):
-    """_summary_
+#programmatic functions to retrieve certain dataframes
+#e.g. if we only need the spike_times dataframe
+subset_frames = {'spike_times': ['peak_t'], 'spike_times_isi': ['peak_t', 'isi'], 'spike_times_isi_sweepwise': ['peak_t', 'threshold_t', 'isi']}
 
-    Args:
-        abf (_type_): _description_
-        sweeplist (_type_, optional): _description_. Defaults to None.
-        plot (int, optional): _description_. Defaults to -1.
-        param_dict (_type_, optional): _description_. Defaults to None.
+def analyze_template(x=None, y=None, c=None, file=None, param_dict=None, feature_keys=[''], return_array=False):
+    #call analyze 
+    df_raw, spike_count_df, running_bin = analyze(x, y, c, file=file, param_dict=param_dict, return_summary_frames=True)
 
-    Returns:
-        _type_: _description_
-    """    
-    np.nan_to_num(abf.data, nan=-9999, copy=False)
+    #index the dataframe by the filename, sweep
+    df_raw = df_raw.set_index(['filename', 'sweep'])
 
-    #load the data 
-    x, y ,c = abf.data
-
-    #If there is more than one sweep, we need to ensure we dont iterate out of range
-    if sweeplist == None:
-        if abf.sweepCount > 1:
-            sweepcount = abf.sweepList
-        else:
-            sweepcount = [0]
+    #if we only want a subset of the features
+    if feature_keys != ['']:
+        df_raw = df_raw[feature_keys]
     
-    #Now we walk through the sweeps looking for action potentials
-    df = pd.DataFrame()
-    temp_spike_df = pd.DataFrame()
-    temp_spike_df['filename'] = [abf.name]
-    temp_spike_df['foldername'] = [os.path.dirname(abf.filePath)]
-    temp_running_bin = pd.DataFrame()
+    if return_array:
+        return df_raw.to_numpy()
     
-    
-    #for now if user wants to filter by stim time we will just use the first sweep
-    stim_find = param_dict.pop('stim_find')
-    if stim_find:
-        abf.setSweep(abf.sweepList[-1])
-        start, end = find_non_zero_range(abf.sweepX, abf.sweepC)
-        param_dict['end'] = end
-        param_dict['start'] = start
-        print('Stimulation time found: ' + str(start) + ' to ' + str(end))
+    return df_raw
 
-    #if the user wants a bessel filter pop it out of the param_dict
-    if 'bessel_filter' in param_dict:
-        bessel_filter = param_dict.pop('bessel_filter')
-    else:
-        bessel_filter = None
+analyze_spike_times = functools.partial(analyze_template, feature_keys=subset_frames['spike_times'])
+analyze_spike_times_isi = functools.partial(analyze_template, feature_keys=subset_frames['spike_times_isi'])
+analyze_spike_times_isi_sweepwise = functools.partial(analyze_template, feature_keys=subset_frames['spike_times_isi_sweepwise'])
 
-    #iterate through the sweeps
-    for sweepNumber in sweepcount: 
-        real_sweep_length = abf.sweepLengthSec - 0.0001
-        abf.setSweep(sweepNumber)
-        #here we just make sure the sweep number is in the correct format for the dataframe
-        real_sweep_number = sweepNumber_to_real_sweep_number(sweepNumber)
-        if param_dict['start'] == 0 and param_dict['end'] == 0: 
-            param_dict['end']= real_sweep_length
-        elif param_dict['end'] > real_sweep_length:
-            param_dict['end'] = real_sweep_length
-        
-        spike_in_sweep, spike_train = analyze_sweep(x[sweepNumber], y[sweepNumber] ,c[sweepNumber], param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by ipfx
-        
-        #build the dataframe, this will be the dataframe that is used for the full data, essentially the sweepwise dataframe, each file will have a dataframe like this
-        temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict) 
-        
-        #attach the custom features
-        custom_features = _custom_sweepwise_features(x[sweepNumber], y[sweepNumber] ,c[sweepNumber] , real_sweep_number, param_dict, temp_spike_df, spike_in_sweep)
-        temp_spike_df = temp_spike_df.assign(**custom_features)
 
-    #add the filename and foldername to the temp_running_bin
-    temp_running_bin['filename'] = abf.name
-    temp_running_bin['foldername'] = os.path.dirname(abf.filePath)
-    #compute some final features, here we need all the sweeps etc, so these are computed after the sweepwise features
-    temp_spike_df = _custom_full_features(x, y, c, param_dict, temp_spike_df)
-    temp_spike_df, df, temp_running_bin = _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepcount)
-    
-    return temp_spike_df, df, temp_running_bin
+
+
+#=== internal functions, but can be used externally ===
+
 
 def process_file(file_path, param_dict, protocol_name):
     """Takes an file and runs the feature extractor on it. Filters the protocol etc.
-    Essentially a wrapper for the feature extractor. As when there is an error we dont want to stop the whole program, we just want to skip the abf.
+    Essentially a wrapper for the feature extractor. As when there is an error we dont want to stop the whole program, we just want to skip the file.
     Args:
         file_path (str, os.path): _description_
         param_dict (dict): _description_
@@ -208,7 +262,7 @@ def process_file(file_path, param_dict, protocol_name):
     file = cellData(file=file_path)   
     if protocol_name in file.protocol: 
         print(file_path + ' import')
-        temp_spike_df, df, temp_running_bin = analyze_cell(file, sweeplist=None, param_dict=param_dict)
+        temp_spike_df, df, temp_running_bin = analyze_sweepset(file=file, sweeplist=None, param_dict=param_dict)
         return temp_spike_df, df, temp_running_bin
     else:
         print('Not correct protocol: ' + file.protocol)
