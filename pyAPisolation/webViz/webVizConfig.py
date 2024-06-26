@@ -1,10 +1,11 @@
 import json
 
-class web_viz_config():
+class webVizConfig():
     def __init__(self, file = None, **kwargs):
         self.file_index = 'filename.1'
         self.folder_path = 'foldername.1'
         self.file_path = "foldername.1"
+        self.primary_label = None
         self.table_vars_rq = ['filename', 'foldername']
         self.table_vars = ["rheo", "QC", 'label_c']
         self.para_vars = ["rheo", 'CRH', 'label_c']

@@ -21,7 +21,7 @@ import anndata as ad
 import shutil
 from .flaskApp import tsServer
 from .tsDatabase import tsDatabase
-from .web_viz_config import web_viz_config
+from .webVizConfig import webVizConfig
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +60,12 @@ def generate_plots(df, static, filename='filename', foldername='foldername.1'):
     return full_y
 
 
-class ephysDatabase (tsDatabase):
+class ephysDatabase(tsDatabase):
     def __init__(self, database_file, config=None, **kwargs):
         self.super().__init__(database_file, config, **kwargs)
+
+        self.config = config
+        self.database_file = database_file
 
 
 def main(database_file=None, config=None, static=False):
@@ -82,11 +85,11 @@ def main(database_file=None, config=None, static=False):
     else: 
         files = [database_file]
     if config is None:
-        config = web_viz_config()
+        config = webVizConfig()
     elif isinstance(config, str):
-        config = web_viz_config(file=config)
+        config = webVizConfig(file=config)
     elif isinstance(config, dict):
-        config = web_viz_config(**config)
+        config = webVizConfig(**config)
     
     files = list(files)
     fileList = files
@@ -115,13 +118,19 @@ def main(database_file=None, config=None, static=False):
 
     ### Preprocess the data, 
     #get the columns that are required by the config    
-    full_dataframe = df_select_by_col(full_dataframe, [*config.table_vars_rq, *config.table_vars, *config.umap_labels, *config.para_vars])
+    full_dataframe = df_select_by_col(full_dataframe, [*config.table_vars_rq, *config.table_vars, *config.umap_cols, *config.umap_labels, *config.para_vars, config.primary_label if config.primary_label is not None else 'label'])
     full_dataframe['ID'] = full_dataframe[config.file_index] if config.file_index in full_dataframe.columns else full_dataframe.index #add an ID column, if it does not exist
-    bool_l = [x=='label' for x in full_dataframe.columns.values]
-    if np.any(bool_l):
-        labels = full_dataframe['label'].to_numpy()
+    
+    #get the labels from the primary config
+    if config.primary_label is not None:
+        if config.primary_label not in full_dataframe.columns:
+            logger.error(f"Primary label {config.primary_label} not in dataframe")
+            labels = None
+        else:    
+            labels = full_dataframe[config.primary_label].to_numpy()
     else:
         labels = None
+
     pred_col, labels = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]), ret_labels=True, labels=labels)
     full_dataframe['label'] = labels
 
@@ -139,6 +148,8 @@ def main(database_file=None, config=None, static=False):
         print("Umap columns generated")
     else:
         umap_data = full_dataframe[config.umap_cols].to_numpy()
+        full_dataframe['Umap X'] = umap_data[:, 0]
+        full_dataframe['Umap Y'] = umap_data[:, 1]
 
     #populate umap-drop-menu 
     for label in config.umap_labels:

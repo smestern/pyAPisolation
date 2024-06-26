@@ -96,30 +96,30 @@ window.onload = function() {
 
     //umap plot
     function generate_umap(rows, keys=['Umap X', 'Umap Y', 'label']) {
-        data = []
+        
         var colors = ['#f59582', '#f0320c', '#274f1b', '#d6b376', '#18c912', '#58d4d6', '#071aeb', '#000000']
         var encoded_labels = encode_labels(rows, keys[2]);
         // make a trace array for each label
-        var x = unpack(rows, keys[0]);
-        var y = unpack(rows, keys[1]); 
-        var trace = {
-            x: x,
-            y: y,
-            mode: 'markers',
-            type: 'scatter',
-            marker: {
-                color: encoded_labels[0],
-                colorscale: colors,
-                size: 10,
-                opacity: 0.8
-            },
-            text: unpack(rows, 'ID'),
-            name: keys[2],
-            hovertemplate: '%{text}',
-            showlegend: true
-        };
-            
-        data.push(trace);
+        var traces = []
+        encoded_labels[1].forEach(function (label, i) {traces.push(new Object())});
+
+        // loop through the rows and append the data to the correct trace/data
+        rows.forEach(function (row) {
+            var trace = encoded_labels[1].indexOf(row[keys[2]]);
+            if (traces[trace].x === undefined) {
+                traces[trace].x = [];
+                traces[trace].y = [];
+                traces[trace].name = encoded_labels[1][trace];
+                traces[trace].mode = 'markers';
+                traces[trace].marker = { color: colors[trace], size: 5 };
+            }
+            traces[trace].x.push(row[keys[0]]);
+            traces[trace].y.push(row[keys[1]]);
+        });
+
+        // create the data array
+        var data = traces;
+
         var layout = {dragmode: 'lasso',autosize: true,
             margin: {                           // update the left, bottom, right, top margin
                 b: 20, r: 10, t: 20

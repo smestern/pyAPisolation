@@ -5,7 +5,7 @@ from pyAPisolation.patch_ml import *
 import os
 import sys
 import argparse
-from . import web_viz_config
+from . import webVizConfig
 # dash / plotly imports
 import dash
 from dash.dependencies import Input, Output, State
@@ -32,7 +32,7 @@ file_path = os.path.dirname(os.path.realpath(__file__))
 # pyAPisolation imports
 
 
-GLOBAL_VARS = web_viz_config.web_viz_config()
+GLOBAL_VARS = webVizConfig.webVizConfig()
 
 
 def _df_select_by_col(df, string_to_find):

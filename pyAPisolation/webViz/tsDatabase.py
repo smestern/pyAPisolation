@@ -11,7 +11,7 @@ from scipy.signal import resample, decimate
 from http.server import HTTPServer, CGIHTTPRequestHandler
 import matplotlib.pyplot as plt
 import anndata as ad
-from .web_viz_config import web_viz_config
+from .webVizConfig import webVizConfig
 import shutil
 from .flaskApp import tsServer
 import logging
@@ -34,11 +34,11 @@ class tsDatabase:
     """
     def __init__(self, database_file, config=None, **kwargs):
         if config is None:
-            config = web_viz_config()
+            config = webVizConfig()
         elif isinstance(config, str):
-            config = web_viz_config(file=config)
+            config = webVizConfig(file=config)
         elif isinstance(config, dict):
-            config = web_viz_config(**config)
+            config = webVizConfig(**config)
         config.update(kwargs)
         self.config = config
         #parse the database file

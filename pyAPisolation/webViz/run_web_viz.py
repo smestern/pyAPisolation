@@ -9,7 +9,7 @@
 
 import os
 from pyAPisolation.utils import arg_wrap
-from . import build_database, dashApp, ephysDatabase, web_viz_config
+from . import build_database, dashApp, ephysDatabase, webVizConfig
 from http.server import HTTPServer, CGIHTTPRequestHandler
 
 def run_web_viz(dir_path=None, database_file=None, config=None, backend='static'):
@@ -21,11 +21,11 @@ def run_web_viz(dir_path=None, database_file=None, config=None, backend='static'
         database_file = os.path.join(dir_path, 'output', 'database.csv')
 
     if config is None:
-        config = web_viz_config.web_viz_config()
+        config = webVizConfig.webVizConfig()
     elif isinstance(config, str):
-        config = web_viz_config.web_viz_config(file=config)
+        config = webVizConfig.webVizConfig(file=config)
     elif isinstance(config, dict):
-        config = web_viz_config.web_viz_config(**config)
+        config = webVizConfig.webVizConfig(**config)
 
     if backend == 'static' or backend == 'dynamic':
         ephysDatabase.main(database_file=database_file, config=config, static=(backend=='static'))
