@@ -11,10 +11,10 @@ from scipy.signal import resample, decimate
 from http.server import HTTPServer, CGIHTTPRequestHandler
 import matplotlib.pyplot as plt
 import anndata as ad
-from .webVizConfig import webVizConfig
-import shutil
-from .flaskApp import tsServer
 import logging
+from .flaskApp import tsServer
+from .webVizConfig import webVizConfig
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
