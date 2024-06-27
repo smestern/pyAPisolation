@@ -22,6 +22,7 @@ import shutil
 from .flaskApp import tsServer
 from .tsDatabase import tsDatabase
 from .webVizConfig import webVizConfig
+from ._scriptTemplates import generate_onload, generate_umap, generate_paracoords
 
 logger = logging.getLogger(__name__)
 
@@ -217,7 +218,12 @@ def main(database_file=None, config=None, static=False):
         new_tag['src'] = 'assets/template_dyn.js'
         script_tag.append(new_tag)
 
-
+    #generate the umap and paracoords scripts
+    umap_script = generate_umap('data_tb', [*config.umap_cols, config.umap_labels[0]])
+    paracoords_script = generate_paracoords('data_tb', config.para_vars)
+    #add the onload script to the end of the body
+    
+    #== Saving the output ==#
     #export everything to the out_path_folder
     if not os.path.exists(config.output_path):
         os.makedirs(config.output_path)
@@ -227,10 +233,22 @@ def main(database_file=None, config=None, static=False):
 
     #copy the 'assets' folder
     shutil.copytree(os.path.join(_LOCAL_PATH, "assets"), os.path.join(config.output_path,"assets"), dirs_exist_ok=True)
+
+    #load the template.js file as a string
+    template_js = os.path.join(_LOCAL_PATH, "assets/template.js")
+    with open(template_js) as inf:
+        template_js = inf.read()
+        #add the onload script to the template.js file
+        template_js = template_js.replace("/* onload */", umap_script + "\n \t" + paracoords_script)
+    #save the template.js file
+    with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:
+        outf.write(template_js)
         
     if static:
         print("=== Running Server ===")
         #Create server object listening the port 80
+        #change cwd to the output path
+        os.chdir(config.output_path)
         server_object = HTTPServer(server_address=('', 80), RequestHandlerClass=CGIHTTPRequestHandler)
         #spawn a new thread for the server to run on
         server_object.server_activate()

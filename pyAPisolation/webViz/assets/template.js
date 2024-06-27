@@ -22,31 +22,22 @@ window.onload = function() {
         }
     }
 
-    function generate_paracoords(){
+    function generate_paracoords(data_tb, keys=['rheobase_thres', 'rheobase_width', 'rheobase_latency'], color='rheobase_thres') {
         //create out plotly fr
         var data = [{
             type: 'parcoords',
             line: {
             colorscale: 'Plotly',
-            color: unpack(data_tb, 'label')
+            color: unpack(data_tb, color)
             },
         
-            dimensions: [{
-            label: 'rheobase_thres',
-            values: unpack(data_tb, 'rheobase_thres')
-            }, {
-            label: 'rheobase_width',
-            values: unpack(data_tb, 'rheobase_width')
-            },{
-            label: 'rheobase_latency',
-            values: unpack(data_tb, 'rheobase_latency')
-            },{
-            label: 'label',
-            values: unpack(data_tb, 'label')
+            dimensions: keys.map(function (key) {
+            return {
+                //range: [Math.min(...unpack(data_tb, key)), Math.max(...unpack(data_tb, key))],
+                label: key,
+                values: unpack(data_tb, key)
             }
-            
-            
-            ]
+            })
         }]; // create the data object
         
         var layout = {
@@ -266,12 +257,9 @@ window.onload = function() {
     $table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
     $table.bootstrapTable('refresh')
     
-    // generate the parallel coordinates plot
-    generate_paracoords();
-
-    // generate the umap plot as basic plot
-    generate_umap(data_tb, ['Umap X', 'Umap Y', 'label']);
-
+    
+    /* onload */
+    
     //find the elements of 
     var drop_parent = document.getElementById("umap-drop-menu");
     //get the children and add the event listener
