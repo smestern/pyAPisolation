@@ -144,7 +144,7 @@ def main(database_file=None, config=None, static=False):
         #insert nan values for the outliers
         for idx in outlier_idx:
             umap_data = np.insert(umap_data, idx, np.nan, axis=0)
-        full_dataframe['Umap X'] = umap_data[:, 0]
+        full_dataframe['Umap X'] = ]umap_data[:, 0]
         full_dataframe['Umap Y'] = umap_data[:, 1]
         print("Umap columns generated")
     else:
