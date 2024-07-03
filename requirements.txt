@@ -11,4 +11,4 @@ allensdk
 h5py==3.11.0
 joblib
 matplotlib>=3.7.2
-
+beautifulsoup4
