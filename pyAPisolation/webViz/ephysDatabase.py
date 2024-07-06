@@ -63,10 +63,8 @@ def generate_plots(df, static, filename='filename', foldername='foldername.1'):
 
 class ephysDatabase(tsDatabase):
     def __init__(self, database_file, config=None, **kwargs):
-        self.super().__init__(database_file, config, **kwargs)
+        super().__init__(database_file, config, **kwargs)
 
-        self.config = config
-        self.database_file = database_file
 
 
 def main(database_file=None, config=None, static=False):
@@ -144,7 +142,7 @@ def main(database_file=None, config=None, static=False):
         #insert nan values for the outliers
         for idx in outlier_idx:
             umap_data = np.insert(umap_data, idx, np.nan, axis=0)
-        full_dataframe['Umap X'] = ]umap_data[:, 0]
+        full_dataframe['Umap X'] = umap_data[:, 0]
         full_dataframe['Umap Y'] = umap_data[:, 1]
         print("Umap columns generated")
     else:
