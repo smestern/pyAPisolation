@@ -117,7 +117,9 @@ def main(database_file=None, config=None, static=False):
 
     ### Preprocess the data, 
     #get the columns that are required by the config    
-    full_dataframe = df_select_by_col(full_dataframe, [*config.table_vars_rq, *config.table_vars, *config.umap_cols, *config.umap_labels, *config.para_vars, config.primary_label if config.primary_label is not None else 'label'])
+    full_dataframe = df_select_by_col(full_dataframe, 
+                                      [*config.table_vars_rq, *config.table_vars, *config.umap_cols, *config.umap_labels, *config.para_vars, config.primary_label 
+                                       if config.primary_label is not None else 'label', config.file_index, config.file_path])
     full_dataframe['ID'] = full_dataframe[config.file_index] if config.file_index in full_dataframe.columns else full_dataframe.index #add an ID column, if it does not exist
     
     #get the labels from the primary config
@@ -154,7 +156,7 @@ def main(database_file=None, config=None, static=False):
     for label in config.umap_labels:
         full_dataframe[label] = full_dataframe[label].astype(str)
         umap_drop = soup.find('ul', {'id': 'umap-drop-menu'})
-        temp_opt = f"""<button id="{label}" class="dropdown-item" type="button")">{label}</button>"""
+        temp_opt = f"""<button id="{label}" class="dropdown-item" type="button">{label}</button>"""
         umap_drop.append(bs4.BeautifulSoup(temp_opt, 'html.parser'))
     ## handle plots
     if config.plots_path: #if the user has already pregeneated the plots
@@ -199,13 +201,13 @@ def main(database_file=None, config=None, static=False):
     head.insert_before(tag)
 
     #column tags
-    table_head= soup.find('th')
-    pred_col = np.hstack((pred_col[:10], 'foldername', *config.table_vars_rq, *config.table_vars))
+    table_head= soup.find('tr')
+    pred_col = np.hstack((config.file_index, config.folder_path, pred_col[:10], *config.table_vars_rq, *config.table_vars))
     print(pred_col)
     for col in pred_col:
         logger.info(f"Adding column {col}")
         test = gen_table_head_str_(col, soup)
-        table_head.insert_after(test)
+        table_head.append(test)
 
     if not static:
         #replace the template.js import in the html with 
@@ -226,7 +228,7 @@ def main(database_file=None, config=None, static=False):
     if not os.path.exists(config.output_path):
         os.makedirs(config.output_path)
     
-    with open(os.path.join(config.output_path, "output.html"), "w") as outf:
+    with open(os.path.join(config.output_path, "index.html"), "w") as outf:
         outf.write(str(soup))
 
     #copy the 'assets' folder
