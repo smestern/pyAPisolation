@@ -94,6 +94,9 @@ class tsDatabaseViewer:
         pass
 
     def _search_for_raw_data(self):
+        
+
+
         #check for raw data. If the raw data is not present, search for it in the folder path
         globbed_files = np.array([glob.glob(os.path.join(x, '*'+self.config.ext)) for x in self.database[self.config.folder_path].unique()])
 
