@@ -20,7 +20,7 @@ import anndata as ad
 
 import shutil
 from .flaskApp import tsServer
-from .tsDatabase import tsDatabase
+from .tsDatabase import tsDatabaseViewer
 from .webVizConfig import webVizConfig
 from ._scriptTemplates import generate_onload, generate_umap, generate_paracoords
 
@@ -61,7 +61,7 @@ def generate_plots(df, static, filename='filename', foldername='foldername.1'):
     return full_y
 
 
-class ephysDatabase(tsDatabase):
+class ephysDatabaseViewer(tsDatabaseViewer):
     def __init__(self, database_file, config=None, **kwargs):
         super().__init__(database_file, config, **kwargs)
 

@@ -19,7 +19,7 @@ from .webVizConfig import webVizConfig
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-class tsDatabase:
+class tsDatabaseViewer:
     """
     A class to represent a time series database. Overall this class will help you present a tablaur view of metadata and features, whilst also providing a simple interface to load and serve raw time series data.
     Given a dataframe (or equivalent) of time series data, this class will serve the data via a simple web interface, or export the data to a csv, annData object, or static web page.

@@ -16,9 +16,10 @@ import pyabf
 from http.server import HTTPServer, CGIHTTPRequestHandler
 import matplotlib.pyplot as plt
 import anndata as ad
+import streamlit as st
 
 
 import shutil
 from .flaskApp import tsServer
-from .tsDatabase import tsDatabase
+from .tsDatabase import tsDatabaseViewer
 from .webVizConfig import webVizConfig
