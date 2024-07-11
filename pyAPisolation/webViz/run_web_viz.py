@@ -8,8 +8,9 @@
 # 3. dash: This will generate the plots and then serve them via a dash app
 
 import os
+from ..database import build_database
 from pyAPisolation.utils import arg_wrap
-from . import build_database, dashApp, ephysDatabase, webVizConfig
+from . import dashApp, ephysDatabaseViewer, webVizConfig
 from http.server import HTTPServer, CGIHTTPRequestHandler
 
 def run_web_viz(dir_path=None, database_file=None, config=None, backend='static'):
@@ -28,7 +29,7 @@ def run_web_viz(dir_path=None, database_file=None, config=None, backend='static'
         config = webVizConfig.webVizConfig(**config)
 
     if backend == 'static' or backend == 'dynamic':
-        ephysDatabase.main(database_file=database_file, config=config, static=(backend=='static'))
+        ephysDatabaseViewer.main(database_file=database_file, config=config, static=(backend=='static'))
         return
     elif backend == 'dash':
         app = dashApp.run_app(database_file)

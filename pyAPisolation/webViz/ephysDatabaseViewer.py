@@ -20,7 +20,7 @@ import anndata as ad
 
 import shutil
 from .flaskApp import tsServer
-from .tsDatabase import tsDatabaseViewer
+from .tsDatabaseViewer import tsDatabaseViewer
 from .webVizConfig import webVizConfig
 from ._scriptTemplates import generate_onload, generate_umap, generate_paracoords
 
@@ -194,12 +194,16 @@ def main(database_file=None, config=None, static=False):
     #open our template, and insert the json data
     json_var = '  var data_tb = ' + json_str + ' '
 
+    #script
+    json_script =  soup.new_tag('script')
+    json_script.string = json_var
+    soup.head.append(json_script)
     
     #column tags
     table_head= soup.find('tr')
     pred_col = np.hstack((config.file_index, config.folder_path, pred_col[:10], *config.table_vars_rq, *config.table_vars))
     print(pred_col)
-    for col in pred_col:
+    for col in pred_col[:1]:
         logger.info(f"Adding column {col}")
         test = gen_table_head_str_(col, soup)
         table_head.append(test)
@@ -224,7 +228,7 @@ def main(database_file=None, config=None, static=False):
         os.makedirs(config.output_path)
     
     with open(os.path.join(config.output_path, "index.html"), "w") as outf:
-         outf.write(str(soup))
+        outf.write(str(soup))
 
     #copy the 'assets' folder
     shutil.copytree(os.path.join(_LOCAL_PATH, "assets"), os.path.join(config.output_path,"assets"), dirs_exist_ok=True)
@@ -234,15 +238,14 @@ def main(database_file=None, config=None, static=False):
     with open(template_js) as inf:
         template_js = inf.read()
         #add the onload script to the template.js file
-        template_js = template_js.replace("/* onload */", umap_script + "\n \t" + paracoords_script)
+        #template_js = template_js.replace("/* onload */", umap_script + "\n \t" + paracoords_script)
+        #template_js = template_js.replace("/* data_tb */", json_var)
     #save the template.js file
     with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:
         outf.write(template_js)
-
     #this si instered into the assets/data.js file
     with open(os.path.join(config.output_path, "assets/data.js"), "w") as outf:
-        outf.write(json_var)
-        
+        outf.write(json_var)        
     if static:
         print("=== Running Server ===")
         #Create server object listening the port 80

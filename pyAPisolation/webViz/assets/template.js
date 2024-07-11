@@ -1,6 +1,10 @@
 // This script is used to generate the table and parallel coordinates plot in the web application
 // wrap this in a on load function to ensure the page is loaded before the script runs
 window.onload = function() {
+
+    /* data_tb */
+
+
     function unpack(rows, key) {
         return rows.map(function(row) { 
         return row[key]; 
@@ -8,9 +12,6 @@ window.onload = function() {
     }
     
 
-    function filterByID(ids) {
-        
-    }
 
     function generate_paracoords(data_tb, keys=['rheobase_thres', 'rheobase_width', 'rheobase_latency'], color='rheobase_thres') {
         //create out plotly fr
@@ -37,33 +38,33 @@ window.onload = function() {
             },
         };
         
-        Plotly.newPlot('graphDiv', data, layout, {displaylogo: false}, {responsive: true}); // create the plot
-        var graphDiv = document.getElementById("graphDiv") // get the plot div
-        graphDiv.on('plotly_restyle', function(data){
-            var keys = []
-            var ranges = []
+        Plotly.newPlot('graphDiv_parallel', data, layout, {displaylogo: false}, {responsive: true}); // create the plot
+        var graphDiv_parallel = document.getElementById("graphDiv_parallel") // get the plot div
+        // graphDiv_parallel.on('plotly_restyle', function(data){
+        //     var keys = []
+        //     var ranges = []
 
-            graphDiv.data[0].dimensions.forEach(function(d) {
-                    if (d.constraintrange === undefined){
-                        keys.push(d.label);
-                        ranges.push([-9999,9999]);
-                    }
-                    else{
-                        keys.push(d.label);
-                        var allLengths = d.constraintrange.flat();
-                        if (allLengths.length > 2){
-                            ranges.push([d.constraintrange[0][0],d.constraintrange[0][1]]); //return only the first filter applied per feature
+        //     graphDiv_parallel.data[0].dimensions.forEach(function(d) {
+        //             if (d.constraintrange === undefined){
+        //                 keys.push(d.label);
+        //                 ranges.push([-9999,9999]);
+        //             }
+        //             else{
+        //                 keys.push(d.label);
+        //                 var allLengths = d.constraintrange.flat();
+        //                 if (allLengths.length > 2){
+        //                     ranges.push([d.constraintrange[0][0],d.constraintrange[0][1]]); //return only the first filter applied per feature
 
-                        }else{
-                            ranges.push(d.constraintrange);
-                        }
+        //                 }else{
+        //                     ranges.push(d.constraintrange);
+        //                 }
                         
                         
-                    } // => use this to find values are selected
-            })
+        //             } // => use this to find values are selected
+        //     })
 
-            filterByPlot(keys, ranges)
-        }); 
+        //     filterByPlot(keys, ranges)
+        // }); 
     };
 
     //encode labels
@@ -108,20 +109,20 @@ window.onload = function() {
 
         Plotly.react('graphDiv_scatter', data, layout, { displaylogo: false }, { responsive: true });
         var graphDiv5 = document.getElementById("graphDiv_scatter")
-        graphDiv5.on('plotly_selected', function (eventData) {
-            var ids = []
-            var ranges = []
-            if (typeof eventData !== 'undefined') {
-                eventData.points.forEach(function (pt) { 
-                    ids.push(parseInt(pt.data.name));
-                });
-            }
-            else {
-                console.log(ids)
-                ids = undefined
-            }
-            filterByID(ids);
-        });
+        // graphDiv5.on('plotly_selected', function (eventData) {
+        //     var ids = []
+        //     var ranges = []
+        //     if (typeof eventData !== 'undefined') {
+        //         eventData.points.forEach(function (pt) { 
+        //             ids.push(parseInt(pt.data.name));
+        //         });
+        //     }
+        //     else {
+        //         console.log(ids)
+        //         ids = undefined
+        //     }
+        //     filterByID(ids);
+        // });
     };
     //table functions
     function traceFormatter(index, row) {
@@ -211,6 +212,8 @@ window.onload = function() {
 
         $('#table').bootstrapTable('filterBy',{'ID': result})
     };
+
+
     function cellStyle(value, row, index) {
         var classes = [
         'bg-blue',
@@ -239,15 +242,7 @@ window.onload = function() {
     // find the table div
     var $table = $('#table')
 
-    // create the table
-    $table.bootstrapTable('load', data)
-    // while we are here, set the attr 'data-detail-formatter' to the function we defined above
-    // refresh the table
-    // set the table to be responsive
-    $table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
-    $table.bootstrapTable('refresh')
-    
-    
+
     /* onload */
     
     //find the elements of 
@@ -261,6 +256,13 @@ window.onload = function() {
             generate_umap(data_tb, keys);
         });
     }
+    // create the table
+    $table.bootstrapTable('load', data_tb)
+    // while we are here, set the attr 'data-detail-formatter' to the function we defined above
+    // refresh the table
+    // set the table to be responsive
+    //$table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
+    $table.bootstrapTable('refresh')
 
     
 

@@ -4,7 +4,7 @@ import sys
 import time
 import argparse
 import pyAPisolation.web_viz.ephysdatabase as ephysdatabase
-import build_database
+import pyAPisolation.database.build_database as build_database
 import pyAPisolation.webViz.dashApp as dashApp
 import PySide2.QtWidgets as QtWidgets
 import pandas as pd
