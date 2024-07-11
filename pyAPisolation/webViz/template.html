@@ -25,6 +25,7 @@
 
 	
 	<script src="./assets/template.js"></script>
+    <script src="./assets/data.js"></script>
     <link rel="stylesheet" href="./assets/template.css">
 	  
 <!-- NAV BAR AND HEADING -->
@@ -35,7 +36,7 @@
 
 <div class="fluid-container">
 
-<div class="row d-flex align-items-stretch nowrap" style="min-height: 100%;">
+<div class="row d-flex align-items-stretch flex-nowrap" style="min-height: 100%;">
     <!--Side navbar-->
     <div class="col-auto col-md-3 col-xl-2 px-sm-2 px-0 bg-dark">
         <div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark">
@@ -55,7 +56,7 @@
                 <button id = "filter_btn" class="btn btn-primary" data-bs-toggle="collapse" href="#ScatterFilter" role="button" aria-expanded="true" aria-controls="ScatterFilter">Filter</button>
                 <button id = "filter_btn2" class="btn btn-primary" data-toggle="collapse" href="#Scatter2Filter" role="button" aria-expanded="false" aria-controls="Scatter2Filter" >Filter - Scatter</button></span> -->
 
-        <div class="row d-flex align-items-stretch nowrap" >
+        <div class="row d-flex align-items-stretch flex-nowrap" >
             <div class="col-auto px-0 bg-dark"style="max-width: 40%; min-width: 40%;">
                 <div class="card card-body" style=" min-height: 100%">
                     <div id="graphDiv_scatter"></div>
@@ -76,10 +77,10 @@
                 </div>
             </div>
         </div>
-        <div class="row d-flex align-items-stretch nowrap" >
+        <div class="row d-flex align-items-stretch flex-nowrap" >
             <table id="table"
                 data-toggle="table"
-                data-detail-view="true"
+                data-detail-view="false"
                 data-show-export="false"
                 data-show-columns="true"
                 data-search="true"

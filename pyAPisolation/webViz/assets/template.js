@@ -9,17 +9,7 @@ window.onload = function() {
     
 
     function filterByID(ids) {
-        if (typeof ids !== 'undefined') {
-            $table.bootstrapTable('filterBy', { 'cellID': ids })
-        }
-        else {
-            jQuery.get("data/box2_ephys.json").done(function (data) {
-                ids = data.map(function (a) { return a.cellID })
-                $table.bootstrapTable('filterBy', { 'cellID': ids })
-            })
-
-
-        }
+        
     }
 
     function generate_paracoords(data_tb, keys=['rheobase_thres', 'rheobase_width', 'rheobase_latency'], color='rheobase_thres') {

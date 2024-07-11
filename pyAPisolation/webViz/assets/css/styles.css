@@ -1,0 +1,10 @@
+.card-base {
+  box-shadow: -5px 6px 0px 0px var(--bs-card-border-color);
+  border-style: none;
+}
+
+.col {
+  padding: 12px;
+  flex: 1 0 0%;
+}
+

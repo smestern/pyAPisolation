@@ -93,7 +93,7 @@ def main(database_file=None, config=None, static=False):
     files = list(files)
     fileList = files
 
-    TEMPLATE = os.path.join(_LOCAL_PATH, "template.html")# if not static else os.path.join(_LOCAL_PATH, "template_static.html")
+    TEMPLATE = os.path.join(_LOCAL_PATH, "index.html")# if not static else os.path.join(_LOCAL_PATH, "template_static.html")
     with open(TEMPLATE) as inf:
         txt = inf.read()
         soup = bs4.BeautifulSoup(txt, 'html.parser')
@@ -155,7 +155,7 @@ def main(database_file=None, config=None, static=False):
     #populate umap-drop-menu 
     for label in config.umap_labels:
         full_dataframe[label] = full_dataframe[label].astype(str)
-        umap_drop = soup.find('ul', {'id': 'umap-drop-menu'})
+        umap_drop = soup.find('div', {'id': 'umap-drop-menu'})
         temp_opt = f"""<button id="{label}" class="dropdown-item" type="button">{label}</button>"""
         umap_drop.append(bs4.BeautifulSoup(temp_opt, 'html.parser'))
     ## handle plots
@@ -194,12 +194,7 @@ def main(database_file=None, config=None, static=False):
     #open our template, and insert the json data
     json_var = '  var data_tb = ' + json_str + ' '
 
-    tag = soup.new_tag("script")
-    tag.append(json_var)
-
-    head = soup.find('body')
-    head.insert_before(tag)
-
+    
     #column tags
     table_head= soup.find('tr')
     pred_col = np.hstack((config.file_index, config.folder_path, pred_col[:10], *config.table_vars_rq, *config.table_vars))
@@ -229,7 +224,7 @@ def main(database_file=None, config=None, static=False):
         os.makedirs(config.output_path)
     
     with open(os.path.join(config.output_path, "index.html"), "w") as outf:
-        outf.write(str(soup))
+         outf.write(str(soup))
 
     #copy the 'assets' folder
     shutil.copytree(os.path.join(_LOCAL_PATH, "assets"), os.path.join(config.output_path,"assets"), dirs_exist_ok=True)
@@ -243,6 +238,10 @@ def main(database_file=None, config=None, static=False):
     #save the template.js file
     with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:
         outf.write(template_js)
+
+    #this si instered into the assets/data.js file
+    with open(os.path.join(config.output_path, "assets/data.js"), "w") as outf:
+        outf.write(json_var)
         
     if static:
         print("=== Running Server ===")
