@@ -238,7 +238,7 @@ def main(database_file=None, config=None, static=False):
     with open(template_js) as inf:
         template_js = inf.read()
         #add the onload script to the template.js file
-        #template_js = template_js.replace("/* onload */", umap_script + "\n \t" + paracoords_script)
+        template_js = template_js.replace("/* onload */", umap_script + "\n \t" + paracoords_script)
         #template_js = template_js.replace("/* data_tb */", json_var)
     #save the template.js file
     with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:
