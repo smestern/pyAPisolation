@@ -1,6 +1,13 @@
 .card-base {
   box-shadow: -5px 6px 0px 0px var(--bs-card-border-color);
+  border-bottom-right-radius: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 0;
   border-style: none;
+  border-top: 1px solid #2125291f ;
+  border-right-style: solid;
+  border-right-color: #2125291f;
 }
 
 .col {

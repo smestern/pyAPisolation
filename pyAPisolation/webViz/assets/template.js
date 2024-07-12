@@ -32,13 +32,10 @@ window.onload = function() {
         }]; // create the data object
         
         var layout = {
-            autosize: true,
-            margin: {                           // update the left, bottom, right, top margin
-                b: 20, r: 20, t: 60
-            },
+           
         };
         
-        Plotly.newPlot('graphDiv_parallel', data, layout, {displaylogo: false}, {responsive: true}); // create the plot
+        Plotly.newPlot('graphDiv_parallel', data, layout, {responsive: true}); // create the plot
         var graphDiv_parallel = document.getElementById("graphDiv_parallel") // get the plot div
         // graphDiv_parallel.on('plotly_restyle', function(data){
         //     var keys = []
@@ -107,7 +104,7 @@ window.onload = function() {
                 b: 20, r: 10, t: 20
             },};
 
-        Plotly.react('graphDiv_scatter', data, layout, { displaylogo: false }, { responsive: true });
+        Plotly.react('graphDiv_scatter', data, layout, { responsive: true });
         var graphDiv5 = document.getElementById("graphDiv_scatter")
         // graphDiv5.on('plotly_selected', function (eventData) {
         //     var ids = []
