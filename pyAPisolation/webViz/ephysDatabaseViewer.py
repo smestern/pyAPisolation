@@ -201,11 +201,19 @@ def main(database_file=None, config=None, static=False):
     
     #column tags
     table_head= soup.find('tr')
-    pred_col = np.hstack((config.file_index, config.folder_path, pred_col[:10], *config.table_vars_rq, *config.table_vars))
-    print(pred_col)
-    for col in pred_col[:1]:
+    pred_col = np.hstack((config.file_index, '_plot', pred_col[:10], *config.table_vars_rq, *config.table_vars))
+    for col in pred_col[:]:
         logger.info(f"Adding column {col}")
-        test = gen_table_head_str_(col, soup)
+        #if the column is _plot, add a special tag
+        if col == '_plot':
+            test = soup.new_tag(f"th")
+            test['data-field'] = f"{col}"
+            test['data-formatter'] = f"plotFormatterDummy"
+            test['data-sortable'] = f"false"
+            test['data-searchable'] = f"false"
+            test.string = f""
+        else:
+            test = gen_table_head_str_(col, soup)
         table_head.append(test)
 
     if not static:

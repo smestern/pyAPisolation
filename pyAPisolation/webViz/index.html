@@ -49,19 +49,19 @@
                         <div class="card card-base" id="table_card">
                             <div class="card-body">
                                 <h4 class="card-title">Title</h4><table id="table"
-data-toggle="table"
-data-detail-view="false"
-data-show-export="false"
-data-show-columns="true"
-data-search="true"
-data-resizable="true"
-data-pagination="true"
-data-classes="table table-card-like table-striped table-responsive">
-<thead>
-    <tr>
-    </tr>
-</thead>
-</table>
+                                    data-toggle="table"
+                                    data-detail-view="false"
+                                    data-show-export="false"
+                                    data-show-columns="true"
+                                    data-search="true"
+                                    data-resizable="true"
+                                    data-pagination="true"
+                                    data-classes="table table-card-like table-striped table-responsive">
+                                    <thead>
+                                        <tr>
+                                        </tr>
+                                    </thead>
+                                    </table>
                             </div>
                         </div>
                     </div>
@@ -69,6 +69,11 @@ data-classes="table table-card-like table-striped table-responsive">
             </div>
         </div>
     </div><div>	
+    <script>
+    function plotFormatterDummy(value, row, index) {
+        return '<div id="graphDiv_' + row['ID'] + '"></div>';
+    }
+    </script>
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
 	<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
 	

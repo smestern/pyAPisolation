@@ -134,6 +134,13 @@ window.onload = function() {
         setTimeout(() =>{maketrace(row)}, 1000);
         return html.join('');
     }
+
+    function plotFormatter(index, row) {
+
+        return '<div id="' + row.ID + '"></div>';
+    };
+
+
     function maketrace(row){
         var url = "./data/" + row.ID + ".csv"
         Plotly.d3.csv(url, function(rows){			
@@ -170,8 +177,8 @@ window.onload = function() {
                     
 
                         var layout = {
-                        width: 950,
-                        height: 500,
+                        width: 200,
+                        height: 120,
                         yaxis: {title: "mV",
                                 },       // set the y axis title
                         xaxis: {
@@ -183,11 +190,13 @@ window.onload = function() {
                         margin: {                           // update the left, bottom, right, top margin
                             b: 60, r: 10, t: 20
                         },
-                        hovermode: "closest"
+                        hovermode: "closest",
+                        showlegend: false,
+                        autosize: true,
                     
                         };
 
-                        Plotly.newPlot(document.getElementById(row.ID), data, layout, {displaylogo: false});
+                        Plotly.newPlot(document.getElementById("graphDiv_" + row['ID']), data, layout, {displaylogo: false, staticPlot: true});
                     
             
         });
@@ -234,6 +243,15 @@ window.onload = function() {
         }
     }
 
+    function generate_plots(){
+        console.log("Generating plots...")
+        //spawn plots for each row
+        var rows = $table.bootstrapTable('getData', {useCurrentPage:true}) // get the rows, only the visible ones
+        rows.forEach(function (row) {
+            maketrace(row)
+        });
+    }
+
     // create the table
     var data = data_tb
     // find the table div
@@ -256,11 +274,19 @@ window.onload = function() {
     // create the table
     $table.bootstrapTable('load', data_tb)
     // while we are here, set the attr 'data-detail-formatter' to the function we defined above
+
+    //add an event listener for table changes
+    $table.on('page-change.bs.table', function (e, name, args) {
+        generate_plots();
+    });
+
+
     // refresh the table
     // set the table to be responsive
     //$table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
     $table.bootstrapTable('refresh')
 
+    //now create our cell plots
     
 
 };
