@@ -280,6 +280,7 @@ window.onload = function() {
         generate_plots();
     });
 
+    generate_plots();
 
     // refresh the table
     // set the table to be responsive
