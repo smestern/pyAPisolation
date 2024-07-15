@@ -4,7 +4,7 @@ window.onload = function() {
 
     /* data_tb */
 
-
+    var embed_colors = ['#0000FF', '#A5E41F', '#FF24FF', '#B8B2B2', '#fc0303']
     function unpack(rows, key) {
         return rows.map(function(row) { 
         return row[key]; 
@@ -82,9 +82,8 @@ window.onload = function() {
 
 
     //umap plot
-    function generate_umap(rows, keys=['Umap X', 'Umap Y', 'label']) {
+    function generate_umap(rows, keys=['Umap X', 'Umap Y', 'label'], colors=embed_colors) {
         
-        var colors = ['#f59582', '#f0320c', '#274f1b', '#d6b376', '#18c912', '#58d4d6', '#071aeb', '#000000']
         var encoded_labels = encode_labels(rows, keys[2]);
         // make a trace array for each label
         var traces = []
@@ -172,7 +171,7 @@ window.onload = function() {
     function makefi(row){
         var url = "./data/traces/" + row.ID + "_FI.svg"
         var html = []
-        html.push('<img src="' + url + '" alt="FI" style="width: 20vw">');
+        html.push('<object data="' + url + '" alt="FI" style="width: 20vw">');
         //get the div
         var div = document.getElementById("graphDiv_"+row.ID+"_plot_fi")
         div.innerHTML = html.join('');
@@ -218,17 +217,25 @@ window.onload = function() {
         }
     }
 
-    function generate_plots(){
-        console.log("Generating plots...")
-        //spawn plots for each row
-        $table.bootstrapTable('showLoading')
-        var rows = $table.bootstrapTable('getData', {useCurrentPage:true}) // get the rows, only the visible ones
-        rows.forEach(function (row) {
-            setTimeout(() =>{maketrace(row)}, 1000);
-            //setTimeout(() =>{makerheo(row)}, 1000);
-            setTimeout(() =>{makefi(row)}, 1000);
+    function generate_plots() {
+        console.log("Generating plots...");
+        $table.bootstrapTable('showLoading');
+        var rows = $table.bootstrapTable('getData', {useCurrentPage: true}); // get the rows, only the visible ones
+        let promises = rows.map(row => {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    maketrace(row);
+                    // Uncomment the next line if makerheo should also be awaited
+                    // makerheo(row);
+                    makefi(row);
+                    resolve();
+                }, 1000);
+            });
         });
-        $table.bootstrapTable('hideLoading')
+    
+        Promise.all(promises).then(() => {
+            $table.bootstrapTable('hideLoading');
+        });
     }
 
     // create the table
