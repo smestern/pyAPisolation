@@ -33,16 +33,17 @@ window.onload = function() {
             return {
                 //range: [Math.min(...unpack(data_tb, key)), Math.max(...unpack(data_tb, key))],
                 label: key,
-                values: unpack(data_tb, key)
-            }
-            })
+                values: unpack(data_tb, key),
+                multiselect: false
+            }}),
+            rangefont: {size: 5},
+            labelangle: -45
         }]; // create the data object
         
         var layout = {
-           
         };
         
-        Plotly.newPlot('graphDiv_parallel', data, layout, {responsive: true}); // create the plot
+        fig = Plotly.newPlot('graphDiv_parallel', data, layout, {responsive: true}); // create the plots
         var graphDiv_parallel = document.getElementById("graphDiv_parallel") // get the plot div
         graphDiv_parallel.on('plotly_restyle', function(data){
             var keys = []
@@ -154,7 +155,7 @@ window.onload = function() {
     function maketrace(row){
         var url = "./data/traces/" + row.ID + ".svg"
         var html = []
-        html.push('<img src="' + url + '" alt="Traces" width="500px">');
+        html.push('<img src="' + url + '" alt="Traces" style="width: 30vw">');
         //get the div
         var div = document.getElementById("graphDiv_"+row.ID)
         div.innerHTML = html.join('');

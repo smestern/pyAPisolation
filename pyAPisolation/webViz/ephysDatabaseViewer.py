@@ -201,11 +201,16 @@ def main(database_file=None, config=None, static=False):
     
     #column tags
     table_head= soup.find('tr')
-    pred_col = np.hstack((config.file_index, '_plot', pred_col[:10], *config.table_vars_rq, *config.table_vars))
-    for col in pred_col[:]:
+    visible_cols = np.hstack((*config.table_vars_rq, *[x for x in config.table_vars if x in full_dataframe.columns]))
+    #make sure these are unique
+    visible_cols = np.unique(visible_cols)
+    visible_cols = np.hstack((config.file_index, '_plot', visible_cols, '_plot_rheo', '_plot_fi'))
+    #we need to add the hidden columns
+    hidden_cols = np.setdiff1d(full_dataframe.columns, visible_cols)
+    for col in visible_cols:
         logger.info(f"Adding column {col}")
         #if the column is _plot, add a special tag
-        if col == '_plot':
+        if '_plot' in col:
             test = soup.new_tag(f"th")
             test['data-field'] = f"{col}"
             test['data-formatter'] = f"plotFormatterDummy"
@@ -214,6 +219,12 @@ def main(database_file=None, config=None, static=False):
             test.string = f""
         else:
             test = gen_table_head_str_(col, soup)
+        table_head.append(test)
+
+    #add the hidden columns
+    for col in hidden_cols:
+        logger.info(f"Adding hidden column {col}")
+        test = gen_table_head_str_(col, soup, dict_args={'data-visible': 'false', 'data-searchable': 'false', 'data-sortable': 'true'})
         table_head.append(test)
 
     if not static:
