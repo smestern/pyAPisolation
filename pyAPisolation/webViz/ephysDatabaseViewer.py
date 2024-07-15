@@ -204,7 +204,10 @@ def main(database_file=None, config=None, static=False):
     visible_cols = np.hstack((*config.table_vars_rq, *[x for x in config.table_vars if x in full_dataframe.columns]))
     #make sure these are unique
     visible_cols = np.unique(visible_cols)
-    visible_cols = np.hstack((config.file_index, '_plot', visible_cols, '_plot_rheo', '_plot_fi'))
+    visible_cols = np.setdiff1d(visible_cols, config.file_index)
+    #remove file_index if its there
+    
+    visible_cols = np.hstack((config.file_index, '_plot', visible_cols, '_plot_fi'))
     #we need to add the hidden columns
     hidden_cols = np.setdiff1d(full_dataframe.columns, visible_cols)
     for col in visible_cols:

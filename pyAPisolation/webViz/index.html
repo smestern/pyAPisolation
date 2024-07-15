@@ -50,6 +50,10 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
                 <div class="row">
                     <div class="col"><table id="table"
 data-toggle="table"
@@ -70,8 +74,8 @@ data-classes="table table-responsive table-card-alt">
         </div>
     </div><div>
     <script>
-    function plotFormatterDummy(value, row, index) {
-        return '<div id="graphDiv_' + row['ID'] + '"></div>';
+    function plotFormatterDummy(value, row, index,field) {
+        return '<div id="graphDiv_' + row['ID'] + field + '"></div>';
     }
     function valFormatter(value, row, index, field) {
         //make a nice text for the value

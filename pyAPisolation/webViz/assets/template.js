@@ -155,12 +155,29 @@ window.onload = function() {
     function maketrace(row){
         var url = "./data/traces/" + row.ID + ".svg"
         var html = []
-        html.push('<img src="' + url + '" alt="Traces" style="width: 30vw">');
+        html.push('<object data="' + url + '" alt="Traces" style="width: 30vw">');
         //get the div
-        var div = document.getElementById("graphDiv_"+row.ID)
+        var div = document.getElementById("graphDiv_"+row.ID+"_plot")
         div.innerHTML = html.join('');
         
     };
+    function makerheo(row){
+        var url = "./data/traces/" + row.ID + "_rheo.png"
+        var html = []
+        html.push('<img src="' + url + '" alt="Rheobase" style="width: 10vw">');
+        //get the div
+        var div = document.getElementById("graphDiv_"+row.ID+"_plot_rheo")
+        div.innerHTML = html.join('');
+    };
+    function makefi(row){
+        var url = "./data/traces/" + row.ID + "_FI.svg"
+        var html = []
+        html.push('<img src="' + url + '" alt="FI" style="width: 20vw">');
+        //get the div
+        var div = document.getElementById("graphDiv_"+row.ID+"_plot_fi")
+        div.innerHTML = html.join('');
+    };
+
     function filterByPlot(keys, ranges){		
         var newArray = data_tb.filter(function (el) {
                 return keys.every(function (key, i) {
@@ -208,6 +225,8 @@ window.onload = function() {
         var rows = $table.bootstrapTable('getData', {useCurrentPage:true}) // get the rows, only the visible ones
         rows.forEach(function (row) {
             setTimeout(() =>{maketrace(row)}, 1000);
+            //setTimeout(() =>{makerheo(row)}, 1000);
+            setTimeout(() =>{makefi(row)}, 1000);
         });
         $table.bootstrapTable('hideLoading')
     }
