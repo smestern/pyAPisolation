@@ -25,4 +25,10 @@ class webVizConfig():
     def update(self, kwargs):
         self.__dict__.update(kwargs)
         return self 
+    
+    def __getattr__(self, name):
+        try:
+            return self.__dict__[name]
+        except KeyError:
+            return None
 

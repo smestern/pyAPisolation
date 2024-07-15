@@ -10,14 +10,7 @@ window.onload = function() {
         return row[key]; 
         });
     }
-    function filterByID(ids) {
-        if (ids === undefined) {
-            $('#table').bootstrapTable('filterBy', {})
-        }
-        else {
-            $('#table').bootstrapTable('filterBy', { ID: ids })
-        }
-    }
+    
 
 
     function generate_paracoords(data_tb, keys=['rheobase_thres', 'rheobase_width', 'rheobase_latency'], color='rheobase_thres') {
@@ -44,31 +37,31 @@ window.onload = function() {
         
         Plotly.newPlot('graphDiv_parallel', data, layout, {responsive: true}); // create the plot
         var graphDiv_parallel = document.getElementById("graphDiv_parallel") // get the plot div
-        graphDiv_parallel.on('plotly_restyle', function(data){
-            var keys = []
-            var ranges = []
+        // graphDiv_parallel.on('plotly_restyle', function(data){
+        //     var keys = []
+        //     var ranges = []
 
-            graphDiv_parallel.data[0].dimensions.forEach(function(d) {
-                    if (d.constraintrange === undefined){
-                        keys.push(d.label);
-                        ranges.push([-9999,9999]);
-                    }
-                    else{
-                        keys.push(d.label);
-                        var allLengths = d.constraintrange.flat();
-                        if (allLengths.length > 2){
-                            ranges.push([d.constraintrange[0][0],d.constraintrange[0][1]]); //return only the first filter applied per feature
+        //     graphDiv_parallel.data[0].dimensions.forEach(function(d) {
+        //             if (d.constraintrange === undefined){
+        //                 keys.push(d.label);
+        //                 ranges.push([-9999,9999]);
+        //             }
+        //             else{
+        //                 keys.push(d.label);
+        //                 var allLengths = d.constraintrange.flat();
+        //                 if (allLengths.length > 2){
+        //                     ranges.push([d.constraintrange[0][0],d.constraintrange[0][1]]); //return only the first filter applied per feature
 
-                        }else{
-                            ranges.push(d.constraintrange);
-                        }
+        //                 }else{
+        //                     ranges.push(d.constraintrange);
+        //                 }
                         
                         
-                    } // => use this to find values are selected
-            })
+        //             } // => use this to find values are selected
+        //     })
 
-            filterByPlot(keys, ranges)
-        }); 
+        //     filterByPlot(keys, ranges)
+        // }); 
     };
 
     //encode labels
@@ -95,14 +88,12 @@ window.onload = function() {
             if (traces[trace].x === undefined) {
                 traces[trace].x = [];
                 traces[trace].y = [];
-                traces[trace].text = [];
                 traces[trace].name = encoded_labels[1][trace];
                 traces[trace].mode = 'markers';
                 traces[trace].marker = { color: colors[trace], size: 5 };
             }
             traces[trace].x.push(row[keys[0]]);
             traces[trace].y.push(row[keys[1]]);
-            traces[trace].text.push(row['ID']);
         });
 
         // create the data array
@@ -115,22 +106,21 @@ window.onload = function() {
 
         Plotly.react('graphDiv_scatter', data, layout, { responsive: true });
         var graphDiv5 = document.getElementById("graphDiv_scatter")
-        graphDiv5.on('plotly_selected', function (eventData) {
-            var ids = []
-            var ranges = []
-            if (typeof eventData !== 'undefined') {
-                eventData.points.forEach(function (pt) { 
-                    ids.push(pt.text);
-                });
-            }
-            else {
-                console.log(ids)
-                ids = undefined
-            }
-            filterByID(ids);
-        });
-    };-
-
+        // graphDiv5.on('plotly_selected', function (eventData) {
+        //     var ids = []
+        //     var ranges = []
+        //     if (typeof eventData !== 'undefined') {
+        //         eventData.points.forEach(function (pt) { 
+        //             ids.push(parseInt(pt.data.name));
+        //         });
+        //     }
+        //     else {
+        //         console.log(ids)
+        //         ids = undefined
+        //     }
+        //     filterByID(ids);
+        // });
+    };
     //table functions
     function traceFormatter(index, row) {
         var html = []
@@ -152,24 +142,77 @@ window.onload = function() {
 
 
     function maketrace(row){
-        var url = "./data/traces/" + row.ID + ".svg"
-        var html = []
-        html.push('<img src="' + url + '" alt="Traces" width="500px">');
-        //get the div
-        var div = document.getElementById("graphDiv_"+row.ID)
-        div.innerHTML = html.join('');
-        
+        var url = "./data/" + row.ID + ".csv"
+        Plotly.d3.csv(url, function(rows){			
+                        data = []
+                        var i = 1
+                        rows.forEach(function(row) {
+                            
+                            var sweepname = 'Sweep ' + i + ': ' + Math.round(row[Object.keys(row)[0]].toString()) + ' pA'
+                            delete row[Object.keys(row)[0]]
+                            var rowdata =  Object.keys(row).map(function(e) { 
+                                                                    return row[e]
+                                                                })
+                            var timeseries = Object.keys(row);
+                            
+                            
+                            var trace = {
+                                    type: 'scattergl',                    // set the chart type
+                                    mode: 'lines',                      // connect points with lines
+                                    name: sweepname,
+                                    y: rowdata,
+                                    x: timeseries,
+                                    hovertemplate: '%{x} S, %{y} mV',
+                        line: {                             // set the width of the line.
+                            width: 1,
+                            shape: 'spline',
+                            smoothing: 0.005
+                        }
+                            
+                        };
+                            data.push(trace);
+                            i += 1;
+                        });
+                        
+                    
+
+                        var layout = {
+                        width: 200,
+                        height: 120,
+                        yaxis: {title: "mV",
+                                },       // set the y axis title
+                        xaxis: {
+                            dtick: 0.25,
+                            zeroline: false,
+                            title: "Time (S)"// remove the x-axis grid lines
+                            
+                        },
+                        margin: {                           // update the left, bottom, right, top margin
+                            b: 60, r: 10, t: 20
+                        },
+                        hovermode: "closest",
+                        showlegend: false,
+                        autosize: true,
+                    
+                        };
+
+                        Plotly.newPlot(document.getElementById("graphDiv_" + row['ID']), data, layout, {displaylogo: false, staticPlot: true});
+                    
+            
+        });
     };
     function filterByPlot(keys, ranges){		
+        var ids = []
+        var fildata = data
         var newArray = data_tb.filter(function (el) {
-                return keys.every(function (key, i) {
-                    if (ranges[i][0] == -9999){
-                        return true;
-                    }
-                    else{
-                        return el[key] >= ranges[i][0] && el[key] <= ranges[i][1];
-                    }
-                });	
+                return el.rheobase_thres <= ranges[0][1] &&
+            el.rheobase_thres >= ranges[0][0] &&
+            el.rheobase_width <= ranges[1][1] &&
+            el.rheobase_width >= ranges[1][0] &&
+            el.rheobase_latency <= ranges[2][1] &&
+            el.rheobase_latency >= ranges[2][0] &&
+            el.label <= ranges[3][1] &&
+            el.label >= ranges[3][0];	
             });
         let result = newArray.map(function(a) { return a.ID; });
 
@@ -203,15 +246,14 @@ window.onload = function() {
     function generate_plots(){
         console.log("Generating plots...")
         //spawn plots for each row
-        $table.bootstrapTable('showLoading')
         var rows = $table.bootstrapTable('getData', {useCurrentPage:true}) // get the rows, only the visible ones
         rows.forEach(function (row) {
-            setTimeout(() =>{maketrace(row)}, 1000);
+            maketrace(row)
         });
-        $table.bootstrapTable('hideLoading')
     }
 
     // create the table
+    var data = data_tb
     // find the table div
     var $table = $('#table')
 
@@ -227,8 +269,6 @@ window.onload = function() {
             var selected = e.target.innerHTML
             var keys = ['Umap X', 'Umap Y', selected]
             generate_umap(data_tb, keys);
-            //update the dropdown
-            document.getElementById("drop-button").innerHTML = selected;
         });
     }
     // create the table
@@ -236,7 +276,7 @@ window.onload = function() {
     // while we are here, set the attr 'data-detail-formatter' to the function we defined above
 
     //add an event listener for table changes
-    $table.on('all.bs.table', function (e, name, args) {
+    $table.on('page-change.bs.table', function (e, name, args) {
         generate_plots();
     });
 

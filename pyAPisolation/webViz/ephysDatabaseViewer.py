@@ -33,7 +33,7 @@ def gen_table_head_str_(col, soup, dict_args=None):
     tag['data-field'] = f"{col}"
     tag['data-sortable'] = f"true"
     tag['searchable'] = f"true"
-
+    tag['data-formatter'] = f"valFormatter"
     if dict_args is not None:
         for key, value in dict_args.items():
             tag[key] = value
@@ -230,6 +230,27 @@ def main(database_file=None, config=None, static=False):
     paracoords_script = generate_paracoords('data_tb', config.para_vars)
     #add the onload script to the end of the body
     
+    if config.db_title is not None:
+        #find the title tag and replace the text
+        title_tag = soup.find('h4',{'id':'db_title'})
+        title_tag.string = config.db_title
+    if config.db_subtitle is not None:
+        #find the subtitle tag and replace the text
+        subtitle_tag = soup.find('h6',{'id':'db_subtitle'})
+        subtitle_tag.string = config.db_subtitle
+    if config.db_description is not None:
+        #find the description tag and replace the text
+        description_tag = soup.find('p',{'id':'db_desc'})
+        inner_soup = bs4.BeautifulSoup(config.db_description, 'html.parser')
+        #clear the placeholder children
+        description_tag.clear()
+        #add the new children
+        for child in inner_soup.children:
+            description_tag.append(child)
+
+
+
+
     #== Saving the output ==#
     #export everything to the out_path_folder
     if not os.path.exists(config.output_path):

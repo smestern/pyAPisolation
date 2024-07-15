@@ -7,7 +7,7 @@
 .table-card-alt tbody > tr {
   border-radius: 0;
   outline: 1px solid rgba(0, 0, 0, 0.175);
-  box-shadow: -4px 4px;
+  box-shadow: -4px 4px 0px 2px rgba(0,0,0,0.175);
   overflow: visible;
   margin-right: 0px;
   margin-left: 0;
