@@ -5,9 +5,9 @@
 }
 
 .table-card-alt tbody > tr {
-  border-radius: 0;
+  border-radius: 0px;
   outline: 2px solid rgb(176,176,176);
-  box-shadow: -4px 4px 0px 1px rgba(0, 0, 0, 0.175);
+  box-shadow: -4px 4px 0px 1px rgb(176,176,176);
   overflow: visible;
   margin-right: 0px;
   margin-left: 0;
@@ -16,16 +16,13 @@
 }
 
 .table-card-alt tbody > tr > td {
-  padding: 1rem 0.5rem 1rem 0.5rem;
+  padding: 0.5rem 0rem 0.5rem 0rem;
 }
 
 .card-base {
   box-shadow: -6px 6px 0px 0px rgb(176,176,176);
-  border-bottom-right-radius: 0;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  border-top-right-radius: 0;
   outline: 2px solid rgb(176,176,176);
+  border-radius: 0px;
   transition: box-shadow .1s, transform .1s;
 }
 
@@ -45,13 +42,22 @@ thead {
 }
 
 .card-base:hover {
-  outline: 2px solid rgba(0, 0, 0, 0.25);
+  outline: 2px solid rgb(166,166,166);
   box-shadow: -7px 8px 0px 0px rgb(176,176,176);
 }
 
 .table-card-alt tbody tr:hover {
-  transform: translateX(2px) translateY(-2px) translateZ(0px);
-  outline: 2px solid rgba(0, 0, 0, 0.25);
+  outline: 2px solid rgb(166,166,166);
   box-shadow: -6px 6px 0px 0px rgb(176,176,176);
+}
+
+path {
+}
+
+path:hover {
+  cursor: crosshair;
+}
+
+text {
 }
 

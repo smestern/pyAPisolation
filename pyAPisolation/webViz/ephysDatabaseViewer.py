@@ -22,7 +22,7 @@ import shutil
 from .flaskApp import tsServer
 from .tsDatabaseViewer import tsDatabaseViewer
 from .webVizConfig import webVizConfig
-from ._scriptTemplates import generate_onload, generate_umap, generate_paracoords
+from ._scriptTemplates import generate_onload, generate_umap, generate_paracoords, colors, colors_end
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,8 @@ _LOCAL_PATH = os.path.dirname(os.path.abspath(__file__))
 def gen_table_head_str_(col, soup, dict_args=None):
     tag = soup.new_tag(f"th")
     tag['data-field'] = f"{col}"
-    tag['data-sortable'] = f"true"
-    tag['searchable'] = f"true"
+    tag['data-sortable'] = f"false"
+    tag['data-searchable'] = f"false"
     tag['data-formatter'] = f"valFormatter"
     if dict_args is not None:
         for key, value in dict_args.items():
@@ -206,29 +206,53 @@ def main(database_file=None, config=None, static=False):
     visible_cols = np.unique(visible_cols)
     visible_cols = np.setdiff1d(visible_cols, config.file_index)
     #remove file_index if its there
-    
-    visible_cols = np.hstack((config.file_index, '_plot', visible_cols, '_plot_fi'))
-    #we need to add the hidden columns
-    hidden_cols = np.setdiff1d(full_dataframe.columns, visible_cols)
-    for col in visible_cols:
-        logger.info(f"Adding column {col}")
-        #if the column is _plot, add a special tag
-        if '_plot' in col:
-            test = soup.new_tag(f"th")
-            test['data-field'] = f"{col}"
-            test['data-formatter'] = f"plotFormatterDummy"
-            test['data-sortable'] = f"false"
-            test['data-searchable'] = f"false"
-            test.string = f""
-        else:
-            test = gen_table_head_str_(col, soup)
-        table_head.append(test)
+    if config.hidden_table is not None:
+        if config.hidden_table is False:
+            visible_cols = np.hstack((config.file_index, '_plot', visible_cols, '_plot_fi'))
+            #we need to add the hidden columns
+            hidden_cols = np.setdiff1d(full_dataframe.columns, visible_cols)
+            for col in visible_cols:
+                logger.info(f"Adding column {col}")
+                #if the column is _plot, add a special tag
+                if '_plot' in col:
+                    test = soup.new_tag(f"th")
+                    test['data-field'] = f"{col}"
+                    test['data-formatter'] = f"plotFormatterDummy"
+                    test['data-sortable'] = f"false"
+                    test['data-searchable'] = f"false"
+                    test.string = f""
+                else:
+                    test = gen_table_head_str_(col, soup)
+                table_head.append(test)
 
-    #add the hidden columns
-    for col in hidden_cols:
-        logger.info(f"Adding hidden column {col}")
-        test = gen_table_head_str_(col, soup, dict_args={'data-visible': 'false', 'data-searchable': 'false', 'data-sortable': 'true'})
-        table_head.append(test)
+            #add the hidden columns
+            for col in hidden_cols:
+                logger.info(f"Adding hidden column {col}")
+                test = gen_table_head_str_(col, soup, dict_args={'data-visible': 'false', 'data-searchable': 'false', 'data-sortable': 'true'})
+                table_head.append(test)
+        else:
+            #our actual columns are just then
+            _true_visible = np.hstack((config.file_index, '_plot', '_ephys', '_plot_fi'))
+            for col in _true_visible:
+                if '_plot' in col:
+                    test = soup.new_tag(f"th")
+                    test['data-field'] = f"{col}"
+                    test['data-formatter'] = f"plotFormatterDummy"
+                    test['data-sortable'] = f"false"
+                    test['data-searchable'] = f"false"
+                    test.string = f""
+                elif '_ephys' in col:
+                    test = gen_table_head_str_(col, soup, dict_args={'data-formatter': 'ephysFormatterDummy', 'data-searchable': 'false', 'data-sortable': 'false'})
+                else:
+                    test = gen_table_head_str_(col, soup)
+                table_head.append(test)
+
+            #add the hidden columns
+            hidden_cols = np.setdiff1d(full_dataframe.columns, _true_visible)
+            for col in hidden_cols:
+                logger.info(f"Adding hidden column {col}")
+                test = gen_table_head_str_(col, soup, dict_args={'data-visible': 'false', 'data-searchable': 'false', 'data-sortable': 'true'})
+                table_head.append(test)
 
     if not static:
         #replace the template.js import in the html with 
@@ -283,6 +307,10 @@ def main(database_file=None, config=None, static=False):
         #add the onload script to the template.js file
         template_js = template_js.replace("/* onload */", umap_script + "\n \t" + paracoords_script)
         #template_js = template_js.replace("/* data_tb */", json_var)
+        template_js = template_js.replace("/* colors */", colors+colors_end)
+
+        template_js = template_js.replace("/* ekeys */", "var ekeys = " + json.dumps(visible_cols.tolist()))
+
     #save the template.js file
     with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:
         outf.write(template_js)

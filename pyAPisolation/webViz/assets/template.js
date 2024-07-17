@@ -4,7 +4,9 @@ window.onload = function() {
 
     /* data_tb */
 
-    var embed_colors = ['#0000FF', '#A5E41F', '#FF24FF', '#B8B2B2', '#fc0303']
+    /* colors */
+
+    /* ekeys */
     function unpack(rows, key) {
         return rows.map(function(row) { 
         return row[key]; 
@@ -36,7 +38,6 @@ window.onload = function() {
                 values: unpack(data_tb, key),
                 multiselect: false
             }}),
-            rangefont: {size: 5},
             labelangle: -45
         }]; // create the data object
         
@@ -154,7 +155,7 @@ window.onload = function() {
     function maketrace(row){
         var url = "./data/traces/" + row.ID + ".svg"
         var html = []
-        html.push('<object data="' + url + '" alt="Traces" style="width: 30vw">');
+        html.push('<img src="' + url + '" alt="Traces">');
         //get the div
         var div = document.getElementById("graphDiv_"+row.ID+"_plot")
         div.innerHTML = html.join('');
@@ -163,7 +164,7 @@ window.onload = function() {
     function makerheo(row){
         var url = "./data/traces/" + row.ID + "_rheo.png"
         var html = []
-        html.push('<img src="' + url + '" alt="Rheobase" style="width: 10vw">');
+        html.push('<img src="' + url + '" alt="Rheobase" style="width: 10%">');
         //get the div
         var div = document.getElementById("graphDiv_"+row.ID+"_plot_rheo")
         div.innerHTML = html.join('');
@@ -171,11 +172,38 @@ window.onload = function() {
     function makefi(row){
         var url = "./data/traces/" + row.ID + "_FI.svg"
         var html = []
-        html.push('<object data="' + url + '" alt="FI" style="width: 20vw">');
+        html.push('<object data="' + url + '" alt="FI">');
         //get the div
         var div = document.getElementById("graphDiv_"+row.ID+"_plot_fi")
         div.innerHTML = html.join('');
     };
+
+    function makeephys(row, keys=ekeys){
+        var html = [];
+        
+        //we just need to populate it with rows
+        html.push('<div class="col">');
+        
+        //loop through the keys
+        keys.forEach(function(key){
+            html.push('<div class="row">');
+            html.push('<p class="ephys-key">'+key+'</p>');
+            html.push('<p class="ephys-value">'+row[key]+'</p>');
+            html.push('</div>');
+        
+            
+        });
+        html.push('</div>');
+        //get the div
+
+
+
+        var div = document.getElementById("table_"+row.ID)
+        div.innerHTML = html.join('');
+
+
+    };
+
 
     function filterByPlot(keys, ranges){		
         var newArray = data_tb.filter(function (el) {
@@ -192,6 +220,7 @@ window.onload = function() {
 
         $('#table').bootstrapTable('filterBy',{'ID': result})
     };
+
 
 
     function cellStyle(value, row, index) {
@@ -227,6 +256,7 @@ window.onload = function() {
                     maketrace(row);
                     // Uncomment the next line if makerheo should also be awaited
                     // makerheo(row);
+                    makeephys(row);
                     makefi(row);
                     resolve();
                 }, 1000);
