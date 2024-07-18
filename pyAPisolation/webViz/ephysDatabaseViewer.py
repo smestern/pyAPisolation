@@ -22,7 +22,7 @@ import shutil
 from .flaskApp import tsServer
 from .tsDatabaseViewer import tsDatabaseViewer
 from .webVizConfig import webVizConfig
-from ._scriptTemplates import generate_onload, generate_umap, generate_paracoords, colors, colors_end
+from ._scriptTemplates import generate_onload, generate_umap, generate_paracoords, colors, generate_colors
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,6 @@ def main(database_file=None, config=None, static=False):
                                       [*config.table_vars_rq, *config.table_vars, *config.umap_cols, *config.umap_labels, *config.para_vars, config.primary_label 
                                        if config.primary_label is not None else 'label', config.file_index, config.file_path])
     full_dataframe['ID'] = full_dataframe[config.file_index] if config.file_index in full_dataframe.columns else full_dataframe.index #add an ID column, if it does not exist
-    
     #get the labels from the primary config
     if config.primary_label is not None:
         if config.primary_label not in full_dataframe.columns:
@@ -134,7 +133,6 @@ def main(database_file=None, config=None, static=False):
 
     pred_col, labels = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]), ret_labels=True, labels=labels)
     full_dataframe['label'] = labels
-
     #check if the umap_cols are present in the dataframe
     if not all([x in full_dataframe.columns for x in config.umap_cols]):
         print("Umap columns not present in the dataframe, generating...")
@@ -151,6 +149,12 @@ def main(database_file=None, config=None, static=False):
         umap_data = full_dataframe[config.umap_cols].to_numpy()
         full_dataframe['Umap X'] = umap_data[:, 0]
         full_dataframe['Umap Y'] = umap_data[:, 1]
+
+    #rename the columns if needed
+    full_dataframe = config.process_rename(full_dataframe)
+
+
+
 
     #populate umap-drop-menu 
     for label in config.umap_labels:
@@ -212,7 +216,8 @@ def main(database_file=None, config=None, static=False):
             #we need to add the hidden columns
             hidden_cols = np.setdiff1d(full_dataframe.columns, visible_cols)
             for col in visible_cols:
-                logger.info(f"Adding column {col}")
+                logger.info(f"Adding column {col}")\
+                
                 #if the column is _plot, add a special tag
                 if '_plot' in col:
                     test = soup.new_tag(f"th")
@@ -221,6 +226,8 @@ def main(database_file=None, config=None, static=False):
                     test['data-sortable'] = f"false"
                     test['data-searchable'] = f"false"
                     test.string = f""
+                elif col == config.file_index:
+                    test = gen_table_head_str_(col, soup, dict_args={'data-class': 'file-ID'})
                 else:
                     test = gen_table_head_str_(col, soup)
                 table_head.append(test)
@@ -243,6 +250,8 @@ def main(database_file=None, config=None, static=False):
                     test.string = f""
                 elif '_ephys' in col:
                     test = gen_table_head_str_(col, soup, dict_args={'data-formatter': 'ephysFormatterDummy', 'data-searchable': 'false', 'data-sortable': 'false'})
+                elif col == config.file_index:
+                    test = gen_table_head_str_(col, soup, dict_args={'data-class': 'file-ID'})
                 else:
                     test = gen_table_head_str_(col, soup)
                 table_head.append(test)
@@ -265,7 +274,8 @@ def main(database_file=None, config=None, static=False):
 
     #generate the umap and paracoords scripts
     umap_script = generate_umap('data_tb', [*config.umap_cols, config.umap_labels[0]])
-    paracoords_script = generate_paracoords('data_tb', config.para_vars)
+    paracoords_script = generate_paracoords('data_tb', config.para_vars, config.para_var_colors)
+    color_script = generate_colors(config.color_schemes)
     #add the onload script to the end of the body
     
     if config.db_title is not None:
@@ -307,7 +317,7 @@ def main(database_file=None, config=None, static=False):
         #add the onload script to the template.js file
         template_js = template_js.replace("/* onload */", umap_script + "\n \t" + paracoords_script)
         #template_js = template_js.replace("/* data_tb */", json_var)
-        template_js = template_js.replace("/* colors */", colors+colors_end)
+        template_js = template_js.replace("/* colors */", colors+str(config.color_schemes))
 
         template_js = template_js.replace("/* ekeys */", "var ekeys = " + json.dumps(visible_cols.tolist()))
 

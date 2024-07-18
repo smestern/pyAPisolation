@@ -86,6 +86,12 @@ window.onload = function() {
     function generate_umap(rows, keys=['Umap X', 'Umap Y', 'label'], colors=embed_colors) {
         
         var encoded_labels = encode_labels(rows, keys[2]);
+        if (Object.keys(colors).includes(keys[2])) {
+            label_color =  colors[keys[2]];
+        }
+        else {
+            label_color =  Plotly.d3.scale.category10().range();
+        }
         // make a trace array for each label
         var traces = []
         encoded_labels[1].forEach(function (label, i) {traces.push(new Object())});
@@ -99,7 +105,7 @@ window.onload = function() {
                 traces[trace].text = [];
                 traces[trace].name = encoded_labels[1][trace];
                 traces[trace].mode = 'markers';
-                traces[trace].marker = { color: colors[trace], size: 5 };
+                traces[trace].marker = { color: label_color[trace], size: 5 };
             }
             traces[trace].x.push(row[keys[0]]);
             traces[trace].y.push(row[keys[1]]);
@@ -172,7 +178,7 @@ window.onload = function() {
     function makefi(row){
         var url = "./data/traces/" + row.ID + "_FI.svg"
         var html = []
-        html.push('<object data="' + url + '" alt="FI">');
+        html.push('<img src="' + url + '" alt="FI">');
         //get the div
         var div = document.getElementById("graphDiv_"+row.ID+"_plot_fi")
         div.innerHTML = html.join('');
@@ -182,13 +188,13 @@ window.onload = function() {
         var html = [];
         
         //we just need to populate it with rows
-        html.push('<div class="col">');
+        html.push('<div class="col table-ephys">');
         
         //loop through the keys
         keys.forEach(function(key){
             html.push('<div class="row">');
-            html.push('<p class="ephys-key">'+key+'</p>');
-            html.push('<p class="ephys-value">'+row[key]+'</p>');
+            html.push('<span class="ephys-key">'+key+'</span>');
+            html.push('<span class="ephys-value"> '+row[key]+'</span>');
             html.push('</div>');
         
             

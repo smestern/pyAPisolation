@@ -41,7 +41,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col col-para">
                         <div class="card card-base" id="para_card">
                             <div class="card-body">
                                 <h4 class="card-title">Title</h4>
@@ -65,9 +65,7 @@ data-classes="table table-responsive table-card-alt">
     <tr>
     </tr>
 </thead>
-</table>
-            <div class="col"></div>
-        </div>
+</table></div>
     </div><div>
     <script>
     function plotFormatterDummy(value, row, index,field) {
@@ -77,12 +75,8 @@ data-classes="table table-responsive table-card-alt">
         //make a nice text for the value
         html = []
         html.push('<div class="col">')
-        html.push('<div class="row">')
         html.push('<div class="feat-title">' + field + '</div>')
-        html.push('</div>')
-        html.push('<div class="row">')
-        html.push('<div class="feat-value">' + value + '</div>')
-        html.push('</div>')
+        html.push('<span class="feat-value">' + value + '</span>')
         html.push('</div>')
         return html.join('')
 
