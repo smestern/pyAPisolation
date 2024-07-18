@@ -1,6 +1,6 @@
 // This script is used to generate the table and parallel coordinates plot in the web application
 // wrap this in a on load function to ensure the page is loaded before the script runs
-window.onload = function() {
+$( document ).ready(function() {
 
     /* data_tb */
 
@@ -33,7 +33,7 @@ window.onload = function() {
         
             dimensions: keys.map(function (key) {
             return {
-                //range: [Math.min(...unpack(data_tb, key)), Math.max(...unpack(data_tb, key))],
+                range: [Math.min(...unpack(data_tb, key)), Math.max(...unpack(data_tb, key))],
                 label: key,
                 values: unpack(data_tb, key),
                 multiselect: false
@@ -99,17 +99,21 @@ window.onload = function() {
         // loop through the rows and append the data to the correct trace/data
         rows.forEach(function (row) {
             var trace = encoded_labels[1].indexOf(row[keys[2]]);
-            if (traces[trace].x === undefined) {
-                traces[trace].x = [];
-                traces[trace].y = [];
-                traces[trace].text = [];
-                traces[trace].name = encoded_labels[1][trace];
-                traces[trace].mode = 'markers';
-                traces[trace].marker = { color: label_color[trace], size: 5 };
-            }
-            traces[trace].x.push(row[keys[0]]);
-            traces[trace].y.push(row[keys[1]]);
-            traces[trace].text.push(row['ID']);
+            if (encoded_labels[1][trace] != 'nan'){
+                if (traces[trace].x === undefined) {
+                    
+                        traces[trace].x = [];
+                        traces[trace].y = [];
+                        traces[trace].text = [];
+                        traces[trace].name = encoded_labels[1][trace];
+                        traces[trace].mode = 'markers';
+                        traces[trace].marker = { color: label_color[trace], size: 5 };
+                    
+                }
+                traces[trace].x.push(row[keys[0]]);
+                traces[trace].y.push(row[keys[1]]);
+                traces[trace].text.push(row['ID']);
+            };
         });
 
         // create the data array
@@ -117,8 +121,16 @@ window.onload = function() {
 
         var layout = {dragmode: 'lasso',autosize: true,
             margin: {                           // update the left, bottom, right, top margin
-                b: 20, r: 10, t: 20
-            },};
+                b: 20, r: 20, t: 20, l: 20
+            },
+            legend: {
+                x: 1,
+                xanchor: 'right',
+                yanchor: 'top',
+                y: 0.2
+            },
+            scene: {aspectmode: "cube", xaxis: {title: keys[0]}, yaxis: {title: keys[1]}}
+        };
 
         Plotly.react('graphDiv_scatter', data, layout, { responsive: true });
         var graphDiv5 = document.getElementById("graphDiv_scatter")
@@ -277,7 +289,11 @@ window.onload = function() {
     // create the table
     // find the table div
     var $table = $('#table')
-
+    // create the table
+    //%table.bootstrapTable({data: data_tb})
+    $table.bootstrapTable('load', data_tb)
+    //$table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
+    $table.bootstrapTable('refresh')
 
     /* onload */
     
@@ -294,8 +310,7 @@ window.onload = function() {
             document.getElementById("drop-button").innerHTML = selected;
         });
     }
-    // create the table
-    $table.bootstrapTable('load', data_tb)
+
     // while we are here, set the attr 'data-detail-formatter' to the function we defined above
 
     //add an event listener for table changes
@@ -307,10 +322,9 @@ window.onload = function() {
 
     // refresh the table
     // set the table to be responsive
-    //$table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
-    $table.bootstrapTable('refresh')
+
 
     //now create our cell plots
     
 
-};
+});

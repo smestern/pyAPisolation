@@ -325,7 +325,7 @@ def main(database_file=None, config=None, static=False):
     with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:
         outf.write(template_js)
     #this si instered into the assets/data.js file
-    with open(os.path.join(config.output_path, "assets/data.js"), "w") as outf:
+    with open(os.path.join(config.output_path, "assets/data.json"), "w") as outf:
         outf.write(json_var)        
     if static:
         print("=== Running Server ===")
