@@ -250,6 +250,7 @@ def main(database_file=None, config=None, static=False):
                     test.string = f""
                 elif '_ephys' in col:
                     test = gen_table_head_str_(col, soup, dict_args={'data-formatter': 'ephysFormatterDummy', 'data-searchable': 'false', 'data-sortable': 'false'})
+                    test.string = f""
                 elif col == config.file_index:
                     test = gen_table_head_str_(col, soup, dict_args={'data-class': 'file-ID'})
                 else:
@@ -282,6 +283,10 @@ def main(database_file=None, config=None, static=False):
         #find the title tag and replace the text
         title_tag = soup.find('h4',{'id':'db_title'})
         title_tag.string = config.db_title
+
+        #also the page title
+        soup.title.string = config.db_title
+
     if config.db_subtitle is not None:
         #find the subtitle tag and replace the text
         subtitle_tag = soup.find('h6',{'id':'db_subtitle'})
@@ -295,6 +300,30 @@ def main(database_file=None, config=None, static=False):
         #add the new children
         for child in inner_soup.children:
             description_tag.append(child)
+    if config.db_links is not None:
+        #get the card-links
+        card_links = soup.find_all('a', {'class': 'card-link'})
+        #clear the children
+        [x.clear() for x in card_links]
+        description_tag = soup.find('p',{'id':'db_desc'})
+        for link in config.db_links:
+            #create a new link tag
+            new_link = soup.new_tag('a')
+            new_link['href'] = link[1]
+            new_link.string = link[0]
+            description_tag.insert_after(new_link)
+
+    #update the embed and paracoords titles
+    if config.db_embed_title is not None:
+        embed = soup.find('div', {'id': 'embed_card'})
+        #find the title tag in the children
+        title_tag = embed.find('h4')
+        title_tag.string = config.db_embed_title
+    if config.db_para_title is not None:
+        paracoords = soup.find('div', {'id': 'para_card'})
+        #find the title tag in the children
+        title_tag = paracoords.find('h4')
+        title_tag.string = config.db_para_title
 
 
 

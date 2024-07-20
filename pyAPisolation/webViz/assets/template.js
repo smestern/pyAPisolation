@@ -7,6 +7,10 @@ $( document ).ready(function() {
     /* colors */
 
     /* ekeys */
+
+
+    var restyle_programmatically = false;
+
     function unpack(rows, key) {
         return rows.map(function(row) { 
         return row[key]; 
@@ -24,27 +28,72 @@ $( document ).ready(function() {
 
     function generate_paracoords(data_tb, keys=['rheobase_thres', 'rheobase_width', 'rheobase_latency'], color='rheobase_thres') {
         //create out plotly fr
+
+        color_vals = unpack(data_tb, color)
+        //encode the labels if they are strings
+        if (typeof color_vals[0] === 'string') {
+            var encoded_labels = encode_labels(data_tb, color);
+            color_vals = encoded_labels[0];
+        }
+        //check if the color key is in embed_colors
+        if (Object.keys(embed_colors).includes(color)) {
+            colorscale =  embed_colors[color];
+            //colorscale needs to be mapped to a range of 0-1 of the normalized values
+            var min = Math.min(...color_vals);
+            var max = Math.max(...color_vals);
+            color_vals = color_vals.map(function (el) { return (el - min) / (max - min); });
+            //colorscale needs to be in the form [0, 'hex'], [1, 'hex'] ...
+            colorscale = colorscale.map(function (el, i) { return [i / (colorscale.length - 1), "#"+el]; });
+        }
+        else {
+            colorscale =  Plotly.d3.scale.category10();
+        }
+    
+
         var data = [{
             type: 'parcoords',
             line: {
-            colorscale: 'Plotly',
-            color: unpack(data_tb, color)
+            colorscale: colorscale,
+            color: color_vals
             },
         
             dimensions: keys.map(function (key) {
-            return {
-                range: [Math.min(...unpack(data_tb, key)), Math.max(...unpack(data_tb, key))],
-                label: key,
-                values: unpack(data_tb, key),
-                multiselect: false
-            }}),
+                values = unpack(data_tb, key)
+                //check if its a string
+                if (typeof values[0] === 'string'){
+                    //encode the labels
+                    var encoded_labels = encode_labels(data_tb, key);
+                    var out = {
+                        range: [0, encoded_labels[1].length - 1],
+                        tickvals: [...Array(encoded_labels[1].length).keys()],
+                        ticktext: encoded_labels[1],
+                        label: key,
+                        values: encoded_labels[0],
+                        multiselect: true
+                    }
+                    
+                } else {
+                //replace null / nan with the mean
+                mean_values = values.reduce((a, b) => a + b, 0) / values.length;
+                values = values.map(function (el) { return el == null || el != el ? mean_values : el; });
+                var out = {
+                    range: [Math.min(...values), Math.max(...values)],
+                    label: key,
+                    values: values,
+                    multiselect: false
+                    }
+                }
+                return out
+            }),
             labelangle: -45
         }]; // create the data object
         
-        var layout = {
+        var layout = {margin: {                           // update the left, bottom, right, top margin
+            b: 20, r: 40, t: 90, l: 20
+        },
         };
         
-        fig = Plotly.newPlot('graphDiv_parallel', data, layout, {responsive: true}); // create the plots
+        fig = Plotly.newPlot('graphDiv_parallel', data, layout, {responsive: true, displayModeBar: false}); // create the plots
         var graphDiv_parallel = document.getElementById("graphDiv_parallel") // get the plot div
         graphDiv_parallel.on('plotly_restyle', function(data){
             var keys = []
@@ -58,18 +107,26 @@ $( document ).ready(function() {
                     else{
                         keys.push(d.label);
                         var allLengths = d.constraintrange.flat();
-                        if (allLengths.length > 2){
+                        //check if the label is actually categorical, by looking at ticktext
+                        if (d.ticktext !== undefined){
+                            //find the tickvals that are selected
+                            var selected = d.tickvals.filter(function(value, index) { return (d.constraintrange[0] <= value && d.constraintrange[1] >= value); });
+                            //find the ticktext that corresponds to the tickvals
+                            var selected_text = selected.map(function(value, index) { return d.ticktext[value]; });
+                            ranges.push(selected_text);
+                            
+                        }else {
+                            if (allLengths.length > 2){
                             ranges.push([d.constraintrange[0][0],d.constraintrange[0][1]]); //return only the first filter applied per feature
 
-                        }else{
-                            ranges.push(d.constraintrange);
-                        }
-                        
-                        
+                            }else{
+                                ranges.push(d.constraintrange);
+                            }
+                        }   
                     } // => use this to find values are selected
             })
 
-            filterByPlot(keys, ranges)
+            filterByPlot(keys, ranges);
         }); 
     };
 
@@ -132,7 +189,7 @@ $( document ).ready(function() {
             scene: {aspectmode: "cube", xaxis: {title: keys[0]}, yaxis: {title: keys[1]}}
         };
 
-        Plotly.react('graphDiv_scatter', data, layout, { responsive: true });
+        Plotly.react('graphDiv_scatter', data, layout, { responsive: true, });
         var graphDiv5 = document.getElementById("graphDiv_scatter")
         graphDiv5.on('plotly_selected', function (eventData) {
             var ids = []
@@ -229,6 +286,9 @@ $( document ).ready(function() {
                     if (ranges[i][0] == -9999){
                         return true;
                     }
+                    else if (typeof ranges[i][0] === 'string'){
+                        return ranges[i].includes(el[key]);
+                    }
                     else{
                         return el[key] >= ranges[i][0] && el[key] <= ranges[i][1];
                     }
@@ -236,9 +296,26 @@ $( document ).ready(function() {
             });
         let result = newArray.map(function(a) { return a.ID; });
 
-        $('#table').bootstrapTable('filterBy',{'ID': result})
+        $('#table').bootstrapTable('filterBy',{'ID': result});
+        crossfilter(data_tb, result);
     };
 
+    function crossfilter(data_tb, IDs) { 
+        //set the restyle flag to true
+        restyle_programmatically = true; //this way we can avoid the plotly_restyle event loop
+
+        //now we want to get the embedded graphDiv
+        var graphDiv_scatter = document.getElementById("graphDiv_scatter");
+
+        console.log("Crossfiltering data...");
+        var selected = [];
+        for (var i = 0; i < graphDiv_scatter.data.length; i++) {
+            var trace = graphDiv_scatter.data[i];
+            //figure out if trace.text is in the selected IDs
+            
+
+
+    }
 
 
     function cellStyle(value, row, index) {
