@@ -159,8 +159,8 @@ def main(database_file=None, config=None, static=False):
     #populate umap-drop-menu 
     for label in config.umap_labels:
         full_dataframe[label] = full_dataframe[label].astype(str)
-        umap_drop = soup.find('div', {'id': 'umap-drop-menu'})
-        temp_opt = f"""<button id="{label}" class="dropdown-item" type="button">{label}</button>"""
+        umap_drop = soup.find('select', {'id': 'umap-drop-menu'})
+        temp_opt = f"""<option id="{label}" class="dropdown-item">{label}</option>"""
         umap_drop.append(bs4.BeautifulSoup(temp_opt, 'html.parser'))
     ## handle plots
     if config.plots_path: #if the user has already pregeneated the plots
@@ -309,8 +309,8 @@ def main(database_file=None, config=None, static=False):
         for link in config.db_links:
             #create a new link tag
             new_link = soup.new_tag('a')
-            new_link['href'] = link[1]
-            new_link.string = link[0]
+            new_link['href'] = config.db_links[link]
+            new_link.string = link
             description_tag.insert_after(new_link)
 
     #update the embed and paracoords titles

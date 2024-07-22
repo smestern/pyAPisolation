@@ -13,9 +13,9 @@
 </head>
 
 <body>
-    <div class="container-fluid d-flex flex-column flex-grow-1 flex-shrink-1 flex-fill justify-content-center align-items-center align-items-xxl-center" style="position: static;">
+    <div class="container-fluid d-flex flex-column flex-grow-1 flex-shrink-1 flex-fill justify-content-center align-items-center align-content-center align-items-xxl-center" style="position: static;">
         <div class="row">
-            <div class="col-md-2">
+            <div class="col-md">
                 <div class="row">
                     <div class="col">
                         <div class="card card-base">
@@ -27,23 +27,29 @@
                         </div>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col">
+                        <div class="card card-base">
+                            <div class="card-body">
+                                <h6 class="text-muted card-subtitle" id="Label-Viz">Label Visualized</h6><select id="umap-drop-menu" class="form-select"></select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-10">
+            <div class="col-md-10" id="plot-col">
                 <div class="row">
                     <div class="col">
                         <div class="card card-base" id="embed_card">
                             <div class="card-body" style="min-height: auto;">
                                 <h4 class="card-title">Title</h4>
                                 <div id="graphDiv_scatter" style="min-height: 450px;"></div>
-                                <div class="dropdown" id="umap-drop"><button class="btn btn-primary dropdown-toggle" aria-expanded="false" data-bs-toggle="dropdown" id="drop-button" type="button">Dropdown </button>
-                                    <div class="dropdown-menu" id="umap-drop-menu"></div>
-                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col col-para">
                         <div class="card card-base" id="para_card">
-                            <div class="card-body">
+                            <div class="card-body" style="max-height: 90vh;min-height: 25vh;">
                                 <h4 class="card-title">Title</h4>
                                 <div id="graphDiv_parallel"></div>
                             </div>

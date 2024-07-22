@@ -8,7 +8,9 @@ onload = """ window.onload = function() {%s}; """
 
 umap_call = """generate_umap($datatb, $umapkeys); """
 
-paracoords_call = """generate_paracoords($datatb, $paracoordskeys, '$default_color'); """
+paracoords_call = """var paracoordskeys = $paracoordskeys;
+                    var paracoordscolors = "$default_color";
+                    generate_paracoords($datatb, $paracoordskeys, '$default_color'); """
 
 colors = """var embed_colors = """
 

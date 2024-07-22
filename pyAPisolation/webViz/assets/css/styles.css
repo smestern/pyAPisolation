@@ -82,7 +82,7 @@ img {
   height: 100%;
 }
 
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 1050px) {
   .col-para {
     display: none !important;
   }
@@ -102,5 +102,16 @@ img {
 
 img {
   filter: contrast(200%);
+}
+
+#umap-drop-menu {
+  margin-top: 6px;
+  margin-right: 0px;
+  margin-bottom: 6px;
+}
+
+#plot-col {
+  flex-grow: 1;
+  flex-basis: 60%;
 }
 

@@ -19,31 +19,47 @@ $( document ).ready(function() {
     function filterByID(ids) {
         if (ids === undefined) {
             $('#table').bootstrapTable('filterBy', {})
+            crossfilter(data_tb, [], "scatter");
         }
         else {
             $('#table').bootstrapTable('filterBy', { ID: ids })
+            crossfilter(data_tb, ids, "scatter");
         }
     }
 
 
-    function generate_paracoords(data_tb, keys=['rheobase_thres', 'rheobase_width', 'rheobase_latency'], color='rheobase_thres') {
+    function generate_paracoords(data_tb, keys=['rheobase_thres', 'rheobase_width', 'rheobase_latency'], color='rheobase_thres', filter=[]) {
         //create out plotly fr
 
-        color_vals = unpack(data_tb, color)
+        if (filter.length > 0) {
+            var data_para = data_tb.filter(function (el) {
+                return filter.includes(el.ID);
+            });
+        }
+        else {
+            var data_para = data_tb;
+        }
+
+        color_vals = unpack(data_para, color)
         //encode the labels if they are strings
         if (typeof color_vals[0] === 'string') {
-            var encoded_labels = encode_labels(data_tb, color);
+            var encoded_labels = encode_labels(data_para, color);
             color_vals = encoded_labels[0];
         }
         //check if the color key is in embed_colors
         if (Object.keys(embed_colors).includes(color)) {
             colorscale =  embed_colors[color];
+            // affix a white color to the start of the colorscale
+            
             //colorscale needs to be mapped to a range of 0-1 of the normalized values
             var min = Math.min(...color_vals);
             var max = Math.max(...color_vals);
-            color_vals = color_vals.map(function (el) { return (el - min) / (max - min); });
+            color_vals = color_vals.map(function (el) { return ((el - min) / (max - min)); });
+            //weird hack but multiply color_vals by 0.999 to avoid the last color in the colorscale
+            //color_vals = color_vals.map(function (el) { return el * (1 - (1/colorscale.length)); });
+            //colorscale.push('7f7f7f');
             //colorscale needs to be in the form [0, 'hex'], [1, 'hex'] ...
-            colorscale = colorscale.map(function (el, i) { return [i / (colorscale.length - 1), "#"+el]; });
+            colorscale = colorscale.map(function (el, i) { return [(i / (colorscale.length - 1)), "#"+el]; }); 
         }
         else {
             colorscale =  Plotly.d3.scale.category10();
@@ -56,15 +72,21 @@ $( document ).ready(function() {
             colorscale: colorscale,
             color: color_vals
             },
+            ids: unpack(data_para, 'ID'),
         
             dimensions: keys.map(function (key) {
-                values = unpack(data_tb, key)
+                values = unpack(data_para, key)
                 //check if its a string
                 if (typeof values[0] === 'string'){
                     //encode the labels
-                    var encoded_labels = encode_labels(data_tb, key);
+                    var encoded_labels = encode_labels(data_para, key);
+                    if (encoded_labels[1].length < 2){
+                        range = [-1, 1];
+                    } else {
+                        range = [0, encoded_labels[1].length - 1];
+                    }
                     var out = {
-                        range: [0, encoded_labels[1].length - 1],
+                        range: range,
                         tickvals: [...Array(encoded_labels[1].length).keys()],
                         ticktext: encoded_labels[1],
                         label: key,
@@ -75,7 +97,9 @@ $( document ).ready(function() {
                 } else {
                 //replace null / nan with the mean
                 mean_values = values.reduce((a, b) => a + b, 0) / values.length;
+                //unfiltered_vals = unpack(data_tb, key);
                 values = values.map(function (el) { return el == null || el != el ? mean_values : el; });
+                //unfiltered_vals = unfiltered_vals.map(function (el) { return el == null || el != el ? mean_values : el; });
                 var out = {
                     range: [Math.min(...values), Math.max(...values)],
                     label: key,
@@ -85,11 +109,12 @@ $( document ).ready(function() {
                 }
                 return out
             }),
-            labelangle: -45
+            labelangle: 0,
+            labelside: 'bottom',
         }]; // create the data object
         
         var layout = {margin: {                           // update the left, bottom, right, top margin
-            b: 20, r: 40, t: 90, l: 20
+            b: 90, r: 40, t: 20, l: 40
         },
         };
         
@@ -176,7 +201,8 @@ $( document ).ready(function() {
         // create the data array
         var data = traces;
 
-        var layout = {dragmode: 'lasso',autosize: true,
+        var layout = {dragmode: 'lasso',
+            autosize: true,
             margin: {                           // update the left, bottom, right, top margin
                 b: 20, r: 20, t: 20, l: 20
             },
@@ -271,14 +297,9 @@ $( document ).ready(function() {
         html.push('</div>');
         //get the div
 
-
-
         var div = document.getElementById("table_"+row.ID)
         div.innerHTML = html.join('');
-
-
     };
-
 
     function filterByPlot(keys, ranges){		
         var newArray = data_tb.filter(function (el) {
@@ -297,23 +318,42 @@ $( document ).ready(function() {
         let result = newArray.map(function(a) { return a.ID; });
 
         $('#table').bootstrapTable('filterBy',{'ID': result});
-        crossfilter(data_tb, result);
+        crossfilter(data_tb, result, "parallel");
     };
 
-    function crossfilter(data_tb, IDs) { 
+    function crossfilter(data_tb, IDs, sender='') { 
         //set the restyle flag to true
         restyle_programmatically = true; //this way we can avoid the plotly_restyle event loop
+        var graphDiv_parallel = document.getElementById("graphDiv_parallel");
+        if (sender == "parallel") {
+            //now we want to get the embedded graphDiv
+            var graphDiv_scatter = document.getElementById("graphDiv_scatter");
 
-        //now we want to get the embedded graphDiv
-        var graphDiv_scatter = document.getElementById("graphDiv_scatter");
+            console.log("Crossfiltering data...");
+            var selected = [];
+            for (var i = 0; i < graphDiv_scatter.data.length; i++) {
+                var trace = graphDiv_scatter.data[i];
+                //figure out if trace.text is in the selected IDs
+                var trace_selectedIndices = trace.text.map(function(value, index) {
+                    return IDs.includes(value) ? index : undefined;
+                }).filter(function(index) {
+                    return index !== undefined;
+                });
+                //update the selected array
+                selected.push(trace_selectedIndices);
+            }
+            //now we want to update the layout
+            Plotly.update(graphDiv_scatter, {'selectedpoints': selected});
+        } else if (sender == "scatter") {
+            //in this case we completely reset the parallel plot
+            generate_paracoords(data_tb, paracoordskeys, paracoordscolors, IDs);
+        } else {
+            //do nothing
+        };
+        //set the restyle flag to false
+        restyle_programmatically = false
 
-        console.log("Crossfiltering data...");
-        var selected = [];
-        for (var i = 0; i < graphDiv_scatter.data.length; i++) {
-            var trace = graphDiv_scatter.data[i];
-            //figure out if trace.text is in the selected IDs
-            
-
+        
 
     }
 
@@ -376,17 +416,15 @@ $( document ).ready(function() {
     
     //find the elements of 
     var drop_parent = document.getElementById("umap-drop-menu");
-    //get the children and add the event listener
-    var drop_children = drop_parent.children;
-    for (var i = 0; i < drop_children.length; i++) {
-        drop_children[i].addEventListener('click', function (e) {
-            var selected = e.target.innerHTML
-            var keys = ['Umap X', 'Umap Y', selected]
-            generate_umap(data_tb, keys);
-            //update the dropdown
-            document.getElementById("drop-button").innerHTML = selected;
-        });
-    }
+    //this is a bootsrap select
+    
+    //add an event listener
+    drop_parent.addEventListener('change', function (e) {
+        var selected = drop_parent.value;
+        var keys = ['Umap X', 'Umap Y', selected]
+        generate_umap(data_tb, keys);
+        //generate_paracoords(data_tb, keys, selected);
+    });
 
     // while we are here, set the attr 'data-detail-formatter' to the function we defined above
 
