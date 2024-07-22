@@ -32,11 +32,13 @@ $( document ).ready(function() {
         //create out plotly fr
 
         if (filter.length > 0) {
-            var data_para = data_tb.filter(function (el) {
-                return filter.includes(el.ID);
-            });
+            //get the row indices that match the filter
+            var indices = data_tb.map(function (a) { return a['ID']; });
+            indices = indices.filter(function (value, index) { return filter.includes(value); });
+            var data_para = data_tb;
         }
         else {
+            var indices = data_tb.map(function (a) { return a['ID']; });
             var data_para = data_tb;
         }
 
@@ -65,12 +67,18 @@ $( document ).ready(function() {
             colorscale =  Plotly.d3.scale.category10();
         }
     
+        //filter color_vals by our indices
+        color_vals = color_vals.filter((el, i) => indices.includes(data_para[i]['ID']))
+        .map(el => el);
 
         var data = [{
             type: 'parcoords',
             line: {
             colorscale: colorscale,
-            color: color_vals
+            color: color_vals,
+            cauto: false,
+            cmin: 0,
+            cmax: 1,
             },
             ids: unpack(data_para, 'ID'),
         
@@ -85,12 +93,19 @@ $( document ).ready(function() {
                     } else {
                         range = [0, encoded_labels[1].length - 1];
                     }
+
+                    values = encoded_labels[0];
+                    //filter by our indices
+                    // Filter out elements not in indices and then map
+                    values = values.filter((el, i) => indices.includes(data_para[i]['ID']))
+                    .map(el => el);
+
                     var out = {
                         range: range,
                         tickvals: [...Array(encoded_labels[1].length).keys()],
                         ticktext: encoded_labels[1],
                         label: key,
-                        values: encoded_labels[0],
+                        values: values,
                         multiselect: true
                     }
                     
@@ -99,6 +114,9 @@ $( document ).ready(function() {
                 mean_values = values.reduce((a, b) => a + b, 0) / values.length;
                 //unfiltered_vals = unpack(data_tb, key);
                 values = values.map(function (el) { return el == null || el != el ? mean_values : el; });
+                //filter by our indices
+                values = values.filter((el, i) => indices.includes(data_para[i]['ID']))
+                .map(el => el);
                 //unfiltered_vals = unfiltered_vals.map(function (el) { return el == null || el != el ? mean_values : el; });
                 var out = {
                     range: [Math.min(...values), Math.max(...values)],
@@ -114,7 +132,7 @@ $( document ).ready(function() {
         }]; // create the data object
         
         var layout = {margin: {                           // update the left, bottom, right, top margin
-            b: 90, r: 40, t: 20, l: 40
+            b: 90, r: 40, t: 90, l: 40
         },
         };
         
