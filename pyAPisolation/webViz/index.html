@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.22.4/dist/bootstrap-table.min.css">
 </head>
 
-<body>
+<body class="fs-6 fw-lighter focus-ring focus-ring-primary">
     <div class="container-fluid d-flex flex-column flex-grow-1 flex-shrink-1 flex-fill justify-content-center align-items-center align-content-center align-items-xxl-center" style="position: static;">
         <div class="row">
             <div class="col-md">
@@ -31,7 +31,18 @@
                     <div class="col">
                         <div class="card card-base">
                             <div class="card-body">
-                                <h6 class="text-muted card-subtitle" id="Label-Viz">Label Visualized</h6><select id="umap-drop-menu" class="form-select"></select>
+                                <h6 class="text-muted card-subtitle" id="Label-Viz">Label Visualized</h6>
+                                <div id="umap-drop-menu" class="form-check"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row visually-hidden" id="dataset-select">
+                    <div class="col">
+                        <div class="card card-base">
+                            <div class="card-body">
+                                <h6 class="text-muted card-subtitle" id="Label-Viz-1">Datasets Visualized</h6>
+                                <div id="dataset-drop-menu"></div>
                             </div>
                         </div>
                     </div>

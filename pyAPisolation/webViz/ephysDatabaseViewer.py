@@ -159,9 +159,16 @@ def main(database_file=None, config=None, static=False):
     #populate umap-drop-menu 
     for label in config.umap_labels:
         full_dataframe[label] = full_dataframe[label].astype(str)
-        umap_drop = soup.find('select', {'id': 'umap-drop-menu'})
-        temp_opt = f"""<option id="{label}" class="dropdown-item">{label}</option>"""
-        umap_drop.append(bs4.BeautifulSoup(temp_opt, 'html.parser'))
+        umap_drop = soup.find('div', {'id': 'umap-drop-menu'})
+        temp_div = soup.new_tag('div', {'class': 'form-check'})
+        temp_opt = f"""<input id="{label}" type="radio" class="form-check-input" value="{label}"></input>"""
+        
+        temp_div.append(bs4.BeautifulSoup(temp_opt, 'html.parser'))
+        temp_opt = f"""<label class="form-check-label">{label}</label>"""
+        temp_opt = bs4.BeautifulSoup(temp_opt, 'html.parser')
+        temp_div.append(temp_opt)
+        #temp_div = temp_div.prettify()
+        umap_drop.append(temp_div)
     ## handle plots
     if config.plots_path: #if the user has already pregeneated the plots
         plot_data = [os.path.join(config.plots_path, x+".csv") for x in full_dataframe['ID'].to_numpy()]
