@@ -61,6 +61,7 @@ def generate_plots(df, static, filename='filename', foldername='foldername.1'):
     return full_y
 
 
+
 class ephysDatabaseViewer(tsDatabaseViewer):
     def __init__(self, database_file, config=None, **kwargs):
         super().__init__(database_file, config, **kwargs)
@@ -160,15 +161,20 @@ def main(database_file=None, config=None, static=False):
     for label in config.umap_labels:
         full_dataframe[label] = full_dataframe[label].astype(str)
         umap_drop = soup.find('div', {'id': 'umap-drop-menu'})
-        temp_div = soup.new_tag('div', {'class': 'form-check'})
-        temp_opt = f"""<input id="{label}" type="radio" class="form-check-input" value="{label}"></input>"""
+        temp_div = soup.new_tag('div', attrs={'class': 'form-check'})
+        #set the class to form-check
+        if label == config.primary_label:
+            temp_opt = f"""<input id="{label}" type="radio" class="form-check-input" name="label-select" value="{label}" checked></input>"""
+        else:
+            temp_opt = f"""<input id="{label}" type="radio" class="form-check-input" name="label-select" value="{label}"></input>"""
         
         temp_div.append(bs4.BeautifulSoup(temp_opt, 'html.parser'))
-        temp_opt = f"""<label class="form-check-label">{label}</label>"""
+        temp_opt = f"""<label class="form-check-label" for="{label}">{label}</label>"""
         temp_opt = bs4.BeautifulSoup(temp_opt, 'html.parser')
         temp_div.append(temp_opt)
         #temp_div = temp_div.prettify()
         umap_drop.append(temp_div)
+
     ## handle plots
     if config.plots_path: #if the user has already pregeneated the plots
         plot_data = [os.path.join(config.plots_path, x+".csv") for x in full_dataframe['ID'].to_numpy()]
@@ -182,10 +188,8 @@ def main(database_file=None, config=None, static=False):
         new_names.append(temp)
     full_dataframe['foldername'] = new_names #add the new foldername column
 
-    #convert the dataframe to json
-    json_df = full_dataframe.to_json(orient='records')
-    parsed = json.loads(json_df)
-    if static:
+
+    def table_prettier(parsed):
         for i, dict_data in enumerate(parsed):
             dict_data['y'] = plot_data[i]
             for key, value in dict_data.items():
@@ -200,15 +204,74 @@ def main(database_file=None, config=None, static=False):
                         dict_data[key] = round(value, 2)
 
             parsed[i] = dict_data
+        return parsed
+
+
+    #prior to the conversion, we should check if the user is spliting the table
+    if config.table_split is not None:
+        
+        #split the table on the column requested
+        unique_splits = full_dataframe[config.table_split].unique()
+        json_split_strs = f"var split_strs = \"{config.table_split}\" \n"
+        subtables = {}
+        for unique in unique_splits:
+            subtables[unique] = full_dataframe.loc[full_dataframe[config.table_split]==unique]
+
+    else:
+        subtables = {'': full_dataframe}
+        
+        json_split_strs = ""
+    #convert the dataframe to json
+    for title, val in subtables.items():
+        temp_json = val.to_json(orient='records')
+        parsed = json.loads(temp_json)
+        
+        if static:
+            parsed = table_prettier(parsed)
+        #temp_json_str = json.dumps(parsed)
+        subtables[title] = parsed
+
+    json_full = "var subtables = " + json.dumps(subtables) + " \n "
+
+    json_df = full_dataframe.to_json(orient='records')
+    parsed = json.loads(json_df)
+    if static:
+        parsed = table_prettier(parsed)
+       
     json_str = json.dumps(parsed)
 
     #open our template, and insert the json data
-    json_var = '  var data_tb = ' + json_str + ' '
+    if config.table_split is not None:
+        json_var = f" var data_tb = subtables['{config.split_default}']"
+    else:
+        json_var = '  var data_tb = ' + json_str + ' '
+
 
     #script
     json_script =  soup.new_tag('script')
-    json_script.string = json_var
+    json_script.string = json_split_strs+ json_full + json_var
     soup.head.append(json_script)
+
+    #unhide our dataset selector if needed
+    if config.table_split is not None:
+        table_drop = soup.find('div', {'id': 'dataset-drop-menu'})
+        table_drop_parent = soup.find('div', {'id': 'dataset-select'})
+        table_drop_parent['class'] = "row"
+        for label in subtables.keys():
+            temp_div = soup.new_tag('div', attrs={'class': 'form-check'})
+            #set the class to form-check
+            if label == config.split_default:
+                temp_opt = f"""<input id="{label}" type="checkbox" class="form-check-input" name="dataset-select" value="{label}" checked></input>"""
+            else:
+                temp_opt = f"""<input id="{label}" type="checkbox" class="form-check-input" name="dataset-select" value="{label}"></input>"""
+            
+            temp_div.append(bs4.BeautifulSoup(temp_opt, 'html.parser'))
+            temp_opt = f"""<label class="form-check-label" for="{label}">{label}</label>"""
+            temp_opt = bs4.BeautifulSoup(temp_opt, 'html.parser')
+            temp_div.append(temp_opt)
+            #temp_div = temp_div.prettify()
+            table_drop.append(temp_div)
+
     
     #column tags
     table_head= soup.find('tr')
@@ -356,6 +419,8 @@ def main(database_file=None, config=None, static=False):
         template_js = template_js.replace("/* colors */", colors+str(config.color_schemes))
 
         template_js = template_js.replace("/* ekeys */", "var ekeys = " + json.dumps(visible_cols.tolist()))
+
+        template_js = template_js.replace("/* para_keys */", "var para_keys = "+ json.dumps(config.para_vars))
 
     #save the template.js file
     with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:

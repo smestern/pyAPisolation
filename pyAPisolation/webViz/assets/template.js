@@ -8,6 +8,7 @@ $( document ).ready(function() {
 
     /* ekeys */
 
+    /* para_keys */
 
     var restyle_programmatically = false;
 
@@ -25,6 +26,19 @@ $( document ).ready(function() {
             $('#table').bootstrapTable('filterBy', { ID: ids })
             crossfilter(data_tb, ids, "scatter");
         }
+    }
+
+    function table_concatenator(labels){
+
+        //update the global table data_tb with the selected labels
+        data_tb = []
+        labels.forEach(function(label) {
+            // Assuming you have a way to get data for each label
+            // For example, you might have a function getDataForLabel(label)
+            var dataForLabel = subtables[label]
+            // Concatenate or merge dataForLabel into data_tb
+            data_tb.push(...dataForLabel);
+        });
     }
 
 
@@ -438,13 +452,39 @@ $( document ).ready(function() {
     
     //add an event listener
     drop_parent.addEventListener('change', function (e) {
-        var selected = drop_parent.value;
+        var selected = $('input[name="label-select"]:checked').val();
         var keys = ['Umap X', 'Umap Y', selected]
         generate_umap(data_tb, keys);
         //generate_paracoords(data_tb, keys, selected);
     });
 
-    // while we are here, set the attr 'data-detail-formatter' to the function we defined above
+    //listen for changes
+    var dataset_parent = document.getElementById("dataset-select");
+    // Check if the element has the class 'visually-hidden'
+    if (dataset_parent.classList.contains('visually-hidden')) {
+        console.log("Element is visually hidden");
+    } else {
+        var drop_parent = document.getElementById("dataset-drop-menu");
+        //this is a bootsrap select
+        
+        //add an event listener
+        drop_parent.addEventListener('change', function (e) {
+            var selectedCheckboxes = document.querySelectorAll('input[name="dataset-select"]:checked');
+            var selectedValues = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+            table_concatenator(selectedValues);
+            //complete refresh
+            var selected = $('input[name="label-select"]:checked').val();
+            generate_umap(data_tb, ['Umap X', 'Umap Y', selected]);
+            generate_paracoords(data_tb, para_keys, paracoordscolors)
+            $table.bootstrapTable('load', data_tb)
+            //$table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
+            $table.bootstrapTable('refresh')
+        });
+
+    }
+
+
+
 
     //add an event listener for table changes
     $table.on('all.bs.table', function (e, name, args) {
