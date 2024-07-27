@@ -422,6 +422,8 @@ def main(database_file=None, config=None, static=False):
 
         template_js = template_js.replace("/* para_keys */", "var para_keys = "+ json.dumps(config.para_vars))
 
+        template_js = template_js.replace("/* umap_labels */", "var umap_labels = " + json.dumps(config.umap_labels))
+
     #save the template.js file
     with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:
         outf.write(template_js)

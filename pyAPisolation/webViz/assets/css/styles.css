@@ -101,7 +101,7 @@ img {
 }
 
 img {
-  filter: contrast(200%);
+  filter: contrast(100%);
 }
 
 #umap-drop-menu {
@@ -113,5 +113,15 @@ img {
 #plot-col {
   flex-grow: 1;
   flex-basis: 60%;
+}
+
+img[alt="FI"] {
+  padding-right: 20px;
+  padding-top: 0px;
+}
+
+.fixed-table-toolbar {
+  /*visibility: hidden;*/
+  /*max-height: 0px;*/
 }
 

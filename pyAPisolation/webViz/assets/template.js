@@ -10,6 +10,10 @@ $( document ).ready(function() {
 
     /* para_keys */
 
+    /* umap_labels */
+
+    var table_concat = false;
+
     var restyle_programmatically = false;
 
     function unpack(rows, key) {
@@ -34,8 +38,28 @@ $( document ).ready(function() {
         data_tb = []
         labels.forEach(function(label) {
             // Assuming you have a way to get data for each label
-            // For example, you might have a function getDataForLabel(label)
             var dataForLabel = subtables[label]
+            //we also want rename the columns in the subcolumn with the split label
+            // if (labels.length > 1) {
+            //     table_concat = true;
+            //     dataForLabel.forEach( function(row){
+            //         umap_labels.forEach(function(ulabel){
+            //             //check if labels are present
+            //             if (row[ulabel].indexOf(label) < 0){
+            //             row[ulabel] = row[ulabel] + " " + label};
+            //         });
+            //     });
+            // } else {
+            //     table_concat = false;
+            //     dataForLabel.forEach( function(row){
+            //         umap_labels.forEach(function(ulabel){
+            //             //check if labels are present
+            //             if (row[ulabel].indexOf(label) > 0){
+            //             row[ulabel] = row[ulabel].substring(0, row[ulabel].indexOf((" " + label)))};
+            //         });
+            //     });
+
+            // }
             // Concatenate or merge dataForLabel into data_tb
             data_tb.push(...dataForLabel);
         });
@@ -197,9 +221,11 @@ $( document ).ready(function() {
 
 
     //umap plot
-    function generate_umap(rows, keys=['Umap X', 'Umap Y', 'label'], colors=embed_colors) {
+    function generate_umap(rows, keys=['Umap X', 'Umap Y', 'label'], colors=embed_colors, dataset_en='Species', dataset_shapes=['o', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross'], dataset_opacity=[0.25, 1]) {
         
         var encoded_labels = encode_labels(rows, keys[2]);
+        var encoded_dataset = encode_labels(rows, dataset_en);
+
         if (Object.keys(colors).includes(keys[2])) {
             label_color =  colors[keys[2]];
         }
@@ -208,25 +234,37 @@ $( document ).ready(function() {
         }
         // make a trace array for each label
         var traces = []
-        encoded_labels[1].forEach(function (label, i) {traces.push(new Object())});
+        encoded_labels[1].forEach(function (label, i) {
+            if (keys[2] != dataset_en && encoded_dataset[1].length > 1){
+            encoded_dataset[1].forEach(function (dataset, j) {
+                traces.push({
+                    x: [],
+                    y: [],
+                    text: [],
+                    mode: 'markers',
+                    name: `${label} - ${dataset}`,
+                    marker: { color: label_color[i], size: 5, symbol: dataset_shapes[j], opacity: dataset_opacity[j] }                                                                                              
+                })});
+            } else{
+                traces.push({
+                    x: [],
+                    y: [],
+                    text: [],
+                    mode: 'markers',
+                    name: `${label}`,
+                    marker: { color: label_color[i], size: 5, symbol: 'circle' }
+                });
+            }
+        });
 
         // loop through the rows and append the data to the correct trace/data
         rows.forEach(function (row) {
-            var trace = encoded_labels[1].indexOf(row[keys[2]]);
-            if (encoded_labels[1][trace] != 'nan'){
-                if (traces[trace].x === undefined) {
-                    
-                        traces[trace].x = [];
-                        traces[trace].y = [];
-                        traces[trace].text = [];
-                        traces[trace].name = encoded_labels[1][trace];
-                        traces[trace].mode = 'markers';
-                        traces[trace].marker = { color: label_color[trace], size: 5 };
-                    
-                }
-                traces[trace].x.push(row[keys[0]]);
-                traces[trace].y.push(row[keys[1]]);
-                traces[trace].text.push(row['ID']);
+            if (keys[2] != dataset_en && encoded_dataset[1].length > 1){var traceIndex = encoded_labels[1].indexOf(row[keys[2]]) * encoded_dataset[1].length + encoded_dataset[1].indexOf(row[dataset_en])}
+            else{var traceIndex = encoded_labels[1].indexOf(row[keys[2]])};
+            if (encoded_labels[1][traceIndex] != 'nan'){
+                traces[traceIndex].x.push(row[keys[0]]);
+                traces[traceIndex].y.push(row[keys[1]]);
+                traces[traceIndex].text.push(row['ID']);
             };
         });
 
