@@ -12,9 +12,13 @@ $( document ).ready(function() {
 
     /* umap_labels */
 
+    /* dataset_label_col */
+
     var table_concat = false;
 
     var restyle_programmatically = false;
+
+    var pre_selected_datasets = [];
 
     function unpack(rows, key) {
         return rows.map(function(row) { 
@@ -90,16 +94,21 @@ $( document ).ready(function() {
         if (Object.keys(embed_colors).includes(color)) {
             colorscale =  embed_colors[color];
             // affix a white color to the start of the colorscale
+            //filter the colorscale to only colors found in encoded
+            // Filter the colorscale to only include colors found in encoded_labels[1]
+            const encodedKeys = encoded_labels[1];
+            colorscale = Object.fromEntries(
+                Object.entries(colorscale).filter(([key, value]) => encodedKeys.includes(key))
+            );
             
             //colorscale needs to be mapped to a range of 0-1 of the normalized values
             var min = Math.min(...color_vals);
             var max = Math.max(...color_vals);
             color_vals = color_vals.map(function (el) { return ((el - min) / (max - min)); });
-            //weird hack but multiply color_vals by 0.999 to avoid the last color in the colorscale
-            //color_vals = color_vals.map(function (el) { return el * (1 - (1/colorscale.length)); });
-            //colorscale.push('7f7f7f');
-            //colorscale needs to be in the form [0, 'hex'], [1, 'hex'] ...
-            colorscale = colorscale.map(function (el, i) { return [(i / (colorscale.length - 1)), "#"+el]; }); 
+            // colorscale is an object with keys being the actual label, and value being the color
+            colorscale = Object.values(colorscale)
+            colorscale = colorscale.map(function (el, i) { return [(i / (colorscale.length - 1)), "#"+el]; });;
+            
         }
         else {
             colorscale =  Plotly.d3.scale.category10();
@@ -165,12 +174,12 @@ $( document ).ready(function() {
                 }
                 return out
             }),
-            labelangle: 0,
+            labelangle: 25,
             labelside: 'bottom',
         }]; // create the data object
         
         var layout = {margin: {                           // update the left, bottom, right, top margin
-            b: 90, r: 40, t: 90, l: 40
+            b: 120, r: 40, t: 90, l: 40
         },
         };
         
@@ -243,7 +252,7 @@ $( document ).ready(function() {
                     text: [],
                     mode: 'markers',
                     name: `${label} - ${dataset}`,
-                    marker: { color: label_color[i], size: 5, symbol: dataset_shapes[j], opacity: dataset_opacity[j] }                                                                                              
+                    marker: { color: label_color[label], size: 5, symbol: dataset_shapes[j], opacity: dataset_opacity[j] }
                 })});
             } else{
                 traces.push({
@@ -252,7 +261,7 @@ $( document ).ready(function() {
                     text: [],
                     mode: 'markers',
                     name: `${label}`,
-                    marker: { color: label_color[i], size: 5, symbol: 'circle' }
+                    marker: { color: label_color[label], size: 5, symbol: 'circle' }
                 });
             }
         });
@@ -280,7 +289,7 @@ $( document ).ready(function() {
                 x: 1,
                 xanchor: 'right',
                 yanchor: 'top',
-                y: 0.2
+                y: 0.5
             },
             scene: {aspectmode: "cube", xaxis: {title: keys[0]}, yaxis: {title: keys[1]}}
         };
@@ -423,8 +432,6 @@ $( document ).ready(function() {
         //set the restyle flag to false
         restyle_programmatically = false
 
-        
-
     }
 
 
@@ -473,6 +480,21 @@ $( document ).ready(function() {
         });
     }
 
+    function dataset_selector(){
+        var selectedCheckboxes = document.querySelectorAll('input[name="dataset-select"]:checked');
+        var selectedValues = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+        table_concatenator(selectedValues);
+        //complete refresh
+        var selected = $('input[name="label-select"]:checked').val();
+        generate_umap(data_tb, ['Umap X', 'Umap Y', selected]);
+        generate_paracoords(data_tb, para_keys,  selected)
+        $table.bootstrapTable('load', data_tb)
+        //$table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
+        $table.bootstrapTable('refresh')
+
+    }
+
+
     // create the table
     // find the table div
     var $table = $('#table')
@@ -491,9 +513,38 @@ $( document ).ready(function() {
     //add an event listener
     drop_parent.addEventListener('change', function (e) {
         var selected = $('input[name="label-select"]:checked').val();
-        var keys = ['Umap X', 'Umap Y', selected]
-        generate_umap(data_tb, keys);
-        //generate_paracoords(data_tb, keys, selected);
+        //check if selected is
+        if (selected === split_strs) {
+            var selectedCheckboxes = document.querySelectorAll('input[name="dataset-select"]:checked');
+            var selectedValues = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+            pre_selected_datasets = selectedValues;
+            // force select all the datasets
+            var checkboxes = document.querySelectorAll('input[name="dataset-select"]');
+            checkboxes.forEach(checkbox => checkbox.checked = true);
+            dataset_selector();
+        } else if (pre_selected_datasets.length > 0){ 
+            //we want to restore the preselected datasets
+            pre_selected_datasets.forEach(function(dataset){
+                var checkbox = document.getElementById(dataset);
+                checkbox.checked = true;
+            });
+            //uncheck any other checkboxes
+            var checkboxes = document.querySelectorAll('input[name="dataset-select"]');
+            checkboxes.forEach(checkbox => {
+                if (!pre_selected_datasets.includes(checkbox.value)){
+                    checkbox.checked = false;
+                }
+            });
+            //reset the pre_selected_datasets
+            pre_selected_datasets = [];
+            dataset_selector();
+        } else {
+
+            var keys = ['Umap X', 'Umap Y', selected]
+            generate_umap(data_tb, keys);
+            generate_paracoords(data_tb, paracoordskeys, selected) 
+    
+        };
     });
 
     //listen for changes
@@ -507,16 +558,7 @@ $( document ).ready(function() {
         
         //add an event listener
         drop_parent.addEventListener('change', function (e) {
-            var selectedCheckboxes = document.querySelectorAll('input[name="dataset-select"]:checked');
-            var selectedValues = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
-            table_concatenator(selectedValues);
-            //complete refresh
-            var selected = $('input[name="label-select"]:checked').val();
-            generate_umap(data_tb, ['Umap X', 'Umap Y', selected]);
-            generate_paracoords(data_tb, para_keys, paracoordscolors)
-            $table.bootstrapTable('load', data_tb)
-            //$table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
-            $table.bootstrapTable('refresh')
+            dataset_selector();
         });
 
     }

@@ -380,8 +380,11 @@ def main(database_file=None, config=None, static=False):
             #create a new link tag
             new_link = soup.new_tag('a')
             new_link['href'] = config.db_links[link]
+            new_link['class'] = 'card-link'
             new_link.string = link
             description_tag.insert_after(new_link)
+            #also add a break
+            description_tag.insert_after(soup.new_tag('div'))
 
     #update the embed and paracoords titles
     if config.db_embed_title is not None:
@@ -423,6 +426,7 @@ def main(database_file=None, config=None, static=False):
         template_js = template_js.replace("/* para_keys */", "var para_keys = "+ json.dumps(config.para_vars))
 
         template_js = template_js.replace("/* umap_labels */", "var umap_labels = " + json.dumps(config.umap_labels))
+
 
     #save the template.js file
     with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:
