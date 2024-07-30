@@ -174,7 +174,7 @@ $( document ).ready(function() {
                 }
                 return out
             }),
-            labelangle: 25,
+            labelangle: 45,
             labelside: 'bottom',
         }]; // create the data object
         
@@ -250,6 +250,7 @@ $( document ).ready(function() {
                     x: [],
                     y: [],
                     text: [],
+                    customdata: [],
                     mode: 'markers',
                     name: `${label} - ${dataset}`,
                     marker: { color: label_color[label], size: 5, symbol: dataset_shapes[j], opacity: dataset_opacity[j] }
@@ -259,6 +260,7 @@ $( document ).ready(function() {
                     x: [],
                     y: [],
                     text: [],
+                    customdata: [],
                     mode: 'markers',
                     name: `${label}`,
                     marker: { color: label_color[label], size: 5, symbol: 'circle' }
@@ -274,6 +276,7 @@ $( document ).ready(function() {
                 traces[traceIndex].x.push(row[keys[0]]);
                 traces[traceIndex].y.push(row[keys[1]]);
                 traces[traceIndex].text.push(row['ID']);
+                traces[traceIndex].customdata.push(row['ID']);
             };
         });
 
@@ -310,7 +313,30 @@ $( document ).ready(function() {
             }
             filterByID(ids);
         });
-    };-
+        // graphDiv5.on('plotly_hover', function(data) {
+        //     //update the hover innerHTML to display an image
+        //     var point = data.points[0];
+        //     var mouseX = data.event.clientX;
+        //     var mouseY = data.event.clientY;
+        //     var url = "./data/traces/" + point.text + ".svg"
+        //     // Check if the hoverwrapper element exists
+        //     var div = $('#hoverwrapper');
+        //     if (div.length === 0) {
+        //         // Create the hoverwrapper element if it does not exist
+        //         div = $('<div id="hoverwrapper" class="image-wrapper card card-base">')
+        //             .appendTo(document.body);
+        //     }
+
+        //     // Update the position and content of the hoverwrapper element
+        //     div.css({
+        //         "left": mouseX + 'px',
+        //         "top": mouseY + 'px',
+        //         "position": "absolute",
+        //         "padding": "10px",
+        //     }).html('<h6>'+ point.text+'</h6><img src="' + url + '" alt="Traces" style="max-width: 250px; max-height: 250px">');
+
+        // })
+    };
 
     //table functions
     function traceFormatter(index, row) {
@@ -568,7 +594,13 @@ $( document ).ready(function() {
 
     //add an event listener for table changes
     $table.on('all.bs.table', function (e, name, args) {
-        generate_plots();
+        console.log(e, name, args)
+        //if its a click cell, we actually want to just ignore it
+        if (name == "click-cell.bs.table" || name == "click-row.bs.table" || name == "dbl-click-row.bs.table"){ 
+            return;
+        } else {
+            generate_plots();
+        }
     });
 
     generate_plots();
