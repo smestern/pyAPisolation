@@ -125,3 +125,10 @@ img[alt="FI"] {
   /*max-height: 0px;*/
 }
 
+@media (min-width: 1200px) {
+  #header-row {
+    margin-left: 5%;
+    margin-right: 5%;
+  }
+}
+

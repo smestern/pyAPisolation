@@ -288,6 +288,8 @@ $( document ).ready(function() {
             margin: {                           // update the left, bottom, right, top margin
                 b: 20, r: 20, t: 20, l: 20
             },
+            xaxis: { zeroline: false },
+            yaxis: { zeroline: false },
             legend: {
                 x: 1,
                 xanchor: 'right',
