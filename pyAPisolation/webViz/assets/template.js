@@ -128,6 +128,7 @@ $( document ).ready(function() {
             cmax: 1,
             },
             ids: unpack(data_para, 'ID'),
+            customdata: unpack(data_para, 'ID'),
         
             dimensions: keys.map(function (key) {
                 values = unpack(data_para, key)
@@ -408,8 +409,34 @@ $( document ).ready(function() {
         div.innerHTML = html.join('');
     };
 
-    function filterByPlot(keys, ranges){		
-        var newArray = data_tb.filter(function (el) {
+    function filterByPlot(keys, ranges){
+        //we want to filter only the data selected on the scatter and parallel plots
+        var graphDiv_scatter = document.getElementById("graphDiv_scatter");
+        var selected = []
+        for (var i = 0; i < graphDiv_scatter.data.length; i++) {
+            //get the selected points
+            var trace = graphDiv_scatter.data[i];
+            var selectedIndices = trace.selectedpoints;
+            //get the IDs of the selected points
+            var selectedIDs = selectedIndices.map(function(value, index) {
+                return trace.text[value
+                ];
+            });
+            //update the selected array
+            selected.push(...selectedIDs);
+        }
+        //if the total number of selected points is 0, skip this step
+        if (selected.length == 0) {
+            var newArray = data_tb;
+        } else {
+            //filter the data_tb by the selected IDs
+            var newArray = data_tb.filter(function (el) {
+                return selected.includes(el.ID);
+        })};
+        //now we want to filter the data_tb by the selected ranges
+        
+
+        var newArray = newArray.filter(function (el) {
                 return keys.every(function (key, i) {
                     if (ranges[i][0] == -9999){
                         return true;
