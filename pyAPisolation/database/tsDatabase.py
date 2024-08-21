@@ -60,6 +60,9 @@ class tsDatabase:
     ## 1       | file1      | file2      | ... | fileN      | meta1    | feat1    | ts1
     ## 2       | file1      | file2      | ... | fileN      | meta2    | feat2    | ts2
     ## ...     | ...        | ...        | ... | ...        | ...      | ...      | ...
+    #internally we will use annData to store the data, externally we use a excel sheet to store the metadata and features. This is not ideal but end users want to be able to edit the metadata and features in excel.
+    
+
 
     def __init__(self):
         """
@@ -75,4 +78,17 @@ class tsDatabase:
         :param path: Path to the entry
         """
         pass
+
+    def loadEntry(self, name):
+        """
+        Load an entry from the database
+        :param name: Name of the entry
+        """
+        pass
             
+    def updateEntry(self, name):
+        """
+        Update an entry in the database
+        :param name: Name of the entry
+        """
+        pass
