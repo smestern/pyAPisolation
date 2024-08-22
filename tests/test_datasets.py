@@ -1,6 +1,6 @@
 import numpy as np
 from pyAPisolation.dataset import cellData
-
+from pyAPisolation.database import tsDatabase
 def test_x_y_c():
     #generate some fake data
     x = np.random.rand(10, 1000)
@@ -43,6 +43,9 @@ def test_x_y_c():
 
     print('All tests passed')
 
+
+def test_database():
+    pass 
 
 
     
