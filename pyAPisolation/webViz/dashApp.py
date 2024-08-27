@@ -145,10 +145,10 @@ class dashBackend():
         if df is None:
             if dir is not None:
                 _, df, _ = batch_feature_extract(
-                    os.path.abspath(dir), default_dict, protocol_name='')
+                    os.path.abspath(dir), DEFAULT_DICT, protocol_name='')
             else:
                 _, df, _ = batch_feature_extract(os.path.abspath(
-                    '../data/'), default_dict, protocol_name='')
+                    '../data/'), DEFAULT_DICT, protocol_name='')
         else:
             if isinstance(df, pd.DataFrame):
                 pass

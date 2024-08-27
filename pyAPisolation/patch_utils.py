@@ -133,6 +133,8 @@ def find_downward(dataI):
 
 def find_non_zero_range(dataT, dataI):
     non_zero_points = np.nonzero(dataI)[0]
+    if len(non_zero_points) == 0:
+        return (0, 0)
     return (dataT[non_zero_points[0]], dataT[non_zero_points[-1]])
 
 def filter_bessel(data_V, fs, cutoff):

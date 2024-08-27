@@ -1,6 +1,8 @@
 import numpy as np
 from pyAPisolation.dataset import cellData
 from pyAPisolation.database import tsDatabase
+import os
+from joblib import load
 def test_x_y_c():
     #generate some fake data
     x = np.random.rand(10, 1000)
@@ -45,10 +47,13 @@ def test_x_y_c():
 
 
 def test_database():
-    pass 
+    df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
+    db = tsDatabase.tsDatabase(dataframe=df, id_col='filename')
 
+    plt.show()
 
     
 
 if __name__ == "__main__":
+    test_database()
     test_x_y_c()

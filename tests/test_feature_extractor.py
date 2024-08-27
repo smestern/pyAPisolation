@@ -10,7 +10,7 @@ import os
 import pandas as pd
 import numpy as np
 from joblib import dump, load
-from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, default_dict, analyze_spike_times
+from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, DEFAULT_DICT, analyze_spike_times
 from pyAPisolation.patch_utils import load_protocols
 import glob
 
@@ -21,7 +21,7 @@ COLS_TO_SKIP = ['Best Fit', 'Curve fit b1', #random / moving api
 
 def test_dataframe_save():
     # Run the feature extractor
-    spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), default_dict)
+    spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), DEFAULT_DICT)
     #also test the save_data_frames function
     save_data_frames(spike, feat_df, running, root_fold=os.path.dirname(__file__))
     #checked manually later
@@ -31,7 +31,7 @@ def test_feature_extractor():
     df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
 
     # Run the feature extractor
-    spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), default_dict)
+    spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), DEFAULT_DICT)
     
     #sort both by filename, index by filename
     df = df.sort_values(by='filename').set_index('filename')
@@ -101,7 +101,8 @@ def test_analyze_funcs():
     files = glob.glob(os.path.expanduser('~/Dropbox/sara_cell_v2') + '/**/*.abf', recursive=True)
     #load the protocols
     #try to load the protocols
-    spike_times = analyze_spike_times(file=files[1])
+    spike_times = analyze_spike_times(file=files[-1])
+    print(spike_times)
     
 
 

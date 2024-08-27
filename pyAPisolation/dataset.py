@@ -111,7 +111,7 @@ class cellData(object):
     
     @property
     def sweepLengthSec(self):
-        return self.dataX[0,-1]
+        return self.sweepX[-1]
 
     def __str__(self):
         return f"cellData object: {self.name}, loaded from {self.file}"
