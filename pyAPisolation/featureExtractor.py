@@ -272,10 +272,13 @@ def analyze_template(x=None, y=None, c=None, file=None, param_dict=DEFAULT_DICT,
 
 analyze_spike_times = functools.partial(analyze_template, feature_keys=subset_frames['spike_times'])
 analyze_spike_times.__doc__ = analysis_temp_doc_string % 'The spike times'
+analyze_spike_times.__name__ = 'analyze_spike_times'
 analyze_spike_times_isi = functools.partial(analyze_template, feature_keys=subset_frames['spike_times_isi'])
 analyze_spike_times_isi.__doc__ = analysis_temp_doc_string % 'The spike times and the interspike intervals'
+analyze_spike_times_isi.__name__ = 'analyze_spike_times_isi'
 analyze_spike_times_isi_sweepwise = functools.partial(analyze_template, feature_keys=subset_frames['spike_times_isi_sweepwise'])
 analyze_spike_times_isi_sweepwise.__doc__ = analysis_temp_doc_string % 'The spike times, interspike intervals, and the sweepwise spike times'
+analyze_spike_times_isi_sweepwise.__name__ = 'analyze_spike_times_isi_sweepwise'
 
 
 #=== internal functions, but can be used externally ===

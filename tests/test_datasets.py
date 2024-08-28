@@ -50,7 +50,7 @@ def test_database():
     df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
     db = tsDatabase.tsDatabase(dataframe=df, id_col='filename')
 
-    plt.show()
+
 
     
 

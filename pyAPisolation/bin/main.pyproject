@@ -1,7 +1,7 @@
 {
     "files": [
-        "form.ui",
-        "mainwindow.ui",
+        "../gui/database.ui",
+        "/../gui/database.ui",
         "mainwindowMDI.ui",
         "run_APisolation_gui.py"
     ]

@@ -16,18 +16,17 @@ DEFAULT_FEAT_COLS = ['']
 class experimentalStructure:
     """
     A class to represent the experimental structure of a time series database. Each entry represents a protocol,
-    and each protcol has a set of flags, (e.g. time, cell type, etc.).
+    and each protocol has a set of flags, (e.g. time, cell type, etc.).
     One flag is the primairy flag, which is used to flag the protocool the represents the primary time series (for computing features etc).
+
     """
+    
     def __init__(self):
         """
         Constructor for the experimentalStructure class
-        :param path: Path to the database
-        :param exp: Experimental structure of the database
         """
-        self.protocols = []
+        self.protocols = pd.DataFrame(data=None, columns=['name', 'altnames'])
         self.primary = None
-        self.flags = {}
 
     def addProtocol(self, name, flags):
         """
@@ -35,11 +34,29 @@ class experimentalStructure:
         :param name: Name of the protocol
         :param flags: Flags of the protocol
         """
-        self.protocols.append(name)
-        for flag in flags:
-            if flag not in self.flags:
-                self.flags[flag] = []
-            self.flags[flag].append(flags[flag])
+        #check if the protocol already exists in the dataframe either by name or by altnames
+        altnames = np.ravel([x for x in self.protocols['altnames'].values])
+        if name in self.protocols['name'].values or name in altnames:
+            logger.info(f'Protocol {name} already exists in the database')
+
+            if name in self.protocols['altnames'].values:
+                #if the name is in the altnames, we will update the name to the name in the dataframe
+                name = self.protocols[self.protocols['altnames'] == name]['name'].values[0]
+            #if any of the flags are different, we will make a new entry
+            for i in range(len(self.protocols)):
+                if self.protocols['name'][i] == name:
+                    for key in flags.keys():
+                        if key == 'name':
+                            continue
+                        if flags[key] != self.protocols[key][i]:
+                            logger.info(f'Flags for protocol {name} are different, making a new entry')
+                            self.protocols = self.protocols.append(pd.DataFrame(data={'name': name, **flags}))
+                            
+        else:
+            self.protocols = self.protocols.append(pd.DataFrame(data={'name': name, 'altnames': [name], **flags}))
+
+        #deep copy the dataframe to avoid any issues
+        self.protocols = self.protocols.copy() #this is a bit of a hack, but it works for now
     
     def setPrimary(self, name):
         """
@@ -72,7 +89,6 @@ class tsDatabase:
         :param path: Path to the database
         :param exp: Experimental structure of the database
         """
-        self.data = ad.AnnData()
         if path is None:
             self.path = os.getcwd()
         else:
@@ -83,10 +99,17 @@ class tsDatabase:
         else:
             self.exp = exp
 
+        #we have a cellindex df representing the df for cell index
+        self.cellindex = pd.DataFrame()
+        self.data = {}
         #if a dataframe is passed in here, we will use it to populate the database
         if dataframe is not None:
             self.dataframe = dataframe
             self.fromDataFrame(dataframe, self=self, **kwargs)
+        else:
+            self.dataframe = None
+
+        
 
 
     def load(self, path):
@@ -115,9 +138,15 @@ class tsDatabase:
 
         #this will be our primary data object
 
-        self.data = data_obj
-        self.exp.addProtocol(data_obj.obs['protocol'][0], data_obj.obs)
+        self.exp.addProtocol(data_obj.obs['protocol'][0], {'altnames': np.unique(data_obj.obs['protocol'])})
         self.exp.primary = data_obj.obs['protocol'][0]
+
+        self.data = {data_obj.obs['protocol'][0]: data_obj}
+
+        #create our cell index, cell names will be CELL_X_{primary_protocol_file_name}
+        cell_names = [f'CELL_{i}_{data_obj.obs_names}' for i in range(len(data_obj.obs))]
+
+        self.cellindex = pd.DataFrame(index=cell_names, columns=['protocol', 'filename', 'foldername', data_obj.obs['protocol'][0]], data={'protocol': data_obj.obs['protocol'][0], 'filename': data_obj.obs_names, 'foldername': data_obj.obs['foldername'], data_obj.obs['protocol'][0]: data_obj.obs_names})
 
 
     def parseDataFrame(self, dataframe, **kwargs):
