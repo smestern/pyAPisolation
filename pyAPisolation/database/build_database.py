@@ -41,6 +41,7 @@ import ipfx.feature_vectors as fv
 from pyAPisolation import patch_utils
 from pyAPisolation.utils import arg_wrap
 from pyAPisolation.loadFile.loadNWB import loadNWB, GLOBAL_STIM_NAMES
+from pyAPisolation.featureExtractor import analyze_spike_times
 try:
     from pyAPisolation.dev import stim_classifier as sc
 except:
@@ -559,15 +560,26 @@ def build_dataset_traces(folder, ext="nwb", parallel=True):
     #this function will take a run_analysis function and return a dataset of traces
     files = glob_files(folder)[::-1]
     file_idx = np.arange(len(files))
+    GLOBAL_STIM_NAMES.stim_inc = ['']
     if parallel == True:
         #Run in parallel
-        parallel = joblib.cpu_count()
+        parallel = 4
+    else:
+        parallel = 1
     results = joblib.Parallel(n_jobs=parallel, backend='multiprocessing')(joblib.delayed(plot_data)(specimen_id, files) for specimen_id in file_idx)
-
-def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100], debug=True):
+    #results = [plot_data(specimen_id, files) for specimen_id in file_idx]
+def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150, 250, 500, 1000], debug=True, overwrite=True):
     result = {}
+    if os.path.exists(f"{file_list[specimen_id]}.svg") and overwrite == False:
+        logging.debug(f"skipping {file_list[specimen_id]} because it already exists")
+        return
+    elif os.path.exists(f"{file_list[specimen_id]}.svg") and overwrite == True:
+        #os.remove(f"{file_list[specimen_id]}.svg")
+        pass
+    else:
+        pass
     result["specimen_id"] = file_list[specimen_id]
-    _, _, _, _, data_set = loadNWB(file_list[specimen_id], return_obj=True)
+    _, _, _,  data_set = loadNWB(file_list[specimen_id], return_obj=True)
     if data_set is None or len(data_set.dataY)<1:
         return result
     #here we are going to perform long square analysis on the data,
@@ -623,10 +635,11 @@ def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100], deb
         end_times.append(start_time+duration)
         sweep_amp.append(amplitude)
         sweeps.append(Sweep(t, v, i, clamp_mode="CurrentClamp", sampling_rate=int(1/dt), sweep_number=sweep))
-    
+    if len(sweeps) < 1:
+        return result
     #get the most common start and end times
-    start_time = scipy.stats.mode(np.array(start_times))[0][0]
-    end_time = scipy.stats.mode(np.array(end_times))[0][0]
+    start_time = scipy.stats.mode(np.array(start_times))[0]
+    end_time = scipy.stats.mode(np.array(end_times))[0]
     #index out the sweeps that have the most common start and end times
     idx_pass = np.where((np.array(start_times) == start_time) & (np.array(end_times) == end_time))[0]
 
@@ -635,18 +648,47 @@ def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100], deb
 
     idx_pass = np.intersect1d(idx_pass, idx_targets)
 
-    sweeps = np.array(sweeps, dtype=object)[idx_pass]
+    #sweeps = np.array(sweeps, dtype=object)[idx_pass]
 
-    sweeps = SweepSet(sweeps.tolist())
+    sweeps = SweepSet(sweeps)
     #plot the sweeps
-    fig, ax = plt.subplots(1, 1)
-    for sweep in sweeps.sweeps:
+    fig, ax = plt.subplots(1, 1, figsize=(4,3))
+    fi_s = []
+    fi_i = []
+    for i, sweep in enumerate(sweeps.sweeps):
         idx_start = find_time_index(sweep.t, np.clip(start_time*0.8, 0.0, np.inf))
         idx_end = find_time_index(sweep.t, np.clip(end_time*1.4, end_time, sweep.t[-1]))
-        ax.plot(sweep.t[idx_start:idx_end], sweep.v[idx_start:idx_end])
+        if i in idx_pass:
+            ax.plot(sweep.t[idx_start:idx_end], sweep.v[idx_start:idx_end], label=f"sweep {i}", c='k', alpha=0.5)
+
+        spikes = analyze_spike_times(sweep.t, sweep.v, sweep.i)
+        fi_s.append(len(spikes) / (end_time - start_time))
+        fi_i.append(sweep_amp)
+        #ax.plot(sweep.t[idx_start:idx_end], sweep.v[idx_start:idx_end])
+
+
+
+    #turn off the upper and right spines
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    
     #save the figure as a svg
-    plt.savefig(f"{file_list[specimen_id]}.svg")
+
+    plt.savefig(f"{file_list[specimen_id]}.svg", bbox_inches='tight')
+
+    plt.figure(figsize=(3,3))
+    ax = plt.gca()
+    plt.plot(sweep_amp, fi_s, c='k', marker='o')
+    plt.xticks(np.arange(target_amps[0], target_amps[-1]+250, 250))
+    plt.xlim( target_amps[0]-100, target_amps[-1]+100)
+    plt.xlabel("Current (pA)")
+    plt.ylabel("Firing Rate (Hz)")
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    plt.savefig(f"{file_list[specimen_id]}_FI.svg", bbox_inches='tight')
     plt.close('all')
+
+
     print(f"saved {file_list[specimen_id]}.svg", end="\r")
     
 

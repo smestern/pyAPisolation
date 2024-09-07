@@ -93,23 +93,25 @@ class nwbFile(object):
             acq_keys = list(f['acquisition'].keys())
             stim_keys = list(f['stimulus']['presentation'].keys())
             sweeps = zip(acq_keys, stim_keys)##Sweeps are stored as keys
-            self.sweepCount = len(acq_keys)
-            self.rate = dict(f['acquisition'][acq_keys[0]]['starting_time'].attrs.items())
-            self.sweepYVars = dict(f['acquisition'][acq_keys[-1]]['data'].attrs.items())
-            try:
-                self.sweepCVars = dict(f['stimulus']['presentation'][stim_keys[-1]]['data'].attrs.items())
-            except:
-                self.sweepCVars = None
+            
             #self.temp = f['general']['Temperature'][()]
             ## Find the index's with long square
             index_to_use = []
             for key_resp, key_stim in sweeps: 
                 sweep_dict = dict(f['acquisition'][key_resp].attrs.items())
-                
                 if check_stimulus(sweep_dict['stimulus_description']) or check_stimulus(sweep_dict['description']):
                     index_to_use.append((key_resp, key_stim)) 
-
-            
+            self.sweepCount = len(index_to_use)
+            if len(index_to_use)==0:
+                #set rate etc to nan
+                self.rate = {'rate':np.nan}
+                self.sweepYVars = np.nan
+                self.sweepCVars = np.nan
+            else:
+                self.rate = dict(f['acquisition'][index_to_use[0][0]]['starting_time'].attrs.items())
+                self.sweepYVars = dict(f['acquisition'][index_to_use[0][0]]['data'].attrs.items())
+                self.sweepCVars = dict(f['stimulus']['presentation'][stim_keys[-1]]['data'].attrs.items())
+           
             dataY = []
             dataX = []
             dataC = []

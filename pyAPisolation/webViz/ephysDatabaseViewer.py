@@ -154,9 +154,6 @@ def main(database_file=None, config=None, static=False):
     #rename the columns if needed
     full_dataframe = config.process_rename(full_dataframe)
 
-
-
-
     #populate umap-drop-menu 
     for label in config.umap_labels:
         full_dataframe[label] = full_dataframe[label].astype(str)
@@ -439,7 +436,7 @@ def main(database_file=None, config=None, static=False):
         #Create server object listening the port 80
         #change cwd to the output path
         os.chdir(config.output_path)
-        server_object = HTTPServer(server_address=('', 80), RequestHandlerClass=CGIHTTPRequestHandler)
+        server_object = HTTPServer(server_address=('', 8000), RequestHandlerClass=CGIHTTPRequestHandler)
         #spawn a new thread for the server to run on
         server_object.server_activate()
         

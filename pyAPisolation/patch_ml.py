@@ -46,23 +46,32 @@ def extract_features(df, ret_labels=False, labels=None):
     the function will cluster the data and use the clusters as labels. If the labels are provided, the function will encode the labels and use them to predict the features.
     The function will return the column names of the important features and the labels if ret_labels is True. If ret_labels is False, the function will return the column names of the important features."""
     #handle the labels
+
+    pre_df, outliers = preprocess_df(df)
+
     if labels is None:
         labels = cluster_df(pre_df)
         labels_feat = labels.copy()
+        LE = None
     elif isinstance(labels, np.ndarray):
         if labels.dtype != np.int32:
             #encode the labels
-            labels_feat = LabelEncoder().fit_transform(labels)
-    pre_df, outliers = preprocess_df(df)
-    if outliers is not None:
-        labels_feat = np.delete(labels_feat, outliers)
+            LE = LabelEncoder()
+            labels_feat = LE.fit_transform(labels)
+
     idx_feat = feature_importance(pre_df, labels_feat)
-    col = df.columns.values
-
     if outliers is not None:
-        assert labels.shape[0] == df.shape[0]
-        #labels = np.insert(labels, outliers, np.full(outliers.shape[0], -1))
+        new_labels = []
+        labels_iter = iter(labels_feat)
+        for i in np.arange(len(df)):
+            if i in outliers:
+                new_labels.append(-1)
+            else:
+                new_labels.append(next(labels_iter))
+        labels_feat = np.array(new_labels)
+        labels = LE.inverse_transform(labels_feat) if LE is not None else np.array(new_labels)
 
+    col = df.columns.values
     if ret_labels:
         return col[idx_feat], labels
     else:

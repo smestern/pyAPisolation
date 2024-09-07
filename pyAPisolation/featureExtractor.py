@@ -258,7 +258,11 @@ def analyze_template(x=None, y=None, c=None, file=None, param_dict=DEFAULT_DICT,
     spike_count_df, df_raw, running_bin = analyze(x, y, c, file=file, param_dict=param_dict, return_summary_frames=True)
 
     #index the dataframe by the filename, sweep
-    df_raw = df_raw.set_index(['file_name', 'sweep Number'])
+    #sometimes there are no spikes, so we need to check if the dataframe has sweep Number
+    if 'sweep Number' in df_raw.columns:
+        df_raw = df_raw.set_index(['file_name', 'sweep Number'])
+    else:
+        return np.array([])
 
     #if we only want a subset of the features
     if feature_keys != ['']:

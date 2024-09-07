@@ -40,6 +40,13 @@ class webVizConfig():
         
 
     def process_rename(self, df):
+        """ Rename the columns of the dataframe according to the col_rename attribute. This function will also update the attributes of the class where necessary. 
+        The function will return the dataframe with the columns renamed. 
+        takes:
+            df: pd.DataFrame
+        """
+        if self.col_rename is None:
+            return df
         #rename columns of the df
         if self.col_rename:
             df.rename(columns=self.col_rename, inplace=True)
