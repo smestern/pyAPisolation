@@ -99,7 +99,7 @@ class nwbFile(object):
             index_to_use = []
             for key_resp, key_stim in sweeps: 
                 sweep_dict = dict(f['acquisition'][key_resp].attrs.items())
-                if check_stimulus(sweep_dict['stimulus_description']) or check_stimulus(sweep_dict['description']):
+                if check_stimulus(sweep_dict, key_resp):
                     index_to_use.append((key_resp, key_stim)) 
             self.sweepCount = len(index_to_use)
             if len(index_to_use)==0:
@@ -158,15 +158,29 @@ class nwbFile(object):
 class stim_names:
     stim_inc = ['long', '1000']
     stim_exc = ['rheo', 'Rf50_']
+    stim_type = ['']
     def __init__(self):
         self.stim_inc = stim_names.stim_inc
         self.stim_exc = stim_names.stim_exc
         return
 
 GLOBAL_STIM_NAMES = stim_names()
-def check_stimulus(stim_desc):
+
+def check_stimulus(sweep_dict, name):
+    desc_check = np.any([check_stimulus_desc(sweep_dict['description']), check_stimulus_desc(sweep_dict['stimulus_description'])])
+    type_check = check_stimulus_type(sweep_dict['neurodata_type']) or check_stimulus_type(name)
+    return np.logical_and(desc_check, type_check)
+
+def check_stimulus_type(sweep_type):
     try:
-        stim_desc_str = stim_desc.decode()
+        sweep_type_str = sweep_type.decode()
+    except:
+        sweep_type_str = sweep_type
+    return np.any([x.upper() in sweep_type_str.upper() for x in GLOBAL_STIM_NAMES.stim_type])
+
+def check_stimulus_desc(stim_desc):
+    try:
+        stim_desc_str = stim_desc.decode() #sometimes its encoded... sometimes its not
     except:
         stim_desc_str = stim_desc
     #print(stim_desc_str)

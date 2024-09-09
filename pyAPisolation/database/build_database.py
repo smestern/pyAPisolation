@@ -561,13 +561,14 @@ def build_dataset_traces(folder, ext="nwb", parallel=True):
     files = glob_files(folder)[::-1]
     file_idx = np.arange(len(files))
     GLOBAL_STIM_NAMES.stim_inc = ['']
+    GLOBAL_STIM_NAMES.stim_type = ['CurrentClamp', 'CC', 'IC', 'Current Clamp']
     if parallel == True:
         #Run in parallel
         parallel = 4
     else:
         parallel = 1
-    results = joblib.Parallel(n_jobs=parallel, backend='multiprocessing')(joblib.delayed(plot_data)(specimen_id, files) for specimen_id in file_idx)
-    #results = [plot_data(specimen_id, files) for specimen_id in file_idx]
+    #results = joblib.Parallel(n_jobs=parallel, backend='multiprocessing')(joblib.delayed(plot_data)(specimen_id, files) for specimen_id in file_idx)
+    results = [plot_data(specimen_id, files) for specimen_id in file_idx]
 def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150, 250, 500, 1000], debug=True, overwrite=True):
     result = {}
     if os.path.exists(f"{file_list[specimen_id]}.svg") and overwrite == False:
@@ -663,7 +664,7 @@ def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150,
 
         spikes = analyze_spike_times(sweep.t, sweep.v, sweep.i)
         fi_s.append(len(spikes) / (end_time - start_time))
-        fi_i.append(sweep_amp)
+        fi_i.append(sweep_amp[i])
         #ax.plot(sweep.t[idx_start:idx_end], sweep.v[idx_start:idx_end])
 
 
@@ -678,7 +679,26 @@ def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150,
 
     plt.figure(figsize=(3,3))
     ax = plt.gca()
-    plt.plot(sweep_amp, fi_s, c='k', marker='o')
+
+    #if there is the same sweep_amp, average it
+    fi_s = np.array(fi_s)
+    fi_i = np.array(fi_i)
+
+    #get duplicates of fi_i
+    unique, counts = np.unique(fi_i, return_counts=True)
+    duplicates = unique[counts > 1]
+    for dup in duplicates:
+        idx_dup = np.where(fi_i == dup)[0]
+        fi_s[idx_dup] = np.mean(fi_s[idx_dup])
+        fi_i[idx_dup] = np.mean(fi_i[idx_dup])
+    #sort the fi_i and fi_s
+    idx_sort = np.argsort(fi_i)
+    fi_i = fi_i[idx_sort]
+    fi_s = fi_s[idx_sort]
+    #plot the fi curve
+
+
+    plt.plot(fi_i, fi_s, c='k', marker='o')
     plt.xticks(np.arange(target_amps[0], target_amps[-1]+250, 250))
     plt.xlim( target_amps[0]-100, target_amps[-1]+100)
     plt.xlabel("Current (pA)")
