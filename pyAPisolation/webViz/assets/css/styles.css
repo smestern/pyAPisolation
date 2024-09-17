@@ -75,7 +75,7 @@ path:hover {
 .feat-value {
   writing-mode: vertical-lr;
   font-variant: small-caps;
-  max-height: 75%;
+  max-height: 35%;
   word-wrap: break-word;
 }
 
