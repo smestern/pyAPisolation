@@ -59,12 +59,12 @@ path:hover {
 .ephys-key {
   font-size: 12px;
   color: var(--bs-primary-border-subtle);
-  display: inline-flex;
+  display: block;
 }
 
 .table-ephys {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   flex-grow: 1;
   max-height: 15em;
   flex-wrap: wrap;
@@ -75,6 +75,8 @@ path:hover {
 .feat-value {
   writing-mode: vertical-lr;
   font-variant: small-caps;
+  max-height: 75%;
+  word-wrap: break-word;
 }
 
 img {
@@ -94,7 +96,7 @@ img {
   }
 }
 
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 120px) {
   .table-ephys {
     display: none !important;
   }
@@ -129,6 +131,12 @@ img[alt="FI"] {
   #header-row {
     margin-left: 5%;
     margin-right: 5%;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  img[alt="FI"] {
+    display: none !important;
   }
 }
 
