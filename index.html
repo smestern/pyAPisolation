@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+
+<html data-bs-theme="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no" name="viewport"/>
+<title>template2</title>
+<link href="assets/bootstrap/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="assets/css/bs-theme-overrides.css" rel="stylesheet"/>
+<link href="assets/css/styles.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.css" rel="stylesheet"/>
+<link href="https://unpkg.com/bootstrap-table@1.22.4/dist/bootstrap-table.min.css" rel="stylesheet"/>
+</head>
+<body class="fs-6 fw-lighter focus-ring focus-ring-primary">
+<div class="container-fluid d-flex flex-column flex-grow-1 flex-shrink-1 flex-fill justify-content-center align-items-center align-content-center align-items-xxl-center" style="position: static;">
+<div class="row" id="header-row">
+<div class="col-md">
+<div class="row">
+<div class="col">
+<div class="card card-base">
+<div class="card-body">
+<h4 class="card-title" id="db_title">Title</h4>
+<h6 class="text-muted card-subtitle mb-2" id="db_subtitle">Subtitle</h6>
+<p class="card-text" id="db_desc">Nullam id dolor id nibh ultricies vehicula ut id elit. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida at eget metus.</p><a class="card-link" href="#">Link</a><a class="card-link" href="#">Link</a>
+</div>
+</div>
+</div>
+</div>
+<div class="row">
+<div class="col">
+<div class="card card-base">
+<div class="card-body">
+<h6 class="text-muted card-subtitle" id="Label-Viz">Label Visualized</h6>
+<div id="umap-drop-menu"><div class="form-check"><input class="form-check-input" id="dandiset label" name="label-select" type="radio" value="dandiset label"/><label class="form-check-label" for="dandiset label">dandiset label</label></div></div>
+</div>
+</div>
+</div>
+</div>
+<div class="row visually-hidden" id="dataset-select">
+<div class="col">
+<div class="card card-base">
+<div class="card-body">
+<h6 class="text-muted card-subtitle" id="Label-Viz-1">Datasets Visualized</h6>
+<div id="dataset-drop-menu"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="col-md-10" id="plot-col">
+<div class="row">
+<div class="col">
+<div class="card card-base" id="embed_card">
+<div class="card-body" style="min-height: auto;">
+<h4 class="card-title">Title</h4>
+<div id="graphDiv_scatter" style="min-height: 450px;"></div>
+</div>
+</div>
+</div>
+<div class="col col-para">
+<div class="card card-base" id="para_card">
+<div class="card-body" style="max-height: 90vh;min-height: 25vh;">
+<h4 class="card-title">Title</h4>
+<div id="graphDiv_parallel"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="row"><table data-classes="table table-responsive table-card-alt" data-detail-view="false" data-pagination="true" data-resizable="true" data-search="false" data-show-columns="false" data-show-export="false" data-show-header="false" data-toggle="table" id="table">
+<thead>
+<tr>
+<th data-class="file-ID" data-field="specimen_id" data-formatter="valFormatter" data-searchable="false" data-sortable="false">specimen_id</th><th data-field="_plot" data-formatter="plotFormatterDummy" data-searchable="false" data-sortable="false"></th><th data-field="_ephys" data-formatter="ephysFormatterDummy" data-searchable="false" data-sortable="false"></th><th data-field="_plot_fi" data-formatter="plotFormatterDummy" data-searchable="false" data-sortable="false"></th><th data-field="GMM cluster label" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">GMM cluster label</th><th data-field="ID" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">ID</th><th data-field="Umap X" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">Umap X</th><th data-field="Umap Y" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">Umap Y</th><th data-field="ap_1_width_0_long_square" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">ap_1_width_0_long_square</th><th data-field="dandiset label" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">dandiset label</th><th data-field="foldername" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">foldername</th><th data-field="input_resistance" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">input_resistance</th><th data-field="label" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">label</th><th data-field="sag_nearest_minus_100" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">sag_nearest_minus_100</th><th data-field="specimen_id_full" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">specimen_id_full</th><th data-field="tau" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">tau</th><th data-field="v_baseline" data-formatter="valFormatter" data-searchable="false" data-sortable="true" data-visible="false">v_baseline</th></tr>
+</thead>
+</table></div>
+</div><div>
+<script>
+    function plotFormatterDummy(value, row, index,field) {
+        return '<div id="graphDiv_' + row['ID'] + field + '"></div>';
+    }
+    function valFormatter(value, row, index, field) {
+        //make a nice text for the value
+        html = []
+        html.push('<div class="col">')
+        html.push('<div class="feat-title">' + field + '</div>')
+        html.push('<span class="feat-value">' + value + '</span>')
+        html.push('</div>')
+        return html.join('')
+
+    }
+    function ephysFormatterDummy(value, row, index, field)
+    {
+        return '<div id="table_' + row['ID'] + '"></div>';
+    }
+    </script>
+<script crossorigin="anonymous" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+<script crossorigin="anonymous" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.css" rel="stylesheet"/>
+<link href="https://unpkg.com/bootstrap-table@1.22.4/dist/bootstrap-table.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+<script src="https://unpkg.com/bootstrap-table@1.22.4/dist/bootstrap-table.min.js"></script>
+<script src="./assets/data.js"></script>
+<script src="./assets/template.js"></script>
+<script src="assets/bootstrap/js/bootstrap.min.js"></script>
+</div></body>
+</html>

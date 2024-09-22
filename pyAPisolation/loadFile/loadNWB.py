@@ -108,7 +108,7 @@ class nwbFile(object):
                 self.sweepYVars = np.nan
                 self.sweepCVars = np.nan
             else:
-                self.rate = dict(f['acquisition'][index_to_use[0][0]]['starting_time'].attrs.items())
+                self.rate = dict(f['acquisition'][index_to_use[-1][0]]['starting_time'].attrs.items())
                 self.sweepYVars = dict(f['acquisition'][index_to_use[0][0]]['data'].attrs.items())
                 self.sweepCVars = dict(f['stimulus']['presentation'][stim_keys[-1]]['data'].attrs.items())
            
@@ -167,7 +167,15 @@ class stim_names:
 GLOBAL_STIM_NAMES = stim_names()
 
 def check_stimulus(sweep_dict, name):
-    desc_check = np.any([check_stimulus_desc(sweep_dict['description']), check_stimulus_desc(sweep_dict['stimulus_description'])])
+    if 'description' in sweep_dict.keys():
+        desc_check1 = check_stimulus_desc(sweep_dict['description'])
+    else:
+        desc_check1 = False
+    if 'stimulus_description' in sweep_dict.keys():
+        desc_check2 = check_stimulus_desc(sweep_dict['stimulus_description'])
+    else:
+        desc_check2 = False
+    desc_check = np.logical_or(desc_check1, desc_check2)
     type_check = check_stimulus_type(sweep_dict['neurodata_type']) or check_stimulus_type(name)
     return np.logical_and(desc_check, type_check)
 

@@ -440,7 +440,10 @@ def match_protocol(i, t, test_pulse=True, start_epoch=None, end_epoch=None, test
     #this function will take a stimulus and return the stimulus protocol at least it will try
     #first we will try to match the stimulus protocol to a known protocol
     #classifier = sc.stimClassifier()
-    start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(i, t, test_pulse=test_pulse, start_epoch=start_epoch, end_epoch=end_epoch, test_pulse_length=test_pulse_length)
+    try:
+        start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(i, t, test_pulse=test_pulse, start_epoch=start_epoch, end_epoch=end_epoch, test_pulse_length=test_pulse_length)
+    except:
+        return None
     #pred = classifier.decode(classifier.predict(i.reshape(1, -1)))[0]
     #if pred=="long_square":
      #   return "Long Square"
@@ -556,9 +559,13 @@ def QC_voltage_data(t,v,i, zero_threshold=0.2, noise_threshold=10):
     return 1
 
 
-def build_dataset_traces(folder, ext="nwb", parallel=True):
+def build_dataset_traces(folder, ids =None, ext="nwb", parallel=True):
     #this function will take a run_analysis function and return a dataset of traces
     files = glob_files(folder)[::-1]
+    if ids is not None:
+        files_check = [x.split("/dandi")[-1] in ids for x in files]
+        files = np.array(files)[files_check]
+
     file_idx = np.arange(len(files))
     GLOBAL_STIM_NAMES.stim_inc = ['']
     GLOBAL_STIM_NAMES.stim_type = ['CurrentClamp', 'CC', 'IC', 'Current Clamp']
@@ -567,8 +574,16 @@ def build_dataset_traces(folder, ext="nwb", parallel=True):
         parallel = 4
     else:
         parallel = 1
-    #results = joblib.Parallel(n_jobs=parallel, backend='multiprocessing')(joblib.delayed(plot_data)(specimen_id, files) for specimen_id in file_idx)
+    #results = joblib.Parallel(n_jobs=parallel)(joblib.delayed(plot_data)(specimen_id, files) for specimen_id in file_idx)
     results = [plot_data(specimen_id, files) for specimen_id in file_idx]
+
+def plot_wrap(*args, **kwargs):
+    try:
+        return plot_data(*args, **kwargs)
+    except Exception as e:
+        print(e)
+        return None
+
 def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150, 250, 500, 1000], debug=True, overwrite=True):
     result = {}
     if os.path.exists(f"{file_list[specimen_id]}.svg") and overwrite == False:

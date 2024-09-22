@@ -12,7 +12,7 @@ class webVizConfig():
         self.para_var_colors = 'rheobase_width'
         self.umap_cols = ['Umap X', 'Umap Y']
         self.umap_labels = ['label', 'CRH', 'AVP', 'foldername.1']
-        self.color_schemes
+        self.color_schemes = ['viridis', 'plasma', 'inferno', 'magma', 'cividis', 'Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds', 'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu', 'GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']
         self.para_vars_limit = 10
         self.table_vars_limit = 5
         self.plots_path = None

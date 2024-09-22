@@ -247,7 +247,7 @@ def main(database_file=None, config=None, static=False):
     #script
     json_script =  soup.new_tag('script')
     json_script.string = json_split_strs+ json_full + json_var
-    soup.head.append(json_script)
+    #soup.head.append(json_script)
 
     #unhide our dataset selector if needed
     if config.table_split is not None:
@@ -415,7 +415,7 @@ def main(database_file=None, config=None, static=False):
         template_js = inf.read()
         #add the onload script to the template.js file
         template_js = template_js.replace("/* onload */", umap_script + "\n \t" + paracoords_script)
-        #template_js = template_js.replace("/* data_tb */", json_var)
+        template_js = template_js.replace("/* data_tb */", json_var)
         template_js = template_js.replace("/* colors */", colors+str(config.color_schemes))
 
         template_js = template_js.replace("/* ekeys */", "var ekeys = " + json.dumps(visible_cols.tolist()))
@@ -429,8 +429,8 @@ def main(database_file=None, config=None, static=False):
     with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:
         outf.write(template_js)
     #this si instered into the assets/data.js file
-    with open(os.path.join(config.output_path, "assets/data.json"), "w") as outf:
-        outf.write(json_var)        
+    with open(os.path.join(config.output_path, "assets/data.js"), "w") as outf:
+        outf.write(json_split_strs+ json_full + json_var)        
     if static:
         print("=== Running Server ===")
         #Create server object listening the port 80
@@ -446,8 +446,6 @@ def main(database_file=None, config=None, static=False):
     else:
         print("=== Running Server ===")
         tsServer(config=config, static=False).run()
-
-
 
 
 
