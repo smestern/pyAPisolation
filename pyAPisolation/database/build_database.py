@@ -659,10 +659,13 @@ def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150,
     #index out the sweeps that have the most common start and end times
     idx_pass = np.where((np.array(start_times) == start_time) & (np.array(end_times) == end_time))[0]
 
+    sweep_amp_filter = np.array(sweep_amp)[idx_pass]
+    if len(sweep_amp_filter) < 1:
+        return result
     #the sweeps closest to the target amp
-    idx_targets = [np.argmin(np.abs(np.array(sweep_amp) - x)) for x in target_amps]
+    idx_targets = [np.argmin(np.abs(sweep_amp_filter - x)) for x in target_amps]
 
-    idx_pass = np.intersect1d(idx_pass, idx_targets)
+    idx_pass = idx_pass[idx_targets]
 
     #sweeps = np.array(sweeps, dtype=object)[idx_pass]
 
@@ -671,10 +674,12 @@ def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150,
     fig, ax = plt.subplots(1, 1, figsize=(4,3))
     fi_s = []
     fi_i = []
+    plotted = []
     for i, sweep in enumerate(sweeps.sweeps):
         idx_start = find_time_index(sweep.t, np.clip(start_time*0.8, 0.0, np.inf))
         idx_end = find_time_index(sweep.t, np.clip(end_time*1.4, end_time, sweep.t[-1]))
-        if i in idx_pass:
+        if i in idx_pass and i not in plotted:
+            plotted.append(i)
             ax.plot(sweep.t[idx_start:idx_end], sweep.v[idx_start:idx_end], label=f"sweep {i}", c='k', alpha=0.5)
 
         spikes = analyze_spike_times(sweep.t, sweep.v, sweep.i)

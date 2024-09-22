@@ -111,7 +111,20 @@ $( document ).ready(function() {
             
         }
         else {
-            colorscale =  Plotly.d3.scale.category10();
+            // Generate a colorscale using Plotly's category10 scale
+            var colorscale = 'Portland';
+            
+            // Normalize color values to a range of 0-1
+            var min = Math.min(...color_vals);
+            var max = Math.max(...color_vals);
+            color_vals = color_vals.map(function (el) { return ((el - min) / (max - min)); });
+            
+            // Map the normalized values to the colorscale
+            var colorMap = {};
+            color_vals.forEach(function (val, index) {
+                var colorIndex = Math.floor(val * (colorscale.length - 1));
+                colorMap[data_para[index]['ID']] = colorscale[colorIndex];
+            });
         }
     
         //filter color_vals by our indices
