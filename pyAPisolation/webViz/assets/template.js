@@ -430,6 +430,11 @@ $( document ).ready(function() {
             //get the selected points
             var trace = graphDiv_scatter.data[i];
             var selectedIndices = trace.selectedpoints;
+            //if there are no selected points, skip this trace
+            if (selectedIndices === undefined) {
+                continue;
+            }
+
             //get the IDs of the selected points
             var selectedIDs = selectedIndices.map(function(value, index) {
                 return trace.text[value

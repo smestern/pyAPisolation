@@ -156,7 +156,7 @@ def main(database_file=None, config=None, static=False):
 
     #populate umap-drop-menu 
     for label in config.umap_labels:
-        full_dataframe[label] = full_dataframe[label].astype(str)
+        full_dataframe[label] = full_dataframe[label]#.astype(str)
         umap_drop = soup.find('div', {'id': 'umap-drop-menu'})
         temp_div = soup.new_tag('div', attrs={'class': 'form-check'})
         #set the class to form-check
@@ -217,7 +217,9 @@ def main(database_file=None, config=None, static=False):
     else:
         subtables = {'': full_dataframe}
         
-        json_split_strs = ""
+        json_split_strs = f"var split_strs = \"\" \n"
+
+
     #convert the dataframe to json
     for title, val in subtables.items():
         temp_json = val.to_json(orient='records')
