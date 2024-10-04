@@ -246,52 +246,83 @@ $( document ).ready(function() {
     //umap plot
     function generate_umap(rows, keys=['Umap X', 'Umap Y', 'label'], colors=embed_colors, dataset_en='Species', dataset_shapes=['o', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross'], dataset_opacity=[0.25, 1]) {
         
+        function isContinuousFloat(labels) {
+            return labels.every(label => !isNaN(parseFloat(label)) && isFinite(label));
+        }
+        
         var encoded_labels = encode_labels(rows, keys[2]);
         var encoded_dataset = encode_labels(rows, dataset_en);
-
+        
         if (Object.keys(colors).includes(keys[2])) {
-            label_color =  colors[keys[2]];
+            label_color = colors[keys[2]];
+        } else {
+            label_color = Plotly.d3.scale.category10().range();
         }
-        else {
-            label_color =  Plotly.d3.scale.category10().range();
-        }
+        
         // make a trace array for each label
-        var traces = []
-        encoded_labels[1].forEach(function (label, i) {
-            if (keys[2] != dataset_en && encoded_dataset[1].length > 1){
-            encoded_dataset[1].forEach(function (dataset, j) {
-                traces.push({
-                    x: [],
-                    y: [],
-                    text: [],
-                    customdata: [],
-                    mode: 'markers',
-                    name: `${label} - ${dataset}`,
-                    marker: { color: label_color[label], size: 5, symbol: dataset_shapes[j], opacity: dataset_opacity[j] }
-                })});
-            } else{
-                traces.push({
-                    x: [],
-                    y: [],
-                    text: [],
-                    customdata: [],
-                    mode: 'markers',
-                    name: `${label}`,
-                    marker: { color: label_color[label], size: 5, symbol: 'circle' }
-                });
-            }
-        });
+        var traces = [];
+        
+        if (isContinuousFloat(encoded_labels[1])) {
+            // Create a single trace for continuous float labels
+            traces.push({
+                x: [],
+                y: [],
+                text: [],
+                customdata: [],
+                mode: 'markers',
+                name: 'Continuous Data',
+                marker: { color: encoded_labels[0], size: 5, symbol: 'circle' }
+            });
+        } else {
+            encoded_labels[1].forEach(function (label, i) {
+                if (keys[2] != dataset_en && encoded_dataset[1].length > 1) {
+                    encoded_dataset[1].forEach(function (dataset, j) {
+                        traces.push({
+                            x: [],
+                            y: [],
+                            text: [],
+                            customdata: [],
+                            mode: 'markers',
+                            name: `${label} - ${dataset}`,
+                            marker: { color: label_color[label], size: 5, symbol: dataset_shapes[j], opacity: dataset_opacity[j] }
+                        });
+                    });
+                } else {
+                    traces.push({
+                        x: [],
+                        y: [],
+                        text: [],
+                        customdata: [],
+                        mode: 'markers',
+                        name: `${label}`,
+                        marker: { color: label_color[label], size: 5, symbol: 'circle' }
+                    });
+                }
+            });
+        }
 
         // loop through the rows and append the data to the correct trace/data
         rows.forEach(function (row) {
-            if (keys[2] != dataset_en && encoded_dataset[1].length > 1){var traceIndex = encoded_labels[1].indexOf(row[keys[2]]) * encoded_dataset[1].length + encoded_dataset[1].indexOf(row[dataset_en])}
-            else{var traceIndex = encoded_labels[1].indexOf(row[keys[2]])};
-            if (encoded_labels[1][traceIndex] != 'nan'){
-                traces[traceIndex].x.push(row[keys[0]]);
-                traces[traceIndex].y.push(row[keys[1]]);
-                traces[traceIndex].text.push(row['ID']);
-                traces[traceIndex].customdata.push(row['ID']);
-            };
+            if (isContinuousFloat(encoded_labels[1])) {
+                // Append data to the single trace for continuous float labels
+                traces[0].x.push(row[keys[0]]);
+                traces[0].y.push(row[keys[1]]);
+                traces[0].text.push(row['ID']);
+                traces[0].customdata.push(row['ID']);
+            } else {
+                // Existing logic for categorical labels
+                if (keys[2] != dataset_en && encoded_dataset[1].length > 1) {
+                    var traceIndex = encoded_labels[1].indexOf(row[keys[2]]) * encoded_dataset[1].length + encoded_dataset[1].indexOf(row[dataset_en]);
+                } else {
+                    var traceIndex = encoded_labels[1].indexOf(row[keys[2]]);
+                }
+                if (encoded_labels[1][traceIndex] != 'nan') {
+                    traces[traceIndex].x.push(row[keys[0]]);
+                    traces[traceIndex].y.push(row[keys[1]]);
+                    traces[traceIndex].text.push(row['ID']);
+                    traces[traceIndex].customdata.push(row['ID']);
+                }
+            }
         });
 
         // create the data array
