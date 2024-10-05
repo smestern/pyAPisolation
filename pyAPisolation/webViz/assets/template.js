@@ -20,6 +20,10 @@ $( document ).ready(function() {
 
     var pre_selected_datasets = [];
 
+
+    var prev_ranges = {};
+    var prev_filter = "";
+
     function unpack(rows, key) {
         return rows.map(function(row) { 
         return row[key]; 
@@ -34,6 +38,11 @@ $( document ).ready(function() {
             $('#table').bootstrapTable('filterBy', { ID: ids })
             crossfilter(data_tb, ids, "scatter");
         }
+    }
+
+            
+    function isContinuousFloat(labels) {
+        return labels.every(label => typeof label === 'number');
     }
 
     function table_concatenator(labels){
@@ -245,10 +254,7 @@ $( document ).ready(function() {
 
     //umap plot
     function generate_umap(rows, keys=['Umap X', 'Umap Y', 'label'], colors=embed_colors, dataset_en='Species', dataset_shapes=['o', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross'], dataset_opacity=[0.25, 1]) {
-        
-        function isContinuousFloat(labels) {
-            return labels.every(label => !isNaN(parseFloat(label)) && isFinite(label));
-        }
+
         
         var encoded_labels = encode_labels(rows, keys[2]);
         var encoded_dataset = encode_labels(rows, dataset_en);
@@ -271,7 +277,7 @@ $( document ).ready(function() {
                 customdata: [],
                 mode: 'markers',
                 name: 'Continuous Data',
-                marker: { color: encoded_labels[0], size: 5, symbol: 'circle' }
+                marker: { color: encoded_labels[0], size: 5, symbol: 'circle', colorscale: 'Portland', showscale: true, colorbar: { title: {text: keys[2]}} }
             });
         } else {
             encoded_labels[1].forEach(function (label, i) {
@@ -343,6 +349,13 @@ $( document ).ready(function() {
             },
             scene: {aspectmode: "cube", xaxis: {title: keys[0]}, yaxis: {title: keys[1]}}
         };
+
+        // if there is only one trace, set the legend to false
+        if (traces.length == 1) {
+            layout.showlegend = false;
+            
+        }
+
 
         Plotly.react('graphDiv_scatter', data, layout, { responsive: true, });
         var graphDiv5 = document.getElementById("graphDiv_scatter")
@@ -454,25 +467,45 @@ $( document ).ready(function() {
     };
 
     function filterByPlot(keys, ranges){
-        //we want to filter only the data selected on the scatter and parallel plots
-        var graphDiv_scatter = document.getElementById("graphDiv_scatter");
-        var selected = []
-        for (var i = 0; i < graphDiv_scatter.data.length; i++) {
-            //get the selected points
-            var trace = graphDiv_scatter.data[i];
-            var selectedIndices = trace.selectedpoints;
-            //if there are no selected points, skip this trace
-            if (selectedIndices === undefined) {
-                continue;
+        // check to see if the ranges are the same as the previous ranges, or within the bounds of the previous ranges
+        var same = true;
+        for (var i = 0; i < keys.length; i++) {
+            if (prev_ranges[keys[i]] === undefined || ranges[i][0] < prev_ranges[keys[i]][0] || ranges[i][1] > prev_ranges[keys[i]][1]) {
+                same = false;
+                // update the prev_ranges
+                prev_ranges
+                break;
             }
+        }
+        // if the ranges are the same, do nothing
+        if (same) {
+            return;
+        } else {
+            prev_ranges = {};
 
-            //get the IDs of the selected points
-            var selectedIDs = selectedIndices.map(function(value, index) {
-                return trace.text[value
-                ];
-            });
-            //update the selected array
-            selected.push(...selectedIDs);
+            //we want to filter only the data selected on the scatter and parallel plots
+            if (prev_filter != "scatter") { //if the previous filter was not the scatter plot, we want to filter by the parallel plot
+                selected = []
+            } else {
+                var graphDiv_scatter = document.getElementById("graphDiv_scatter");
+                var selected = []
+                for (var i = 0; i < graphDiv_scatter.data.length; i++) {
+                    //get the selected points
+                    var trace = graphDiv_scatter.data[i];
+                    var selectedIndices = trace.selectedpoints;
+                    //if there are no selected points, skip this trace
+                    if (selectedIndices === undefined) {
+                        continue;
+                    }
+
+                    //get the IDs of the selected points
+                    var selectedIDs = selectedIndices.map(function(value, index) {
+                        return trace.text[value
+                        ];
+                    });
+                    //update the selected array
+                    selected.push(...selectedIDs);
+                }};
         }
         //if the total number of selected points is 0, skip this step
         if (selected.length == 0) {
@@ -483,8 +516,6 @@ $( document ).ready(function() {
                 return selected.includes(el.ID);
         })};
         //now we want to filter the data_tb by the selected ranges
-        
-
         var newArray = newArray.filter(function (el) {
                 return keys.every(function (key, i) {
                     if (ranges[i][0] == -9999){
@@ -527,9 +558,11 @@ $( document ).ready(function() {
             }
             //now we want to update the layout
             Plotly.update(graphDiv_scatter, {'selectedpoints': selected});
+            prev_filter = "parallel";
         } else if (sender == "scatter") {
             //in this case we completely reset the parallel plot
             generate_paracoords(data_tb, paracoordskeys, paracoordscolors, IDs);
+            prev_filter = "scatter";
         } else {
             //do nothing
         };

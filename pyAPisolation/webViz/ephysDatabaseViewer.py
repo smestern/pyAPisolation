@@ -100,6 +100,9 @@ def main(database_file=None, config=None, static=False):
         soup = bs4.BeautifulSoup(txt, 'html.parser')
 
 
+    
+    
+
     #load the data
     full_dataframe = pd.DataFrame()
     for x in fileList:
@@ -122,6 +125,12 @@ def main(database_file=None, config=None, static=False):
                                       [*config.table_vars_rq, *config.table_vars, *config.umap_cols, *config.umap_labels, *config.para_vars, config.primary_label 
                                        if config.primary_label is not None else 'label', config.file_index, config.file_path])
     full_dataframe['ID'] = full_dataframe[config.file_index] if config.file_index in full_dataframe.columns else full_dataframe.index #add an ID column, if it does not exist
+            
+    #Very specific hardcode here #but we need to make sure dandiset is a string, #this will be removed in the future but for now it is necessary
+    if 'dandiset label' in full_dataframe.columns:
+        full_dataframe['dandiset label'] = full_dataframe['dandiset label'].astype(str)
+        full_dataframe['dandiset label'] = [x.zfill(6) for x in full_dataframe['dandiset label']]
+    
     #get the labels from the primary config
     if config.primary_label is not None:
         if config.primary_label not in full_dataframe.columns:
