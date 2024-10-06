@@ -25,12 +25,25 @@
        </widget>
       </item>
       <item>
-       <widget class="QTreeView" name="treeView"/>
+       <widget class="QFrame" name="cellIndexFrame">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+       </widget>
       </item>
       <item>
-       <widget class="QCommandLinkButton" name="commandLinkButton">
+       <widget class="QCommandLinkButton" name="addCell">
         <property name="text">
-         <string>CommandLinkButton</string>
+         <string>Add Cell</string>
         </property>
        </widget>
       </item>
@@ -59,7 +72,20 @@
        </widget>
       </item>
       <item>
-       <widget class="QTableView" name="tableView"/>
+       <widget class="QFrame" name="fileTreeFrame">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>

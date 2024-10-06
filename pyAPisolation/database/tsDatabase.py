@@ -6,6 +6,7 @@ import sys
 import anndata as ad
 import logging
 from ..patch_utils import df_select_by_col
+from ..dataset import cellData
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -206,16 +207,35 @@ class tsDatabase:
         #data.var_names = features.columns
         return data
 
-        
+    def parseFile(file):
+        #use celldata to parse the file
+        cell = cellData(file)
+        #now build a dict
+        file_dict = {'filename': cell.filename, 'foldername': cell.foldername, 'protocol': cell.protocol}
+        return file_dict
 
-    def addEntry(self, name, path):
+    def addEntry(self, name, paths=None):
         """
         Add an entry to the database
         :param name: Name of the entry
         :param path: Path to the entry
         """
-        pass
+        #create a row for adding
+        row = pd.DataFrame(index=[name], columns=['name'], data=[name])
 
+        if paths is not None:
+            if isinstance(paths, str) or isinstance(paths, os.PathLike):
+                file_dicts = [self.parseFile(paths)]
+            elif isinstance(paths, list):
+                file_dicts = [self.parseFile(path) for path in paths]
+            else:
+        
+                logger.error(f'Invalid path type {type(paths)}')
+                return
+
+        #update cellIndex
+        self.cellindex = pd.concat([self.cellindex, row]).copy()
+        
     def addEntries(self, path):
         """
         Add multiple entries to the database
@@ -237,6 +257,18 @@ class tsDatabase:
         """
         pass
 
+    def getEntries(self):
+        """
+        Get all entries from the database
+        """
+        return self.cellindex.to_dict(orient='records')
+    
+    def getCells(self):
+        """
+        Get all cells from the database
+        """
+        return self.cellindex.to_dict(orient='index')
+
     def __getitem__(self, key, protocol, column):
         return self.data[key]
     
@@ -245,3 +277,5 @@ class tsDatabase:
 
     def __delitem__(self, key, protocol, column):
         del self.data[key]
+
+

@@ -13,12 +13,12 @@ from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
 
-class databaseBuilderBase(object):
-    def setupUi(self, MainWindow):
-        if not MainWindow.objectName():
-            MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1196, 671)
-        self.centralwidget = QWidget(MainWindow)
+class Ui_databaseBuilderBase(object):
+    def setupUi(self, databaseBuilderBase):
+        if not databaseBuilderBase.objectName():
+            databaseBuilderBase.setObjectName(u"databaseBuilderBase")
+        databaseBuilderBase.resize(1196, 671)
+        self.centralwidget = QWidget(databaseBuilderBase)
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout = QGridLayout(self.centralwidget)
         self.gridLayout.setObjectName(u"gridLayout")
@@ -29,15 +29,22 @@ class databaseBuilderBase(object):
 
         self.verticalLayout.addWidget(self.label)
 
-        self.treeView = QTreeView(self.centralwidget)
-        self.treeView.setObjectName(u"treeView")
+        self.cellIndexFrame = QFrame(self.centralwidget)
+        self.cellIndexFrame.setObjectName(u"cellIndexFrame")
+        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.cellIndexFrame.sizePolicy().hasHeightForWidth())
+        self.cellIndexFrame.setSizePolicy(sizePolicy)
+        self.cellIndexFrame.setFrameShape(QFrame.StyledPanel)
+        self.cellIndexFrame.setFrameShadow(QFrame.Raised)
 
-        self.verticalLayout.addWidget(self.treeView)
+        self.verticalLayout.addWidget(self.cellIndexFrame)
 
-        self.commandLinkButton = QCommandLinkButton(self.centralwidget)
-        self.commandLinkButton.setObjectName(u"commandLinkButton")
+        self.addCell = QCommandLinkButton(self.centralwidget)
+        self.addCell.setObjectName(u"addCell")
 
-        self.verticalLayout.addWidget(self.commandLinkButton)
+        self.verticalLayout.addWidget(self.addCell)
 
 
         self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
@@ -55,38 +62,42 @@ class databaseBuilderBase(object):
 
         self.verticalLayout_2.addWidget(self.label_2)
 
-        self.tableView = QTableView(self.centralwidget)
-        self.tableView.setObjectName(u"tableView")
+        self.fileTreeFrame = QFrame(self.centralwidget)
+        self.fileTreeFrame.setObjectName(u"fileTreeFrame")
+        sizePolicy.setHeightForWidth(self.fileTreeFrame.sizePolicy().hasHeightForWidth())
+        self.fileTreeFrame.setSizePolicy(sizePolicy)
+        self.fileTreeFrame.setFrameShape(QFrame.StyledPanel)
+        self.fileTreeFrame.setFrameShadow(QFrame.Raised)
 
-        self.verticalLayout_2.addWidget(self.tableView)
+        self.verticalLayout_2.addWidget(self.fileTreeFrame)
 
 
         self.gridLayout.addLayout(self.verticalLayout_2, 0, 2, 1, 1)
 
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QMenuBar(MainWindow)
+        databaseBuilderBase.setCentralWidget(self.centralwidget)
+        self.menubar = QMenuBar(databaseBuilderBase)
         self.menubar.setObjectName(u"menubar")
         self.menubar.setGeometry(QRect(0, 0, 1196, 21))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QStatusBar(MainWindow)
+        databaseBuilderBase.setMenuBar(self.menubar)
+        self.statusbar = QStatusBar(databaseBuilderBase)
         self.statusbar.setObjectName(u"statusbar")
-        MainWindow.setStatusBar(self.statusbar)
+        databaseBuilderBase.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.menuFile.menuAction())
 
-        self.retranslateUi(MainWindow)
+        self.retranslateUi(databaseBuilderBase)
 
-        QMetaObject.connectSlotsByName(MainWindow)
+        QMetaObject.connectSlotsByName(databaseBuilderBase)
     # setupUi
 
-    def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"Cell Index", None))
-        self.commandLinkButton.setText(QCoreApplication.translate("MainWindow", u"CommandLinkButton", None))
-        self.groupBox.setTitle(QCoreApplication.translate("MainWindow", u"Cell Data", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"Protocol Table", None))
-        self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))
+    def retranslateUi(self, databaseBuilderBase):
+        databaseBuilderBase.setWindowTitle(QCoreApplication.translate("databaseBuilderBase", u"MainWindow", None))
+        self.label.setText(QCoreApplication.translate("databaseBuilderBase", u"Cell Index", None))
+        self.addCell.setText(QCoreApplication.translate("databaseBuilderBase", u"Add Cell", None))
+        self.groupBox.setTitle(QCoreApplication.translate("databaseBuilderBase", u"Cell Data", None))
+        self.label_2.setText(QCoreApplication.translate("databaseBuilderBase", u"Protocol Table", None))
+        self.menuFile.setTitle(QCoreApplication.translate("databaseBuilderBase", u"File", None))
     # retranslateUi
 

@@ -1,0 +1,1 @@
+pyside2-uic database.ui > databaseBuilderBase.py
