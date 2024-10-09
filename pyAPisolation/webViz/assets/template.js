@@ -14,6 +14,8 @@ $( document ).ready(function() {
 
     /* dataset_label_col */
 
+    /* table_links */
+
     var table_concat = false;
 
     var restyle_programmatically = false;
@@ -466,6 +468,55 @@ $( document ).ready(function() {
         div.innerHTML = html.join('');
     };
 
+    function makeLink(row) {
+        if (table_links.length > 0) {
+            // Get the row ID
+            var ID = row.ID;
+            
+            // Get the div
+            var div = document.getElementById("link_" + ID);
+            if (!div) {
+                console.error(`Div with ID link_${ID} not found.`);
+                return;
+            }
+            
+            // Create a dropdown (select element)
+            var parent_drop = document.createElement("div"); 
+            parent_drop.className = "dropdown";
+
+            var drop_button = document.createElement("button");
+            drop_button.className = "btn btn-secondary dropdown-toggle";
+            drop_button.type = "button";
+            drop_button.id = "dropdownMenuButton" + ID;
+            drop_button.setAttribute("data-bs-toggle", "dropdown");
+            drop_button.setAttribute("aria-haspopup", "true");
+            drop_button.setAttribute("aria-expanded", "false");
+            drop_button.innerHTML = "Links";
+            parent_drop.appendChild(drop_button);
+
+
+            var select = document.createElement("div");
+            select.className = "dropdown-menu";
+            select.setAttribute("aria-labelledby", "dropdownMenuButton" + ID);
+            
+            // Add options for each link
+            for (var i = 0; i < table_links.length; i++) {
+                var link = table_links[i];
+                var url = row[link];
+                var option = document.createElement("a");
+                option.className = "dropdown-item";
+                option.text = link;
+                option.href = url;
+                select.appendChild(option);
+            }
+            
+            // Clear the div and append the dropdown
+            div.innerHTML = "";
+            parent_drop.appendChild(select);
+            div.appendChild(parent_drop);
+        }
+    };
+
     function filterByPlot(keys, ranges){
         // check to see if the ranges are the same as the previous ranges, or within the bounds of the previous ranges
         var same = true;
@@ -607,6 +658,7 @@ $( document ).ready(function() {
                     // makerheo(row);
                     makeephys(row);
                     makefi(row);
+                    makeLink(row);
                     resolve();
                 }, 1000);
             });
@@ -711,6 +763,7 @@ $( document ).ready(function() {
             return;
         } else {
             generate_plots();
+          
         }
     });
 

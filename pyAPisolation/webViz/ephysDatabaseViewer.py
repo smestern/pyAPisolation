@@ -142,7 +142,7 @@ def main(database_file=None, config=None, static=False):
         labels = None
 
     pred_col, labels = extract_features(full_dataframe.select_dtypes(["float32", "float64", "int32", "int64"]), ret_labels=True, labels=labels)
-    full_dataframe['label'] = labels
+    
     #check if the umap_cols are present in the dataframe
     if not all([x in full_dataframe.columns for x in config.umap_cols]):
         print("Umap columns not present in the dataframe, generating...")
@@ -159,6 +159,7 @@ def main(database_file=None, config=None, static=False):
         umap_data = full_dataframe[config.umap_cols].to_numpy()
         full_dataframe['Umap X'] = umap_data[:, 0]
         full_dataframe['Umap Y'] = umap_data[:, 1]
+    full_dataframe['label'] = labels
 
     #rename the columns if needed
     full_dataframe = config.process_rename(full_dataframe)
@@ -287,14 +288,19 @@ def main(database_file=None, config=None, static=False):
     #make sure these are unique
     visible_cols = np.unique(visible_cols)
     visible_cols = np.setdiff1d(visible_cols, config.file_index)
+    #remove cols that are marked as links
+    link_cols = [x for x in config.table_spec if 'links' in config.table_spec[x]]
+    visible_cols = np.setdiff1d(visible_cols, link_cols)
     #remove file_index if its there
     if config.hidden_table is not None:
         if config.hidden_table is False:
             visible_cols = np.hstack((config.file_index, '_plot', visible_cols, '_plot_fi'))
+            if len(link_cols) > 0:
+                visible_cols = np.hstack((visible_cols, '_link'))
             #we need to add the hidden columns
             hidden_cols = np.setdiff1d(full_dataframe.columns, visible_cols)
             for col in visible_cols:
-                logger.info(f"Adding column {col}")\
+                logger.info(f"Adding column {col}")
                 
                 #if the column is _plot, add a special tag
                 if '_plot' in col:
@@ -303,6 +309,9 @@ def main(database_file=None, config=None, static=False):
                     test['data-formatter'] = f"plotFormatterDummy"
                     test['data-sortable'] = f"false"
                     test['data-searchable'] = f"false"
+                    test.string = f""
+                elif '_link' in col:
+                    test = gen_table_head_str_(col, soup, dict_args={'data-formatter': 'linkFormatterDummy', 'data-searchable': 'false', 'data-sortable': 'false'})
                     test.string = f""
                 elif col == config.file_index:
                     test = gen_table_head_str_(col, soup, dict_args={'data-class': 'file-ID'})
@@ -318,6 +327,8 @@ def main(database_file=None, config=None, static=False):
         else:
             #our actual columns are just then
             _true_visible = np.hstack((config.file_index, '_plot', '_ephys', '_plot_fi'))
+            if len(link_cols) > 0:
+                _true_visible = np.hstack((_true_visible, '_link'))
             for col in _true_visible:
                 if '_plot' in col:
                     test = soup.new_tag(f"th")
@@ -328,6 +339,9 @@ def main(database_file=None, config=None, static=False):
                     test.string = f""
                 elif '_ephys' in col:
                     test = gen_table_head_str_(col, soup, dict_args={'data-formatter': 'ephysFormatterDummy', 'data-searchable': 'false', 'data-sortable': 'false'})
+                    test.string = f""
+                elif '_link' in col:
+                    test = gen_table_head_str_(col, soup, dict_args={'data-formatter': 'linkFormatterDummy', 'data-searchable': 'false', 'data-sortable': 'false'})
                     test.string = f""
                 elif col == config.file_index:
                     test = gen_table_head_str_(col, soup, dict_args={'data-class': 'file-ID'})
@@ -435,6 +449,8 @@ def main(database_file=None, config=None, static=False):
 
         template_js = template_js.replace("/* umap_labels */", "var umap_labels = " + json.dumps(config.umap_labels))
 
+        template_js = template_js.replace("/* table_links */", "var table_links = " + json.dumps(link_cols))
+
 
     #save the template.js file
     with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:
@@ -447,7 +463,7 @@ def main(database_file=None, config=None, static=False):
         #Create server object listening the port 80
         #change cwd to the output path
         os.chdir(config.output_path)
-        server_object = HTTPServer(server_address=('', 8000), RequestHandlerClass=CGIHTTPRequestHandler)
+        server_object = HTTPServer(server_address=('', 800), RequestHandlerClass=CGIHTTPRequestHandler)
         #spawn a new thread for the server to run on
         server_object.server_activate()
         

@@ -58,7 +58,7 @@ path:hover {
 
 .ephys-key {
   font-size: 12px;
-  color: var(--bs-primary-border-subtle);
+  color: var(--bs-primary-text-emphasis);
   display: block;
 }
 
