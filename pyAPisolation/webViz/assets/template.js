@@ -44,7 +44,7 @@ $( document ).ready(function() {
 
             
     function isContinuousFloat(labels) {
-        return labels.every(label => typeof label === 'number');
+        return labels.every(label => typeof label === 'number' || label === undefined || label === null);
     }
 
     function table_concatenator(labels){
