@@ -47,18 +47,25 @@ class webVizConfig():
         """
         if self.col_rename is None:
             return df
-        #rename columns of the df
+        # Rename columns of the df
         if self.col_rename:
             df.rename(columns=self.col_rename, inplace=True)
-        #update our attributes where they need to be updated
+        
         old_names = self.col_rename.keys()
+
+        def recursive_update(value):
+            if isinstance(value, str) and value in old_names:
+                return self.col_rename[value]
+            elif isinstance(value, list):
+                return [recursive_update(item) for item in value]
+            elif isinstance(value, dict):
+                return {recursive_update(k): recursive_update(v) for k, v in value.items()}
+            else:
+                return value
+
+        # Update our attributes where they need to be updated
         for k, v in self.__dict__.items():
-            if isinstance(v, str) and v in old_names:
-                self.__dict__[k] = self.col_rename[v]
-            if isinstance(v, list): #only go one level deep, if we have a list of lists, we will not catch it could be a problem
-                self.__dict__[k] = [self.col_rename[i] if i in old_names else i for i in v]
-            if isinstance(v, dict):
-                self.__dict__[k] = {self.col_rename[i] if i in old_names else i: j for i,j in v.items()}
+            self.__dict__[k] = recursive_update(v)
 
         return df
 

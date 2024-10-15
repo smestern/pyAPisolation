@@ -21,8 +21,9 @@
 .card-base {
   box-shadow: -6px 6px 0px 0px rgb(176,176,176);
   outline: 2px solid rgb(176,176,176);
-  border-radius: 0px;
+  border-radius: 10px;
   transition: box-shadow .1s, transform .1s;
+  border-color: var(--bs-primary-text-emphasis);
 }
 
 .col {

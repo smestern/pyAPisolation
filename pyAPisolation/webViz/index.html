@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>template2</title>
     <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;700&amp;display=swap">
     <link rel="stylesheet" href="assets/css/bs-theme-overrides.css">
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.css">
@@ -13,7 +14,7 @@
 </head>
 
 <body class="fs-6 fw-lighter focus-ring focus-ring-primary">
-    <div class="container-fluid d-flex flex-column flex-grow-1 flex-shrink-1 flex-fill justify-content-center align-items-center align-content-center align-items-xxl-center" style="position: static;">
+    <div class="container-fluid d-flex flex-column flex-grow-1 flex-shrink-1 flex-fill justify-content-center align-items-center align-content-center align-items-xxl-center" style="position: static;background: var(--bs-body-bg);">
         <div class="row" id="header-row">
             <div class="col-md">
                 <div class="row">
@@ -105,7 +106,7 @@ data-classes="table table-responsive table-card-alt">
     }
     function linkFormatterDummy(value, row, index, field)
     {
-        return '<div id="link_' + row['ID'] + '"></div>';
+        return '<div id="link_' + row['ID'] + '" class="file-link"></div>';
     }
     </script>
     <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>

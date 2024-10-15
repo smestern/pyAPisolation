@@ -279,7 +279,9 @@ $( document ).ready(function() {
                 customdata: [],
                 mode: 'markers',
                 name: 'Continuous Data',
-                marker: { color: encoded_labels[0], size: 5, symbol: 'circle', colorscale: 'Portland', showscale: true, colorbar: { title: {text: keys[2]}} }
+                marker: { color: unpack(rows, keys[2]), size: 5, symbol: 'circle', 
+                    colorscale: 'Portland', showscale: true, 
+                    colorbar: { title: {text: keys[2]}} }
             });
         } else {
             encoded_labels[1].forEach(function (label, i) {
@@ -475,6 +477,7 @@ $( document ).ready(function() {
             
             // Get the div
             var div = document.getElementById("link_" + ID);
+            
             if (!div) {
                 console.error(`Div with ID link_${ID} not found.`);
                 return;
@@ -702,6 +705,12 @@ $( document ).ready(function() {
     //add an event listener
     drop_parent.addEventListener('change', function (e) {
         var selected = $('input[name="label-select"]:checked').val();
+        // if the selected has the class multi-select, then this element has a sibiling that holds the actual selected value
+        if ($('input[name="label-select"]:checked')[0].classList.contains('multi-key')) {
+            //step forward 2 in the DOM
+            selected = $('input[name="label-select"]:checked')[0].nextElementSibling.nextElementSibling.value;
+        }
+
         //check if selected is
         if (selected === split_strs) {
             var selectedCheckboxes = document.querySelectorAll('input[name="dataset-select"]:checked');

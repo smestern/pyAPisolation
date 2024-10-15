@@ -166,21 +166,45 @@ def main(database_file=None, config=None, static=False):
 
     #populate umap-drop-menu 
     for label in config.umap_labels:
-        full_dataframe[label] = full_dataframe[label]#.astype(str)
-        umap_drop = soup.find('div', {'id': 'umap-drop-menu'})
-        temp_div = soup.new_tag('div', attrs={'class': 'form-check'})
-        #set the class to form-check
-        if label == config.primary_label:
-            temp_opt = f"""<input id="{label}" type="radio" class="form-check-input" name="label-select" value="{label}" checked></input>"""
+        if isinstance(label, list) or isinstance(label, dict):
+            # if this is the case, then this is a sublist of labels that will need to be grouped in a dropdown
+            # get the label name
+            label_name = list(label.keys())[0] if isinstance(label, dict) else label[0]
+            # get the labels
+            label_list = label[label_name] if isinstance(label, dict) else label[1:]
+            # create a new tag
+            umap_drop = soup.find('div', {'id': 'umap-drop-menu'})
+            temp_div = soup.new_tag('div', attrs={'class': 'form-check'})
+            # add a label
+            temp_radio = bs4.BeautifulSoup(f"""<input id="{label_name}" type="radio" class="form-check-input multi-key" name="label-select" value="{label_name}"></input>""", 'html.parser')
+            temp_label = bs4.BeautifulSoup(f"""<label class="form-check-label" for="{label_name}">{label_name}</label>""", 'html.parser')
+            # add the select
+            temp_select = soup.new_tag('select', attrs={'class': 'form-select', 'id': f'{label_name}-select'})
+            for sublabel in label_list:
+                temp_opt = f"""<option value="{sublabel}">{sublabel}</option>"""
+                temp_opt = bs4.BeautifulSoup(temp_opt, 'html.parser')
+                temp_select.append(temp_opt)
+            temp_label.append(temp_select)
+            temp_div.append(temp_radio)
+            temp_div.append(temp_label)
+            umap_drop.append(temp_div)
         else:
-            temp_opt = f"""<input id="{label}" type="radio" class="form-check-input" name="label-select" value="{label}"></input>"""
-        
-        temp_div.append(bs4.BeautifulSoup(temp_opt, 'html.parser'))
-        temp_opt = f"""<label class="form-check-label" for="{label}">{label}</label>"""
-        temp_opt = bs4.BeautifulSoup(temp_opt, 'html.parser')
-        temp_div.append(temp_opt)
-        #temp_div = temp_div.prettify()
-        umap_drop.append(temp_div)
+            #follow the normal procedure
+            full_dataframe[label] = full_dataframe[label]#.astype(str)
+            umap_drop = soup.find('div', {'id': 'umap-drop-menu'})
+            temp_div = soup.new_tag('div', attrs={'class': 'form-check'})
+            #set the class to form-check
+            if label == config.primary_label:
+                temp_opt = f"""<input id="{label}" type="radio" class="form-check-input" name="label-select" value="{label}" checked></input>"""
+            else:
+                temp_opt = f"""<input id="{label}" type="radio" class="form-check-input" name="label-select" value="{label}"></input>"""
+            
+            temp_div.append(bs4.BeautifulSoup(temp_opt, 'html.parser'))
+            temp_opt = f"""<label class="form-check-label" for="{label}">{label}</label>"""
+            temp_opt = bs4.BeautifulSoup(temp_opt, 'html.parser')
+            temp_div.append(temp_opt)
+            #temp_div = temp_div.prettify()
+            umap_drop.append(temp_div)
 
     ## handle plots
     if config.plots_path: #if the user has already pregeneated the plots

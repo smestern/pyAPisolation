@@ -228,6 +228,18 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
         return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
 
 def df_select_by_col(df, string_to_find):
+    def flatten_stf(lis):
+        for item in lis:
+            if isinstance(item, list):
+                for subitem in flatten_stf(item):
+                    yield subitem
+            elif isinstance(item, dict):
+                for subitem in flatten_stf(item.values()):
+                    yield subitem
+            else:
+                yield item
+    string_to_find = list(flatten_stf(string_to_find))
+    #flatten the string to find (should be a lsit of strings, but some are dicts)
     columns = df.columns.values
     out = []
     for col in columns:
@@ -235,6 +247,7 @@ def df_select_by_col(df, string_to_find):
         if np.any(string_found):
             out.append(col)
     return df[out]
+
 
 
 def compute_sag(dataT,dataV,dataI, time_aft, plot=False, clear=True):

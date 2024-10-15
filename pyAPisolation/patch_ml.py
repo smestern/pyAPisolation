@@ -7,9 +7,10 @@ from sklearn.ensemble import RandomForestClassifier, IsolationForest
 
 #import umap
 from sklearn.manifold import TSNE
+import umap
 
 def dense_umap(df):
-    dens_map = TSNE().fit_transform(df)
+    dens_map = umap.UMAP(n_neighbors=15, min_dist=0.1, n_components=2).fit_transform(df)
     return dens_map
 
 def preprocess_df(df): 
@@ -26,7 +27,7 @@ def drop_outliers(df):
     od = IsolationForest(contamination=0.01)
     f_outliers = od.fit_predict(df)
     drop_o = np.nonzero(np.where(f_outliers==-1, 1, 0))[0]
-    out = np.delete(df, drop_o, axis=0)
+    out = np.delete(df, drop_o, axis=0) 
     #return outliers
     return out, drop_o
 
