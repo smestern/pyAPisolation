@@ -708,7 +708,7 @@ $( document ).ready(function() {
         // if the selected has the class multi-select, then this element has a sibiling that holds the actual selected value
         if ($('input[name="label-select"]:checked')[0].classList.contains('multi-key')) {
             //step forward 2 in the DOM
-            selected = $('input[name="label-select"]:checked')[0].nextElementSibling.nextElementSibling.value;
+            selected = $('input[name="label-select"]:checked')[0].nextElementSibling.children[0].value;
         }
 
         //check if selected is

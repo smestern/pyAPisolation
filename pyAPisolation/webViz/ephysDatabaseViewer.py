@@ -177,7 +177,7 @@ def main(database_file=None, config=None, static=False):
             temp_div = soup.new_tag('div', attrs={'class': 'form-check'})
             # add a label
             temp_radio = bs4.BeautifulSoup(f"""<input id="{label_name}" type="radio" class="form-check-input multi-key" name="label-select" value="{label_name}"></input>""", 'html.parser')
-            temp_label = bs4.BeautifulSoup(f"""<label class="form-check-label" for="{label_name}">{label_name}</label>""", 'html.parser')
+            temp_label = soup.new_tag('label', attrs={'class': 'form-check-label', 'for': label_name})
             # add the select
             temp_select = soup.new_tag('select', attrs={'class': 'form-select', 'id': f'{label_name}-select'})
             for sublabel in label_list:
