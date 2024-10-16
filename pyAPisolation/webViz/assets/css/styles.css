@@ -4,13 +4,15 @@
 }
 
 .table-card-alt tbody > tr {
-  border-radius: 0px;
+  border-radius: 10px;
+  /*border-color: var(--bs-primary-text-emphasis);*/
   outline: 2px solid rgb(176,176,176);
   box-shadow: -4px 4px 0px 1px rgb(176,176,176);
   overflow: visible;
   margin-right: 0px;
   margin-left: 0;
   padding-left: 17px;
+  max-height: 250px;
   transition: box-shadow .1s, transform .1s;
 }
 
@@ -23,7 +25,7 @@
   outline: 2px solid rgb(176,176,176);
   border-radius: 10px;
   transition: box-shadow .1s, transform .1s;
-  border-color: var(--bs-primary-text-emphasis);
+  /*border-color: var(--bs-primary-text-emphasis);*/
 }
 
 .col {
@@ -76,7 +78,7 @@ path:hover {
 .feat-value {
   writing-mode: vertical-lr;
   font-variant: small-caps;
-  max-height: 35%;
+  max-height: 15%;
   word-wrap: break-word;
 }
 
@@ -139,5 +141,9 @@ img[alt="FI"] {
   img[alt="FI"] {
     display: none !important;
   }
+}
+
+.file-link {
+  padding: 0.5rem;
 }
 
