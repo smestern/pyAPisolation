@@ -347,8 +347,8 @@ $( document ).ready(function() {
             yaxis: { zeroline: false },
             legend: {
                 x: 1,
-                xanchor: 'right',
-                yanchor: 'top',
+                //xanchor: 'right',
+                //yanchor: 'top',
                 y: 0.5
             },
             scene: {aspectmode: "cube", xaxis: {title: keys[0]}, yaxis: {title: keys[1]}}

@@ -147,3 +147,7 @@ img[alt="FI"] {
   padding: 0.5rem;
 }
 
+#header-row {
+  max-height: 25%;
+}
+

@@ -10,16 +10,16 @@ from sklearn.manifold import TSNE
 import umap
 
 def dense_umap(df):
-    dens_map = umap.UMAP(n_neighbors=15, min_dist=0.1, n_components=2).fit_transform(df)
+    dens_map = umap.UMAP(n_neighbors=50, n_components=2).fit_transform(df)
     return dens_map
 
-def preprocess_df(df): 
+def preprocess_df(df, remove_outliers=True): 
     df = df.select_dtypes(["float32", "float64", "int32", "int64"])
     scaler = StandardScaler()
     impute = SimpleImputer()
     
     out = impute.fit_transform(df)
-    out, outliers = drop_outliers(out)
+    out, outliers = drop_outliers(out) if remove_outliers else (out, [])
     out = scaler.fit_transform(out)
     return out, outliers
 
@@ -66,7 +66,7 @@ def extract_features(df, ret_labels=False, labels=None):
         labels_iter = iter(labels_feat)
         for i in np.arange(len(df)):
             if i in outliers:
-                new_labels.append(-1)
+                new_labels.append(0)
             else:
                 new_labels.append(next(labels_iter))
         labels_feat = np.array(new_labels)

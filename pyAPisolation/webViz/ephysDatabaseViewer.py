@@ -194,11 +194,10 @@ def main(database_file=None, config=None, static=False):
             umap_drop = soup.find('div', {'id': 'umap-drop-menu'})
             temp_div = soup.new_tag('div', attrs={'class': 'form-check'})
             #set the class to form-check
-            if label == config.primary_label:
+            if label == config.primary_label or label == config.umap_labels[0]:
                 temp_opt = f"""<input id="{label}" type="radio" class="form-check-input" name="label-select" value="{label}" checked></input>"""
             else:
                 temp_opt = f"""<input id="{label}" type="radio" class="form-check-input" name="label-select" value="{label}"></input>"""
-            
             temp_div.append(bs4.BeautifulSoup(temp_opt, 'html.parser'))
             temp_opt = f"""<label class="form-check-label" for="{label}">{label}</label>"""
             temp_opt = bs4.BeautifulSoup(temp_opt, 'html.parser')
