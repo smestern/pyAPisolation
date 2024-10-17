@@ -203,8 +203,11 @@ $( document ).ready(function() {
             labelside: 'bottom',
         }]; // create the data object
         
-        var layout = {margin: {                           // update the left, bottom, right, top margin
-            b: 120, r: 40, t: 90, l: 40
+        var layout = {
+            autosize: true,
+            height: 300,
+            margin: {                           // update the left, bottom, right, top margin
+            b: 120, r: 40, t: 30, l: 40
         },
         };
         

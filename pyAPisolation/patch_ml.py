@@ -10,7 +10,7 @@ from sklearn.manifold import TSNE
 import umap
 
 def dense_umap(df):
-    dens_map = umap.UMAP(n_neighbors=50, n_components=2).fit_transform(df)
+    dens_map = umap.UMAP(n_neighbors=15, metric='euclidean', min_dist=0.5, n_components=2).fit_transform(df)
     return dens_map
 
 def preprocess_df(df, remove_outliers=True): 

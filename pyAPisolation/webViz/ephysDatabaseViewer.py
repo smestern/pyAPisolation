@@ -463,7 +463,7 @@ def main(database_file=None, config=None, static=False):
         template_js = inf.read()
         #add the onload script to the template.js file
         template_js = template_js.replace("/* onload */", umap_script + "\n \t" + paracoords_script)
-        template_js = template_js.replace("/* data_tb */", json_var)
+        #template_js = template_js.replace("/* data_tb */", json_var)
         template_js = template_js.replace("/* colors */", colors+str(config.color_schemes))
 
         template_js = template_js.replace("/* ekeys */", "var ekeys = " + json.dumps(visible_cols.tolist()))
