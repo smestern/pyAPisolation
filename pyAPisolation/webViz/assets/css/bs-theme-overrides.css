@@ -4,6 +4,8 @@
   --bs-primary-text-emphasis: #1A2230;
   --bs-primary-bg-subtle: #D9DDE4;
   --bs-primary-border-subtle: #B3BBC9;
+  --bs-body-font-size: 3rem;
+  --bs-body-font-weight: normal;
 }
 
 .btn-primary {

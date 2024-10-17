@@ -317,6 +317,7 @@ def main(database_file=None, config=None, static=False):
     #remove file_index if its there
     if config.hidden_table is not None:
         if config.hidden_table is False:
+            
             visible_cols = np.hstack((config.file_index, '_plot', visible_cols, '_plot_fi'))
             if len(link_cols) > 0:
                 visible_cols = np.hstack((visible_cols, '_link'))
