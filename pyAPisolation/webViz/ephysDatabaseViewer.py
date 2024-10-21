@@ -481,7 +481,9 @@ def main(database_file=None, config=None, static=False):
         outf.write(template_js)
     #this si instered into the assets/data.js file
     with open(os.path.join(config.output_path, "assets/data.js"), "w") as outf:
-        outf.write(json_split_strs+ json_full + json_var)        
+        outf.write(json_split_strs+ json_full + json_var)   
+    #save the final csv
+    full_dataframe.to_csv(os.path.join(config.output_path, "data.csv"), index=False)     
     if static:
         print("=== Running Server ===")
         #Create server object listening the port 80

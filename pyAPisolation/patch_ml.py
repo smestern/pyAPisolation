@@ -10,11 +10,11 @@ from sklearn.manifold import TSNE
 import umap
 
 def dense_umap(df):
-    dens_map = umap.UMAP(n_neighbors=15, metric='euclidean', min_dist=0.5, n_components=2).fit_transform(df)
+    dens_map = umap.UMAP( metric='euclidean', min_dist=0.5, n_components=2).fit_transform(df)
     return dens_map
 
 def preprocess_df(df, remove_outliers=True): 
-    df = df.select_dtypes(["float32", "float64", "int32", "int64"])
+    df = df.select_dtypes(["float32", "float64", "int32", "int64"]).drop(columns=["GMM cluster label"])
     scaler = StandardScaler()
     impute = SimpleImputer()
     
@@ -24,7 +24,7 @@ def preprocess_df(df, remove_outliers=True):
     return out, outliers
 
 def drop_outliers(df):
-    od = IsolationForest(contamination=0.01)
+    od = IsolationForest(contamination='auto')
     f_outliers = od.fit_predict(df)
     drop_o = np.nonzero(np.where(f_outliers==-1, 1, 0))[0]
     out = np.delete(df, drop_o, axis=0) 
