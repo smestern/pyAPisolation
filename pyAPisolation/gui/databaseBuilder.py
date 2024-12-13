@@ -1,9 +1,10 @@
 from . import databaseBuilderBase as dbb
 
 from ..database import tsDatabase
-from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QTreeView, QVBoxLayout, QWidget, QFileSystemModel
+from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QTreeView, QVBoxLayout, QWidget, QFileSystemModel, QLabel, QLineEdit, QCommandLinkButton, QGroupBox, QTextEdit
 from PySide2.QtGui import QStandardItem, QStandardItemModel
 from PySide2.QtCore import QDir
+import numpy as np
 import sys
 
 
@@ -37,12 +38,18 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
         self.actionOpen.triggered.connect(self.openFolder)
         self.actionAddCell.triggered.connect(self._addCell)
         self.addCell.clicked.connect(self._addCell)
+        self.addProtocol.clicked.connect(self._addProtocol)
 
 
         # Initialize the cell index model
         self.cellIndexModel = QStandardItemModel()
         self.cellIndexModel.setHorizontalHeaderLabels(['Cell Name', 'Recordings'])
         self.cellIndex.setModel(self.cellIndexModel)
+
+        self.folderView.setDragEnabled(True)
+        self.folderView.setDragDropMode(QTreeView.DragOnly)
+        self.cellIndex.setAcceptDrops(True)
+        self.cellIndex.setDragDropMode(QTreeView.DropOnly)
 
     def retranslateUi(self, MainWindow):
         super().retranslateUi(MainWindow)
@@ -70,12 +77,46 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
             self.folderView.setDragDropMode(QTreeView.DragOnly)
 
     def _addCell(self):
-        self.database.addEntry("placeholder")
+        self.database.addEntry(str(np.random.rand(1)))
         self._updateCellIndex()
 
     def _updateCell(self, event):
-        # Implement the logic to update the cell
+        # Implement the logic to update the cell(s)
         pass
+
+    def _addProtocol(self):
+        # Spawn some prompts in the GUI to add a protocol.
+        # We will add prompts to the group box.
+        # Add a new row to the group box.
+        self.protocol_layout = QVBoxLayout()
+        self.groupBox.setLayout(self.protocol_layout)
+        self.protocol_layout.addWidget(QLabel('Protocol Name'))
+        self.protocolName = QLineEdit()
+        self.protocol_layout.addWidget(self.protocolName)
+        self.protocol_layout.addWidget(QLabel('Protocol Description'))
+        self.protocolDescription = QTextEdit()
+        self.protocol_layout.addWidget(self.protocolDescription)
+        self.protocol_layout.addWidget(QLabel('Pharmacology'))
+        self.protocolPharma = QLineEdit()
+        self.protocol_layout.addWidget(self.protocolPharma)
+        self.protocol_layout.addWidget(QLabel('Temperature'))
+        self.protocolTemp = QLineEdit()
+        self.protocol_layout.addWidget(self.protocolTemp)
+        confirm_button = QCommandLinkButton('Confirm')
+        confirm_button.clicked.connect(self._addProtocolstoCell)
+        self.protocol_layout.addWidget(confirm_button)
+    
+    def _addProtocolstoCell(self):
+        # Add the protocols to the cell(s)
+        cells = self.database.getCells()
+        protocol_name = self.protocolName.text()
+        protocol_description = self.protocolDescription.toPlainText()
+        protocol_pharma = self.protocolPharma.text()
+        protocol_temp = self.protocolTemp.text()
+        for cell_name, recordings in cells.items():
+            # Add the protocol to the cell
+            self.database.addProtocol(cell_name, protocol_name, protocol_description, protocol_pharma, protocol_temp)
+        self._updateCellIndex()
 
     def _handleDropEvent(self, event):
         # Handle the drop event and update the cell index model

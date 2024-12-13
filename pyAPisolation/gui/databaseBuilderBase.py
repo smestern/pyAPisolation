@@ -38,13 +38,24 @@ class Ui_databaseBuilderBase(object):
         self.cellIndexFrame.setSizePolicy(sizePolicy)
         self.cellIndexFrame.setFrameShape(QFrame.StyledPanel)
         self.cellIndexFrame.setFrameShadow(QFrame.Raised)
+        self.cellIndexFrame.setAcceptDrops(True)
 
         self.verticalLayout.addWidget(self.cellIndexFrame)
 
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.addCell = QCommandLinkButton(self.centralwidget)
         self.addCell.setObjectName(u"addCell")
 
-        self.verticalLayout.addWidget(self.addCell)
+        self.horizontalLayout.addWidget(self.addCell)
+
+        self.addProtocol = QCommandLinkButton(self.centralwidget)
+        self.addProtocol.setObjectName(u"addProtocol")
+
+        self.horizontalLayout.addWidget(self.addProtocol)
+
+
+        self.verticalLayout.addLayout(self.horizontalLayout)
 
 
         self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
@@ -68,6 +79,7 @@ class Ui_databaseBuilderBase(object):
         self.fileTreeFrame.setSizePolicy(sizePolicy)
         self.fileTreeFrame.setFrameShape(QFrame.StyledPanel)
         self.fileTreeFrame.setFrameShadow(QFrame.Raised)
+        
 
         self.verticalLayout_2.addWidget(self.fileTreeFrame)
 
@@ -96,6 +108,7 @@ class Ui_databaseBuilderBase(object):
         databaseBuilderBase.setWindowTitle(QCoreApplication.translate("databaseBuilderBase", u"MainWindow", None))
         self.label.setText(QCoreApplication.translate("databaseBuilderBase", u"Cell Index", None))
         self.addCell.setText(QCoreApplication.translate("databaseBuilderBase", u"Add Cell", None))
+        self.addProtocol.setText(QCoreApplication.translate("databaseBuilderBase", u"Add Protocol", None))
         self.groupBox.setTitle(QCoreApplication.translate("databaseBuilderBase", u"Cell Data", None))
         self.label_2.setText(QCoreApplication.translate("databaseBuilderBase", u"Protocol Table", None))
         self.menuFile.setTitle(QCoreApplication.translate("databaseBuilderBase", u"File", None))

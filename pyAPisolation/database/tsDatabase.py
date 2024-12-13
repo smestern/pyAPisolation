@@ -268,7 +268,16 @@ class tsDatabase:
         Get all cells from the database
         """
         return self.cellindex.to_dict(orient='index')
+    
+    def addProtocol(self, cell, protocol, **kwargs):
+        """
+        Add a protocol to a cell
+        :param cell: Cell to add the protocol to
+        :param protocol: Protocol to add
+        """
+        pass
 
+    
     def __getitem__(self, key, protocol, column):
         return self.data[key]
     
