@@ -33,6 +33,7 @@ print("Loaded external libraries")
 from pyAPisolation.featureExtractor import save_data_frames, save_subthres_data, \
 process_file, analyze_subthres, preprocess_abf_subthreshold, determine_rejected_spikes
 from pyAPisolation.patch_subthres import exp_decay_2p
+from pyAPisolation.patch_utils import sweepNumber_to_real_sweep_number
 from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
@@ -497,7 +498,7 @@ class analysis_gui(object):
         #for the current abf run the analysis and save the csv
         self.run_indiv_analysis()
         if self.get_current_analysis() is 'spike':
-            dfs = preprocess_abf(self.abf.filePath, copy.deepcopy(self.param_dict), False, '')
+            dfs = process_file(self.abf.abfFilePath, copy.deepcopy(self.param_dict), '')
             save_data_frames(dfs[1], dfs[0], dfs[2], self.selected_dir, str(time.time())+self.outputTag.text(), self.bspikeFind.isChecked(), self.brunningBin.isChecked(), self.brawData.isChecked())
 
     def _find_outliers(self, df):
@@ -661,18 +662,15 @@ class analysis_gui(object):
             cols = self.subthres_df.columns
             for sweep in self.selected_sweeps:
                 self.abf.setSweep(sweep)
-                if sweep < 9:
-                    real_sweep_number = '00' + str(sweep + 1)
-                elif sweep > 8 and sweep < 99:
-                    real_sweep_number = '0' + str(sweep + 1)
+                real_sweep_number = sweepNumber_to_real_sweep_number(sweep)
                 cols_for_sweep = [c for c in cols if real_sweep_number in c]
                 if len(cols_for_sweep) == 0:
                     continue
                 temp_df = self.subthres_df[cols_for_sweep]
                 #decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.name)
                 #pull out the params, we want the decay, A1, b1, b2
-                decay_fast = 1/temp_df[f"fast 2 phase decay {real_sweep_number}"].to_numpy()[0]
-                decay_slow = 1/temp_df[f"slow 2 phase decay {real_sweep_number}"].to_numpy()[0]
+                decay_fast = 1/temp_df[f"fast 2 phase tau {real_sweep_number}"].to_numpy()[0]
+                decay_slow = 1/temp_df[f"slow 2 phase tau {real_sweep_number}"].to_numpy()[0]
                 a = temp_df[f"Curve fit A {real_sweep_number}"].to_numpy()[0]
                 b1 = temp_df[f"Curve fit b1 {real_sweep_number}"].to_numpy()[0]
                 b2 = temp_df[f"Curve fit b2 {real_sweep_number}"].to_numpy()[0]

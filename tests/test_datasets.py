@@ -49,6 +49,17 @@ def test_x_y_c():
 def test_database():
     df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
     db = tsDatabase.tsDatabase(dataframe=df, id_col='filename')
+    print(db.cellindex.head())
+    assert db.dataframe.equals(df)
+    assert np.all(list(db.cellindex['IC1']) == list(df.index.values))
+
+    #check that we can add a new entry
+    db.addEntry('test')
+    assert 'test' in db.cellindex.index.values
+
+    #try adding a protocol
+    db.addProtocol('test', 'protocol')
+    assert db.cellindex.loc['test', 'protocol'] == 'protocol'
 
 
 

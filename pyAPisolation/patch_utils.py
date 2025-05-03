@@ -194,3 +194,9 @@ def parse_user_input(x=None, y=None, c=None, file=None):
     else:
         raise ValueError("No valid input was passed to the function. Please pass in a file or the dataX, dataY, and dataC arrays")
 
+def sweepNumber_to_real_sweep_number(sweepNumber):
+    if sweepNumber < 9:
+            real_sweep_number = '00' + str(sweepNumber + 1)
+    elif sweepNumber > 8 and sweepNumber < 99:
+            real_sweep_number = '0' + str(sweepNumber + 1)
+    return real_sweep_number

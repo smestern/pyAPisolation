@@ -17,9 +17,11 @@ import logging
 from .ipfx_df import _build_full_df, _build_sweepwise_dataframe, save_data_frames, save_subthres_data
 from .loadFile import loadFile, loadABF
 from .dataset import cellData
-from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_bessel, parse_user_input
+from .patch_utils import plotabf, load_protocols, find_non_zero_range, filter_bessel, parse_user_input, sweepNumber_to_real_sweep_number
 from .patch_subthres import exp_decay_factor, membrane_resistance, mem_cap, mem_cap_alt, \
-    rmp_mode, compute_sag, exp_decay_factor_alt, exp_growth_factor, determine_subt, df_select_by_col, subthres_a
+    rmp_mode, compute_sag, exp_decay_factor_alt, exp_growth_factor, determine_subt, df_select_by_col, subthres_a, exp_rm_factor, ladder_rm, \
+    mem_resist_alt
+    
 from .QC import run_qc
 
 #set up the logger
@@ -312,12 +314,6 @@ def process_file(file_path, param_dict, protocol_name):
     #except:
     return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-def sweepNumber_to_real_sweep_number(sweepNumber):
-    if sweepNumber < 9:
-            real_sweep_number = '00' + str(sweepNumber + 1)
-    elif sweepNumber > 8 and sweepNumber < 99:
-            real_sweep_number = '0' + str(sweepNumber + 1)
-    return real_sweep_number
 
 #CUSTOM FEATURES
 def _custom_sweepwise_features(sweepX, sweepY, sweepC, real_sweep_number, param_dict, spike_df, rawspike_df):
@@ -411,6 +407,8 @@ def _merge_current_injection_features(sweepX, sweepY, sweepC, spike_df):
     #pack it into the dict, if there is only one stimuli length, we will just take that
     if len(np.unique(stimuli_length)) == 1:
         new_current_injection_features['stimuli_length'] = stimuli_length[0]
+    elif len(np.unique(stimuli_length)) == 0:
+        new_current_injection_features['stimuli_length'] =  np.nan
     else:
         #take the mode of the stimuli length
         new_current_injection_features['stimuli_length'] = np.unique(stimuli_length)[np.unique(stimuli_length, return_counts=True)[1].argmax()]
@@ -531,153 +529,174 @@ def preprocess_abf_subthreshold(file_path, protocol_name='', param_dict={}):
        #return pd.DataFrame(), pd.DataFrame()
 
 def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False):
-    filename = abf.name
-    
-    print(filename + ' import')
-    file_path = abf.name
-    root_fold = os.path.dirname(file_path)
-    np.nan_to_num(abf.data, nan=-9999, copy=False)
-    if savfilter >0:
-        abf.data = signal.savgol_filter(abf.data, savfilter, polyorder=3)
-    
-    #determine the search area
-    dataT = abf.sweepX #sweeps will need to be the same length
-    if start_sear != None:
-        idx_start = np.argmin(np.abs(dataT - start_sear))
-    else:
-        idx_start = 0
-        
-    if end_sear != None:
-        idx_end = np.argmin(np.abs(dataT - end_sear))
-        
-    else:
-        idx_end = -1
+    dfs = pd.DataFrame()
+    averages = pd.DataFrame()
+    plt.close('all')
+    if (abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and protocol_name in abf.protocol):
+        np.nan_to_num(abf.data, nan=-9999, copy=False)
+        if savfilter > 0:
+            abf.data = signal.savgol_filter(abf.data, savfilter, polyorder=3)
 
-
-
-    #If there is more than one sweep, we need to ensure we dont iterate out of range
-    if abf.sweepCount > 1:
-        if subt_sweeps is None:
-            sweepList = determine_subt(abf, (idx_start, idx_end))
-            sweepcount = len(sweepList)
+        dataT = abf.sweepX
+        if start_sear is not None:
+            idx_start = np.argmin(np.abs(dataT - start_sear))
         else:
-            subt_sweeps_temp = subt_sweeps - 1
-            sweep_union = np.intersect1d(abf.sweepList, subt_sweeps_temp)
-            sweepList = sweep_union
+            idx_start = 0
+
+        if end_sear is not None:
+            idx_end = np.argmin(np.abs(dataT - end_sear))
+        else:
+            idx_end = -1
+
+        if abf.sweepCount > 1:
+            if subt_sweeps is None:
+                sweepList = determine_subt(abf, (idx_start, idx_end))
+                sweepcount = len(sweepList)
+            else:
+                subt_sweeps_temp = subt_sweeps - 1
+                sweep_union = np.intersect1d(abf.sweepList, subt_sweeps_temp)
+                sweepList = sweep_union
+                sweepcount = 1
+        else:
             sweepcount = 1
-    else:
-        sweepcount = 1
-        sweepList = [0]
-    
-    
-    temp_df = pd.DataFrame()
-    temp_df['filename'] = [abf.name]
-    temp_df['foldername'] = [os.path.dirname(file_path)]
-    temp_avg = pd.DataFrame()
-    temp_avg['filename'] = [abf.name]
-    temp_avg['foldername'] = [os.path.dirname(file_path)]
-    
-    full_dataI = []
-    full_dataV = []
-    for sweepNumber in sweepList: 
-        real_sweep_length = abf.sweepLengthSec - 0.0001
-        if sweepNumber < 9:
-            real_sweep_number = '00' + str(sweepNumber + 1)
-        elif sweepNumber > 8 and sweepNumber < 99:
-            real_sweep_number = '0' + str(sweepNumber + 1)
+            sweepList = [0]
 
-        
+        temp_df = pd.DataFrame()
+        temp_df['1Afilename'] = [abf.abfID]
+        temp_df['1Afoldername'] = [os.path.dirname(abf.abfFilePath)]
+        temp_avg = pd.DataFrame()
+        temp_avg['1Afilename'] = [abf.abfID]
+        temp_avg['1Afoldername'] = [os.path.dirname(abf.abfFilePath)]
 
-        abf.setSweep(sweepNumber)
+        full_dataI = []
+        full_dataV = []
+        for sweepNumber in sweepList:
+            real_sweep_length = abf.sweepLengthSec - 0.0001
+            real_sweep_number = sweepNumber_to_real_sweep_number(sweepNumber) 
 
-        dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
-        dataT, dataV, dataI = dataT[idx_start:idx_end], dataV[idx_start:idx_end], dataI[idx_start:idx_end]
-        dataT = dataT - dataT[0]
-        
+            abf.setSweep(sweepNumber)
+            dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+            dataT, dataV, dataI = dataT[idx_start:idx_end], dataV[idx_start:idx_end], dataI[idx_start:idx_end]
+            dataT = dataT - dataT[0]
 
-        decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.name)
-        
-        resist = membrane_resistance(dataT, dataV, dataI)
-        Cm2, Cm1 = mem_cap(resist, decay_slow)
-        Cm3 = mem_cap_alt(resist, decay_slow, curve[3], np.amin(dataI))
-        temp_df[f"_1 phase decay {real_sweep_number}"] = [p_decay]           
-        temp_df[f"fast 2 phase decay {real_sweep_number}"] = [decay_fast]
-        temp_df[f"slow 2 phase decay {real_sweep_number}"] = [decay_slow]
-        temp_df[f"Curve fit A {real_sweep_number}"] = [curve[0]]
-        temp_df[f"Curve fit b1 {real_sweep_number}"] = [curve[1]]
-        temp_df[f"Curve fit b2 {real_sweep_number}"] = [curve[3]]
-        temp_df[f"R squared 2 phase {real_sweep_number}"] = [r_squared_2p]
-        temp_df[f"R squared 1 phase {real_sweep_number}"] = [r_squared_1p]
-        temp_df[f"RMP {real_sweep_number}"] = [rmp_mode(dataV, dataI)]
-        temp_df[f"Membrane Resist {real_sweep_number}"] =  resist / 1000000000 #to gigaohms
-        temp_df[f"_2 phase Cm {real_sweep_number}"] =  Cm2 * 1000000000000#to pf farad
-        temp_df[f"_ALT_2 phase Cm {real_sweep_number}"] =  Cm3 * 1000000000000
-        temp_df[f"_1 phase Cm {real_sweep_number}"] =  Cm1 * 1000000000000
-        temp_df[f"Voltage sag {real_sweep_number}"],temp_df[f"Voltage min {real_sweep_number}"] = compute_sag(dataT,dataV,dataI, time_after, plot=bplot, clear=False)
-         
-        #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
-        #
-        #temp_spike_df['time_constant' + real_sweep_number] = subt.time_constant(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
-        #temp_spike_df['voltage_deflection' + real_sweep_number] = subt.voltage_deflection(dataT,dataV,dataI, start=b_lowerlim, end=upperlim)
+            decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.abfID)
+            resist = membrane_resistance(dataT, dataV, dataI)
+            Cm2, Cm1 = mem_cap(resist, decay_slow)
+            Cm3 = mem_cap_alt(resist, decay_slow, curve[3], np.amin(dataI))
+            temp_df[f"_1 phase tau {real_sweep_number}"] = [p_decay]
+            temp_df[f"fast 2 phase tau {real_sweep_number}"] = [decay_fast]
+            temp_df[f"slow 2 phase tau {real_sweep_number}"] = [decay_slow]
+            temp_df[f"Curve fit A {real_sweep_number}"] = [curve[0]]
+            temp_df[f"Curve fit b1 {real_sweep_number}"] = [curve[1]]
+            temp_df[f"Curve fit b2 {real_sweep_number}"] = [curve[3]]
+            temp_df[f"R squared 2 phase {real_sweep_number}"] = [r_squared_2p]
+            temp_df[f"R squared 1 phase {real_sweep_number}"] = [r_squared_1p]
+            temp_df[f"RMP {real_sweep_number}"] = [rmp_mode(dataV, dataI)]
+            temp_df[f"Membrane Resist {real_sweep_number}"] = resist / 1000000000
+            temp_df[f"_2 phase Cm {real_sweep_number}"] = Cm2 * 1000000000000
+            temp_df[f"_ALT_2 phase Cm {real_sweep_number}"] = Cm3 * 1000000000000
+            temp_df[f"_1 phase Cm {real_sweep_number}"] = Cm1 * 1000000000000
+            temp_df[f"Voltage sag {real_sweep_number}"], temp_df[f"Voltage min {real_sweep_number}"] = compute_sag(dataT, dataV, dataI, time_after, plot=bplot, clear=False)
+            try:
+                sag_ratio, taum_allen, voltage_allen = subthres_a(dataT, dataV, dataI, 0.0, np.amax(dataT))
+                temp_df[f"Voltage sag ratio {real_sweep_number}"] = sag_ratio
+                temp_df[f"Tau_m Allen {real_sweep_number}"] = taum_allen
+                temp_df[f"Voltage sag Allen {real_sweep_number}"] = voltage_allen[0]
+            except:
+                temp_df[f"Voltage sag ratio {real_sweep_number}"] = np.nan
+                temp_df[f"Tau_m Allen {real_sweep_number}"] = np.nan
+                temp_df[f"Voltage sag Allen {real_sweep_number}"] = np.nan
 
-        
+            full_dataI.append(dataI)
+            full_dataV.append(dataV)
+            if dataI.shape[0] < dataV.shape[0]:
+                dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
 
-        full_dataI.append(dataI)
-        full_dataV.append(dataV)
-        if dataI.shape[0] < dataV.shape[0]:
-            dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
-    
-    if bplot == True:
-            plt.title(abf.name)
+        if bplot:
+            plt.title(abf.abfID)
             plt.ylim(top=-40)
             plt.xlim(right=0.6)
-            #plt.legend()
-            plt.savefig(root_fold+'//cm_plots//sagfit'+abf.name+'sweep'+real_sweep_number+'.png')
-    
-    full_dataI = np.vstack(full_dataI) 
-    indices_of_same = np.arange(full_dataI.shape[0])
-    full_dataV = np.vstack(full_dataV)
-    if bplot == True:
-        if not os.path.exists(root_fold+'//cm_plots//'):
-                os.mkdir(root_fold+'//cm_plots//')   
-    print("Fitting Decay")
-    decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, abf_id=abf.name, plot=bplot, root_fold=root_fold)
-    print("Computing Sag")
-    grow = exp_growth_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), 1/decay_slow)
-    temp_avg[f"Voltage sag mean"], temp_avg["Voltage Min point"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, plot=bplot)
-    temp_avg[f"Sweepwise Voltage sag mean"], temp_avg["Sweepwise Voltage Min point"] = np.nanmean(df_select_by_col(temp_df, ['Voltage sag'])), np.nanmean(df_select_by_col(temp_df, ['Voltage min']))
-    
-    temp_avg["Averaged 1 phase decay "] = [p_decay]           
-    temp_avg["Averaged 2 phase fast decay "] = [decay_fast]
-    temp_avg["Averaged 2 phase slow decay "] = [decay_slow]
-    temp_avg["Averaged Curve fit A"] = [curve[0]]
-    temp_avg["Averaged Curve fit b1"] = [curve[1]]
-    temp_avg["Averaged Curve fit b2"] = [curve[3]]
-    temp_avg["Averaged R squared 2 phase"] = [r_squared_2p]
-    temp_avg["Averaged R squared 1 phase"] = [r_squared_1p]
-    temp_avg[f"Averaged RMP"] = [rmp_mode(np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0))]
-    temp_avg["SweepCount Measured"] = [sweepcount]
-    temp_avg["Averaged alpha tau"] = [grow[1]]
-    temp_avg["Averaged b tau"] = [grow[3]]
-    if r_squared_2p > r_squared_1p:
-        temp_avg["Averaged Best Fit"] = [2]
-    else:
-        temp_avg["AverageD Best Fit"] = [1]
-    print(f"fitting Membrane resist")
-    resist = membrane_resistance(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0))
-    resist_alt = exp_rm_factor(dataT, np.nanmean(full_dataV[indices_of_same,:],axis=0), np.nanmean(full_dataI[indices_of_same,:],axis=0), time_after, decay_slow, abf_id=abf.name,  root_fold=root_fold)
-    Cm2, Cm1 = mem_cap(resist, decay_slow, p_decay)
-    Cm3 = mem_cap_alt(resist, decay_slow, curve[3], np.amin(np.nanmean(full_dataI[indices_of_same,:],axis=0)))
-    rm_alt = mem_resist_alt(Cm3, decay_slow)
-    temp_avg["Averaged Membrane Resist"] =  resist  / 1000000000 #to gigaohms
-    temp_avg["Averaged Membrane Resist _ ALT"] =  resist_alt[0]  / 1000000000
-    temp_avg["Averaged Membrane Resist _ ALT 2"] =  rm_alt  / 1000000000#to gigaohms
-    temp_avg["Averaged pipette Resist _ ALT"] =  resist_alt[2]  / 1000000000 #to gigaohms
-    temp_avg["Averaged 2 phase Cm"] =  Cm2 * 1000000000000
-    temp_avg["Averaged 2 phase Cm Alt"] =  Cm3 * 1000000000000
-    temp_avg["Averaged 1 phase Cm"] =  Cm1 * 1000000000000
-    print(f"Computed a membrane resistance of {(resist  / 1000000000)} giga ohms, and a capatiance of {Cm2 * 1000000000000} pF, and tau of {decay_slow*1000} ms")
-    return temp_df, temp_avg
+            plt.savefig(os.path.join(os.path.dirname(abf.abfFilePath), 'cm_plots', f'sagfit{abf.abfID}sweep{real_sweep_number}.png'))
+
+        full_dataI = np.vstack(full_dataI)
+        indices_of_same = np.arange(full_dataI.shape[0])
+        full_dataV = np.vstack(full_dataV)
+
+        decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0),
+                                                                                                  np.nanmean(full_dataI[indices_of_same, :], axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=os.path.dirname(abf.abfFilePath))
+        temp_avg[f"Voltage sag mean"], temp_avg["Voltage Min point"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0), np.nanmean(full_dataI[indices_of_same, :], axis=0), time_after, plot=bplot)
+        temp_avg[f"Sweepwise Voltage sag mean"], temp_avg["Sweepwise Voltage Min point"] = np.nanmean(df_select_by_col(temp_df, ['Voltage sag 0'])), np.nanmean(df_select_by_col(temp_df, ['Voltage min']))
+        if bplot:
+            plt.title(abf.abfID)
+            plt.savefig(os.path.join(os.path.dirname(abf.abfFilePath), 'cm_plots', f'sagfit{abf.abfID}'))
+
+        temp_avg["Averaged 1 phase tau "] = [p_decay]
+        temp_avg["Averaged 2 phase fast tau "] = [decay_fast]
+        temp_avg["Averaged 2 phase slow tau "] = [decay_slow]
+        temp_avg["Averaged Curve fit A"] = [curve[0]]
+        temp_avg["Averaged Curve fit b1"] = [curve[1]]
+        temp_avg["Averaged Curve fit b2"] = [curve[3]]
+        temp_avg["Averaged R squared 2 phase"] = [r_squared_2p]
+        temp_avg["Averaged R squared 1 phase"] = [r_squared_1p]
+        temp_avg[f"Averaged RMP"] = [rmp_mode(np.nanmean(full_dataV[indices_of_same, :], axis=0), np.nanmean(full_dataI[indices_of_same, :], axis=0))]
+        temp_avg["SweepCount Measured"] = [sweepcount]
+        if r_squared_2p > r_squared_1p:
+            temp_avg["Averaged Best Fit"] = [2]
+        else:
+            temp_avg["Averaged Best Fit"] = [1]
+
+        resist = membrane_resistance(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0), np.nanmean(full_dataI[indices_of_same, :], axis=0))
+        resist_alt = exp_rm_factor(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0), np.nanmean(full_dataI[indices_of_same, :], axis=0), time_after, decay_slow, abf_id=abf.abfID, root_fold=os.path.dirname(abf.abfFilePath))
+        Cm2, Cm1 = mem_cap(resist, decay_slow, p_decay)
+        Cm3 = mem_cap_alt(resist, decay_slow, curve[3], np.amin(np.nanmean(full_dataI[indices_of_same, :], axis=0)))
+        rm_alt = mem_resist_alt(Cm3, decay_slow)
+        temp_avg["Averaged Membrane Resist"] = resist / 1000000000
+        temp_avg["Averaged Membrane Resist _ ALT"] = resist_alt[0] / 1000000000
+        temp_avg["Averaged Membrane Resist _ ALT 2"] = rm_alt / 1000000000
+        temp_avg["Averaged pipette Resist _ ALT"] = resist_alt[2] / 1000000000
+        temp_avg["Averaged 2 phase Cm"] = Cm2 * 1000000000000
+        temp_avg["Averaged 2 phase Cm Alt"] = Cm3 * 1000000000000
+        temp_avg["Averaged 1 phase Cm"] = Cm1 * 1000000000000
+        try:
+            sag_ratio, taum_allen, voltage_allen = subthres_a(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0),
+                                                              np.nanmean(full_dataI[indices_of_same, :], axis=0), 0.0, np.amax(dataT))
+            temp_avg[f"Averaged Voltage sag ratio "] = sag_ratio
+            temp_avg[f"Averaged Tau_m Allen "] = taum_allen
+            temp_avg[f"Averaged Voltage sag min Allen "] = voltage_allen[0]
+        except:
+            temp_avg[f"Averaged Voltage sag ratio "] = np.nan
+            temp_avg[f"Averaged Tau_m Allen "] = np.nan
+            temp_avg[f"Averaged Voltage sag min Allen "] = np.nan
+
+        try:
+            mean_rms, max_rms, mean_drift, max_drift = run_qc(full_dataV[indices_of_same, :], full_dataI[indices_of_same, :])
+            temp_avg["Averaged Mean RMS"] = mean_rms
+            temp_avg["Max RMS"] = max_rms
+            temp_avg["Averaged Mean Drift"] = mean_drift
+            temp_avg["Max Drift"] = max_drift
+        except:
+            temp_avg["Averaged Mean RMS"] = np.nan
+            temp_avg["Max RMS"] = np.nan
+            temp_avg["Averaged Mean Drift"] = np.nan
+            temp_avg["Max Drift"] = np.nan
+
+        temp_avg = _merge_current_injection_features(sweepX=np.tile(dataT, (full_dataI.shape[0], 1)), sweepY=full_dataI, sweepC=full_dataI, spike_df=temp_avg)
+
+        try:
+            rm_ladder, _, sweep_count = ladder_rm(np.tile(dataT, (full_dataI.shape[0], 1)), full_dataV, full_dataI)
+            temp_avg["Resistance Ladder Slope"] = rm_ladder
+            temp_avg["Rm Resistance Ladder"] = 1 / rm_ladder
+            temp_avg["Resistance Ladder SweepCount Measured"] = sweep_count
+        except:
+            temp_avg["Resistance Ladder Slope"] = np.nan
+            temp_avg["Rm Resistance Ladder"] = np.nan
+            temp_avg["Resistance Ladder SweepCount Measured"] = np.nan
+
+        dfs = dfs.append(temp_df, sort=True)
+        averages = averages.append(temp_avg, sort=True)
+
+    return dfs, averages
+
 
 ### IPFX FIXES
 # here we have a few functions that are used to fix the IPFX package, since there is a few errors

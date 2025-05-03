@@ -59,6 +59,22 @@ class experimentalStructure:
         #deep copy the dataframe to avoid any issues
         self.protocols = self.protocols.copy() #this is a bit of a hack, but it works for now
     
+    def getProtocol(self, name):
+        """
+        Get the protocol by name
+        :param name: Name of the protocol
+        """
+        #check if the protocol exists in the dataframe either by name or by altnames
+        altnames = np.ravel([x for x in self.protocols['altnames'].values])
+        if name in self.protocols['name'].values or name in altnames:
+            if name in self.protocols['altnames'].values:
+                #if the name is in the altnames, we will update the name to the name in the dataframe
+                name = self.protocols[self.protocols['altnames'] == name]['name'].values[0]
+            return self.protocols[self.protocols['name'] == name]
+        else:
+            logger.error(f'Protocol {name} does not exist in the database')
+            return None
+
     def setPrimary(self, name):
         """
         Set the primary protocol
@@ -145,7 +161,7 @@ class tsDatabase:
         self.data = {data_obj.obs['protocol'][0]: data_obj}
 
         #create our cell index, cell names will be CELL_X_{primary_protocol_file_name}
-        cell_names = [f'CELL_{i}_{data_obj.obs_names}' for i in range(len(data_obj.obs))]
+        cell_names = [f'CELL_{i}_{data_obj.obs_names[i]}' for i in range(len(data_obj.obs))]
 
         self.cellindex = pd.DataFrame(index=cell_names, columns=['protocol', 'filename', 'foldername', data_obj.obs['protocol'][0]], data={'protocol': data_obj.obs['protocol'][0], 'filename': data_obj.obs_names, 'foldername': data_obj.obs['foldername'], data_obj.obs['protocol'][0]: data_obj.obs_names})
 
@@ -207,11 +223,12 @@ class tsDatabase:
         #data.var_names = features.columns
         return data
 
+    @staticmethod
     def parseFile(file):
         #use celldata to parse the file
         cell = cellData(file)
         #now build a dict
-        file_dict = {'filename': cell.filename, 'foldername': cell.foldername, 'protocol': cell.protocol}
+        file_dict = {'filename': cell.fileName, 'protocol': cell.protocol}
         return file_dict
 
     def addEntry(self, name, paths=None):
@@ -222,19 +239,21 @@ class tsDatabase:
         """
         #create a row for adding
         row = pd.DataFrame(index=[name], columns=['name'], data=[name])
-
+        logger.info(f'Adding entry {name} to the database')
         if paths is not None:
+            logger.info(f'Adding files {paths} to the database')
             if isinstance(paths, str) or isinstance(paths, os.PathLike):
                 file_dicts = [self.parseFile(paths)]
             elif isinstance(paths, list):
                 file_dicts = [self.parseFile(path) for path in paths]
             else:
-        
                 logger.error(f'Invalid path type {type(paths)}')
-                return
+                
+            #with the diles
 
-        #update cellIndex
-        self.cellindex = pd.concat([self.cellindex, row]).copy()
+        else:
+            #update cellIndex
+            self.cellindex = pd.concat([self.cellindex, row]).copy()
         
     def addEntries(self, path):
         """
@@ -250,7 +269,7 @@ class tsDatabase:
         """
         pass
             
-    def updateEntry(self, name):
+    def updateEntry(self, name, **kwargs):
         """
         Update an entry in the database
         :param name: Name of the entry
@@ -275,9 +294,20 @@ class tsDatabase:
         :param cell: Cell to add the protocol to
         :param protocol: Protocol to add
         """
-        pass
+        #check if the protocol exists in the database
+        path = kwargs.pop('path', None) #pop the path from the kwargs
+        if self.exp.getProtocol(protocol) is None:
+            logger.info(f'Protocol {protocol} does not exist in the database')
+            self.exp.addProtocol(protocol, kwargs)
+            #make a new column in the cell index
+            self.cellindex[protocol] = None
+        else:
+            logger.info(f'Protocol {protocol} exists in the database')
+        
+        #update the cell index
+        if path is not None:
+            self.cellindex.loc[cell, protocol] = path
 
-    
     def __getitem__(self, key, protocol, column):
         return self.data[key]
     

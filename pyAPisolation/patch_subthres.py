@@ -68,11 +68,12 @@ def deriv(x,y):
     return xfirst, yfirst
 
 def rmp_mode(dataV, dataI):
-
-    pre = find_downward(dataI)
-
-    mode_vm = mode(np.round(dataV[:pre]*4)/4, nan_policy='omit')[0][0]
-    return mode_vm
+    try:
+        pre = find_downward(dataI)
+        mode_vm = mode(np.round(dataV[:pre]*4)/4, nan_policy='omit')[0][0]
+        return mode_vm
+    except:
+        return np.nan
 
 def mem_resist_alt(cm_alt, slow_decay):
     rm_alt = cm_alt / slow_decay
