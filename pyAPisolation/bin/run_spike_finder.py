@@ -65,6 +65,7 @@ class analysis_gui(object):
         #assign the children to the main object for easy access
         self.folder_select = self.main_widget.findChild(QWidget, "folder_select")
         self.folder_select.clicked.connect(self.file_select)
+        self.mdi_area = self.main_widget.findChild(QWidget, "mdiArea")
         
         self.file_list = self.main_widget.findChild(QWidget, "file_list")
         self.file_list.itemClicked.connect(self.abf_select)
@@ -184,6 +185,10 @@ class analysis_gui(object):
         self.actionPrism_Writer2 = self.tools_menu.addAction("Prism Writer")
         self.actionPrism_Writer.triggered.connect(self._prism_writer)
         self.actionPrism_Writer2.triggered.connect(self._prism_writer)
+
+
+        #plotting windows => 
+        self.plot_windows = {}
 
 
     def file_select(self):
@@ -493,11 +498,33 @@ class analysis_gui(object):
                 sweep.blockSignals(False)
         self.plot_abf()
 
-
+    def create_plot(self, x, y, title=None, xlabel='', ylabel='', type='line', color='k', xlim=None, ylim=None, clear=False, raise_window=True):
+        title = self._spawn_plot_window(name=title)
+        #clear the figure
+        if clear: 
+            self.plot_windows[title]['figure'].figure.clear()
+        try:
+            self.axe1 = self.plot_windows[title]['figure'].figure.axes[0]
+        except:
+            self.axe1 = self.plot_windows[title]['figure'].figure.add_subplot(111)
+        if type == 'line':
+            self.axe1.plot(x, y, label=title)
+        elif type == 'scatter':
+            self.axe1.scatter(x, y, label=title)
+        if xlim is not None:
+            self.axe1.set_xlim(xlim)
+        if ylim is not None:
+            self.axe1.set_ylim(ylim)
+        self.axe1.set_title(title)
+        self.axe1.set_xlabel(xlabel)
+        self.axe1.set_ylabel(ylabel)
+        if raise_window:
+            self.plot_windows[title]['window'].raise_()
+        
     def _save_csv_for_current_file(self):
         #for the current abf run the analysis and save the csv
         self.run_indiv_analysis()
-        if self.get_current_analysis() is 'spike':
+        if self.get_current_analysis() == 'spike':
             dfs = process_file(self.abf.abfFilePath, copy.deepcopy(self.param_dict), '')
             save_data_frames(dfs[1], dfs[0], dfs[2], self.selected_dir, str(time.time())+self.outputTag.text(), self.bspikeFind.isChecked(), self.brunningBin.isChecked(), self.brawData.isChecked())
 
@@ -573,6 +600,7 @@ class analysis_gui(object):
 
 
     def _plot_matplotlib(self):
+        
         self.main_view.figure.clear()
         #self.main_view.figure.canvas.setFixedWidth(900)
         self.axe1 = self.main_view.figure.add_subplot(211)
@@ -625,7 +653,9 @@ class analysis_gui(object):
                         self.axe2.scatter(self.spike_df[sweep]['upstroke_t'], self.spike_df[sweep]['upstroke'], color='#00FF00')
                     except:
                         pass
-        
+                #create an ISI x time plot
+                isi = np.diff(self.spike_df[sweep]['peak_t'])
+                
         #plot the rejected spikes if they exist
         if self.rejected_spikes is not None:
             #create a cmap for the labels
@@ -764,6 +794,36 @@ class analysis_gui(object):
                 if self.spike_df[sweep].empty:
                     continue
                 #self.axe1.scatter(self.spike_df[sweep].loc[:, 'peak_t'], self.spike_df[sweep].loc[:,'peak_v'], color='#FF0000', s=10, zorder=99)
+
+    def _spawn_plot_window(self, name=None):
+        #create a new plotting window when called, for plotting things like current x firing etc
+        given_name = name if name is not None else f"Plot Window {len(self.plot_windows)+1}"
+        #check if the window is already open
+        if given_name in self.plot_windows:
+            #if it is, show it
+            #get the idx of the window
+            idx = [x.windowTitle() for x in self.mdi.subWindowList()].index(given_name)
+            self.mdi.subWindowList()[idx].showNormal()
+            #also pull it to the front
+            self.mdi.subWindowList()[idx].setFocus()
+        else:
+            #if it is not, create it, just a simple mdi window with a canvas in it
+            #create a new plot window
+            self.plot_windows[given_name] = {}
+            self.plot_windows[given_name]['window'] = QtWidgets.QMdiSubWindow(self.mdi_area)
+            self.plot_windows[given_name]['window'].setWindowTitle(given_name)
+
+            self.plot_windows[given_name]['window'].setWidget(QtWidgets.QWidget())
+            self.plot_windows[given_name]['window'].widget().setLayout(QtWidgets.QVBoxLayout())
+
+            self.plot_windows[given_name]['figure'] = FigureCanvas(Figure(figsize=(15, 5)))
+            self.plot_windows[given_name]['window'].widget().layout().addWidget(self.plot_windows[given_name]['figure'])
+
+            self.plot_windows[given_name]['window'].setAttribute(Qt.WA_DeleteOnClose)
+
+            self.plot_windows[given_name]['window'].show()
+            self.plot_windows[given_name]['window'].setWindowModality(QtCore.Qt.WindowModal)
+        return given_name
 
     def _run_script(self, checked=False, name=None):
         #try to spawn the script in the current terminal
