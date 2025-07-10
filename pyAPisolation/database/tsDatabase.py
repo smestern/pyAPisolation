@@ -274,7 +274,18 @@ class tsDatabase:
         Update an entry in the database
         :param name: Name of the entry
         """
-        pass
+        #this will be a bit tricky, we will have to update the cell index and the data, assuming the individual passes in the columns to update via kwargs
+        #we will also have to update the experimental structure
+        #update the cell index
+        if name in self.cellindex.index:
+            #update the cell index
+            for key in kwargs.keys():
+                if key in self.cellindex.columns:
+                    self.cellindex.loc[name, key] = kwargs[key]
+                else:
+                    logger.error(f'Key {key} not found in cell index')
+        else:
+            logger.error(f'Entry {name} not found in the database')
 
     def getEntries(self):
         """

@@ -1,13 +1,38 @@
 from . import databaseBuilderBase as dbb
 
 from ..database import tsDatabase
-from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QTreeView, QVBoxLayout, QWidget, QFileSystemModel, QLabel, QLineEdit, QCommandLinkButton, QGroupBox, QTextEdit
+from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QTreeView, QVBoxLayout, QWidget, \
+QFileSystemModel, QLabel, QLineEdit, QCommandLinkButton, QGroupBox, QTextEdit
 from PySide2.QtGui import QStandardItem, QStandardItemModel
-from PySide2.QtCore import QDir
+from PySide2.QtCore import QDir, Qt, QMimeData, QUrl
 import numpy as np
 import sys
 import time
+import glob
 
+class CustomFileSystemModel(QFileSystemModel):
+    def __init__(self):
+        super().__init__()
+        self.protocol_data = {}  # Dictionary to store protocol names
+
+    def columnCount(self, parent=None):
+        return super().columnCount()  # No need to add +1 since we're modifying existing columns
+
+    def data(self, index, role=Qt.DisplayRole):
+        if index.column() == 0 and role == Qt.DisplayRole:  # Change to column 0 (filename column)
+            file_path = self.filePath(index)
+            protocol = self.protocol_data.get(file_path, "")['protocol'] if file_path in self.protocol_data else ""
+            filename = super().data(index, role)
+            return f"{filename} - {protocol}" if protocol else filename
+        return super().data(index, role)
+
+    def headerData(self, section, orientation, role):
+        return super().headerData(section, orientation, role)
+
+    def setProtocolData(self, file_path, protocol_name):
+        index = self.filePath(self.index(file_path))
+        self.protocol_data[index] = protocol_name
+        self.dataChanged.emit(self.index(file_path), self.index(file_path))
 
 class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
     def __init__(self):
@@ -73,12 +98,11 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
 
     def openFolder(self):
         print('open folder')
-        # open folder dialog
         folderPath = QFileDialog.getExistingDirectory(None, "Select Folder")
 
         if folderPath:
-            # Set up the file system model
-            self.model = QFileSystemModel()
+            # Set up the custom file system model
+            self.model = CustomFileSystemModel()
             self.model.setRootPath(folderPath)
 
             # Set the name filters to only show .abf files
@@ -92,6 +116,16 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
             self.folderView.setColumnHidden(2, True)  # Hide the type column       
             self.folderView.setDragEnabled(True)
             self.folderView.setDragDropMode(QTreeView.DragOnly)
+            self.folderView.setColumnWidth(3, 200)  # Set the width of the protocol name column
+
+            # Get protocol names and update the model
+            file_list = glob.glob(folderPath + '/*.abf')
+            file_list += glob.glob(folderPath + '/*.nwb')
+            print(f'Found {len(file_list)} files in {folderPath}')
+            for file in file_list:
+                protocol_name = self.database.parseFile(file)
+                self.model.setProtocolData(file, protocol_name)
+            print('Protocol names updated in the file system model.')
 
     def _addCell(self):
         self._clearGroupBox()
@@ -218,7 +252,17 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
                 print('No file found')
         elif cell is not None and protocol is not None:
             #then the user is trying to add a recording to the protocol
-            pass
+            #we need to check if the file is a recording
+            file_dicts = {} #handle multiple files, this means the user can drop multiple files at once
+            protocol_list = []
+            if mime_data.hasUrls():
+                for url in mime_data.urls():
+                    url = url.toLocalFile()
+                    file_dicts[url] = self.database.parseFile(url)
+                    self.database.updateEntry(cell.text(),**{protocol.text(): url})
+            else:
+                # I don't know what to do here, print a warning
+                print('No file found')
         self._updateCellIndex()
         
 
@@ -262,8 +306,15 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
             if self.groupBox.layout() is None:
                 return True
             # Hide the layout
-            #self.groupBox.layout().hide()
+            for i in range(self.groupBox.layout().count()):
+                widget = self.groupBox.layout().itemAt(i).widget()
+                if widget is not None:
+                    widget.hide()
+                    widget.deleteLater()
+            self.groupBox.layout().deleteLater()
             self.groupBox.setLayout(None)
+            self.cell_layout = None
+            self.protocol_layout = None
             return False
         _innerclear()
         
