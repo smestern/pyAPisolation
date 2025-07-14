@@ -12,6 +12,7 @@ from ipfx import subthresh_features as subt
 from ipfx import feature_extractor as fx
 from . import patch_utils
 import pyabf
+from . import loadFile
 #from brian2.units import ohm, Gohm, amp, volt, mV, second, pA
 
 
@@ -330,19 +331,57 @@ def mem_cap_alt(resist, tau, b2, deflection):
 
 def determine_subt(abf, idx_bounds):
     
-    dataC =[]
-    for sweep in abf.sweepList:
-        abf.setSweep(sweep)
-        sweepdiff = abf.sweepC[idx_bounds[0]:idx_bounds[1]]
-        dataC.append(sweepdiff)
-    dataC = np.vstack(dataC)
-    deflections = np.unique(np.where(dataC<0)[0])
-    return deflections
+  
+
+    #for compat reasons this function needs to open the abf file itself. ideally this should be done in the main script, but for now we will do it here.
+    if isinstance(abf, str):
+        abf = loadFile.loadFile(abf)
+    elif isinstance(abf, pyabf.ABF):
+        abf = loadFile.loadFile(abf.abfFilePath)
+
+
+    #find the sweepwise difference in current amp
+    diff_I = np.diff(abf[2], axis=0)
+    #filter out nonzero values
+    ladder_pulse_point = [[]]
+    for row in diff_I:
+        #assuming sqaure pulse here, the nonzero idxs should be continous
+        non_zero_idxs = np.flatnonzero(row)
+        if len(non_zero_idxs) > 1:
+            #compute the difference and assert that its 1
+            diff_idx = np.diff(non_zero_idxs)
+            #filter down to the first one that is not 1
+            first_non_one = np.flatnonzero(diff_idx != 1)
+            #finally we want to adjust to skip the first 25% of the pulse
+            skip_idx = int(len(non_zero_idxs) * 0.25)
+            if len(first_non_one) > 0:
+                ladder_pulse_point.append(non_zero_idxs[skip_idx:first_non_one[0]] )
+            else:
+                ladder_pulse_point.append(non_zero_idxs[skip_idx:] )
+        else:
+            ladder_pulse_point.append([])
+
+    spikefx = fx.SpikeFeatureExtractor(filter = 0)
+    non_spike_sweeps = []
+    for i, (sweepX, sweepY, sweepC) in enumerate(zip(abf[0], abf[1], abf[2])):
+        try:
+            if len(ladder_pulse_point[i]) > 0:
+                sweep_features= spikefx.process(sweepX[ladder_pulse_point[i]], sweepY[ladder_pulse_point[i]], sweepC[ladder_pulse_point[i]])
+                if sweep_features.empty:
+                    non_spike_sweeps.append(i)
+        except:
+            pass
+            #non_spike_sweeps.append(i)
+    
+    #if there are less than 2 non spike sweeps, we cant compute the membrane resistance
+    if len(non_spike_sweeps) < 2:
+        return np.nan
+    
+    return non_spike_sweeps
 
 def nonzero_1d(a):
     non = np.nonzero(a)
     return a[non]
-
 
 def ladder_rm(dataT, dataV, dataI):
     """ Computes the membrane resistance using the ladder method. Essentially we need a changing hyperpolarization / depolarization segment

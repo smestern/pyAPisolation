@@ -562,11 +562,11 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
             sweepList = [0]
 
         temp_df = pd.DataFrame()
-        temp_df['1Afilename'] = [abf.abfID]
-        temp_df['1Afoldername'] = [os.path.dirname(abf.abfFilePath)]
+        temp_df['filename'] = [abf.abfID]
+        temp_df['foldername'] = [os.path.dirname(abf.abfFilePath)]
         temp_avg = pd.DataFrame()
-        temp_avg['1Afilename'] = [abf.abfID]
-        temp_avg['1Afoldername'] = [os.path.dirname(abf.abfFilePath)]
+        temp_avg['filename'] = [abf.abfID]
+        temp_avg['foldername'] = [os.path.dirname(abf.abfFilePath)]
 
         full_dataI = []
         full_dataV = []
