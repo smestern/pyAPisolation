@@ -339,6 +339,7 @@ def determine_subt(abf, idx_bounds):
     elif isinstance(abf, pyabf.ABF):
         abf = loadFile.loadFile(abf.abfFilePath)
 
+    abf = [x[:, idx_bounds[0]:idx_bounds[1]] for x in abf] #
 
     #find the sweepwise difference in current amp
     diff_I = np.diff(abf[2], axis=0)
@@ -352,8 +353,7 @@ def determine_subt(abf, idx_bounds):
             diff_idx = np.diff(non_zero_idxs)
             #filter down to the first one that is not 1
             first_non_one = np.flatnonzero(diff_idx != 1)
-            #finally we want to adjust to skip the first 25% of the pulse
-            skip_idx = int(len(non_zero_idxs) * 0.25)
+            skip_idx = 0 #int(len(non_zero_idxs))
             if len(first_non_one) > 0:
                 ladder_pulse_point.append(non_zero_idxs[skip_idx:first_non_one[0]] )
             else:
@@ -374,9 +374,10 @@ def determine_subt(abf, idx_bounds):
             #non_spike_sweeps.append(i)
     
     #if there are less than 2 non spike sweeps, we cant compute the membrane resistance
-    if len(non_spike_sweeps) < 2:
-        return np.nan
-    
+    if len(non_spike_sweeps) < 1:
+        #logging.warning("No non-spiking sweeps found in the abf file. Returning empty list.")
+        return []
+
     return non_spike_sweeps
 
 def nonzero_1d(a):

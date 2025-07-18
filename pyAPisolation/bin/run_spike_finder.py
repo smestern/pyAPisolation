@@ -689,12 +689,14 @@ class analysis_gui(object):
 
         #if the analysis was subthreshold, we need to plot the results
         if self.subthres_df is not None:
+            lines = self.axe1.get_lines()
             cols = self.subthres_df.columns
             for sweep in self.selected_sweeps:
                 self.abf.setSweep(sweep)
                 real_sweep_number = sweepNumber_to_real_sweep_number(sweep)
                 cols_for_sweep = [c for c in cols if real_sweep_number in c]
                 if len(cols_for_sweep) == 0:
+                    lines[sweep].set_color('#000000') #if no columns for the sweep, set the color to black
                     continue
                 temp_df = self.subthres_df[cols_for_sweep]
                 #decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.name)

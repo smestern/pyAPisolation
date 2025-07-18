@@ -551,6 +551,8 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
         if abf.sweepCount > 1:
             if subt_sweeps is None:
                 sweepList = determine_subt(abf, (idx_start, idx_end))
+                if np.isscalar(sweepList):
+                    sweepList = np.array([sweepList])
                 sweepcount = len(sweepList)
             else:
                 subt_sweeps_temp = subt_sweeps - 1
