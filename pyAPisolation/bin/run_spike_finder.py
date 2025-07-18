@@ -86,30 +86,30 @@ class analysis_gui(object):
         self.sweep_selector = self.main_widget.findChild(QWidget, "sweep_selector")
         #generate the analysis settings listener for spike finder
         self.dvdt_thres = self.main_widget.findChild(QWidget, "dvdt_thres")
-        self.dvdt_thres.textChanged.connect(self.analysis_changed)
+        self.dvdt_thres.editingFinished.connect(self.analysis_changed)
         self.thres_to_peak_time = self.main_widget.findChild(QWidget, "t_to_p_time")
-        self.thres_to_peak_time.textChanged.connect(self.analysis_changed)
+        self.thres_to_peak_time.editingFinished.connect(self.analysis_changed)
         self.thres_to_peak_height = self.main_widget.findChild(QWidget, "t_to_p_height")
-        self.thres_to_peak_height.textChanged.connect(self.analysis_changed)
+        self.thres_to_peak_height.editingFinished.connect(self.analysis_changed)
         self.min_peak_height = self.main_widget.findChild(QWidget, "min_peak")
-        self.min_peak_height.textChanged.connect(self.analysis_changed)
+        self.min_peak_height.editingFinished.connect(self.analysis_changed)
         self.start_time = self.main_widget.findChild(QWidget, "start")
-        self.start_time.textChanged.connect(self.analysis_changed)
+        self.start_time.editingFinished.connect(self.analysis_changed)
         self.end_time = self.main_widget.findChild(QWidget, "end_time")
-        self.end_time.textChanged.connect(self.analysis_changed)
+        self.end_time.editingFinished.connect(self.analysis_changed)
         self.protocol_select = self.main_widget.findChild(QWidget, "protocol_selector")
         self.protocol_select.currentIndexChanged.connect(self.change_protocol_select)
         self.bstim = self.main_widget.findChild(QWidget, "bstim")
         self.bessel = self.main_widget.findChild(QWidget, "bessel_filt")
         self.thres_per = self.main_widget.findChild(QWidget, "thres_percent")
-        self.thres_per.textChanged.connect(self.analysis_changed)
+        self.thres_per.editingFinished.connect(self.analysis_changed)
         #find the output buttons
         self.bspikeFind = self.main_widget.findChild(QWidget, "spikeFinder")
         self.brunningBin = self.main_widget.findChild(QWidget, "runningBin")
         self.brawData = self.main_widget.findChild(QWidget, "rawSpike")
 
         self.protocol_select.currentIndexChanged.connect(self.analysis_changed)
-        self.bessel.textChanged.connect(self.analysis_changed)
+        self.bessel.editingFinished.connect(self.analysis_changed)
         run_analysis = self.main_widget.findChild(QWidget, "run_analysis")
         run_analysis.clicked.connect(self.run_analysis)
         self.refresh = self.main_widget.findChild(QWidget, "refresh_plot")
@@ -121,17 +121,17 @@ class analysis_gui(object):
         self.tabselect = self.main_widget.findChild(QWidget, "tabWidget")
         self.tabselect.currentChanged.connect(self.analysis_changed_run)
         self.subthresSweeps = self.main_widget.findChild(QWidget, "subthresSweeps")
-        self.subthresSweeps.textChanged.connect(self.analysis_changed)
+        self.subthresSweeps.editingFinished.connect(self.analysis_changed)
         self.stimPer = self.main_widget.findChild(QWidget, "stimPer")
-        self.stimPer.textChanged.connect(self.analysis_changed)
+        self.stimPer.editingFinished.connect(self.analysis_changed)
         self.stimfind = self.main_widget.findChild(QWidget, "bstim_2")
         self.stimfind.clicked.connect(self.analysis_changed)
         self.startCM = self.main_widget.findChild(QWidget, "startCM")
-        self.startCM.textChanged.connect(self.analysis_changed)
+        self.startCM.editingFinished.connect(self.analysis_changed)
         self.endCM = self.main_widget.findChild(QWidget, "endCM")
-        self.endCM.textChanged.connect(self.analysis_changed)
+        self.endCM.editingFinished.connect(self.analysis_changed)
         self.besselFilterCM = self.main_widget.findChild(QWidget, "bessel_filt_cm")
-        self.besselFilterCM.textChanged.connect(self.analysis_changed)
+        self.besselFilterCM.editingFinished.connect(self.analysis_changed)
 
         #Find the table view
         self.tableView = self.main_widget.findChild(QWidget, "resultsTable")
@@ -356,14 +356,15 @@ class analysis_gui(object):
         if self.get_current_analysis() is 'spike':
             self.subthres_df = None
             if self.selected_sweeps is None:
-                self.selected_sweeps = self.abf.sweepList
+                self.selected_sweeps = self.abf.sweepList 
+            temp_param_dict = copy.deepcopy(self.param_dict) #copy and avoid changing the original, we need to override some settings
             #create the spike extractor 
-            if self.param_dict['end'] == 0.0 or self.param_dict['end'] > self.abf.sweepX[-1]:
-                self.param_dict['end'] = self.abf.sweepX[-1]
+            if temp_param_dict['end'] == 0.0 or temp_param_dict['end'] > self.abf.sweepX[-1]:
+                temp_param_dict['end'] = self.abf.sweepX[-1]
 
-            self.spike_extractor = SpikeFeatureExtractor(filter=0,  dv_cutoff=self.param_dict['dv_cutoff'],
-                max_interval=self.param_dict['max_interval'], min_height=self.param_dict['min_height'], min_peak=self.param_dict['min_peak'],
-                start=self.param_dict['start'], end=self.param_dict['end'], thresh_frac=self.param_dict['thresh_frac'])
+            self.spike_extractor = SpikeFeatureExtractor(filter=0,  dv_cutoff=temp_param_dict['dv_cutoff'],
+                max_interval=temp_param_dict['max_interval'], min_height=temp_param_dict['min_height'], min_peak=temp_param_dict['min_peak'],
+                start=temp_param_dict['start'], end=temp_param_dict['end'], thresh_frac=temp_param_dict['thresh_frac'])
             #extract the spikes and make a dataframe for each sweep
             self.spike_df = {}
             self.rejected_spikes = {} if show_rejected else None
@@ -372,8 +373,8 @@ class analysis_gui(object):
                 
                 self.spike_df[sweep] = self.spike_extractor.process(self.abf.sweepX,self.abf.sweepY, self.abf.sweepC)
                 if show_rejected:
-                    self.rejected_spikes[sweep] = pd.DataFrame().from_dict(determine_rejected_spikes(self.spike_extractor, self.spike_df[sweep], self.abf.sweepY, self.abf.sweepX, 
-                    self.param_dict)).T 
+                    self.rejected_spikes[sweep] = pd.DataFrame().from_dict(determine_rejected_spikes(self.spike_extractor, self.spike_df[sweep], self.abf.sweepY, self.abf.sweepX,
+                    temp_param_dict)).T
                 #self.rejected_spikes = None
                 self.indiv_popup.setValue(sweep)
             #self.spike_df = pd.concat(self.spike_df)
@@ -422,13 +423,23 @@ class analysis_gui(object):
         return self.param_dict
 
     def analysis_changed(self):
+        print("Analysis changed")
+        if hasattr(self, 'param_dict') is False:
+            self.param_dict = {}
+            old_params = {}
+        else:
+            old_params = copy.deepcopy(self.param_dict)
         self.get_analysis_params()
-        #update the refresh button to reflect that the analysis has changed
-        self.refresh.setText("🔄 Refresh plot (Analysis Changed)")
+        #check if the parameters have changed
+        if old_params != self.param_dict:
+            print("Parameters changed - running analysis")
+            #if they have changed, we need to run the analysis again
+            self.analysis_changed_run()
+        
         
     def analysis_changed_run(self):
         if self.abf is not None:
-            self.run_indiv_analysis( )
+            self.run_indiv_analysis()
             self.plot_abf()
             self.refresh.setText("🔄 Refresh plot")
 
@@ -697,6 +708,7 @@ class analysis_gui(object):
                 cols_for_sweep = [c for c in cols if real_sweep_number in c]
                 if len(cols_for_sweep) == 0:
                     lines[sweep].set_color('#000000') #if no columns for the sweep, set the color to black
+                    lines[sweep].set_alpha(0.1) #set the alpha to 0.1
                     continue
                 temp_df = self.subthres_df[cols_for_sweep]
                 #decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.name)
