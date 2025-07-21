@@ -3,6 +3,7 @@ h5py>=2.10
 pyabf
 matplotlib
 pandas
+openpyxl
 scipy
 anndata
 scikit-learn
