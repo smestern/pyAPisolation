@@ -48,7 +48,7 @@ ANALYSIS_TABS = {0:'spike', 1:'subthres'}
 class analysis_gui(object):
     def __init__(self, app: QApplication):
         #super(analysis_gui, self).__init__()
-        self.main_window = app
+        self.app = app
         self.load_ui()
         #self.main_widget = self.children()[-1]
         self.abf = None
@@ -56,9 +56,13 @@ class analysis_gui(object):
         self.bind_ui()
 
     def load_ui(self):
+        # loader = QUiLoader()
+        # path = os.path.join(os.path.dirname(__file__), "mainwindowMDI.ui")
+        # ui_file = QFile(path)
+        # ui_file.open(QFile.ReadOnly)
         self.main_window = QtWidgets.QMainWindow()
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self.main_window)  # This returns the main_window
+        self.main_widget = Ui_MainWindow().setupUi(self.main_window) #loader.load(ui_file)
+        #ui_file.close()
 
     def bind_ui(self):
         #assign the children to the main object for easy access
