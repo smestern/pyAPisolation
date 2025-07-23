@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import multiprocessing as mp
 import matplotlib
-from  .mainwindow import Ui_MainWindow
+#from  .mainwindow import Ui_MainWindow
 matplotlib.use('QtAgg')
 
 from sklearn.ensemble import IsolationForest
@@ -57,12 +57,12 @@ class analysis_gui(object):
 
     def load_ui(self):
         # loader = QUiLoader()
-        # path = os.path.join(os.path.dirname(__file__), "mainwindowMDI.ui")
-        # ui_file = QFile(path)
-        # ui_file.open(QFile.ReadOnly)
-        self.main_window = QtWidgets.QMainWindow()
-        self.main_widget = Ui_MainWindow().setupUi(self.main_window) #loader.load(ui_file)
-        #ui_file.close()
+        path = os.path.join(os.path.dirname(__file__), "mainwindowMDI.ui")
+        ui_file = QFile(path)
+        ui_file.open(QFile.ReadOnly)
+        loader = QUiLoader()
+        self.main_widget = loader.load(ui_file)
+        ui_file.close()
 
     def bind_ui(self):
         #assign the children to the main object for easy access
