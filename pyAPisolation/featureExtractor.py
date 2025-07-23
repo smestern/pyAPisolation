@@ -529,8 +529,8 @@ def preprocess_abf_subthreshold(file_path, protocol_name='', param_dict={}):
        #return pd.DataFrame(), pd.DataFrame()
 
 def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False):
-    dfs = pd.DataFrame()
-    averages = pd.DataFrame()
+    dfs = []
+    averages = []
     plt.close('all')
     if (abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and protocol_name in abf.protocol):
         np.nan_to_num(abf.data, nan=-9999, copy=False)
@@ -563,10 +563,10 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
             sweepcount = 1
             sweepList = [0]
 
-        temp_df = pd.DataFrame()
+        temp_df = {}
         temp_df['filename'] = [abf.abfID]
         temp_df['foldername'] = [os.path.dirname(abf.abfFilePath)]
-        temp_avg = pd.DataFrame()
+        temp_avg = {}
         temp_avg['filename'] = [abf.abfID]
         temp_avg['foldername'] = [os.path.dirname(abf.abfFilePath)]
 
@@ -623,7 +623,7 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
         full_dataI = np.vstack(full_dataI)
         indices_of_same = np.arange(full_dataI.shape[0])
         full_dataV = np.vstack(full_dataV)
-
+        temp_df = pd.DataFrame.from_dict(temp_df)
         decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0),
                                                                                                   np.nanmean(full_dataI[indices_of_same, :], axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=os.path.dirname(abf.abfFilePath))
         temp_avg[f"Voltage sag mean"], temp_avg["Voltage Min point"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0), np.nanmean(full_dataI[indices_of_same, :], axis=0), time_after, plot=bplot)
@@ -682,10 +682,20 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
             temp_avg["Averaged Mean Drift"] = np.nan
             temp_avg["Max Drift"] = np.nan
 
-        temp_avg = _merge_current_injection_features(sweepX=np.tile(dataT, (full_dataI.shape[0], 1)), sweepY=full_dataI, sweepC=full_dataI, spike_df=temp_avg)
+        
 
         try:
-            rm_ladder, _, sweep_count = ladder_rm(np.tile(dataT, (full_dataI.shape[0], 1)), full_dataV, full_dataI)
+            #here we want o use seperate subthreshold data to compute the resistance ladder
+            ladder_X = []
+            ladder_Y = []
+            ladder_C = []
+            for i in range(full_dataI.shape[0]):
+                abf.setSweep(i)
+                dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+                ladder_X.append(dataT)
+                ladder_Y.append(dataV)
+                ladder_C.append(dataI)
+            rm_ladder, _, sweep_count = ladder_rm(np.vstack(ladder_X), np.vstack(ladder_Y), np.vstack(ladder_C))
             temp_avg["Resistance Ladder Slope"] = rm_ladder
             temp_avg["Rm Resistance Ladder"] = 1 / rm_ladder
             temp_avg["Resistance Ladder SweepCount Measured"] = sweep_count
@@ -694,8 +704,13 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
             temp_avg["Rm Resistance Ladder"] = np.nan
             temp_avg["Resistance Ladder SweepCount Measured"] = np.nan
 
-        dfs = dfs.append(temp_df, sort=True)
-        averages = averages.append(temp_avg, sort=True)
+        temp_avg = pd.DataFrame.from_dict(temp_avg).T
+        #now we can append the dataframes
+        temp_avg = _merge_current_injection_features(sweepX=np.tile(dataT, (full_dataI.shape[0], 1)), sweepY=full_dataI, sweepC=full_dataI, spike_df=temp_avg)
+
+        
+        dfs = temp_df
+        averages = temp_avg
 
     return dfs, averages
 

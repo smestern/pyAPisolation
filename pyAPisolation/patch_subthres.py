@@ -329,7 +329,7 @@ def mem_cap_alt(resist, tau, b2, deflection):
     cm = tau / rm2
     return cm
 
-def determine_subt(abf, idx_bounds):
+def determine_subt(abf, idx_bounds, filter_spikes=False):
     
   
 
@@ -360,18 +360,20 @@ def determine_subt(abf, idx_bounds):
                 ladder_pulse_point.append(non_zero_idxs[skip_idx:] )
         else:
             ladder_pulse_point.append([])
-
-    spikefx = fx.SpikeFeatureExtractor(filter = 0)
-    non_spike_sweeps = []
-    for i, (sweepX, sweepY, sweepC) in enumerate(zip(abf[0], abf[1], abf[2])):
-        try:
-            if len(ladder_pulse_point[i]) > 0:
-                sweep_features= spikefx.process(sweepX[ladder_pulse_point[i]], sweepY[ladder_pulse_point[i]], sweepC[ladder_pulse_point[i]])
-                if sweep_features.empty:
-                    non_spike_sweeps.append(i)
-        except:
-            pass
-            #non_spike_sweeps.append(i)
+    if filter_spikes:
+        spikefx = fx.SpikeFeatureExtractor(filter = 0)
+        non_spike_sweeps = []
+        for i, (sweepX, sweepY, sweepC) in enumerate(zip(abf[0], abf[1], abf[2])):
+            try:
+                if len(ladder_pulse_point[i]) > 0:
+                    sweep_features= spikefx.process(sweepX[ladder_pulse_point[i]], sweepY[ladder_pulse_point[i]], sweepC[ladder_pulse_point[i]])
+                    if sweep_features.empty:
+                        non_spike_sweeps.append(i)
+            except:
+                pass
+                #non_spike_sweeps.append(i)
+    else:
+        non_spike_sweeps = list(range(len(abf[0])))
     
     #if there are less than 2 non spike sweeps, we cant compute the membrane resistance
     if len(non_spike_sweeps) < 1:
@@ -384,7 +386,7 @@ def nonzero_1d(a):
     non = np.nonzero(a)
     return a[non]
 
-def ladder_rm(dataT, dataV, dataI):
+def ladder_rm(dataT, dataV, dataI, mean_current=False):
     """ Computes the membrane resistance using the ladder method. Essentially we need a changing hyperpolarization / depolarization segment
     to compute the membrane resistance.
     """
@@ -427,11 +429,15 @@ def ladder_rm(dataT, dataV, dataI):
         return np.nan
     
     #finally fit a line to the ladder pulse point by taking the means
-    sweep_mean_V = []
-    sweep_mean_I = []
-    for i in non_spike_sweeps:
-        sweep_mean_V.append(np.mean(dataV[i][ladder_pulse_point[i]]))
-        sweep_mean_I.append(np.mean(dataI[i][ladder_pulse_point[i]]))
+    if mean_current:
+        sweep_mean_V = []
+        sweep_mean_I = []
+        for i in non_spike_sweeps:
+            sweep_mean_V.append(np.mean(dataV[i][ladder_pulse_point[i]]))
+            sweep_mean_I.append(np.mean(dataI[i][ladder_pulse_point[i]]))
+    else:
+        sweep_mean_V = np.ravel([dataV[i][ladder_pulse_point[i]] for i in non_spike_sweeps])
+        sweep_mean_I = np.ravel([dataI[i][ladder_pulse_point[i]] for i in non_spike_sweeps])
     #fit a line to the mean V and I
     slope, intercept = np.polyfit(sweep_mean_V, sweep_mean_I, 1)
     return slope, intercept, len(non_spike_sweeps)
