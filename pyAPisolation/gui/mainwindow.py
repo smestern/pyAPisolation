@@ -14,6 +14,8 @@ from PySide2.QtWidgets import *
 
 
 class Ui_MainWindow(object):
+   
+
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
@@ -619,12 +621,13 @@ class Ui_MainWindow(object):
         self.menuSettings.addAction(self.menuDebug.menuAction())
         self.menuDebug.addAction(self.actionShow_Rejected_Spikes)
 
-        self.retranslateUi(MainWindow)
+        #self.retranslateUi(MainWindow)
 
         self.tabWidget.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
+        return MainWindow
     # setupUi
 
     def retranslateUi(self, MainWindow):
