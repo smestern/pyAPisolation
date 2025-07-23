@@ -3,6 +3,7 @@ h5py>=2.10
 pyabf
 matplotlib
 pandas
+openpyxl
 scipy
 anndata
 scikit-learn
@@ -11,4 +12,6 @@ allensdk
 h5py==3.11.0
 joblib
 matplotlib>=3.7.2
+seaborn
+PySide2
 

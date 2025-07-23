@@ -328,4 +328,317 @@ class tsDatabase:
     def __delitem__(self, key, protocol, column):
         del self.data[key]
 
+    def save(self, path):
+        """
+        Save the database to an Excel file with multiple sheets
+        :param path: Path to save the Excel file
+        """
+        import pandas as pd
+        
+        # Ensure the path has .xlsx extension
+        if not path.endswith('.xlsx'):
+            path = path + '.xlsx'
+        
+        # Create Excel writer object
+        with pd.ExcelWriter(path, engine='openpyxl') as writer:
+            # Save main cell index data
+            if not self.cellindex.empty:
+                self.cellindex.to_excel(writer, sheet_name='CellIndex',
+                                        index=True)
+            else:
+                # Create empty sheet with headers if no data
+                empty_df = pd.DataFrame(columns=['Cell Name', 'Notes'])
+                empty_df.to_excel(writer, sheet_name='CellIndex',
+                                  index=False)
+            
+            # Save experimental structure/protocols as a separate sheet
+            if not self.exp.protocols.empty:
+                self.exp.protocols.to_excel(writer, sheet_name='Protocols',
+                                            index=False)
+            else:
+                # Create empty protocols sheet
+                protocol_cols = ['name', 'altnames', 'description',
+                                 'pharma', 'temp']
+                empty_protocols = pd.DataFrame(columns=protocol_cols)
+                empty_protocols.to_excel(writer, sheet_name='Protocols',
+                                         index=False)
+            
+            # Save configuration information
+            config_data = {
+                'version': ['1.0'],
+                'created_by': ['pyAPisolation'],
+                'database_type': ['tsDatabase'],
+                'path': [self.path]
+            }
+            config_df = pd.DataFrame(config_data)
+            config_df.to_excel(writer, sheet_name='_cdb_config',
+                               index=False)
+            
+            # Save metadata about the database structure
+            metadata = {
+                'total_cells': [len(self.cellindex)],
+                'total_protocols': [len(self.exp.protocols)],
+                'columns': [list(self.cellindex.columns)],
+                'index_name': [self.cellindex.index.name or 'Cell']
+            }
+            metadata_df = pd.DataFrame(metadata)
+            metadata_df.to_excel(writer, sheet_name='_cdb_metadata',
+                                 index=False)
+        
+        logger.info(f'Database saved to {path}')
+        return path
 
+    def load_from_excel(self, path):
+        """
+        Load the database from an Excel file
+        :param path: Path to the Excel file
+        """
+        import pandas as pd
+        
+        try:
+            # Read the main cell index
+            self.cellindex = pd.read_excel(path, sheet_name='CellIndex',
+                                           index_col=0)
+            
+            # Read protocols if they exist
+            try:
+                protocols_df = pd.read_excel(path, sheet_name='Protocols')
+                self.exp.protocols = protocols_df
+            except Exception as e:
+                logger.warning(f'No Protocols sheet found: {e}')
+            
+            # Read config if it exists
+            try:
+                config_df = pd.read_excel(path, sheet_name='_cdb_config')
+                if 'path' in config_df.columns and len(config_df) > 0:
+                    self.path = config_df['path'].iloc[0]
+            except Exception as e:
+                logger.warning(f'No config sheet found: {e}')
+                
+            logger.info(f'Database loaded from {path}')
+            
+        except Exception as e:
+            logger.error(f'Error loading database from {path}: {e}')
+            raise e
+
+    def import_spike_data(self, csv_path):
+        """
+        Import spike analysis data from a CSV file (e.g., spike_count_.csv)
+        Each row represents a file with features from spike finder output.
+        
+        :param csv_path: Path to the CSV file containing spike analysis data
+        """
+        try:
+            # Read the CSV file
+            spike_df = pd.read_csv(csv_path)
+            logger.info(f"Loading spike analysis data from {csv_path}")
+            logger.info(f"Found {len(spike_df)} files with spike features")
+            
+            # Extract key columns for mapping to database entries
+            # Based on CSV structure: foldername, filename, protocol columns
+            if 'filename' not in spike_df.columns:
+                raise ValueError("CSV must contain a 'filename' column")
+            
+            if 'protocol' not in spike_df.columns:
+                raise ValueError("CSV must contain a 'protocol' column")
+            
+            # Get the feature columns (excluding metadata columns)
+            metadata_cols = ['foldername', 'filename', 'protocol']
+            feature_cols = [col for col in spike_df.columns
+                            if col not in metadata_cols]
+            
+            # Track successful imports and issues
+            imported_count = 0
+            issues = []
+            
+            # Process each row in the CSV
+            for idx, row in spike_df.iterrows():
+                filename = row['filename']
+                protocol = row['protocol']
+                folder = row.get('foldername', '')
+                
+                # Find matching entry in cellindex
+                # Look for entries where the filename matches
+                matching_entries = []
+                
+                if not self.cellindex.empty:
+                    # Try to match by filename in any protocol column
+                    for cell_name in self.cellindex.index:
+                        cell_row = self.cellindex.loc[cell_name]
+                        
+                        # Check if filename appears in any protocol column
+                        for col in self.cellindex.columns:
+                            if col in ['protocol', 'filename', 'foldername']:
+                                continue
+                            cell_value = cell_row.get(col, '')
+                            if (isinstance(cell_value, str) and
+                                    filename in cell_value):
+                                matching_entries.append(cell_name)
+                                break
+                        
+                        # Also check the filename column directly
+                        if cell_row.get('filename', '') == filename:
+                            matching_entries.append(cell_name)
+                
+                if not matching_entries:
+                    # No matching entry found, create a new cell entry
+                    cell_name = f'CELL_{imported_count}_{filename}'
+                    
+                    # Add to cellindex
+                    new_row = {
+                        'protocol': protocol,
+                        'filename': filename,
+                        'foldername': folder,
+                        protocol: filename
+                    }
+                    
+                    # Add all feature columns as additional metadata/features
+                    for feat_col in feature_cols:
+                        new_row[f'spike_{feat_col}'] = row[feat_col]
+                    
+                    # Add the new entry to cellindex
+                    if self.cellindex.empty:
+                        self.cellindex = pd.DataFrame([new_row],
+                                                      index=[cell_name])
+                    else:
+                        self.cellindex.loc[cell_name] = new_row
+                    
+                    imported_count += 1
+                    logger.info(f"Created new cell entry: {cell_name}")
+                    
+                else:
+                    # Update existing entries with spike features
+                    for cell_name in matching_entries:
+                        for feat_col in feature_cols:
+                            col_name = f'spike_{feat_col}'
+                            self.cellindex.loc[cell_name, col_name] = (
+                                row[feat_col])
+                    
+                    imported_count += len(matching_entries)
+                    logger.info(f"Updated {len(matching_entries)} existing "
+                                f"entries for {filename}")
+            
+            # Add spike analysis protocol to experimental structure
+            spike_protocol_name = 'spike_analysis'
+            protocol_names = [p for p in self.exp.protocols['name']
+                              if isinstance(p, str)]
+            if spike_protocol_name not in protocol_names:
+                self.exp.addProtocol(spike_protocol_name, {
+                    'altnames': ['spike_count', 'spike_finder'],
+                    'description': 'Spike analysis features from spike output'
+                })
+            
+            logger.info("Successfully imported spike data:")
+            logger.info(f"  - {imported_count} entries processed")
+            logger.info(f"  - {len(feature_cols)} feature columns added")
+            logger.info("  - Features prefixed with 'spike_' in database")
+            
+            if issues:
+                logger.warning("Issues encountered during import:")
+                for issue in issues[:10]:  # Show first 10 issues
+                    logger.warning(f"  - {issue}")
+                if len(issues) > 10:
+                    msg = f"  - ... and {len(issues) - 10} more issues"
+                    logger.warning(msg)
+            
+            return {
+                'imported_count': imported_count,
+                'feature_cols': feature_cols,
+                'issues': issues
+            }
+            
+        except Exception as e:
+            logger.error(f"Error importing spike data from {csv_path}: {e}")
+            raise
+
+    def import_spike_data_row(self, row_data, import_options):
+        """
+        Import a single row of spike analysis data
+        
+        Args:
+            row_data (dict): Dictionary containing the mapped data fields
+            import_options (dict): Import configuration options
+            
+        Returns:
+            bool: True if import was successful, False otherwise
+        """
+        try:
+            # Extract essential fields
+            recording_path = row_data.get('Recording Path')
+            if not recording_path:
+                return False
+            
+            # Extract cell name (try multiple strategies)
+            cell_name = row_data.get('Cell Name')
+            if not cell_name:
+                # Try to extract from file path
+                filename = os.path.basename(recording_path)
+                cell_name = filename.split('_')[0] if '_' in filename else filename.split('.')[0]
+            
+            # Extract protocol name
+            protocol_name = row_data.get('Protocol')
+            if not protocol_name:
+                protocol_name = import_options.get('default_protocol', 'Unknown')
+            
+            # Create cell if it doesn't exist
+            if import_options.get('create_cells', True):
+                if cell_name not in self.cellindex:
+                    self.addEntry(cell_name)
+            
+            # Check if cell exists
+            if cell_name not in self.cellindex:
+                return False
+            
+            # Create or update protocol
+            if import_options.get('create_protocols', True):
+                if protocol_name not in self.cellindex[cell_name]:
+                    self.addProtocol(cell_name, protocol_name, path=recording_path)
+                elif import_options.get('update_existing', True):
+                    # Update existing protocol with new recording
+                    current_path = self.cellindex[cell_name].get(protocol_name)
+                    if isinstance(current_path, list):
+                        if recording_path not in current_path:
+                            current_path.append(recording_path)
+                    else:
+                        if current_path != recording_path:
+                            self.cellindex[cell_name][protocol_name] = [current_path, recording_path]
+            
+            # Add spike analysis metadata
+            spike_data = {}
+            field_mappings = {
+                'Spike Count': 'spike_count',
+                'Spike Rate': 'spike_rate',
+                'ISI Mean': 'isi_mean',
+                'ISI CV': 'isi_cv',
+                'First Spike Latency': 'first_spike_latency',
+                'Sweep Number': 'sweep_number'
+            }
+            
+            for field_name, data_key in field_mappings.items():
+                if field_name in row_data and row_data[field_name] is not None:
+                    try:
+                        # Convert to appropriate numeric type
+                        value = row_data[field_name]
+                        if pd.notna(value):
+                            spike_data[data_key] = float(value) if '.' in str(value) else int(value)
+                    except (ValueError, TypeError):
+                        # Skip non-numeric values
+                        pass
+            
+            # Store spike analysis data
+            if spike_data:
+                if 'spike_analysis' not in self.cellindex[cell_name]:
+                    self.cellindex[cell_name]['spike_analysis'] = {}
+                
+                if protocol_name not in self.cellindex[cell_name]['spike_analysis']:
+                    self.cellindex[cell_name]['spike_analysis'][protocol_name] = {}
+                
+                # Use sweep number as key if available, otherwise use recording path
+                analysis_key = spike_data.get('sweep_number', recording_path)
+                self.cellindex[cell_name]['spike_analysis'][protocol_name][analysis_key] = spike_data
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error importing spike data row: {e}")
+            return False

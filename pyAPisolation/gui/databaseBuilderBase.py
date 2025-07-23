@@ -53,18 +53,18 @@ class Ui_databaseBuilderBase(object):
         self.addProtocol.setObjectName(u"addProtocol")
 
         self.horizontalLayout.addWidget(self.addProtocol)
-
-
-        self.verticalLayout.addLayout(self.horizontalLayout)
-
-
-        self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
-
         self.groupBox = QGroupBox(self.centralwidget)
         self.groupBox.setObjectName(u"groupBox")
         self.groupBox.setMinimumSize(QSize(370, 0))
 
-        self.gridLayout.addWidget(self.groupBox, 0, 1, 1, 1)
+
+        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.verticalLayout.addWidget(self.groupBox)
+
+        self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
+
+        
+        #self.gridLayout.addWidget(self.groupBox, 0, 1, 1, 1)
 
         self.verticalLayout_2 = QVBoxLayout()
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
