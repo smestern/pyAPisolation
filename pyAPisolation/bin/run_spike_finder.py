@@ -1,3 +1,4 @@
+import PySide2
 import matplotlib
 #from  .mainwindow import Ui_MainWindow
 matplotlib.use('QtAgg')
