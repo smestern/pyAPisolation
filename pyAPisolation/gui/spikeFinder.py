@@ -37,6 +37,7 @@ process_file, analyze_subthres, preprocess_abf_subthreshold, determine_rejected_
 from pyAPisolation.patch_subthres import exp_decay_2p
 from pyAPisolation.patch_utils import sweepNumber_to_real_sweep_number
 from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
+from pyAPisolation.analysis import analysis_registry
 #from .mainwindow import Ui_MainWindow
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
@@ -52,6 +53,8 @@ PLOT_BACKEND = 'matplotlib'
 if PLOT_BACKEND == "pyqtgraph":
     import pyqtgraph as pg
     pg.setConfigOptions(imageAxisOrder='row-major', background='w', useNumba=True, useOpenGL=True)
+
+# Legacy compatibility - preserved for existing code
 ANALYSIS_TABS = {0:'spike', 1:'subthres'}
 
 class analysis_gui(object):
@@ -62,6 +65,9 @@ class analysis_gui(object):
         #self.main_widget = self.children()[-1]
         self.abf = None
         self.current_filter = 0.
+        # Initialize the analysis registry
+        self.analysis_registry = analysis_registry
+        self.current_analysis_module = None
         self.bind_ui()
 
     def load_ui(self):
@@ -362,6 +368,49 @@ class analysis_gui(object):
         return abf
 
     def run_indiv_analysis(self):
+        """Run individual analysis using modular framework with legacy fallback"""
+        current_module = self.get_current_analysis_module()
+        
+        if current_module is None:
+            return self._run_indiv_analysis_legacy()
+        
+        try:
+            return self._run_indiv_analysis_modular(current_module)
+        except (NotImplementedError, AttributeError) as e:
+            print(f"Modular individual analysis not implemented for {current_module.name}: {e}")
+            return self._run_indiv_analysis_legacy()
+    
+    def _run_indiv_analysis_modular(self, module):
+        """Run individual analysis using the modular framework"""
+        # Get the current abf
+        self.abf = self.get_selected_abf()
+        # Get the current sweep(s)
+        self.get_selected_sweeps()
+        params = self.get_analysis_params_modular()
+        
+        # Create progress popup
+        self.indiv_popup = QProgressDialog("Operation in progress.", "Cancel", 0, len(self.selected_sweeps), parent=None)
+        self.indiv_popup.setWindowModality(QtCore.Qt.WindowModal)
+        self.indiv_popup.forceShow()
+        
+        show_rejected = self.actionShow_Rejected_Spikes.isChecked()
+        
+        try:
+            results = module.run_individual_analysis(
+                self.abf, self.selected_sweeps, params, 
+                popup=self.indiv_popup, show_rejected=show_rejected
+            )
+            
+            # Store results in class attributes for plotting
+            self.spike_df = results.get('spike_df')
+            self.rejected_spikes = results.get('rejected_spikes')
+            self.subthres_df = results.get('subthres_df')
+            
+        finally:
+            self.indiv_popup.hide()
+    
+    def _run_indiv_analysis_legacy(self):
+        """Legacy individual analysis implementation"""
         #get the current abf
         self.abf = self.get_selected_abf()
         #get the current sweep(s)
@@ -464,6 +513,57 @@ class analysis_gui(object):
 
     
     def run_analysis(self):
+        """Run analysis using modular framework with legacy fallback"""
+        current_module = self.get_current_analysis_module()
+        
+        if current_module is None:
+            # Fallback to legacy implementation
+            return self._run_analysis_legacy()
+        
+        try:
+            # Try to use modular approach
+            return self._run_analysis_modular(current_module)
+        except (NotImplementedError, AttributeError) as e:
+            print(f"Modular analysis not fully implemented for {current_module.name}: {e}")
+            # Fallback to legacy implementation
+            return self._run_analysis_legacy()
+    
+    def _run_analysis_modular(self, module):
+        """Run analysis using the modular framework"""
+        params = self.get_analysis_params_modular()
+        protocol = self.get_selected_protocol()
+        
+        try:
+            results = module.run_batch_analysis(self.selected_dir, params, protocol)
+            
+            # Determine save options
+            save_options = {}
+            if hasattr(self, 'bspikeFind'):
+                save_options['spike_find'] = self.bspikeFind.isChecked()
+            if hasattr(self, 'brunningBin'):
+                save_options['running_bin'] = self.brunningBin.isChecked()
+            if hasattr(self, 'brawData'):
+                save_options['raw_data'] = self.brawData.isChecked()
+            
+            # Save results
+            output_tag = str(time.time()) + self.outputTag.text()
+            module.save_results(results, self.selected_dir, output_tag, save_options)
+            
+            # Set dataframe for table view (module-dependent)
+            if module.name == 'spike':
+                self.df = results[1] if len(results) > 1 else results
+            elif module.name == 'subthres':
+                self.df = results[0] if isinstance(results, tuple) else results
+            else:
+                # For custom modules, assume first result is the display dataframe
+                self.df = results[0] if isinstance(results, (list, tuple)) else results
+                
+        except NotImplementedError:
+            # Module hasn't implemented batch analysis yet
+            raise
+    
+    def _run_analysis_legacy(self):
+        """Legacy analysis implementation - preserved for compatibility"""
         #check whether we are running spike or subthres
         if self.get_current_analysis() is 'spike':
             #run the folder analysis
@@ -480,12 +580,49 @@ class analysis_gui(object):
             sweepwise_df, avg_df = self._inner_analysis_loop_subthres(self.selected_dir, self.subt_param_dict,  self.selected_protocol)
             save_subthres_data(avg_df, sweepwise_df, self.selected_dir, str(time.time())+self.outputTag.text())
             self.df = avg_df
+        
+        # Update table view
         self.tableView.setModel(PandasModel(self.df, index='filename', parent=self.tableView))
         
     def get_current_analysis(self):
         index = self.tabselect.currentIndex()
         self.current_analysis = ANALYSIS_TABS[index]
+        
+        # Get the corresponding analysis module
+        self.current_analysis_module = self.analysis_registry.get_module_by_tab(index)
+        if self.current_analysis_module is None:
+            # Fallback to legacy behavior
+            self.current_analysis_module = self.analysis_registry.get_module(self.current_analysis)
+        
         return self.current_analysis
+    
+    def get_current_analysis_module(self):
+        """Get the current analysis module instance"""
+        if self.current_analysis_module is None:
+            self.get_current_analysis()
+        return self.current_analysis_module
+    
+    def get_analysis_params_modular(self):
+        """Get analysis parameters using the modular framework"""
+        current_module = self.get_current_analysis_module()
+        if current_module is None:
+            return self.get_analysis_params()  # Fallback to legacy
+        
+        # Get UI elements that this module needs
+        ui_elements = {}
+        expected_elements = current_module.get_ui_elements()
+        
+        for element_name, element_type in expected_elements.items():
+            ui_element = getattr(self, element_name, None)
+            if ui_element is not None:
+                ui_elements[element_name] = ui_element
+        
+        # Parse parameters using the module
+        try:
+            return current_module.parse_ui_params(ui_elements)
+        except Exception as e:
+            print(f"Error parsing UI params for {current_module.name}: {e}")
+            return self.get_analysis_params()  # Fallback to legacy
         
 
     def get_selected_protocol(self):
