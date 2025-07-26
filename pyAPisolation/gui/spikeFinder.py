@@ -22,7 +22,9 @@ from PySide2.QtCore import QFile, QAbstractTableModel, Qt, QModelIndex
 from PySide2 import QtGui
 import PySide2.QtCore as QtCore
 from PySide2.QtUiTools import QUiLoader
+
 print("Loaded QT libraries")
+
 from matplotlib.backends.qt_compat import QtWidgets
 from matplotlib.backends.backend_qtagg import (
     FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
@@ -30,12 +32,20 @@ from matplotlib.figure import Figure
 from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 from matplotlib.widgets import SpanSelector
+
 print("Loaded external libraries")
+
+#let's import the prism writer
+
 #import pyAPisolation
 from pyAPisolation.featureExtractor import save_data_frames, save_subthres_data, \
 process_file, analyze_subthres, preprocess_abf_subthreshold, determine_rejected_spikes
 from pyAPisolation.patch_subthres import exp_decay_2p
 from pyAPisolation.patch_utils import sweepNumber_to_real_sweep_number
+
+
+# Import the custom analysis modules
+from pyAPisolation.gui.wizard_integration import add_analysis_wizard_to_menu
 from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
 from pyAPisolation.analysis import analysis_registry
 #from .mainwindow import Ui_MainWindow
@@ -46,7 +56,7 @@ import PySide2
 
 try:
     import shap
-except:
+except ImportError:
     shap = None
 
 PLOT_BACKEND = 'matplotlib'
@@ -86,6 +96,7 @@ class analysis_gui(object):
 
     def bind_ui(self):
         #assign the children to the main object for easy access
+        self.main_widget.setWindowTitle("pyAPisolation Spike Finder")
         self.folder_select = self.main_widget.findChild(QWidget, "folder_select")
         self.folder_select.clicked.connect(self.file_select)
         self.mdi_area = self.main_widget.findChild(QWidget, "mdiArea")
@@ -208,10 +219,12 @@ class analysis_gui(object):
         #add a action here to spawn the prism writer
         self.actionPrism_Writer = self.viewBar.addAction("Prism Writer")
         self.actionPrism_Writer2 = self.tools_menu.addAction("Prism Writer")
+        
+        
         self.actionPrism_Writer.triggered.connect(self._prism_writer)
         self.actionPrism_Writer2.triggered.connect(self._prism_writer)
 
-
+        add_analysis_wizard_to_menu(self.main_widget, self.tools_menu)
         #plotting windows => 
         self.plot_windows = {}
 
@@ -700,6 +713,16 @@ class analysis_gui(object):
         temp_df = SimpleImputer(missing_values=np.nan, strategy='mean').fit_transform(df.select_dtypes(include=['float']))
         outlier_dect.fit(temp_df)
         labels = outlier_dect.predict(temp_df)
+        if shap is not None:
+            shapOut = shap.TreeExplainer(outlier_dect)
+            shap_values = shapOut.shap_values(temp_df)
+
+            shap.summary_plot(shap_values, temp_df, show=False)
+            self.create_plot(shap_values, temp_df, title='Isolation Forest Outliers', xlabel='Features', ylabel='Shap Values', type='scatter', color='b', clear=True, raise_window=False)
+            self.plot_windows['Isolation Forest Outliers'] = {'figure': self.main_view, 'window': self.main_view}
+            self.main_view.figure.canvas.draw()
+        
+
         return labels
 
     def _inner_analysis_loop(self, folder, param_dict, protocol_name):

@@ -61,11 +61,14 @@ def test_prism_writer():
     out = file.make_group_table('rowcols', df, groupby='labels', rowgroupcols=['rnd1', 'rnd2'])
 
     #load the xlsx
-    # test_df = pd.read_excel('test.xlsx')
-    # rowgroupcols = ['Sweep 001 spike count', 'Sweep 002 spike count', 'Sweep 003 spike count', 'Sweep 004 spike count', 'Sweep 005 spike count', 'Sweep 006 spike count', 'Sweep 007 spike count', 'Sweep 008 spike count', 
-    #                 'Sweep 009 spike count', 'Sweep 010 spike count', 'Sweep 011 spike count', 'Sweep 012 spike count', 'Sweep 013 spike count', 'Sweep 014 spike count', 'Sweep 015 spike count']
-    # #make a group table
-    # out = file.make_group_table('test_group', test_df, groupby='foldername.1', subgroupby='filename.1', rowgroupcols=rowgroupcols)
+    test_df = pd.read_csv('test.csv')
+    rowgroupcols = ['Sweep 001 spike count', 'Sweep 002 spike count', 'Sweep 003 spike count', 'Sweep 004 spike count', 'Sweep 005 spike count', 'Sweep 006 spike count', 'Sweep 007 spike count', 'Sweep 008 spike count', 
+                    'Sweep 009 spike count', 'Sweep 010 spike count', 'Sweep 011 spike count', 'Sweep 012 spike count', 'Sweep 013 spike count', 'Sweep 014 spike count', 'Sweep 015 spike count']
+    #make a group table
+    out = file.make_group_table('test_group', test_df, groupby='Burst Cadex', rowgroupcols=rowgroupcols)
+
+    #TRY A 3WAY GROUP WITH ROWGROUPCOLS
+    out = file.make_group_table('3way_rowcols', test_df, cols='Sag Ratio', groupby='Burst Cadex', rowgroupby='1Afoldername', subgroupby='1Afilename')
 
     # #try to write it
     file.write('test.pzfx')
