@@ -337,14 +337,18 @@ class PrismWriterGUI(QWidget):
                                self.row_group_list, self.data_col_list]:
                 list_widget.addItem(display_text)
     
-    def update_data_preview(self):
+    def update_data_preview(self, df=None):
         """Update the data preview table"""
-        if self.df is None:
+        if df is not None:
+            df = df.copy()
+        elif df is None and self.df is not None:
+            df = self.df.copy()
+        elif self.df is None:
             self.preview_table.clear()
             return
         
         # Show first 10 rows and limit columns if too many
-        preview_data = self.df.head(10)
+        preview_data = df.head(10)
         max_cols = min(8, len(preview_data.columns))
         display_data = preview_data.iloc[:, :max_cols]
         
@@ -491,6 +495,23 @@ class PrismWriterGUI(QWidget):
         except:
             preview += "Unable to estimate table dimensions\n"
         
+        #generate a table preview using the prism_writer
+        #try:
+        self.prism_writer.make_group_table(
+            group_name="__" + self.group_table_name.text().strip(),
+            group_values=self.df.sample(frac=0.1).head(), # sample for preview, since full df may be large
+            groupby=main_group,
+            cols=data_cols if data_cols else None,
+            subgroupcols=sub_group if sub_group else None,
+            rowgroupcols=row_group if row_group else None
+        )
+        #preview += f"Table Preview:\n{preview_table}\n"
+        df_preview = self.prism_writer.to_dataframe("__" + self.group_table_name.text().strip())
+        #except Exception as e:
+        #preview += f"Error generating table preview: {e}\n"
+        #replace the self.preview_table with a dataframe preview
+        if df_preview is not None:
+            self.update_data_preview(df_preview)
         return preview
     
     def update_validation(self):
