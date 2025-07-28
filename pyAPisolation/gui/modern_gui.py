@@ -12,8 +12,9 @@ import copy
 
 # Import Qt components
 try:
-    from PySide2.QtWidgets import QApplication, QWidget, QProgressDialog
-    from PySide2.QtCore import Qt, QThread, pyqtSignal
+    from PySide2.QtWidgets import QApplication, QWidget, QProgressDialog, QComboBox, QVBoxLayout
+    from PySide2.QtCore import Qt, QThread
+    from PySide2.QtCore import Signal as pyqtSignal
     import PySide2.QtCore as QtCore
 except ImportError:
     print("PySide2 not available, GUI functionality disabled")
@@ -64,8 +65,8 @@ class ModernAnalysisThread(QThread):
 class ModernAnalysisGUI(analysis_gui):
     """Enhanced GUI using the new analysis framework"""
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, app):
+        super().__init__(app)
         self.analysis_thread = None
         self.current_results: List[AnalysisResult] = []
         
@@ -74,11 +75,216 @@ class ModernAnalysisGUI(analysis_gui):
     
     def _setup_new_framework_integration(self):
         """Setup integration with new analysis framework"""
+        # Initialize modern analysis preferences
+        self.use_modern_analysis = True
+        
         # Add analyzer selection if needed
         self.available_analyzers = registry.list_analyzers()
         
+        # Setup modern analysis integration with existing UI
+        self.setup_modern_analysis_integration()
+        
         # You could add UI elements here to select different analyzers
         # For now, we'll use the existing tab system
+        for analyzer_name in self.available_analyzers:
+            if hasattr(self, f"run_{analyzer_name}_analysis"):
+                # Add a button or menu item to run this analysis
+                # For simplicity, we'll just print available analyzers
+                print(f"Available analyzer: {analyzer_name}")
+        #add a tab
+        # Add a tab for modern analysis if it doesn't exist
+        if not hasattr(self, 'modern_analysis_tab'):
+            self.modern_analysis_tab = QWidget()
+            self.modern_analysis_tab.setObjectName("modern_analysis_tab")
+            self.modern_analysis_tab.setWindowTitle("Analysis")
+            self.tabselect.addTab(self.modern_analysis_tab, "Analysis")
+            #add a dropdown to select analysis type
+            self.analysis_tab_layout = QVBoxLayout(self.modern_analysis_tab)
+            self.analysis_type_dropdown = QComboBox(self.modern_analysis_tab)
+            self.analysis_type_dropdown.addItems(self.available_analyzers)
+            self.analysis_type_dropdown.setCurrentIndex(-1)  # No selection by default
+            self.analysis_type_dropdown.currentIndexChanged.connect(self._on_analysis_type_changed)
+            self.analysis_tab_layout.addWidget(self.analysis_type_dropdown)
+            self.modern_analysis_tab.setLayout(self.analysis_tab_layout)
+
+
+    def _on_analysis_type_changed(self, index: int):
+        """Handle analysis type selection change"""
+        if index < 0 or index >= len(self.available_analyzers):
+            return
+        
+        selected_analyzer = self.available_analyzers[index]
+        print(f"Selected analyzer: {selected_analyzer}")
+        
+        # Update current analysis type
+        self.current_analysis = selected_analyzer
+        
+        # Update UI elements based on selected analyzer
+        self.update_ui_for_analyzer(selected_analyzer)
+
+
+    def update_ui_for_analyzer(self, analyzer_name: str):
+        """Update UI elements based on selected analyzer"""
+        # This method can be used to show/hide specific UI elements
+        # or update parameters based on the selected analyzer
+        
+        # For now, just print the analyzer name
+        print(f"Updating UI for analyzer: {analyzer_name}")
+        
+        # You could add logic here to enable/disable specific fields
+        # or change labels based on the selected analyzer type
+        
+        # Example: if the analyzer has specific parameters, show them
+        if hasattr(self, 'analysis_parameters'):
+            self.analysis_parameters.setText(f"Parameters for {analyzer_name}")
+
+        #clear the tab if it exists
+        if hasattr(self, 'modern_analysis_tab'):
+            # Clear existing content in the tab
+            for i in reversed(range(self.modern_analysis_tab.layout().count())):
+                widget = self.modern_analysis_tab.layout().itemAt(i).widget()
+                if widget is not None:
+                    widget.deleteLater()
+            # Optionally, reset the layout or add new elements
+            self.modern_analysis_tab.layout().addWidget(self.analysis_type_dropdown)
+        
+        #now add the parameters for the selected analyzer
+        if analyzer_name in registry._analyzers:
+            analyzer = registry._analyzers[analyzer_name]
+            parameters = analyzer.get_default_parameters()
+            schema = analyzer.get_parameter_schema()
+            self._display_parameters(parameters, schema)
+    
+    def _display_parameters(self, parameters, schema):
+        """Display parameter controls based on the analysis schema"""
+        from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox
+        
+        if not hasattr(self, 'modern_analysis_tab'):
+            return
+        
+        # Create layout if it doesn't exist
+        if self.modern_analysis_tab.layout() is None:
+            layout = QVBoxLayout(self.modern_analysis_tab)
+            layout.addWidget(self.analysis_type_dropdown)
+        else:
+            layout = self.modern_analysis_tab.layout()
+        
+        # Store parameter widgets for later retrieval
+        if not hasattr(self, 'parameter_widgets'):
+            self.parameter_widgets = {}
+        
+        # Create widgets for each parameter
+        for param_name, param_info in schema.items():
+            if param_name in ['start_time', 'end_time', 'protocol_filter']:
+                continue  # Skip common parameters handled elsewhere
+            
+            param_layout = QHBoxLayout()
+            label = QLabel(f"{param_name}:")
+            param_layout.addWidget(label)
+            
+            widget = self._create_parameter_widget(param_info, parameters.get(param_name))
+            param_layout.addWidget(widget)
+            
+            layout.addLayout(param_layout)
+            self.parameter_widgets[param_name] = widget
+    
+    def _create_parameter_widget(self, param_info, current_value):
+        """Create appropriate widget based on parameter type"""
+        from PySide2.QtWidgets import QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox
+        
+        param_type = param_info.get('type', 'str')
+        default_value = param_info.get('default', current_value)
+        
+        if param_type == 'bool':
+            widget = QCheckBox()
+            widget.setChecked(bool(current_value if current_value is not None else default_value))
+            return widget
+        
+        elif param_type == 'int':
+            widget = QSpinBox()
+            if 'min' in param_info:
+                widget.setMinimum(int(param_info['min']))
+            if 'max' in param_info:
+                widget.setMaximum(int(param_info['max']))
+            widget.setValue(int(current_value if current_value is not None else default_value))
+            return widget
+        
+        elif param_type == 'float':
+            widget = QDoubleSpinBox()
+            widget.setDecimals(4)
+            if 'min' in param_info:
+                widget.setMinimum(float(param_info['min']))
+            if 'max' in param_info:
+                widget.setMaximum(float(param_info['max']))
+            widget.setValue(float(current_value if current_value is not None else default_value))
+            return widget
+        
+        else:  # Default to string/text input
+            widget = QLineEdit()
+            widget.setText(str(current_value if current_value is not None else default_value))
+            return widget
+
+    def setup_modern_analysis_integration(self):
+        """Setup modern analysis integration with existing tab system"""
+        # This method integrates the modern analysis framework with the existing GUI
+        # without needing to construct new tabs since they already exist in the UI
+        
+        # Override the existing run analysis methods to use modern framework when appropriate
+        # Store original methods for fallback
+        if not hasattr(self, '_original_run_indiv_analysis'):
+            self._original_run_indiv_analysis = super().run_indiv_analysis
+            self._original_run_analysis = super().run_analysis
+
+        # Add modern analysis menu options or buttons if they don't exist
+        self._add_modern_analysis_ui_elements()
+    
+    def _add_modern_analysis_ui_elements(self):
+        """Add UI elements for modern analysis if they don't already exist"""
+        # Add a checkbox or menu item to enable modern analysis mode
+        if hasattr(self, 'tools_menu') and self.tools_menu:
+            # Add separator if it doesn't exist
+            actions = [action.text() for action in self.tools_menu.actions()]
+            if "Use Modern Analysis Framework" not in actions:
+                self.tools_menu.addSeparator()
+                self.action_use_modern = self.tools_menu.addAction("Use Modern Analysis Framework")
+                self.action_use_modern.setCheckable(True)
+                self.action_use_modern.setChecked(True)  # Default to modern framework
+                self.action_use_modern.triggered.connect(self._on_modern_analysis_toggled)
+    
+    def _on_modern_analysis_toggled(self, checked: bool):
+        """Handle toggling between modern and legacy analysis"""
+        self.use_modern_analysis = checked
+        print(f"Modern analysis framework: {'Enabled' if checked else 'Disabled'}")
+    
+    def get_current_analyzer_config(self) -> Dict[str, Any]:
+        """Get configuration for the current analyzer based on selected tab"""
+        current_analysis = self.get_current_analysis()
+        analyzer_info = {}
+        
+        if current_analysis in self.available_analyzers:
+            analyzer_info = self.get_analyzer_info(current_analysis)
+        
+        return {
+            'name': current_analysis,
+            'info': analyzer_info,
+            'available': current_analysis in self.available_analyzers
+        }
+    
+    def run_indiv_analysis(self):
+        """Override base class method to use modern framework when enabled"""
+        if hasattr(self, 'use_modern_analysis') and self.use_modern_analysis:
+            return self.run_indiv_analysis_modern()
+        else:
+            # Fallback to original method
+            return self._original_run_indiv_analysis()
+    
+    def run_analysis(self):
+        """Override base class method to use modern framework when enabled"""
+        if hasattr(self, 'use_modern_analysis') and self.use_modern_analysis:
+            return self.run_batch_analysis_modern()
+        else:
+            # Fallback to original method
+            return self._original_run_analysis()
     
     def run_indiv_analysis_modern(self):
         """Modern version of individual analysis using new framework"""
@@ -115,6 +321,7 @@ class ModernAnalysisGUI(analysis_gui):
             print(f"Error in modern analysis: {e}")
             # Fallback to legacy method
             self.run_indiv_analysis()
+
     
     def run_batch_analysis_modern(self):
         """Modern batch analysis with progress tracking"""

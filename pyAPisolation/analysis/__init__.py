@@ -14,7 +14,7 @@ Key components:
 
 from .base import BaseAnalyzer, AnalysisResult, AnalysisParameters
 from .spike_analyzer import SpikeAnalyzer
-from .subthreshold_analyzer import SubthresholdAnalyzer
+from .subthreshold_analyzer import SubthresholdAnalyzer, ResistanceLadder
 from .registry import AnalysisRegistry
 from .runner import AnalysisRunner
 from .legacy import LegacyAnalysisWrapper
@@ -23,6 +23,7 @@ from .legacy import LegacyAnalysisWrapper
 registry = AnalysisRegistry()
 registry.register('spike', SpikeAnalyzer)
 registry.register('subthreshold', SubthresholdAnalyzer)
+registry.register('resistance_ladder', ResistanceLadder)
 
 __all__ = [
     'BaseAnalyzer',

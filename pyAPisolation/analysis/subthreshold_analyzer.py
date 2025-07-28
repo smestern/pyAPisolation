@@ -245,3 +245,77 @@ class SubthresholdAnalyzer(BaseAnalyzer):
         
         base_schema.update(subthres_schema)
         return base_schema
+
+class ResistanceLadder(BaseAnalyzer):
+    """
+    Compute the I-V curve resistance ladder for subthreshold sweeps.
+
+    This is a specialized analyzer that computes the resistance ladder
+    """
+    def __init__(self, name: str = "resistance_ladder"):
+        super().__init__(name)
+        self._setup_default_parameters()
+
+    def _setup_default_parameters(self) -> None:
+        """Setup default parameters for resistance ladder analysis"""
+        self._default_params.extra_params.update({
+            'sweep_range': None,  # Range of sweeps to analyze
+            'voltage_range': None,  # Voltage range for I-V curve
+            'current_range': None,  # Current range for I-V curve
+            'start_time': 0.0,  # Start time for analysis
+            'end_time': None,  # End time for analysis
+            'i_channel': 0,  # Channel to analyze
+            'v_channel': 1,  # Channel to analyze
+            'plot': True  # Generate plot of resistance ladder
+        })
+    def analyze_file(self, file_path: str,
+                     parameters: AnalysisParameters) -> AnalysisResult:
+        """ Analyze resistance ladder in a single ABF file
+        
+        Args:
+            file_path: Path to ABF file
+            parameters: Analysis parameters
+            
+        Returns:
+            AnalysisResult with resistance ladder data
+        """
+        result = AnalysisResult(
+            analyzer_name=self.name,
+            file_path=file_path,
+            success=False
+        )
+        
+        try:
+            # Validate parameters
+            validation_errors = self.validate_parameters(parameters)
+            if validation_errors:
+                for error in validation_errors:
+                    result.add_error(error)
+                return result
+            
+            # Load ABF and compute resistance ladder
+            import pyabf
+            abf = pyabf.ABF(file_path)
+            
+            # Call the resistance ladder analysis function
+            ladder_df = patch_utils.compute_resistance_ladder(
+                abf, **self._convert_parameters(parameters)
+            )
+            
+            # Store results
+            result.summary_data = ladder_df
+            
+            # Add metadata
+            result.metadata.update({
+                'file_name': os.path.basename(file_path),
+                'parameters_used': self._convert_parameters(parameters),
+                'total_sweeps': len(ladder_df) if ladder_df is not None else 0
+            })
+            
+            result.success = True
+            
+        except Exception as e:
+            result.add_error(f"Resistance ladder analysis failed: {str(e)}")
+        
+        return result
+    

@@ -318,6 +318,8 @@ class tsDatabase:
         #update the cell index
         if path is not None:
             self.cellindex.loc[cell, protocol] = path
+        else:
+            self.cellindex.loc[cell, protocol] = None
 
     def __getitem__(self, key, protocol, column):
         return self.data[key]

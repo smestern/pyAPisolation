@@ -58,8 +58,8 @@ def test_database():
     assert 'test' in db.cellindex.index.values
 
     #try adding a protocol
-    db.addProtocol('test', 'protocol')
-    assert db.cellindex.loc['test', 'protocol'] == 'protocol'
+    db.addProtocol('test', 'protocol', path='test_path')
+    assert db.cellindex.loc['test', 'protocol'] =='test_path'
 
 
 
