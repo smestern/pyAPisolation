@@ -14,13 +14,15 @@ Key components:
 
 from .base import AnalysisResult, AnalysisParameters
 
-from .registry import AnalysisRegistry
+from .registry import AnalysisRegistry, registry
 from .runner import AnalysisRunner
-from .legacy import LegacyAnalysisWrapper
+#from .legacy import LegacyAnalysisWrapper
+from .builtin_modules import SpikeAnalysisModule, SubthresholdAnalysisModule
 
 # Initialize the registry with built-in analyzers
-registry = AnalysisRegistry()
 
+registry.register_module(SpikeAnalysisModule())
+registry.register_module(SubthresholdAnalysisModule())
 
 __all__ = [
     'BaseAnalyzer',

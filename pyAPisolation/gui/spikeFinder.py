@@ -73,8 +73,7 @@ class analysis_gui(object):
         #self.main_widget = self.children()[-1]
         self.abf = None
         self.current_filter = 0.
-        # Initialize the analysis registry
-        self.analysis_registry = analysis_registry
+        
         self.current_analysis_module = None
         self.bind_ui()
 

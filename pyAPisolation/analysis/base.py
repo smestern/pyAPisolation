@@ -71,7 +71,7 @@ class AnalysisResult:
 
 
 
-class AnalysisModule(ABC):
+class AnalysisModule:
     """
     Abstract base class for analysis modules.
     Each analysis type should inherit from this class and implement the required methods.

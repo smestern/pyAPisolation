@@ -79,7 +79,7 @@ class ModernAnalysisGUI(analysis_gui):
         self.use_modern_analysis = True
         
         # Add analyzer selection if needed
-        self.available_analyzers = registry.list_analyzers()
+        self.available_analyzers = registry.list_modules()
         
         # Setup modern analysis integration with existing UI
         self.setup_modern_analysis_integration()
@@ -149,13 +149,12 @@ class ModernAnalysisGUI(analysis_gui):
             self.modern_analysis_tab.layout().addWidget(self.analysis_type_dropdown)
         
         #now add the parameters for the selected analyzer
-        if analyzer_name in registry._analyzers:
-            analyzer = registry._analyzers[analyzer_name]
-            parameters = analyzer.get_default_parameters()
-            schema = analyzer.get_parameter_schema()
-            self._display_parameters(parameters, schema)
+        if analyzer_name in self.available_analyzers:
+            analyzer = registry.get_module(analyzer_name)
+            parameters = analyzer.get_ui_elements()
+            self._display_parameters(parameters)
     
-    def _display_parameters(self, parameters, schema):
+    def _display_parameters(self, parameters):
         """Display parameter controls based on the analysis schema"""
         from PySide2.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox
         
@@ -174,9 +173,9 @@ class ModernAnalysisGUI(analysis_gui):
             self.parameter_widgets = {}
         
         # Create widgets for each parameter
-        for param_name, param_info in schema.items():
-            if param_name in ['start_time', 'end_time', 'protocol_filter']:
-                continue  # Skip common parameters handled elsewhere
+        for param_name, param_info in parameters.items():
+            #if param_name in ['start_time', 'end_time', 'protocol_filter']:
+                #continue  # Skip common parameters handled elsewhere
             
             param_layout = QHBoxLayout()
             label = QLabel(f"{param_name}:")
