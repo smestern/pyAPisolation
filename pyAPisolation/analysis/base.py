@@ -11,6 +11,8 @@ from typing import Any, Dict, List, Optional, Union
 import pandas as pd
 import numpy as np
 
+from abc import ABC, abstractmethod
+
 
 @dataclass
 class AnalysisParameters:
@@ -66,89 +68,107 @@ class AnalysisResult:
         self.warnings.append(warning)
 
 
-class BaseAnalyzer(ABC):
-    """Abstract base class for all analyzers"""
+
+
+
+class AnalysisModule(ABC):
+    """
+    Abstract base class for analysis modules.
+    Each analysis type should inherit from this class and implement the required methods.
+    """
     
-    def __init__(self, name: str):
+    def __init__(self, name: str, display_name: str = None):
         self.name = name
-        self._default_params = AnalysisParameters()
-    
-    @property
-    @abstractmethod
-    def analysis_type(self) -> str:
-        """Return the type of analysis this analyzer performs"""
-        pass
-    
-    @property
-    def default_parameters(self) -> AnalysisParameters:
-        """Return default parameters for this analyzer"""
-        return self._default_params
-    
-    @abstractmethod
-    def analyze_file(self, file_path: str, 
-                    parameters: AnalysisParameters) -> AnalysisResult:
-        """
-        Analyze a single file
+        self.display_name = display_name or name
+        self.param_dict = {}
         
-        Args:
-            file_path: Path to the file to analyze
-            parameters: Analysis parameters
-            
+    @abstractmethod
+    def get_ui_elements(self):
+        """
+        Return a dictionary mapping UI element names to their expected types.
+        This helps the GUI know what controls to bind for this analysis.
+        
         Returns:
-            AnalysisResult containing the results
+            dict: {element_name: element_type, ...}
         """
         pass
     
     @abstractmethod
-    def validate_parameters(self, parameters: AnalysisParameters) -> List[str]:
+    def parse_ui_params(self, ui_elements):
         """
-        Validate analysis parameters
+        Parse parameters from UI elements into the format needed for analysis.
         
         Args:
-            parameters: Parameters to validate
+            ui_elements: Dictionary of UI elements
             
         Returns:
-            List of validation errors (empty if valid)
+            dict: Parameter dictionary for this analysis
         """
         pass
     
-    def analyze_sweep(self, sweep_data: Dict[str, np.ndarray], 
-                     parameters: AnalysisParameters) -> Dict[str, Any]:
+    @abstractmethod
+    def run_individual_analysis(self, abf, selected_sweeps, param_dict, 
+                               popup=None, show_rejected=False):
         """
-        Analyze a single sweep (optional implementation)
+        Run analysis on a single file for preview/individual analysis.
         
         Args:
-            sweep_data: Dictionary with 'time', 'voltage', 'current' arrays
-            parameters: Analysis parameters
+            abf: The ABF file object
+            selected_sweeps: List of sweep numbers to analyze
+            param_dict: Analysis parameters
+            popup: Progress dialog (optional)
+            show_rejected: Whether to show rejected spikes (optional)
             
         Returns:
-            Dictionary of analysis results for this sweep
+            dict: Results dictionary with analysis data
         """
-        raise NotImplementedError(
-            f"{self.name} does not support single-sweep analysis"
-        )
+        pass
     
-    def get_parameter_schema(self) -> Dict[str, Any]:
+    @abstractmethod
+    def run_batch_analysis(self, folder_path, param_dict, protocol_name):
         """
-        Return a schema describing the parameters this analyzer accepts
+        Run analysis on a folder of files.
         
+        Args:
+            folder_path: Path to folder containing files
+            param_dict: Analysis parameters
+            protocol_name: Protocol filter
+            
         Returns:
-            Dictionary describing parameter names, types, defaults, etc.
+            tuple: (dataframes, summary_data) - format depends on analysis type
         """
-        return {
-            'start_time': {
-                'type': 'float',
-                'default': 0.0,
-                'description': 'Start time for analysis (seconds)'
-            },
-            'end_time': {
-                'type': 'float', 
-                'default': 0.0,
-                'description': 'End time for analysis (seconds, 0 for end)'
-            },
-            'protocol_filter': {
-                'type': 'str',
-                'default': '',
-                'description': 'Protocol name filter'
-            }
-        }
+        pass
+    
+    @abstractmethod
+    def save_results(self, results, output_dir, output_tag, save_options=None):
+        """
+        Save analysis results to files.
+        
+        Args:
+            results: Results from batch analysis
+            output_dir: Directory to save to
+            output_tag: Tag to append to filenames
+            save_options: Dictionary of save options (optional)
+        """
+        pass
+    
+    def get_plot_data(self, results, sweep_number=None):
+        """
+        Extract data for plotting from analysis results.
+        Optional method - implement if analysis has specific plotting needs.
+        
+        Args:
+            results: Analysis results
+            sweep_number: Specific sweep to plot (optional)
+            
+        Returns:
+            dict: Plot data or None for default plotting
+        """
+        return None
+    
+    def __str__(self):
+        return f"AnalysisModule(name='{self.name}', display_name='{self.display_name}')"
+    
+    def __repr__(self):
+        return self.__str__()
+
