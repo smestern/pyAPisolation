@@ -10,7 +10,7 @@ pf_foldr='C:/Users/SMest/.conda/envs/pyinstaller/Library/plugins/platforms/'
 shiboken2_files = glob.glob('C:/Users/SMest/.conda/envs/pyinstaller/Lib\\site-packages\\shiboken2\\**\\*', recursive=False)
 shiboken2_files = [(file, '.\\shiboken2\\'+os.path.basename(file)) for file in shiboken2_files]
 
-a = Analysis(['run_APisolation_gui.py'],
+a = Analysis(['run_spike_finder.py'],
              pathex=['C:\\Users\\SMest\\source\\repos\\smestern\\pyAPisolation\\pyAPisolation\\dev', "C:/Users/SMest/.conda/envs/pyinstaller/Lib\\site-packages\\shiboken2\\",
               "C:/Users/SMest/.conda/envs/pyinstaller/Lib\\site-packages\\PySide2\\", "C:/Users/SMest/.conda/envs/pyinstaller/Lib\\site-packages\\PyQt5\Qt\\", 
               "C:/Users/SMest/.conda/envs/pyinstaller/Library\\plugins\\platforms"],
@@ -18,8 +18,8 @@ a = Analysis(['run_APisolation_gui.py'],
              (pf_foldr+'qdirect2d.dll', 'qdirect.dll'),
              (pf_foldr+'qoffscreen.dll', 'qoffscreen.dll'),
              (pf_foldr+'qwebgl.dll', 'qwebgl.dll')],
-             datas=[('./mainwindowMDI.ui', '.'), *shiboken2_files],
-             hiddenimports=['openpyxl.cell._writer'],
+             datas=[('./run_rmp.spec', '.'), *shiboken2_files],
+             hiddenimports=['openpyxl.cell._writer', 'pkg_resources.extern'],
              hookspath=[],
              runtime_hooks=['runqthook.py'],
              excludes=[],

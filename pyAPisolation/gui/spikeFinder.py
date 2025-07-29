@@ -1,14 +1,14 @@
 # This Python file uses the following encoding: utf-8
 
-import matplotlib
-matplotlib.use('QtAgg')
+
 import os
 import glob
 import pyabf
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
-
+import matplotlib
+matplotlib.use('QtAgg')
 
 from sklearn.ensemble import IsolationForest
 from sklearn.impute import SimpleImputer
