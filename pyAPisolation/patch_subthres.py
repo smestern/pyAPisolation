@@ -17,12 +17,11 @@ from . import loadFile
 
 
 ##Declare our options at default
-
 def exp_grow(t, a, b, alpha):
     return a - b * np.exp(-alpha * t)
+
 def exp_decay_2p(t, a, b1, alphaFast, b2, alphaSlow):
     return a + b1*np.exp(-alphaFast*t) + b2*np.exp(-alphaSlow*t)
-
 
 def exp_decay_1p(t, a, b1, alphaFast):
     return a + b1*np.exp(-alphaFast*t)

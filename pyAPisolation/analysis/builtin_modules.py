@@ -134,10 +134,6 @@ class SpikeAnalysisModule(AnalysisModule):
             'subthres_df': None
         }
     
-    def run_batch_analysis(self, folder_path, param_dict, protocol_name):
-        # This would call the existing _inner_analysis_loop method
-        # For now, we'll raise NotImplementedError and let the legacy code handle it
-        raise NotImplementedError("Batch analysis should use legacy _inner_analysis_loop method")
     
     def save_results(self, results, output_dir, output_tag, save_options=None):
         from ..featureExtractor import save_data_frames
@@ -201,10 +197,14 @@ class SubthresholdAnalysisModule(AnalysisModule):
             'end_sear': end_sear
         }
     
-    def run_individual_analysis(self, abf, selected_sweeps, param_dict, 
+    def run_individual_analysis(self, abf, selected_sweeps, param_dict=None, 
                                popup=None, show_rejected=False):
         from ..featureExtractor import analyze_subthres
-        
+
+        #convert or use the param_dict
+        if param_dict is None:
+            param_dict = {}
+
         subthres_df, _ = analyze_subthres(abf, **param_dict)
         
         return {
@@ -245,7 +245,9 @@ class ResistanceLadder(AnalysisModule):
         
         # Placeholder for actual implementation
         from ..patch_subthres import ladder_rm
-        return {}
+        
+
+        
     
     def run_batch_analysis(self, folder_path, param_dict, protocol_name):
         # Placeholder for actual implementation
