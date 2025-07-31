@@ -17,12 +17,13 @@ from .base import AnalysisResult, AnalysisParameters
 from .registry import AnalysisRegistry, registry
 from .runner import AnalysisRunner
 #from .legacy import LegacyAnalysisWrapper
-from .builtin_modules import SpikeAnalysisModule, SubthresholdAnalysisModule
+from .builtin_modules import SpikeAnalysisModule, SubthresholdAnalysisModule, ResistanceLadder
 
 # Initialize the registry with built-in analyzers
 
 registry.register_module(SpikeAnalysisModule())
 registry.register_module(SubthresholdAnalysisModule())
+registry.register_module(ResistanceLadder())
 
 __all__ = [
     'BaseAnalyzer',

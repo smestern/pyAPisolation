@@ -8,7 +8,7 @@ that wrap existing functionality while providing the modular interface.
 import pandas as pd
 import numpy as np
 import copy
-from .base import AnalysisModule
+from .base import AnalysisModule, AnalysisParameters
 
 
 class SpikeAnalysisModule(AnalysisModule):
@@ -17,24 +17,30 @@ class SpikeAnalysisModule(AnalysisModule):
     """
     
     def __init__(self):
-        super().__init__("spike", "Spike Analysis")
+        # Initialize with default spike analysis parameters
+        spike_params = AnalysisParameters()
+        spike_params.set('dv_cutoff', 20.0)
+        spike_params.set('max_interval', 0.005)
+        spike_params.set('min_height', 2.0)
+        spike_params.set('min_peak', -30.0)
+        spike_params.set('thresh_frac', 0.05)
+        spike_params.set('bessel_filter', 10000.0)
+        spike_params.set('stim_find', False)
         
-    def get_ui_elements(self):
-        return {
-            'dvdt_thres': 'float',
-            'start_time': 'float', 
-            'end_time': 'float',
-            'thres_to_peak_time': 'float',
-            'thres_to_peak_height': 'float',
-            'min_peak_height': 'float',
-            'bstim': 'bool',
-            'bessel': 'float',
-            'thres_per': 'float',
-            'bspikeFind': 'bool',
-            'brunningBin': 'bool', 
-            'brawData': 'bool'
-        }
+        super().__init__("spike", "Spike Analysis", spike_params)
     
+    def get_default_parameters(self) -> AnalysisParameters:
+        """Get default parameters for spike analysis"""
+        params = AnalysisParameters()
+        params.set('dv_cutoff', 20.0)
+        params.set('max_interval', 0.005)
+        params.set('min_height', 2.0)
+        params.set('min_peak', -30.0)
+        params.set('thresh_frac', 0.05)
+        params.set('bessel_filter', 10000.0)
+        params.set('stim_find', False)
+        return params
+        
     def parse_ui_params(self, ui_elements):
         dv_cut = float(ui_elements['dvdt_thres'].text())
         lowerlim = float(ui_elements['start_time'].text())
@@ -59,14 +65,36 @@ class SpikeAnalysisModule(AnalysisModule):
             'thresh_frac': thresh_frac
         }
     
-    def run_individual_analysis(self, abf, selected_sweeps, param_dict, 
-                               popup=None, show_rejected=False):
+    def run_individual_analysis(self, abf, selected_sweeps, param_dict,
+                                popup=None, show_rejected=False):
         # Import here to avoid circular imports
         from ipfx.feature_extractor import SpikeFeatureExtractor
         from ..featureExtractor import determine_rejected_spikes
         
         if selected_sweeps is None:
-            selected_sweeps = abf.sweepList 
+            selected_sweeps = abf.sweepList
+            
+        # Use both legacy param_dict and new parameters system
+        # Prefer param_dict for backward compatibility
+        temp_param_dict = copy.deepcopy(param_dict)
+        
+        # If param_dict is missing values, fall back to parameters
+        if 'dv_cutoff' not in temp_param_dict:
+            temp_param_dict['dv_cutoff'] = self.get_parameter('dv_cutoff', 20.0)
+        if 'max_interval' not in temp_param_dict:
+            temp_param_dict['max_interval'] = self.get_parameter('max_interval', 0.005)
+        if 'min_height' not in temp_param_dict:
+            temp_param_dict['min_height'] = self.get_parameter('min_height', 2.0)
+        if 'min_peak' not in temp_param_dict:
+            temp_param_dict['min_peak'] = self.get_parameter('min_peak', -30.0)
+        if 'thresh_frac' not in temp_param_dict:
+            temp_param_dict['thresh_frac'] = self.get_parameter('thresh_frac', 0.05)
+        
+        # Update start/end from parameters if available
+        if 'start' not in temp_param_dict:
+            temp_param_dict['start'] = self.get_parameter('start_time', 0.0)
+        if 'end' not in temp_param_dict:
+            temp_param_dict['end'] = self.get_parameter('end_time', 0.0)
             
         temp_param_dict = copy.deepcopy(param_dict)
         
@@ -129,17 +157,20 @@ class SubthresholdAnalysisModule(AnalysisModule):
     """
     
     def __init__(self):
-        super().__init__("subthres", "Subthreshold Analysis")
+        # Initialize with default subthreshold analysis parameters
+        subthres_params = AnalysisParameters()
+        subthres_params.set('time_after', 100.0)
+        subthres_params.set('bessel_filter_cm', 10000.0)
         
-    def get_ui_elements(self):
-        return {
-            'subthresSweeps': 'string',
-            'stimPer': 'float',
-            'startCM': 'float',
-            'endCM': 'float',
-            'besselFilterCM': 'float'
-        }
+        super().__init__("subthres", "Subthreshold Analysis", subthres_params)
     
+    def get_default_parameters(self) -> AnalysisParameters:
+        """Get default parameters for subthreshold analysis"""
+        params = AnalysisParameters()
+        params.set('time_after', 100.0)
+        params.set('bessel_filter_cm', 10000.0)
+        return params
+           
     def parse_ui_params(self, ui_elements):
         try:
             subt_sweeps = np.fromstring(ui_elements['subthresSweeps'].text(), 
@@ -191,3 +222,35 @@ class SubthresholdAnalysisModule(AnalysisModule):
         
         avg_df, sweepwise_df = results
         save_subthres_data(avg_df, sweepwise_df, output_dir, output_tag)
+
+
+class ResistanceLadder(AnalysisModule):
+    """
+    Computes the membrane resistance by fitting a linear regression to a collection of I-V pairs. Computed from the sweep data
+    """
+    def __init__(self):
+        super().__init__("resistance_ladder", "Resistance Ladder Analysis")
+        self.parameters = self.get_default_parameters()
+
+    def get_default_parameters(self) -> AnalysisParameters:
+        """Get default parameters for resistance ladder analysis"""
+        params = AnalysisParameters()
+        params.set('iv_pairs', [])
+        params.set('fit_method', 'linear')
+        return params
+
+
+    def run_individual_analysis(self, celldata, selected_sweeps, param_dict,
+                                popup=None, show_rejected=False):
+        
+        # Placeholder for actual implementation
+        from ..patch_subthres import ladder_rm
+        return {}
+    
+    def run_batch_analysis(self, folder_path, param_dict, protocol_name):
+        # Placeholder for actual implementation
+        return ([], {})
+    
+    def save_results(self, results, output_dir, output_tag, save_options=None):
+        # Placeholder for actual implementation
+        pass

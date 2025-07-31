@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 from scipy.stats import f_oneway
+from statsmodels.stats.multitest import multipletests 
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
@@ -467,6 +468,20 @@ class AnalysisPage(QWizardPage):
                         'error': 'Insufficient groups or data'
                     }
             
+
+            # #run compensation for FDR
+            # self.progress_label.setText(f"Correcting p-values...")
+            # p_values = np.array([result['p_value'] for result in results.values() if 'p_value' in result])
+            # p_values_keys = [feature for feature, result in results.items() if 'p_value' in result]
+            # idx_nan = np.isnan(p_values)
+            # p_values = p_values[~idx_nan]
+            # p_values_keys = np.array(p_values_keys)[~idx_nan]
+
+            # if p_values.size > 0:
+            #     corrected_pvals = multipletests(p_values, alpha=0.01, method='fdr_bh')[1]
+            #     for i, feature in enumerate(p_values_keys):
+            #         results[feature]['p_value_corrected'] = corrected_pvals[i]
+
             self.progress_bar.setValue(100)
             self.progress_label.setText("Analysis complete!")
             
@@ -605,6 +620,8 @@ class ResultsPage(QWizardPage):
             else:
                 sig = "N/A"
             self.results_table.setItem(i, 6, QTableWidgetItem(sig))
+            # if 'p_value_corrected' in result:
+            #     self.results_table.setItem(i, 2, QTableWidgetItem(f"{result['p_value_corrected']:.4f}"))
             
         self.results_table.resizeColumnsToContents()
         
