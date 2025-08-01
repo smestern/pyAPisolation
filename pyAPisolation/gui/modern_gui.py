@@ -181,8 +181,8 @@
 #             label = QLabel(f"{param_name}:")
 #             param_layout.addWidget(label)
             
-#             widget = self._create_parameter_widget(param_info, parameters.get(param_name))
-#             param_layout.addWidget(widget)
+            widget = self._create_parameter_widget(param_info, param_info.value)
+            param_layout.addWidget(widget)
             
 #             layout.addLayout(param_layout)
 #             self.parameter_widgets[param_name] = widget
@@ -191,32 +191,33 @@
 #         """Create appropriate widget based on parameter type"""
 #         from PySide2.QtWidgets import QLineEdit, QCheckBox, QSpinBox, QDoubleSpinBox
         
-#         param_type = param_info.get('type', 'str')
-#         default_value = param_info.get('default', current_value)
-        
-#         if param_type == 'bool':
-#             widget = QCheckBox()
-#             widget.setChecked(bool(current_value if current_value is not None else default_value))
-#             return widget
-        
-#         elif param_type == 'int':
-#             widget = QSpinBox()
-#             if 'min' in param_info:
-#                 widget.setMinimum(int(param_info['min']))
-#             if 'max' in param_info:
-#                 widget.setMaximum(int(param_info['max']))
-#             widget.setValue(int(current_value if current_value is not None else default_value))
-#             return widget
-        
-#         elif param_type == 'float':
-#             widget = QDoubleSpinBox()
-#             widget.setDecimals(4)
-#             if 'min' in param_info:
-#                 widget.setMinimum(float(param_info['min']))
-#             if 'max' in param_info:
-#                 widget.setMaximum(float(param_info['max']))
-#             widget.setValue(float(current_value if current_value is not None else default_value))
-#             return widget
+        param_type_str = str(param_info.param_type)
+        param_type_raw = param_info.param_type
+        default_value = param_info.get('default', current_value)
+
+        if 'bool' in param_type_str or isinstance(current_value, bool):
+            widget = QCheckBox()
+            widget.setChecked(bool(current_value if current_value is not None else default_value))
+            return widget
+
+        elif 'int' in param_type_str or isinstance(current_value, int):
+            widget = QSpinBox()
+            # if 'min' in param_info:
+            #     widget.setMinimum(int(param_info['min']))
+            # if 'max' in param_info:
+            #     widget.setMaximum(int(param_info['max']))
+            widget.setValue(int(current_value if current_value is not None else default_value))
+            return widget
+
+        elif 'float' in param_type_str or isinstance(current_value, float):
+            widget = QDoubleSpinBox()
+            widget.setDecimals(4)
+            # if 'min' in param_info:
+            #     widget.setMinimum(float(param_info['min']))
+            # if 'max' in param_info:
+            #     widget.setMaximum(float(param_info['max']))
+            widget.setValue(float(current_value if current_value is not None else default_value))
+            return widget
         
 #         else:  # Default to string/text input
 #             widget = QLineEdit()

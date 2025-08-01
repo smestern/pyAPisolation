@@ -12,6 +12,7 @@ import numpy as np
 from joblib import dump, load
 from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, DEFAULT_DICT, analyze_spike_times
 from pyAPisolation.patch_utils import load_protocols
+from pyAPisolation.analysis import SpikeAnalysisModule
 import glob
 
 COLS_TO_SKIP = ['Best Fit', 'Curve fit b1', #random / moving api
@@ -104,10 +105,22 @@ def test_analyze_funcs():
     spike_times = analyze_spike_times(file=files[-1])
     print(spike_times)
     
+def test_modular_analysis():
+    #we need to make sure the modular feature analysis is working:
+    # Load the known good df
+    df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
+
+    # Run the feature extractor
+    spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), DEFAULT_DICT)
+
+    # Initialize the SpikeAnalysisModule
+    spike_analysis_module = SpikeAnalysisModule()
+    spike_analysis_module.run_batch_analysis(os.path.expanduser('~/Dropbox/sara_cell_v2'))
 
 
 
 if __name__ == '__main__':
+    test_modular_analysis()
     test_analyze_funcs()
     test_dataframe_save()
     test_feature_extractor()

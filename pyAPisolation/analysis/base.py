@@ -5,13 +5,110 @@ This module defines the core interfaces and data structures that all
 analyzers must implement.
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 import pandas as pd
 import numpy as np
+import glob
+import logging
+import pyabf
+from ..dataset import cellData
+logger = logging.getLogger(__name__)
 
-from abc import ABC, abstractmethod
+
+@dataclass
+class Parameter:
+    """Individual parameter definition with metadata"""
+    
+    name: str
+    param_type: type = None
+    default: Any = None
+    value: Any = None
+    min_value: Optional[Union[int, float]] = None
+    max_value: Optional[Union[int, float]] = None
+    description: Optional[str] = None
+    options: Optional[List[Any]] = None  # For choice/enum parameters
+    
+    def __post_init__(self):
+        """Validate parameter definition"""
+        if self.min_value is not None and self.max_value is not None:
+            if self.min_value > self.max_value:
+                msg = (f"min_value ({self.min_value}) cannot be greater "
+                       f"than max_value ({self.max_value})")
+                raise ValueError(msg)
+        # Validate default value
+        if self.default is not None:
+            if not self.is_valid(self.default):
+                msg = (f"Default value {self.default} is not valid "
+                    f"for parameter {self.name}")
+                raise ValueError(msg)
+        
+        if self.value is None and self.default is not None:
+            self.value = self.default
+    
+    def is_valid(self, value: Any) -> bool:
+        """Check if a value is valid for this parameter"""
+        # Type check
+        if not isinstance(value, self.param_type):
+            try:
+                # Try to convert to the expected type
+                value = self.param_type(value)
+            except (ValueError, TypeError):
+                return False
+        
+        # Range check for numeric types
+        if (self.min_value is not None and hasattr(value, '__lt__')
+                and value < self.min_value):
+            return False
+        if (self.max_value is not None and hasattr(value, '__gt__')
+                and value > self.max_value):
+            return False
+        
+        # Options check
+        if self.options is not None and value not in self.options:
+            return False
+        
+        return True
+    
+    def validate_and_convert(self, value: Any) -> Any:
+        """Validate and convert a value to the correct type"""
+        if not isinstance(value, self.param_type):
+            try:
+                value = self.param_type(value)
+            except (ValueError, TypeError):
+                msg = (f"Cannot convert {value} to type "
+                       f"{self.param_type.__name__} for parameter {self.name}")
+                raise ValueError(msg)
+        
+        if not self.is_valid(value):
+            constraints = []
+            if self.min_value is not None:
+                constraints.append(f"min: {self.min_value}")
+            if self.max_value is not None:
+                constraints.append(f"max: {self.max_value}")
+            if self.options is not None:
+                constraints.append(f"options: {self.options}")
+            
+            constraint_str = ", ".join(constraints)
+            msg = (f"Value {value} is not valid for parameter {self.name}. "
+                   f"Constraints: {constraint_str}")
+            raise ValueError(msg)
+        
+        return value
+    
+    def get(self, key, val=None):
+        if hasattr(self, key):
+            return getattr(self, key)
+        else:
+            return val
+        
+    def set(self, key, value):
+        if hasattr(self, key):
+            setattr(self, key, value)
+        else:
+            #create the property?
+            self.__dict__[key] = value
 
 
 @dataclass
@@ -19,13 +116,18 @@ class AnalysisParameters:
     """Parameters for analysis configuration"""
     
     # Common parameters
-    start_time: float = 0.0
-    end_time: float = 0.0
-    protocol_filter: str = ""
-    
+    start_time: Parameter = Parameter("start_time", param_type=float, default=0.0, min_value=0.0, max_value=np.inf, description="Time in (s) to start analysis")
+    end_time: Parameter = Parameter("end_time", param_type=float, default=0.0, min_value=0.0, max_value=np.inf, description="Time in (s) to end analysis")
+    protocol_filter: Parameter = Parameter("protocol_filter", param_type=str, default="", description="Protocol filter")
+
     # Additional parameters stored as dict for flexibility
     extra_params: Dict[str, Any] = field(default_factory=dict)
     
+    def list(self) -> List[str]:
+        """List all parameter names including extra params"""
+        common_parameters = [x for x in self.__dataclass_fields__.keys() if x != "extra_params"]
+        return common_parameters + list(self.extra_params.keys())
+
     def get(self, key: str, default: Any = None) -> Any:
         """Get parameter value with fallback to extra_params"""
         if hasattr(self, key):
@@ -37,7 +139,9 @@ class AnalysisParameters:
         if hasattr(self, key):
             setattr(self, key, value)
         else:
-            self.extra_params[key] = value
+            #create a new parameter instance
+            temp_parameter = Parameter(name=key, param_type=type(value), value=value)
+            self.extra_params[key] = temp_parameter
 
 
 @dataclass
@@ -68,30 +172,263 @@ class AnalysisResult:
         self.warnings.append(warning)
 
 
-
-
-
 class AnalysisModule:
     """
     Abstract base class for analysis modules.
-    Each analysis type should inherit from this class and implement the required methods.
+    Each analysis type should inherit from this class and implement the
+    required methods.
     """
     
-    def __init__(self, name: str, display_name: str = None):
+    def __init__(self, name: str, display_name: str = None,
+                 parameters: Optional[AnalysisParameters] = None):
         self.name = name
         self.display_name = display_name or name
+        self._parameters = parameters or AnalysisParameters()
+        # Keep param_dict for backward compatibility
         self.param_dict = {}
         
-    @abstractmethod
+    def analyze(self, x=None, y=None, c=None, file=None, celldata=None, 
+                selected_sweeps=None, **kwargs) -> AnalysisResult:
+        """
+        Unified analysis interface that accepts various input types.
+        
+        Args:
+            x (np.array, optional): Time array of the sweep(s)
+            y (np.array, optional): Voltage array of the sweep(s) 
+            c (np.array, optional): Current array of the sweep(s)
+            file (str, optional): File path to analyze
+            celldata (cellData, optional): cellData object to analyze
+            selected_sweeps (list, optional): List of sweep numbers to analyze
+            **kwargs: Additional parameters to override defaults
+            
+        Returns:
+            AnalysisResult: Container with analysis results and metadata
+        """
+        from ..patch_utils import parse_user_input  # Import here to avoid circular imports
+        
+        # Create result container
+        result = AnalysisResult(
+            analyzer_name=self.name,
+            file_path=file or getattr(celldata, 'filePath', 'unknown'),
+            success=True
+        )
+        
+        try:
+            # Update parameters with any kwargs
+            if kwargs:
+                self.update_parameters(**kwargs)
+            
+            # Parse input to get consistent data format
+            if celldata is not None:
+                data = celldata
+            else:
+                data = parse_user_input(x, y, c, file)
+            
+            # Convert parameters to param_dict for compatibility
+            param_dict = self._parameters_to_dict()
+            
+            # Determine sweeps to analyze
+            if selected_sweeps is None:
+                if hasattr(data, 'sweepList'):
+                    selected_sweeps = data.sweepList
+                else:
+                    selected_sweeps = [0]
+            
+            # Run the analysis using the existing individual analysis method
+            analysis_results = self.run_individual_analysis(
+                data, selected_sweeps, param_dict, 
+                popup=None, show_rejected=False
+            )
+            
+            # Convert results to standardized format
+            self._populate_result(result, analysis_results, data)
+            
+        except Exception as e:
+            result.add_error(f"Analysis failed: {str(e)}")
+            
+        return result
+    
+    def run_batch_analysis(self, folder_path, param_dict=None, protocol_name=None):
+        """
+        Run analysis on a folder of files.
+        
+        Args:
+            folder_path: Path to folder containing files
+            param_dict: Analysis parameters
+            protocol_name: Protocol filter
+            
+        Returns:
+            tuple: (dataframes, summary_data) - format depends on analysis type
+        """
+        if isinstance(folder_path, str) or not isinstance(folder_path, list):
+            filelist = glob.glob(folder_path + "/**/*.abf", recursive=True)
+        elif isinstance(folder_path, list):
+            #check if the folder_path are strings or cellData objects
+            if isinstance(folder_path[0], str):
+                filelist = folder_path
+            elif isinstance(folder_path[0], cellData):
+                filelist = [x.file for x in folder_path]
+            elif isinstance(folder_path[0], pyabf.ABF):
+                filelist = [x.name for x in folder_path]
+            elif isinstance(folder_path[0], np.ndarray):
+                filelist = folder_path
+        else:
+            logger.error('Folder_path must be a list of strings, a string, or a list of cellData objects')
+            return None, None, None
+        
+        #create our output dataframes
+        spike_count = []
+        df_full = []
+        df_running_avg = []
+        #run the feature extractor
+        n_jobs = param_dict.get('n_jobs', 1) if param_dict else 1
+        if n_jobs > 1: #if we are using multiprocessing
+            pool = mp.Pool(processes=n_jobs)
+            results = [pool.apply(process_file, args=(file, param_dict, protocol_name)) for file in filelist]
+            pool.close()
+            ##split out the results
+            for result in results:
+                temp_res = result
+                df_full.append(temp_res[1])
+                df_running_avg.append(temp_res[2])
+                spike_count.append(temp_res[0])
+            pool.join()
+        #if we are not using multiprocessing
+        else:
+            for f in filelist:
+                temp_df_spike_count, temp_full_df, temp_running_bin = process_file(f, copy.deepcopy(param_dict), protocol_name)
+                spike_count.append(temp_df_spike_count)
+                df_full.append(temp_full_df)
+                df_running_avg.append(temp_running_bin)
+
+        #concatenate the dataframes
+        df_spike_count = pd.concat(spike_count, sort=True)
+        df_raw_out = pd.concat(df_full, sort=True)
+        df_running_avg_count = pd.concat(df_running_avg, sort=False)
+        return df_raw_out, df_spike_count, df_running_avg_count
+
+    def _parameters_to_dict(self) -> dict:
+        """Convert AnalysisParameters to dict for backward compatibility"""
+        param_dict = {}
+        
+        # Add common parameters
+        param_dict['start'] = self.get_parameter('start_time', 0.0)
+        param_dict['end'] = self.get_parameter('end_time', 0.0)
+        param_dict['filter'] = 0  # Default filter
+        
+        # Add extra parameters
+        for key, param in self._parameters.extra_params.items():
+            if hasattr(param, 'value'):
+                param_dict[key] = param.value
+            else:
+                param_dict[key] = param
+                
+        return param_dict
+    
+    def _populate_result(self, result: AnalysisResult, analysis_results: dict, data) -> None:
+        """
+        Populate the AnalysisResult with data from run_individual_analysis.
+        Override in subclasses for analysis-specific formatting.
+        """
+        # Add basic metadata
+        result.metadata['sweep_count'] = getattr(data, 'sweepCount', 1)
+        result.metadata['protocol'] = getattr(data, 'protocol', 'unknown')
+        
+        # This is a basic implementation - subclasses should override
+        # to properly format their specific results
+        if 'spike_df' in analysis_results and analysis_results['spike_df'] is not None:
+            # Convert spike data to summary format if needed
+            result.summary_data = self._convert_spike_data_to_summary(analysis_results['spike_df'])
+            
+        if 'subthres_df' in analysis_results and analysis_results['subthres_df'] is not None:
+            result.summary_data = analysis_results['subthres_df']
+    
+    def _convert_spike_data_to_summary(self, spike_df_dict) -> pd.DataFrame:
+        """
+        Convert spike dataframe dictionary to summary format.
+        Override in subclasses for specific formatting needs.
+        """
+        if not spike_df_dict:
+            return pd.DataFrame()
+            
+        # Simple implementation - just concatenate all sweeps
+        all_spikes = []
+        for sweep, df in spike_df_dict.items():
+            if not df.empty:
+                df_copy = df.copy()
+                df_copy['sweep'] = sweep
+                all_spikes.append(df_copy)
+                
+        if all_spikes:
+            return pd.concat(all_spikes, ignore_index=True)
+        else:
+            return pd.DataFrame()
+        
+    @property
+    def parameters(self) -> AnalysisParameters:
+        """Get the analysis parameters object"""
+        return self._parameters
+    
+    @parameters.setter
+    def parameters(self, value: AnalysisParameters) -> None:
+        """Set the analysis parameters object"""
+        if not isinstance(value, AnalysisParameters):
+            raise TypeError(
+                "Parameters must be an AnalysisParameters instance")
+        self._parameters = value
+    
+    def get_parameter(self, key: str, default: Any = None) -> Any:
+        """
+        Get a specific parameter value
+        
+        Args:
+            key: Parameter name
+            default: Default value if parameter not found
+            
+        Returns:
+            Parameter value or default
+        """
+        return self._parameters.get(key, default)
+    
+    def set_parameter(self, key: str, value: Any) -> None:
+        """
+        Set a specific parameter value
+        
+        Args:
+            key: Parameter name
+            value: Parameter value
+        """
+        self._parameters.set(key, value)
+    
+    def update_parameters(self, **kwargs) -> None:
+        """
+        Update multiple parameters at once
+        
+        Args:
+            **kwargs: Parameter key-value pairs
+        """
+        for key, value in kwargs.items():
+            self.set_parameter(key, value)
+    
+    def reset_parameters(self) -> None:
+        """Reset parameters to default values"""
+        self._parameters = AnalysisParameters()
+
     def get_ui_elements(self):
         """
-        Return a dictionary mapping UI element names to their expected types.
-        This helps the GUI know what controls to bind for this analysis.
+        Return a dictionary mapping UI element names to their expected types
+        and default values. This helps the GUI know what controls to bind
+        for this analysis.
         
         Returns:
             dict: {element_name: element_type, ...}
         """
-        pass
+        ui_params = {}
+        for param_name in self._parameters.list():
+            # param_type = self._parameters.get(param_name).param_type
+            # param_value = self._parameters.get(param_name).value
+            ui_params[param_name] = self._parameters.get(param_name)
+        return ui_params
     
     @abstractmethod
     def parse_ui_params(self, ui_elements):
@@ -107,8 +444,8 @@ class AnalysisModule:
         pass
     
     @abstractmethod
-    def run_individual_analysis(self, abf, selected_sweeps, param_dict, 
-                               popup=None, show_rejected=False):
+    def run_individual_analysis(self, abf, selected_sweeps, param_dict,
+                                popup=None, show_rejected=False):
         """
         Run analysis on a single file for preview/individual analysis.
         
@@ -124,21 +461,8 @@ class AnalysisModule:
         """
         pass
     
-    @abstractmethod
-    def run_batch_analysis(self, folder_path, param_dict, protocol_name):
-        """
-        Run analysis on a folder of files.
-        
-        Args:
-            folder_path: Path to folder containing files
-            param_dict: Analysis parameters
-            protocol_name: Protocol filter
-            
-        Returns:
-            tuple: (dataframes, summary_data) - format depends on analysis type
-        """
-        pass
     
+
     @abstractmethod
     def save_results(self, results, output_dir, output_tag, save_options=None):
         """
@@ -167,7 +491,8 @@ class AnalysisModule:
         return None
     
     def __str__(self):
-        return f"AnalysisModule(name='{self.name}', display_name='{self.display_name}')"
+        return (f"AnalysisModule(name='{self.name}', "
+                f"display_name='{self.display_name}')")
     
     def __repr__(self):
         return self.__str__()
