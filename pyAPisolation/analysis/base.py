@@ -14,6 +14,7 @@ import glob
 import logging
 import pyabf
 from ..dataset import cellData
+import copy
 logger = logging.getLogger(__name__)
 
 
@@ -171,6 +172,89 @@ class AnalysisResult:
         """Add a warning message"""
         self.warnings.append(warning)
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert result to a dictionary for serialization"""
+        return {
+            'analyzer_name': self.analyzer_name,
+            'file_path': self.file_path,
+            'success': self.success,
+            'summary_data': self.summary_data.to_dict() if self.summary_data is not None else None,
+            'detailed_data': self.detailed_data.to_dict() if self.detailed_data is not None else None,
+            'sweep_data': self.sweep_data.to_dict() if self.sweep_data is not None else None,
+            'metadata': self.metadata,
+            'errors': self.errors,
+            'warnings': self.warnings
+        }
+
+    def __add__(self, other: 'AnalysisResult') -> 'AnalysisResult':
+        """Combine two AnalysisResults"""
+        _detailed_df_list = []
+        _summary_df_list = []
+        _sweep_df_list = []
+        _file_paths = set()
+        _errors = []
+        for res in [self, other]:
+            if res.detailed_data is not None:
+                _detailed_df_list.append(res.detailed_data)
+            if res.summary_data is not None:
+                _summary_df_list.append(res.summary_data)
+            if res.sweep_data is not None:
+                _sweep_df_list.append(res.sweep_data)
+            if res.file_path:
+                _file_paths.add(res.file_path)
+            if res.errors:
+                _errors.extend(res.errors)
+
+        combined = AnalysisResult(
+            analyzer_name=self.analyzer_name,
+            file_path=_file_paths.pop() if _file_paths else None,
+            success=all(res.success for res in [self, other]),
+            summary_data=pd.concat(_summary_df_list) if _summary_df_list else None,
+            detailed_data=pd.concat(_detailed_df_list) if _detailed_df_list else None,
+            sweep_data=pd.concat(_sweep_df_list) if _sweep_df_list else None,
+            metadata={**self.metadata, **other.metadata},
+            errors=_errors,
+            warnings=self.warnings + other.warnings
+        )
+        return combined
+
+    @classmethod
+    def concatenate(cls, results: List['AnalysisResult']) -> 'AnalysisResult':
+        """Concatenate multiple AnalysisResults into one"""
+        if not results:
+            return cls(analyzer_name='NoAnalyzer', file_path='NoFile', success=False)
+        
+        _detailed_df_list = []
+        _summary_df_list = []
+        _sweep_df_list = []
+        _file_paths = []
+        _errors = []
+        for res in results:
+            if res.detailed_data is not None:
+                _detailed_df_list.append(res.detailed_data)
+            if res.summary_data is not None:
+                _summary_df_list.append(res.summary_data)
+            if res.sweep_data is not None:
+                _sweep_df_list.append(res.sweep_data)
+            if res.file_path:
+                _file_paths.append(res.file_path)
+            if res.errors:
+                _errors.extend(res.errors)
+
+        combined = AnalysisResult(
+            analyzer_name=results[0].analyzer_name if results else 'NoAnalyzer',
+            file_path=_file_paths,
+            success=all(res.success for res in results),
+            summary_data=pd.concat(_summary_df_list) if _summary_df_list else None,
+            detailed_data=pd.concat(_detailed_df_list) if _detailed_df_list else None,
+            sweep_data=pd.concat(_sweep_df_list) if _sweep_df_list else None,
+            metadata={},
+            errors=_errors,
+            warnings=[warning for res in results for warning in res.warnings]
+        )
+        
+        return combined
+
 
 class AnalysisModule:
     """
@@ -212,8 +296,8 @@ class AnalysisModule:
             file_path=file or getattr(celldata, 'filePath', 'unknown'),
             success=True
         )
-        
-        try:
+        if True:  # Uncomment to enable error handling
+        #try:
             # Update parameters with any kwargs
             if kwargs:
                 self.update_parameters(**kwargs)
@@ -240,13 +324,13 @@ class AnalysisModule:
                 popup=None, show_rejected=False
             )
             
-            # Convert results to standardized format
-            self._populate_result(result, analysis_results, data)
+           
             
-        except Exception as e:
-            result.add_error(f"Analysis failed: {str(e)}")
             
-        return result
+        #except Exception as e:
+        #    result.add_error(f"Analysis failed: {str(e)}")
+            
+        return analysis_results
     
     def run_batch_analysis(self, folder_path, param_dict=None, protocol_name=None):
         """
@@ -276,44 +360,30 @@ class AnalysisModule:
             logger.error('Folder_path must be a list of strings, a string, or a list of cellData objects')
             return None, None, None
         
-        #create our output dataframes
-        spike_count = []
-        df_full = []
-        df_running_avg = []
         #run the feature extractor
         n_jobs = param_dict.get('n_jobs', 1) if param_dict else 1
         if n_jobs > 1: #if we are using multiprocessing
             pool = mp.Pool(processes=n_jobs)
-            results = [pool.apply(process_file, args=(file, param_dict, protocol_name)) for file in filelist]
+            res = [pool.apply(self.analyze, args=(file, param_dict, protocol_name)) for file in filelist]
             pool.close()
-            ##split out the results
-            for result in results:
-                temp_res = result
-                df_full.append(temp_res[1])
-                df_running_avg.append(temp_res[2])
-                spike_count.append(temp_res[0])
+           
             pool.join()
         #if we are not using multiprocessing
         else:
             for f in filelist:
-                temp_df_spike_count, temp_full_df, temp_running_bin = process_file(f, copy.deepcopy(param_dict), protocol_name)
-                spike_count.append(temp_df_spike_count)
-                df_full.append(temp_full_df)
-                df_running_avg.append(temp_running_bin)
+                res = self.analyze(file=f, param_dict=copy.deepcopy(param_dict), protocol_name=protocol_name)
 
-        #concatenate the dataframes
-        df_spike_count = pd.concat(spike_count, sort=True)
-        df_raw_out = pd.concat(df_full, sort=True)
-        df_running_avg_count = pd.concat(df_running_avg, sort=False)
-        return df_raw_out, df_spike_count, df_running_avg_count
+        #now we combine the results, each is a analysis result
+        results = AnalysisResult.concatenate(res)
+        return results
 
     def _parameters_to_dict(self) -> dict:
         """Convert AnalysisParameters to dict for backward compatibility"""
         param_dict = {}
         
         # Add common parameters
-        param_dict['start'] = self.get_parameter('start_time', 0.0)
-        param_dict['end'] = self.get_parameter('end_time', 0.0)
+        param_dict['start'] = self.get_parameter('start_time', 0.0).value
+        param_dict['end'] = self.get_parameter('end_time', 0.0).value
         param_dict['filter'] = 0  # Default filter
         
         # Add extra parameters
@@ -335,25 +405,30 @@ class AnalysisModule:
         result.metadata['protocol'] = getattr(data, 'protocol', 'unknown')
         
         # This is a basic implementation - subclasses should override
-        # to properly format their specific results
-        if 'spike_df' in analysis_results and analysis_results['spike_df'] is not None:
-            # Convert spike data to summary format if needed
-            result.summary_data = self._convert_spike_data_to_summary(analysis_results['spike_df'])
-            
-        if 'subthres_df' in analysis_results and analysis_results['subthres_df'] is not None:
-            result.summary_data = analysis_results['subthres_df']
+        #just shove it through sweepwise
+        if isinstance(analysis_results, dict):
+            result.detailed_data = self._convert_data_to_summary(analysis_results.get('spike_df', {}))
+            result.summary_data = analysis_results.get('spike_summary', pd.DataFrame())
+            result.sweep_data = analysis_results.get('running_bin', pd.DataFrame())
+        else:
+            # If analysis_results is not a dict, assume it's a DataFrame
+            result.detailed_data = analysis_results
+            result.summary_data = pd.DataFrame()
+
+        
     
-    def _convert_spike_data_to_summary(self, spike_df_dict) -> pd.DataFrame:
+    def _convert_data_to_summary(self, df_dict=None) -> pd.DataFrame:
         """
         Convert spike dataframe dictionary to summary format.
         Override in subclasses for specific formatting needs.
         """
-        if not spike_df_dict:
+        if df_dict is None or not isinstance(df_dict, dict) or not isinstance(df_dict, pd.DataFrame):
+            logger.warning("No spike data provided or data is not a dictionary")
             return pd.DataFrame()
-            
+
         # Simple implementation - just concatenate all sweeps
         all_spikes = []
-        for sweep, df in spike_df_dict.items():
+        for sweep, df in df_dict.items():
             if not df.empty:
                 df_copy = df.copy()
                 df_copy['sweep'] = sweep

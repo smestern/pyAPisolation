@@ -111,12 +111,13 @@ def test_modular_analysis():
     df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
 
     # Run the feature extractor
-    spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), DEFAULT_DICT)
+    #spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), DEFAULT_DICT)
 
     # Initialize the SpikeAnalysisModule
     spike_analysis_module = SpikeAnalysisModule()
     spike_analysis_module.run_batch_analysis(os.path.expanduser('~/Dropbox/sara_cell_v2'))
-
+    # Get the results
+    results = spike_analysis_module.get_results()
 
 
 if __name__ == '__main__':

@@ -65,15 +65,13 @@ class SpikeAnalysisModule(AnalysisModule):
             'thresh_frac': thresh_frac
         }
     
-    def run_individual_analysis(self, abf, selected_sweeps, param_dict,
+    def run_individual_analysis(self, file, selected_sweeps, param_dict,
                                 popup=None, show_rejected=False):
         # Import here to avoid circular imports
         from ipfx.feature_extractor import SpikeFeatureExtractor
         from ..featureExtractor import determine_rejected_spikes
+        from ..featureExtractor import process_file as legacy_analyze
         
-        if selected_sweeps is None:
-            selected_sweeps = abf.sweepList
-            
         # Use both legacy param_dict and new parameters system
         # Prefer param_dict for backward compatibility
         temp_param_dict = copy.deepcopy(param_dict)
@@ -98,39 +96,15 @@ class SpikeAnalysisModule(AnalysisModule):
             
         temp_param_dict = copy.deepcopy(param_dict)
         
-        # Adjust end time if needed
-        if temp_param_dict['end'] == 0.0 or temp_param_dict['end'] > abf.sweepX[-1]:
-            temp_param_dict['end'] = abf.sweepX[-1]
+        #drop param_dict keys that are not used
+        protocol = temp_param_dict.pop("protocol_name", None)
+        temp_param_dict.pop("param_dict", None)
+        res = legacy_analyze(file, param_dict=temp_param_dict, protocol_name=protocol)
 
-        spike_extractor = SpikeFeatureExtractor(
-            filter=0,  
-            dv_cutoff=temp_param_dict['dv_cutoff'],
-            max_interval=temp_param_dict['max_interval'], 
-            min_height=temp_param_dict['min_height'], 
-            min_peak=temp_param_dict['min_peak'], 
-            start=temp_param_dict['start'], 
-            end=temp_param_dict['end'], 
-            thresh_frac=temp_param_dict['thresh_frac']
-        )
-        
-        spike_df = {}
-        rejected_spikes = {} if show_rejected else None
-        
-        for sweep in selected_sweeps:
-            abf.setSweep(sweep)
-            spike_df[sweep] = spike_extractor.process(abf.sweepX, abf.sweepY, abf.sweepC)
-            
-            if show_rejected:
-                rejected_spikes[sweep] = pd.DataFrame().from_dict(
-                    determine_rejected_spikes(spike_extractor, spike_df[sweep], 
-                                            abf.sweepY, abf.sweepX, temp_param_dict)).T
-            
-            if popup:
-                popup.setValue(sweep)
-        
         return {
-            'spike_df': spike_df,
-            'rejected_spikes': rejected_spikes,
+            'spike_df': res[1],
+            'spike_summary': res[0],
+            'running_bin': res[2],
             'subthres_df': None
         }
     
@@ -145,6 +119,34 @@ class SpikeAnalysisModule(AnalysisModule):
                         save_options.get('spike_find', True),
                         save_options.get('running_bin', True), 
                         save_options.get('raw_data', True))
+
+    def get_results(self, results):
+        """
+        Convert results to standardized format
+        """
+        spike_df = results['spike_df']
+        rejected_spikes = results.get('rejected_spikes', None)
+        
+        # Convert to DataFrame if needed
+        if isinstance(spike_df, dict):
+            spike_df = pd.DataFrame.from_dict(spike_df, orient='index')
+        
+        return {
+            'detailed_data': spike_df,
+            'summary_data': rejected_spikes
+        }
+
+    def _populate_result(self, result, analysis_results, data):
+        """
+        Populate AnalysisResult with data from analysis_results.
+        """
+        #in our case, this is specific to spikes
+        result.detailed_data = self.analysis_results['spike_df']
+        result.summary_data = self.analysis_results.get('spike_summary', None)
+        if 'running_bin' in analysis_results and analysis_results['running_bin'] is not None:
+            result.additional_data['running_bin'] = analysis_results['running_bin']
+        return result
+
 
 
 class SubthresholdAnalysisModule(AnalysisModule):
