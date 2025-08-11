@@ -1042,18 +1042,18 @@ class FileSelectionPage(QWizardPage):
         layout.addWidget(self.remove_button)
         
         self.file_list.itemSelectionChanged.connect(self.updateRemoveButton)
+        self.file_list.item()
         
         self.setLayout(layout)
         
     def browseFiles(self):
-        """Browse for individual CSV files"""
+        """Browse for individual CSV or XLSX files"""
         files, _ = QFileDialog.getOpenFileNames(
             self,
-            "Select CSV Files",
+            "Select Data Files",
             "",
-            "CSV Files (*.csv);;All Files (*)"
+            "Data Files (*.csv *.xlsx);;CSV Files (*.csv);;Excel Files (*.xlsx);;All Files (*)"
         )
-        
         if files:
             wizard = self.wizard()
             for file_path in files:
@@ -1065,18 +1065,16 @@ class FileSelectionPage(QWizardPage):
                     self.file_list.addItem(item)
             
     def browseFolder(self):
-        """Browse for a folder containing CSV files"""
-        folder = QFileDialog.getExistingDirectory(self, "Select Folder Containing CSV Files")
-        
+        """Browse for a folder containing CSV or XLSX files"""
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder Containing Data Files")
         if folder:
-            csv_files = []
+            data_files = []
             for file in os.listdir(folder):
-                if file.endswith('.csv'):
-                    csv_files.append(os.path.join(folder, file))
-            
-            if csv_files:
+                if file.lower().endswith('.csv') or file.lower().endswith('.xlsx'):
+                    data_files.append(os.path.join(folder, file))
+            if data_files:
                 wizard = self.wizard()
-                for file_path in csv_files:
+                for file_path in data_files:
                     if file_path not in wizard.csv_files:
                         wizard.csv_files.append(file_path)
                         item = QListWidgetItem(os.path.basename(file_path))
@@ -1084,7 +1082,7 @@ class FileSelectionPage(QWizardPage):
                         item.setToolTip(file_path)
                         self.file_list.addItem(item)
             else:
-                QMessageBox.information(self, "No CSV Files", "No CSV files found in the selected folder.")
+                QMessageBox.information(self, "No Data Files", "No CSV or XLSX files found in the selected folder.")
     
     def removeSelected(self):
         """Remove selected files from the list"""
@@ -1137,22 +1135,24 @@ class PreviewPage(QWizardPage):
     def initializePage(self):
         """Initialize the page when entering"""
         wizard = self.wizard()
-        
         # Clear and populate file combo
         self.file_combo.clear()
         for file_path in wizard.csv_files:
             self.file_combo.addItem(os.path.basename(file_path), file_path)
-        
         # Load preview data for all files
         wizard.preview_data = {}
         for file_path in wizard.csv_files:
             try:
-                df = pd.read_csv(file_path, nrows=10)  # Preview first 10 rows
+                if file_path.lower().endswith('.csv'):
+                    df = pd.read_csv(file_path, nrows=10)
+                elif file_path.lower().endswith('.xlsx'):
+                    df = pd.read_excel(file_path, nrows=10)
+                else:
+                    continue
                 wizard.preview_data[file_path] = df
             except Exception as e:
                 QMessageBox.warning(self, "Preview Error", 
                                   f"Could not preview file {os.path.basename(file_path)}:\n{str(e)}")
-        
         # Update preview for first file
         if wizard.csv_files:
             self.updatePreview()
