@@ -303,32 +303,32 @@ class ModernAnalysisGUI(analysis_gui):
         analysis_type = self.get_current_analysis()
         parameters = self._create_analysis_parameters()
         
-        try:
-            # Get analyzer
-            analyzer = registry.get_analyzer(analysis_type)
+        #try:
+        # Get analyzer
+        analyzer = registry.get_analyzer(analysis_type)
+        
+        # Run analysis
+        result = analyzer.analyze(file=self.abf.abfFilePath, parameters=parameters)
+
+        if result.success:
+            # Store results in legacy format for compatibility
+            if analysis_type == 'spike':
+                self.spike_df = self._convert_spike_results_to_legacy(result)
+                self.subthres_df = None
+            elif analysis_type == 'subthreshold':
+                self.subthres_df = result.detailed_data
+                self.spike_df = None
             
-            # Run analysis
-            result = analyzer.analyze(file=self.abf.abfFilePath, **parameters)
+            # Store modern results
+            self.current_results = [result]
             
-            if result.success:
-                # Store results in legacy format for compatibility
-                if analysis_type == 'spike':
-                    self.spike_df = self._convert_spike_results_to_legacy(result)
-                    self.subthres_df = None
-                elif analysis_type == 'subthreshold':
-                    self.subthres_df = result.detailed_data
-                    self.spike_df = None
+        else:
+            print(f"Analysis failed: {'; '.join(result.errors)}")
                 
-                # Store modern results
-                self.current_results = [result]
-                
-            else:
-                print(f"Analysis failed: {'; '.join(result.errors)}")
-                
-        except Exception as e:
-            print(f"Error in modern analysis: {e}")
-            # Fallback to legacy method
-            self.run_indiv_analysis()
+        #except Exception as e:
+        print(f"Error in modern analysis: {e}")
+        # Fallback to legacy method
+        self.run_indiv_analysis()
 
     
     def run_batch_analysis_modern(self):
@@ -374,7 +374,10 @@ class ModernAnalysisGUI(analysis_gui):
         
         # Add analysis-specific parameters
         analysis_type = self.get_current_analysis()
-        
+        analyzer = registry.get_analyzer(analysis_type)
+        _internal = analyzer.parameters
+
+        #legacy parameters
         if analysis_type == 'spike':
             parameters.extra_params.update({
                 'dv_cutoff': float(self.dvdt_thres.text()) if hasattr(self, 'dvdt_thres') else 7.0,
@@ -403,6 +406,18 @@ class ModernAnalysisGUI(analysis_gui):
                 except:
                     pass
         
+        else:
+            # Get the widgets
+            # Update the parameters with the internals
+            parameters.extra_params.update(_internal.extra_params)
+            for p, a in self.parameter_widgets.items():
+                if "_label" in p:
+                    continue  # Skip labels
+                if p in _internal or p in parameters:
+                    parameters[p] = a.value()
+                if p in parameters.extra_params or p in _internal.extra_params:
+                    parameters.extra_params[p] = a.value()
+
         return parameters
     
     def _convert_spike_results_to_legacy(self, result: AnalysisResult) -> Dict[int, Any]:

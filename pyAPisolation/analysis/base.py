@@ -144,6 +144,41 @@ class AnalysisParameters:
             temp_parameter = Parameter(name=key, param_type=type(value), value=value)
             self.extra_params[key] = temp_parameter
 
+    # --- Dict-like behavior ---
+    def __getitem__(self, key):
+        if hasattr(self, key):
+            return getattr(self, key)
+        elif key in self.extra_params:
+            return self.extra_params[key]
+        else:
+            raise KeyError(key)
+
+    def __setitem__(self, key, value):
+        if hasattr(self, key):
+            setattr(self, key, value)
+        else:
+            temp_parameter = Parameter(name=key, param_type=type(value), value=value)
+            self.extra_params[key] = temp_parameter
+
+    def __contains__(self, key):
+        return hasattr(self, key) or key in self.extra_params
+
+    def __iter__(self):
+        for k in self.__dataclass_fields__:
+            if k != "extra_params":
+                yield k
+        for k in self.extra_params:
+            yield k
+
+    def keys(self):
+        return list(iter(self))
+
+    def values(self):
+        return [self[k] for k in self]
+
+    def items(self):
+        return [(k, self[k]) for k in self]
+
 
 @dataclass
 class AnalysisResult:
