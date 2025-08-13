@@ -1042,10 +1042,11 @@ class FileSelectionPage(QWizardPage):
         layout.addWidget(self.remove_button)
         
         self.file_list.itemSelectionChanged.connect(self.updateRemoveButton)
-        self.file_list.item()
+        
         
         self.setLayout(layout)
-        
+        self.registerField("file_list*", self.file_list)
+
     def browseFiles(self):
         """Browse for individual CSV or XLSX files"""
         files, _ = QFileDialog.getOpenFileNames(
