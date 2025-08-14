@@ -99,107 +99,166 @@ class InteractiveEPSCPlotter:
         self.first_instances = [fi.copy() if fi is not None else None for fi in first_instances]
         self.baseline = baseline
         self.stim_time = stim_time
-        self.factor_ = 30
+        self.current_sweep = 0
         self.deleted_points = {i: [] for i in range(len(first_instances))}
         
-        self.fig, self.ax = plt.subplots(1, 2, figsize=(12, 8), sharey=True)
-        self.fig.suptitle('Interactive EPSC Analysis - Click on red dots to delete them')
+        self.fig, self.ax = plt.subplots(1, 2, figsize=(14, 8), sharey=True)
+        self.update_title()
         
         # Store plot elements for updating
-        self.data_lines = []
         self.threshold_points = []
-        self.threshold_lines = []
-        self.rearm_lines = []
         
-        self.setup_plot()
         self.fig.canvas.mpl_connect('button_press_event', self.on_click)
+        self.fig.canvas.mpl_connect('key_press_event', self.on_key_press)
         
         # Add control buttons
         self.add_controls()
+        self.setup_plot()
+        
+    def update_title(self):
+        """Update the plot title with current sweep information"""
+        total_sweeps = len(self.abf.sweepList)
+        orig_count = len(self.original_first_instances[self.current_sweep]) if self.original_first_instances[self.current_sweep] is not None else 0
+        curr_count = len(self.first_instances[self.current_sweep]) if self.first_instances[self.current_sweep] is not None else 0
+        
+        title = f'Interactive EPSC Analysis - Sweep {self.current_sweep + 1}/{total_sweeps} | '
+        title += f'Detections: {curr_count}/{orig_count} | '
+        title += f'Click red dots to delete | Arrow keys: prev/next sweep'
+        self.fig.suptitle(title)
         
     def setup_plot(self):
-        """Initialize the plot with all sweeps"""
+        """Initialize the plot with current sweep"""
         self.ax[0].clear()
         self.ax[1].clear()
+        self.threshold_points = []
         
-        for x in self.abf.sweepList:
-            self.abf.setSweep(x)
-            first_inst_temp = self.first_instances[x]
-            data = self.abf.sweepY
-            
-            # Baseline the data by taking the slope of the sweep
-            baseline_slope = np.polyfit(self.abf.sweepX, data, 1)
-            baseline_intercept = baseline_slope[1]
-            data = data - (baseline_slope[0] * self.abf.sweepX + baseline_intercept)
-            
-            factor = x * self.factor_
-            
-            # Plot data
-            line1, = self.ax[0].plot(self.abf.sweepX, data + factor, label=f'Sweep {x}', c='k', alpha=0.7)
-            line2, = self.ax[1].plot(self.abf.sweepX, data + factor, label=f'Sweep {x}', c='k', alpha=0.7)
-            
-            # Plot threshold crossings if they exist
-            if first_inst_temp is not None and len(first_inst_temp) > 0:
-                points1, = self.ax[0].plot(self.abf.sweepX[first_inst_temp], data[first_inst_temp] + factor, 
-                                         'ro', markersize=8, picker=True, pickradius=10, label='Detections')
-                points2, = self.ax[1].plot(self.abf.sweepX[first_inst_temp], data[first_inst_temp] + factor, 
-                                         'ro', markersize=8, picker=True, pickradius=10, label='Detections')
-                # Store sweep index in the artist for identification
-                points1.sweep_idx = x
-                points2.sweep_idx = x
-                self.threshold_points.extend([points1, points2])
-            
-            # Plot threshold and rearm lines
-            thresh_line1 = self.ax[0].axhline(y=-7+factor, color='r', linestyle='--', alpha=0.5, label='Threshold')
-            thresh_line2 = self.ax[1].axhline(y=-7+factor, color='r', linestyle='--', alpha=0.5, label='Threshold')
-            rearm_line1 = self.ax[0].axhline(y=-2+factor, color='g', linestyle='--', alpha=0.5, label='Rearm')
-            rearm_line2 = self.ax[1].axhline(y=-2+factor, color='g', linestyle='--', alpha=0.5, label='Rearm')
+        # Get current sweep data
+        self.abf.setSweep(self.current_sweep)
+        first_inst_temp = self.first_instances[self.current_sweep]
+        data = self.abf.sweepY
+        
+        # Baseline the data by taking the slope of the sweep
+        baseline_slope = np.polyfit(self.abf.sweepX, data, 1)
+        baseline_intercept = baseline_slope[1]
+        data = data - (baseline_slope[0] * self.abf.sweepX + baseline_intercept)
+        
+        # Plot data
+        self.ax[0].plot(self.abf.sweepX, data, 'k-', linewidth=1.5, label=f'Sweep {self.current_sweep + 1}')
+        self.ax[1].plot(self.abf.sweepX, data, 'k-', linewidth=1.5, label=f'Sweep {self.current_sweep + 1}')
+        
+        # Plot threshold crossings if they exist
+        if first_inst_temp is not None and len(first_inst_temp) > 0:
+            points1, = self.ax[0].plot(self.abf.sweepX[first_inst_temp], data[first_inst_temp], 
+                                     'ro', markersize=10, picker=True, pickradius=15, 
+                                     label=f'Detections ({len(first_inst_temp)})', zorder=5)
+            points2, = self.ax[1].plot(self.abf.sweepX[first_inst_temp], data[first_inst_temp], 
+                                     'ro', markersize=10, picker=True, pickradius=15,
+                                     label=f'Detections ({len(first_inst_temp)})', zorder=5)
+            # Store sweep index in the artist for identification
+            points1.sweep_idx = self.current_sweep
+            points2.sweep_idx = self.current_sweep
+            self.threshold_points.extend([points1, points2])
+        
+        # Plot threshold and rearm lines
+        self.ax[0].axhline(y=-7, color='r', linestyle='--', alpha=0.7, linewidth=2, label='Threshold (-7 pA)')
+        self.ax[1].axhline(y=-7, color='r', linestyle='--', alpha=0.7, linewidth=2, label='Threshold (-7 pA)')
+        self.ax[0].axhline(y=-2, color='g', linestyle='--', alpha=0.7, linewidth=2, label='Rearm (-2 pA)')
+        self.ax[1].axhline(y=-2, color='g', linestyle='--', alpha=0.7, linewidth=2, label='Rearm (-2 pA)')
         
         # Set plot limits and labels
         self.ax[0].set_xlim(self.baseline[0] - 0.01, self.baseline[1] + 0.01)
-        self.ax[0].set_title('Baseline Period')
+        self.ax[0].set_title('Baseline Period', fontsize=12, fontweight='bold')
         self.ax[0].set_xlabel('Time (s)')
         self.ax[0].set_ylabel('Current (pA)')
+        self.ax[0].grid(True, alpha=0.3)
+        self.ax[0].legend(loc='upper right', fontsize=10)
         
         self.ax[1].set_xlim(self.stim_time[0] - 0.01, self.stim_time[1] + 0.01)
-        self.ax[1].set_title('Stimulation Period')
+        self.ax[1].set_title('Stimulation Period', fontsize=12, fontweight='bold')
         self.ax[1].set_xlabel('Time (s)')
-        self.ax[1].axvline(x=self.stim_time[0], color='b', linestyle='--', alpha=0.7, label='Stim Start')
-        self.ax[1].axvline(x=self.stim_time[1], color='b', linestyle='--', alpha=0.7, label='Stim End')
+        self.ax[1].axvline(x=self.stim_time[0], color='b', linestyle='--', alpha=0.7, linewidth=2, label='Stim Start')
+        self.ax[1].axvline(x=self.stim_time[1], color='b', linestyle='--', alpha=0.7, linewidth=2, label='Stim End')
+        self.ax[1].grid(True, alpha=0.3)
+        self.ax[1].legend(loc='upper right', fontsize=10)
         
-        max_sweep = len(self.abf.sweepList) - 1
-        self.ax[1].set_ylim(-100, (max_sweep * self.factor_) + 10)
+        # Auto-scale y-axis with some padding
+        y_min, y_max = np.min(data), np.max(data)
+        y_range = y_max - y_min
+        padding = y_range * 0.1
+        self.ax[0].set_ylim(y_min - padding, y_max + padding)
+        self.ax[1].set_ylim(y_min - padding, y_max + padding)
         
         plt.tight_layout()
+        self.update_title()
         
     def add_controls(self):
         """Add control buttons to the plot"""
         from matplotlib.widgets import Button
         
         # Create button axes
-        ax_reset = plt.axes([0.02, 0.02, 0.1, 0.04])
-        ax_save = plt.axes([0.15, 0.02, 0.1, 0.04])
-        ax_stats = plt.axes([0.28, 0.02, 0.1, 0.04])
+        ax_prev = plt.axes([0.02, 0.02, 0.08, 0.04])
+        ax_next = plt.axes([0.12, 0.02, 0.08, 0.04])
+        ax_reset = plt.axes([0.22, 0.02, 0.08, 0.04])
+        ax_reset_all = plt.axes([0.32, 0.02, 0.08, 0.04])
+        ax_stats = plt.axes([0.42, 0.02, 0.08, 0.04])
+        ax_save = plt.axes([0.52, 0.02, 0.08, 0.04])
         
         # Create buttons
+        self.button_prev = Button(ax_prev, '← Prev')
+        self.button_next = Button(ax_next, 'Next →')
         self.button_reset = Button(ax_reset, 'Reset')
-        self.button_save = Button(ax_save, 'Save')
+        self.button_reset_all = Button(ax_reset_all, 'Reset All')
         self.button_stats = Button(ax_stats, 'Stats')
+        self.button_save = Button(ax_save, 'Save')
         
         # Connect button events
-        self.button_reset.on_clicked(self.reset_deletions)
-        self.button_save.on_clicked(self.save_results)
+        self.button_prev.on_clicked(self.prev_sweep)
+        self.button_next.on_clicked(self.next_sweep)
+        self.button_reset.on_clicked(self.reset_current_sweep)
+        self.button_reset_all.on_clicked(self.reset_all_deletions)
         self.button_stats.on_clicked(self.show_stats)
+        self.button_save.on_clicked(self.save_results)
+        
+    def on_key_press(self, event):
+        """Handle keyboard navigation"""
+        if event.key == 'left':
+            self.prev_sweep(None)
+        elif event.key == 'right':
+            self.next_sweep(None)
+        elif event.key == 'r':
+            self.reset_current_sweep(None)
+        elif event.key == 's':
+            self.show_stats(None)
+            
+    def prev_sweep(self, event):
+        """Go to previous sweep"""
+        if self.current_sweep > 0:
+            self.current_sweep -= 1
+            self.setup_plot()
+            self.fig.canvas.draw()
+        
+    def next_sweep(self, event):
+        """Go to next sweep"""
+        if self.current_sweep < len(self.abf.sweepList) - 1:
+            self.current_sweep += 1
+            self.setup_plot()
+            self.fig.canvas.draw()
         
     def on_click(self, event):
         """Handle click events on the plot"""
         if event.inaxes not in self.ax:
             return
             
+        # Only process left clicks for deletion
+        if event.button != 1:
+            return
+
+        # Only process clicks for the current sweep
+        sweep_idx = self.current_sweep
+        
         # Check if click was on a threshold point
         for artist in self.threshold_points:
-            if artist.contains(event)[0]:
-                sweep_idx = artist.sweep_idx
+            if artist.contains(event)[0] and artist.sweep_idx == sweep_idx:
                 
                 # Find which point was clicked
                 if self.first_instances[sweep_idx] is not None:
@@ -207,39 +266,57 @@ class InteractiveEPSCPlotter:
                     
                     # Get click coordinates
                     click_time = event.xdata
-                    click_y = event.ydata
                     
                     # Find closest detection point
                     detection_times = self.abf.sweepX[self.first_instances[sweep_idx]]
                     if len(detection_times) > 0:
                         closest_idx = np.argmin(np.abs(detection_times - click_time))
-                        point_to_delete = self.first_instances[sweep_idx][closest_idx]
                         
-                        # Remove the point
-                        self.deleted_points[sweep_idx].append(point_to_delete)
-                        self.first_instances[sweep_idx] = np.delete(self.first_instances[sweep_idx], closest_idx)
-                        
-                        print(f"Deleted point at time {detection_times[closest_idx]:.4f}s in sweep {sweep_idx}")
-                        
-                        # Update the plot
-                        self.update_plot()
-                        break
+                        # Only delete if click is reasonably close to a point
+                        if np.abs(detection_times[closest_idx] - click_time) < 0.01:
+                            point_to_delete = self.first_instances[sweep_idx][closest_idx]
+                            
+                            # Remove the point
+                            self.deleted_points[sweep_idx].append(point_to_delete)
+                            self.first_instances[sweep_idx] = np.delete(
+                                self.first_instances[sweep_idx], closest_idx)
+                            
+                            print(f"Deleted point at time {detection_times[closest_idx]:.4f}s "
+                                  f"in sweep {sweep_idx + 1}")
+                            
+                            # Update the plot
+                            self.setup_plot()
+                            self.fig.canvas.draw()
+                            break
     
+        
     def update_plot(self):
-        """Update the plot after deletion"""
+        """Update the plot after changes"""
         self.setup_plot()
         self.fig.canvas.draw()
         
-    def reset_deletions(self, event):
-        """Reset all deletions"""
-        self.first_instances = [fi.copy() if fi is not None else None for fi in self.original_first_instances]
+    def reset_current_sweep(self, event):
+        """Reset deletions for current sweep only"""
+        sweep_idx = self.current_sweep
+        if self.original_first_instances[sweep_idx] is not None:
+            self.first_instances[sweep_idx] = self.original_first_instances[sweep_idx].copy()
+            self.deleted_points[sweep_idx] = []
+            print(f"Reset deletions for sweep {sweep_idx + 1}")
+            self.setup_plot()
+            self.fig.canvas.draw()
+        
+    def reset_all_deletions(self, event):
+        """Reset all deletions across all sweeps"""
+        self.first_instances = [fi.copy() if fi is not None else None 
+                               for fi in self.original_first_instances]
         self.deleted_points = {i: [] for i in range(len(self.first_instances))}
-        print("Reset all deletions")
-        self.update_plot()
+        print("Reset all deletions across all sweeps")
+        self.setup_plot()
+        self.fig.canvas.draw()
         
     def save_results(self, event):
-        """Save the current state"""
-        print("Current first instances saved to self.first_instances")
+        """Save the current state and show summary"""
+        print("\n=== Results Saved ===")
         self.show_stats(None)
         
     def show_stats(self, event):
@@ -249,16 +326,31 @@ class InteractiveEPSCPlotter:
         total_deleted = total_original - total_current
         
         print(f"\n=== Detection Statistics ===")
-        print(f"Original detections: {total_original}")
-        print(f"Current detections: {total_current}")
-        print(f"Deleted detections: {total_deleted}")
+        print(f"Total original detections: {total_original}")
+        print(f"Total current detections: {total_current}")
+        print(f"Total deleted detections: {total_deleted}")
+        print(f"\nCurrent sweep: {self.current_sweep + 1}/{len(self.abf.sweepList)}")
         
+        # Show current sweep stats
+        orig_count = len(self.original_first_instances[self.current_sweep]) if self.original_first_instances[self.current_sweep] is not None else 0
+        curr_count = len(self.first_instances[self.current_sweep]) if self.first_instances[self.current_sweep] is not None else 0
+        print(f"Current sweep detections: {curr_count}/{orig_count} ({orig_count - curr_count} deleted)")
+        
+        # Show summary for all sweeps with changes
+        changed_sweeps = []
         for sweep_idx in range(len(self.first_instances)):
             orig_count = len(self.original_first_instances[sweep_idx]) if self.original_first_instances[sweep_idx] is not None else 0
             curr_count = len(self.first_instances[sweep_idx]) if self.first_instances[sweep_idx] is not None else 0
-            if orig_count > 0 or curr_count > 0:
-                print(f"Sweep {sweep_idx}: {orig_count} -> {curr_count} ({orig_count - curr_count} deleted)")
-        print("=" * 28)
+            if orig_count != curr_count:
+                changed_sweeps.append((sweep_idx, orig_count, curr_count))
+        
+        if changed_sweeps:
+            print(f"\nSweeps with changes:")
+            for sweep_idx, orig, curr in changed_sweeps:
+                print(f"  Sweep {sweep_idx + 1}: {orig} -> {curr} ({orig - curr} deleted)")
+        else:
+            print("\nNo changes made yet.")
+        print("=" * 35)
         
     def get_results(self):
         """Return the current first instances"""
@@ -295,9 +387,11 @@ def process_file(file_path, interactive=False):
         # Use interactive plotting for manual curation
         print(f"Opening interactive plot for {file_path}")
         print("Instructions:")
+        print("- Use arrow keys or buttons to navigate between sweeps")
         print("- Click on red dots to delete false positive detections")
-        print("- Use 'Reset' button to restore all deletions")
-        print("- Use 'Stats' button to see detection counts") 
+        print("- Use 'Reset' button to restore deletions for current sweep")
+        print("- Use 'Reset All' button to restore all deletions")
+        print("- Use 'Stats' button to see detection counts")
         print("- Close the plot window when finished")
         
         sweep_first = plot_file_interactive(abf, sweep_first, baseline, stim_time)
@@ -326,21 +420,6 @@ def process_file(file_path, interactive=False):
     return return_dict
 
 
-# Test function for interactive plotting
-def test_interactive_plot(file_path=None):
-    """Test the interactive EPSC plotter with a single file"""
-    if file_path is None:
-        file_path = FILE_PATH
-    
-    print(f"Testing interactive plot with: {file_path}")
-    results = process_file(file_path, interactive=True)
-    return results
-
-
-# %%
-import glob
-import pandas as pd
-import os
 
 XLSX_files = "Z:\\Molsrv\\Julia\\Data\\Opto\\Opto Perifornical for Grant_2025\\FILENAMES_Opto Perifornical_for_Yehor.xlsx"
 ABF_ROOT = "Z:\\Molsrv\\Julia\\Data\\Opto\\Opto Perifornical for Grant_2025\\ALL FILES\\"
@@ -352,7 +431,7 @@ xls = xls[xls['Postsynaptic'] != "PS"]
 print(xls.head())
 pp_files = xls['PP (20 ms)'].tolist()
 # Process files (set interactive=True for manual curation)
-INTERACTIVE_MODE = False  # Set to True for interactive processing
+INTERACTIVE_MODE = True # Set to True for interactive processing
 
 result_dict = {}
 for file in pp_files:
@@ -367,10 +446,7 @@ for file in pp_files:
     else:
         print(f"!!!! File not found: {file_path} !!!!")
     
-    # Break after first file if in interactive mode for testing
-    if INTERACTIVE_MODE:
-        print("Interactive mode - processing only first file for testing")
-        break
+
 
 
 # %%
