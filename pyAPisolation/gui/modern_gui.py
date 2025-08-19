@@ -427,7 +427,7 @@ class ModernAnalysisGUI(analysis_gui):
         legacy_dict = {}
         
         if result.detailed_data is not None and not result.detailed_data.empty:
-            # Group by sweep if sweep information is available
+            # Group by sweep if sweep information is available 
             # For now, just use sweep 0
             legacy_dict[0] = result.detailed_data
         
