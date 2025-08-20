@@ -1,13 +1,113 @@
 from . import prism_writer
 print("Loaded basic libraries; importing QT")
 from PySide2.QtWidgets import (QApplication, QWidget, QFileDialog, QVBoxLayout,
-    QHBoxLayout, QPushButton, QListWidget, QAbstractItemView, QLabel, 
-    QLineEdit, QGroupBox, QTextEdit, QTableWidget, QTableWidgetItem, 
-    QSplitter, QFrame)
-from PySide2.QtCore import Qt
+    QHBoxLayout, QPushButton, QListWidget, QLabel,
+    QLineEdit, QGroupBox, QTextEdit, QTableWidget, QTableWidgetItem,
+    QSplitter, QFrame, QComboBox, QDialog, QCheckBox, QScrollArea)
+from PySide2.QtCore import Qt, Signal
 import pandas as pd
 import copy
 import os
+
+
+class MultiSelectPopup(QPushButton):
+    """A button that opens a popup for multi-selection"""
+    selectionChanged = Signal()
+    
+    def __init__(self, placeholder_text="Select items..."):
+        super().__init__()
+        self.placeholder_text = placeholder_text
+        self.selected_items = []
+        self.available_items = []
+        self.setText(placeholder_text)
+        self.clicked.connect(self.show_popup)
+    
+    def set_items(self, items):
+        """Set available items for selection"""
+        self.available_items = items
+        self.selected_items = []
+        self.update_button_text()
+    
+    def set_selected_items(self, selected):
+        """Set currently selected items"""
+        self.selected_items = [item for item in selected if item in self.available_items]
+        self.update_button_text()
+    
+    def get_selected_items(self):
+        """Get currently selected items"""
+        return self.selected_items.copy()
+    
+    def clear_selection(self):
+        """Clear all selections"""
+        self.selected_items = []
+        self.update_button_text()
+        self.selectionChanged.emit()
+    
+    def update_button_text(self):
+        """Update button text based on selection"""
+        if not self.selected_items:
+            self.setText(self.placeholder_text)
+        elif len(self.selected_items) == 1:
+            # Remove [NUM]/[CAT] prefix for display
+            clean_name = self.selected_items[0].split(' ', 1)[-1]
+            self.setText(clean_name)
+        else:
+            # Show count of selected items
+            self.setText(f"{len(self.selected_items)} items selected")
+    
+    def show_popup(self):
+        """Show the multi-selection popup"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Select Items")
+        dialog.setModal(True)
+        dialog.resize(300, 400)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # Scroll area for checkboxes
+        scroll_area = QScrollArea()
+        scroll_widget = QWidget()
+        scroll_layout = QVBoxLayout(scroll_widget)
+        
+        checkboxes = []
+        for item in self.available_items:
+            checkbox = QCheckBox(item)
+            checkbox.setChecked(item in self.selected_items)
+            checkboxes.append(checkbox)
+            scroll_layout.addWidget(checkbox)
+        
+        scroll_widget.setLayout(scroll_layout)
+        scroll_area.setWidget(scroll_widget)
+        layout.addWidget(scroll_area)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        clear_button = QPushButton("Clear All")
+        clear_button.clicked.connect(lambda: self.clear_all_checkboxes(checkboxes))
+        button_layout.addWidget(clear_button)
+        
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(dialog.accept)
+        button_layout.addWidget(ok_button)
+        
+        cancel_button = QPushButton("Cancel")
+        cancel_button.clicked.connect(dialog.reject)
+        button_layout.addWidget(cancel_button)
+        
+        layout.addLayout(button_layout)
+        
+        if dialog.exec_() == QDialog.Accepted:
+            # Update selection
+            self.selected_items = [cb.text() for cb in checkboxes if cb.isChecked()]
+            self.update_button_text()
+            self.selectionChanged.emit()
+    
+    def clear_all_checkboxes(self, checkboxes):
+        """Clear all checkboxes in the popup"""
+        for checkbox in checkboxes:
+            checkbox.setChecked(False)
+
 
 class PrismWriterGUI(QWidget):
     def __init__(self):
@@ -113,10 +213,18 @@ class PrismWriterGUI(QWidget):
         main_group_frame = QFrame()
         main_layout = QVBoxLayout(main_group_frame)
         main_layout.addWidget(QLabel("Main Group Column (Y-axis groups):"))
-        self.main_group_list = QListWidget()
-        self.main_group_list.setMaximumHeight(80)
-        self.main_group_list.itemSelectionChanged.connect(self.update_preview)
-        main_layout.addWidget(self.main_group_list)
+        
+        main_control_layout = QHBoxLayout()
+        self.main_group_combo = QComboBox()
+        self.main_group_combo.currentTextChanged.connect(self.update_preview)
+        main_control_layout.addWidget(self.main_group_combo)
+        
+        main_clear_btn = QPushButton("Clear")
+        main_clear_btn.setMaximumWidth(60)
+        main_clear_btn.clicked.connect(self.clear_main_group)
+        main_control_layout.addWidget(main_clear_btn)
+        
+        main_layout.addLayout(main_control_layout)
         
         self.main_group_info = QLabel("")
         self.main_group_info.setStyleSheet("font-size: 10px; color: #666;")
@@ -126,11 +234,18 @@ class PrismWriterGUI(QWidget):
         sub_group_frame = QFrame()
         sub_layout = QVBoxLayout(sub_group_frame)
         sub_layout.addWidget(QLabel("Sub Group (Sub-columns):"))
-        self.sub_group_list = QListWidget()
-        self.sub_group_list.setMaximumHeight(80)
-        self.sub_group_list.setSelectionMode(QAbstractItemView.MultiSelection)
-        self.sub_group_list.itemSelectionChanged.connect(self.update_preview)
-        sub_layout.addWidget(self.sub_group_list)
+        
+        sub_control_layout = QHBoxLayout()
+        self.sub_group_popup = MultiSelectPopup("Select sub-group columns...")
+        self.sub_group_popup.selectionChanged.connect(self.update_preview)
+        sub_control_layout.addWidget(self.sub_group_popup)
+        
+        sub_clear_btn = QPushButton("Clear")
+        sub_clear_btn.setMaximumWidth(60)
+        sub_clear_btn.clicked.connect(self.clear_sub_group)
+        sub_control_layout.addWidget(sub_clear_btn)
+        
+        sub_layout.addLayout(sub_control_layout)
         
         self.sub_group_info = QLabel("")
         self.sub_group_info.setStyleSheet("font-size: 10px; color: #666;")
@@ -140,11 +255,18 @@ class PrismWriterGUI(QWidget):
         row_group_frame = QFrame()
         row_layout = QVBoxLayout(row_group_frame)
         row_layout.addWidget(QLabel("Row Group (Row labels):"))
-        self.row_group_list = QListWidget()
-        self.row_group_list.setMaximumHeight(80)
-        self.row_group_list.setSelectionMode(QAbstractItemView.MultiSelection)
-        self.row_group_list.itemSelectionChanged.connect(self.update_preview)
-        row_layout.addWidget(self.row_group_list)
+        
+        row_control_layout = QHBoxLayout()
+        self.row_group_popup = MultiSelectPopup("Select row group columns...")
+        self.row_group_popup.selectionChanged.connect(self.update_preview)
+        row_control_layout.addWidget(self.row_group_popup)
+        
+        row_clear_btn = QPushButton("Clear")
+        row_clear_btn.setMaximumWidth(60)
+        row_clear_btn.clicked.connect(self.clear_row_group)
+        row_control_layout.addWidget(row_clear_btn)
+        
+        row_layout.addLayout(row_control_layout)
         
         self.row_group_info = QLabel("")
         self.row_group_info.setStyleSheet("font-size: 10px; color: #666;")
@@ -154,11 +276,18 @@ class PrismWriterGUI(QWidget):
         data_col_frame = QFrame()
         data_layout = QVBoxLayout(data_col_frame)
         data_layout.addWidget(QLabel("Data Columns:"))
-        self.data_col_list = QListWidget()
-        self.data_col_list.setMaximumHeight(80)
-        self.data_col_list.setSelectionMode(QAbstractItemView.MultiSelection)
-        self.data_col_list.itemSelectionChanged.connect(self.update_preview)
-        data_layout.addWidget(self.data_col_list)
+        
+        data_control_layout = QHBoxLayout()
+        self.data_col_popup = MultiSelectPopup("Select data columns...")
+        self.data_col_popup.selectionChanged.connect(self.update_preview)
+        data_control_layout.addWidget(self.data_col_popup)
+        
+        data_clear_btn = QPushButton("Clear")
+        data_clear_btn.setMaximumWidth(60)
+        data_clear_btn.clicked.connect(self.clear_data_cols)
+        data_control_layout.addWidget(data_clear_btn)
+        
+        data_layout.addLayout(data_control_layout)
         
         self.data_col_info = QLabel("")
         self.data_col_info.setStyleSheet("font-size: 10px; color: #666;")
@@ -168,6 +297,17 @@ class PrismWriterGUI(QWidget):
         grouping_layout.addWidget(sub_group_frame)
         grouping_layout.addWidget(row_group_frame)
         grouping_layout.addWidget(data_col_frame)
+        
+        # Add a master clear button
+        master_clear_layout = QHBoxLayout()
+        master_clear_layout.addStretch()
+        master_clear_btn = QPushButton("Clear All Selections")
+        master_clear_btn.setStyleSheet("font-weight: bold; color: #d32f2f;")
+        master_clear_btn.clicked.connect(self.clear_all_selections)
+        master_clear_layout.addWidget(master_clear_btn)
+        master_clear_layout.addStretch()
+        
+        grouping_layout.addLayout(master_clear_layout)
         
         grouping_group.setLayout(grouping_layout)
         parent_layout.addWidget(grouping_group)
@@ -313,10 +453,11 @@ class PrismWriterGUI(QWidget):
         
         columns = list(self.df.columns)
         
-        # Clear all lists
-        for list_widget in [self.main_group_list, self.sub_group_list, 
-                           self.row_group_list, self.data_col_list]:
-            list_widget.clear()
+        # Clear all controls
+        self.main_group_combo.clear()
+        self.sub_group_popup.set_items([])
+        self.row_group_popup.set_items([])
+        self.data_col_popup.set_items([])
         
         # Analyze column types for better recommendations
         numeric_cols = []
@@ -329,13 +470,44 @@ class PrismWriterGUI(QWidget):
                 categorical_cols.append(col)
         
         # Populate lists with type indicators
+        display_items = []
         for col in columns:
             col_type = "[NUM]" if col in numeric_cols else "[CAT]"
             display_text = f"{col_type} {col}"
-            
-            for list_widget in [self.main_group_list, self.sub_group_list, 
-                               self.row_group_list, self.data_col_list]:
-                list_widget.addItem(display_text)
+            display_items.append(display_text)
+        
+        # Add empty option for main group
+        self.main_group_combo.addItem("-- Select Column --")
+        self.main_group_combo.addItems(display_items)
+        
+        # Set items for popup controls
+        self.sub_group_popup.set_items(display_items)
+        self.row_group_popup.set_items(display_items)
+        self.data_col_popup.set_items(display_items)
+    
+    def clear_main_group(self):
+        """Clear main group selection"""
+        self.main_group_combo.setCurrentIndex(0)
+        self.update_preview()
+    
+    def clear_sub_group(self):
+        """Clear sub group selection"""
+        self.sub_group_popup.clear_selection()
+    
+    def clear_row_group(self):
+        """Clear row group selection"""
+        self.row_group_popup.clear_selection()
+    
+    def clear_data_cols(self):
+        """Clear data columns selection"""
+        self.data_col_popup.clear_selection()
+    
+    def clear_all_selections(self):
+        """Clear all selections"""
+        self.clear_main_group()
+        self.clear_sub_group()
+        self.clear_row_group()
+        self.clear_data_cols()
     
     def update_data_preview(self, df=None):
         """Update the data preview table"""
@@ -374,26 +546,43 @@ class PrismWriterGUI(QWidget):
             self.structure_preview.setText("No data loaded")
             return
         
-        # Get selected items
-        main_group = self.get_selected_columns(self.main_group_list)
-        sub_group = self.get_selected_columns(self.sub_group_list)
-        row_group = self.get_selected_columns(self.row_group_list)
-        data_cols = self.get_selected_columns(self.data_col_list)
+        # Get selected items using new control types
+        main_group = self.get_selected_columns("main")
+        sub_group = self.get_selected_columns("sub")
+        row_group = self.get_selected_columns("row")
+        data_cols = self.get_selected_columns("data")
         
         # Update info labels with category counts
-        self.update_group_info_labels(main_group, sub_group, row_group, data_cols)
+        self.update_group_info_labels(main_group, sub_group, 
+                                      row_group, data_cols)
         
         # Generate structure preview
-        preview_text = self.generate_structure_preview(main_group, sub_group, row_group, data_cols)
+        preview_text = self.generate_structure_preview(main_group, sub_group, 
+                                                       row_group, data_cols)
         self.structure_preview.setText(preview_text)
         
         # Update validation
         self.update_validation()
     
-    def get_selected_columns(self, list_widget):
-        """Get selected column names from a list widget"""
-        selected_items = list_widget.selectedItems()
-        return [item.text().split(' ', 1)[1] for item in selected_items]  # Remove [NUM]/[CAT] prefix
+    def get_selected_columns(self, control_type):
+        """Get selected column names from controls"""
+        if control_type == "main":
+            current_text = self.main_group_combo.currentText()
+            if current_text == "-- Select Column --" or not current_text:
+                return []
+            # Remove [NUM]/[CAT] prefix
+            clean_name = current_text.split(' ', 1)[-1]
+            return [clean_name]
+        elif control_type == "sub":
+            selected_items = self.sub_group_popup.get_selected_items()
+            return [item.split(' ', 1)[-1] for item in selected_items]
+        elif control_type == "row":
+            selected_items = self.row_group_popup.get_selected_items()
+            return [item.split(' ', 1)[-1] for item in selected_items]
+        elif control_type == "data":
+            selected_items = self.data_col_popup.get_selected_items()
+            return [item.split(' ', 1)[-1] for item in selected_items]
+        return []
     
     def update_group_info_labels(self, main_group, sub_group, row_group, data_cols):
         """Update info labels showing category counts"""
@@ -522,7 +711,7 @@ class PrismWriterGUI(QWidget):
             self.create_group_table_button.setEnabled(False)
             return
         
-        main_group = self.get_selected_columns(self.main_group_list)
+        main_group = self.get_selected_columns("main")
         
         if not main_group:
             self.validation_label.setText("❌ Main group column required")
@@ -543,13 +732,14 @@ class PrismWriterGUI(QWidget):
             return
         
         # Check for valid columns
-        all_selected = main_group + self.get_selected_columns(self.sub_group_list) + \
-                      self.get_selected_columns(self.row_group_list) + \
-                      self.get_selected_columns(self.data_col_list)
+        all_selected = (main_group + self.get_selected_columns("sub") + 
+                       self.get_selected_columns("row") + 
+                       self.get_selected_columns("data"))
         
         invalid_cols = [col for col in all_selected if col not in self.df.columns]
         if invalid_cols:
-            self.validation_label.setText(f"❌ Invalid columns: {', '.join(invalid_cols)}")
+            error_text = f"❌ Invalid columns: {', '.join(invalid_cols)}"
+            self.validation_label.setText(error_text)
             self.validation_label.setStyleSheet("color: red;")
             self.create_group_table_button.setEnabled(False)
             return
@@ -565,11 +755,11 @@ class PrismWriterGUI(QWidget):
             return
         
         try:
-            # Get selections
-            main_group = self.get_selected_columns(self.main_group_list)[0]
-            sub_group = self.get_selected_columns(self.sub_group_list)
-            row_group = self.get_selected_columns(self.row_group_list)
-            col_group = self.get_selected_columns(self.data_col_list)
+            # Get selections using new control types
+            main_group = self.get_selected_columns("main")[0]
+            sub_group = self.get_selected_columns("sub")
+            row_group = self.get_selected_columns("row")
+            col_group = self.get_selected_columns("data")
             
             # Process selections according to the original logic
             if len(sub_group) > 1:
@@ -602,20 +792,22 @@ class PrismWriterGUI(QWidget):
             # Create the table
             table_name = self.group_table_name.text().strip()
             self.prism_writer.make_group_table(
-                table_name, 
-                self.df, 
-                main_group, 
-                cols=cols, 
-                subgroupcols=sub_group_cols, 
-                rowgroupcols=row_group_cols, 
-                subgroupby=sub_group_by, 
+                table_name,
+                self.df,
+                main_group,
+                cols=cols,
+                subgroupcols=sub_group_cols,
+                rowgroupcols=row_group_cols,
+                subgroupby=sub_group_by,
                 rowgroupby=row_group_by
             )
 
             # Update UI
             self.table_list.addItem(f"✓ {table_name}")
-            self.validation_label.setText(f"✅ Table '{table_name}' created successfully!")
-            self.validation_label.setStyleSheet("color: green; font-weight: bold;")
+            success_text = f"✅ Table '{table_name}' created successfully!"
+            self.validation_label.setText(success_text)
+            success_style = "color: green; font-weight: bold;"
+            self.validation_label.setStyleSheet(success_style)
             
             # Clear selections for next table
             self.group_table_name.setText("Group Table Name")
@@ -636,14 +828,15 @@ class PrismWriterGUI(QWidget):
             self.validation_label.setStyleSheet("color: red;")
             return False
         
-        main_group = self.get_selected_columns(self.main_group_list)
+        main_group = self.get_selected_columns("main")
         if not main_group:
             self.validation_label.setText("❌ Main group column required")
             self.validation_label.setStyleSheet("color: red;")
             return False
         
         if len(main_group) > 1:
-            self.validation_label.setText("❌ Select only one main group column")
+            error_text = "❌ Select only one main group column"
+            self.validation_label.setText(error_text)
             self.validation_label.setStyleSheet("color: red;")
             return False
         
@@ -686,7 +879,7 @@ def main():
     app.setApplicationVersion("2.0")
     
     # Create and show GUI
-    gui = PrismWriterGUI()
+    window = PrismWriterGUI()
     
     app.exec_()
 

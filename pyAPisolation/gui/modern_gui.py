@@ -12,7 +12,7 @@ import copy
 
 # Import Qt components
 try:
-    from PySide2.QtWidgets import QApplication, QWidget, QProgressDialog, QComboBox, QVBoxLayout
+    from PySide2.QtWidgets import QApplication, QWidget, QProgressDialog, QComboBox, QVBoxLayout, QLineEdit
     from PySide2.QtCore import Qt, QThread
     from PySide2.QtCore import Signal as pyqtSignal
     import PySide2.QtCore as QtCore
@@ -414,9 +414,16 @@ class ModernAnalysisGUI(analysis_gui):
                 if "_label" in p:
                     continue  # Skip labels
                 if p in _internal or p in parameters:
-                    parameters[p] = a.value()
+                    #if its a line edit handle it differently
+                    if isinstance(a, QLineEdit):
+                        parameters[p] = a.text()
+                    else:
+                        parameters[p] = a.value()
                 if p in parameters.extra_params or p in _internal.extra_params:
-                    parameters.extra_params[p] = a.value()
+                    if isinstance(a, QLineEdit):
+                        parameters.extra_params[p] = a.text()
+                    else:
+                        parameters.extra_params[p] = a.value()
 
         return parameters
     
