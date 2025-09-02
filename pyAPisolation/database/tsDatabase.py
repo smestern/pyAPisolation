@@ -564,7 +564,8 @@ class tsDatabase:
         Returns:
             bool: True if import was successful, False otherwise
         """
-        try:
+        if True:
+        #try:
             # Extract essential fields
             recording_path = row_data.get('Recording Path')
             if not recording_path:
@@ -641,9 +642,9 @@ class tsDatabase:
             
             return True
             
-        except Exception as e:
-            print(f"Error importing spike data row: {e}")
-            return False
+        #except Exception as e:
+            #print(f"Error importing spike data row: {e}")
+            #return False
         
 
     def from_xlsx(self, file_path, filename_cols, filepath_cols, protocol_col):

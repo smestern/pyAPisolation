@@ -91,6 +91,11 @@ def test_specific_protocols():
         print("❌ Failed to import demo data with specific protocols")
         return False
 
+def test_indiv_rows():
+    demo_path = os.path.join(os.path.dirname(__file__), 'test_data', 'demo_arb_data.csv')
+    df = pd.read_csv(demo_path, skiprows=2)
+
+
 if __name__ == "__main__":
     print("Testing tsDatabase.from_dataframe() with demo data...")
     print("=" * 60)

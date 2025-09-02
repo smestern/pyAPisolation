@@ -132,7 +132,8 @@ class PrismWriterGUI(QWidget):
         # Left panel for controls
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
-        
+        left_widget.setMaximumSize(300, 16777215)  # Set maximum width to 300 and height to unlimited
+
         # Right panel for preview and results
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
@@ -244,7 +245,9 @@ class PrismWriterGUI(QWidget):
         sub_clear_btn.setMaximumWidth(60)
         sub_clear_btn.clicked.connect(self.clear_sub_group)
         sub_control_layout.addWidget(sub_clear_btn)
-        
+
+
+
         sub_layout.addLayout(sub_control_layout)
         
         self.sub_group_info = QLabel("")
@@ -265,7 +268,9 @@ class PrismWriterGUI(QWidget):
         row_clear_btn.setMaximumWidth(60)
         row_clear_btn.clicked.connect(self.clear_row_group)
         row_control_layout.addWidget(row_clear_btn)
+
         
+
         row_layout.addLayout(row_control_layout)
         
         self.row_group_info = QLabel("")
@@ -584,6 +589,8 @@ class PrismWriterGUI(QWidget):
             return [item.split(' ', 1)[-1] for item in selected_items]
         return []
     
+
+    
     def update_group_info_labels(self, main_group, sub_group, row_group, data_cols):
         """Update info labels showing category counts"""
         def get_unique_count_info(columns):
@@ -686,16 +693,26 @@ class PrismWriterGUI(QWidget):
         
         #generate a table preview using the prism_writer
         #try:
-        self.prism_writer.make_group_table(
+        # if data_cols is None or len(data_cols) == 0:
+        #     data_cols = [x for x in self.df.columns if x not in (main_group + sub_group + row_group)]
+        # if len(data_cols) > 20 :
+        #     data_cols = data_cols[:20]  # Limit to 20 columns for preview
+       
+        self.prism_writer.make_group_table
             group_name="__" + self.group_table_name.text().strip(),
-            group_values=self.df.sample(frac=0.1).head(), # sample for preview, since full df may be large
-            groupby=main_group,
+            group_values=self.df.sample(frac=0.5).head(), # sample for preview, since full df may be large
+            groupby=main_group[0] if naub,
             cols=data_cols if data_cols else None,
-            subgroupcols=sub_group if sub_group else None,
-            rowgroupcols=row_group if row_group else None
-        )
+            subgroupcols=sub_group if len(sub_group) > 0 else None,
+            subgroupby=sub_group[0] if len(sub_group) == 1 else None,
+            x=row_group if len(row_group) > 0 else None,
+            rowgroupby=row_group[0] if len(row_group) == 1 else None
+        
         #preview += f"Table Preview:\n{preview_table}\n"
+        #esssentially testing a data rountrip
+
         df_preview = self.prism_writer.to_dataframe("__" + self.group_table_name.text().strip())
+        self.prism_writer.delete_table("__" + self.group_table_name.text().strip())
         #except Exception as e:
         #preview += f"Error generating table preview: {e}\n"
         #replace the self.preview_table with a dataframe preview

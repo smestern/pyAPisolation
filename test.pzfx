@@ -35,12 +35,10 @@
     </Constant>
   </Info>
 <TableSequence Selected="1">
-    <Ref ID="test_group" />
-  <Ref ID="3way_rowcols" />
-  <Ref ID="1way_rowcols" />
+    <Ref ID="Group Table Name" />
   </TableSequence>
-<Table ID="test_group" XFormat="none" YFormat="replicates" Replicates="48" TableType="TwoWay" EVFormat="AsteriskAfterNumber">
-    <Title>test_group</Title>
+<Table ID="Group Table Name" XFormat="none" YFormat="replicates" Replicates="48" TableType="TwoWay" EVFormat="AsteriskAfterNumber">
+    <Title>Group Table Name</Title>
   <RowTitlesColumn Width="125">
       <Subcolumn>
         <d>Sweep 001 spike count</d>
@@ -51,13 +49,6 @@
       <d>Sweep 006 spike count</d>
       <d>Sweep 007 spike count</d>
       <d>Sweep 008 spike count</d>
-      <d>Sweep 009 spike count</d>
-      <d>Sweep 010 spike count</d>
-      <d>Sweep 011 spike count</d>
-      <d>Sweep 012 spike count</d>
-      <d>Sweep 013 spike count</d>
-      <d>Sweep 014 spike count</d>
-      <d>Sweep 015 spike count</d>
       </Subcolumn>
     </RowTitlesColumn>
   <SubColumnTitles OwnSet="1">
@@ -409,13 +400,6 @@
       <d>11</d>
       <d>14</d>
       <d>18</d>
-      <d>20</d>
-      <d>22</d>
-      <d>25</d>
-      <d>26</d>
-      <d>27</d>
-      <d>29</d>
-      <d>30</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -426,13 +410,6 @@
       <d>12</d>
       <d>15</d>
       <d>18</d>
-      <d>20</d>
-      <d>22</d>
-      <d>24</d>
-      <d>26</d>
-      <d>28</d>
-      <d>29</d>
-      <d>30</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -443,13 +420,6 @@
       <d>10</d>
       <d>13</d>
       <d>16</d>
-      <d>19</d>
-      <d>21</d>
-      <d>23</d>
-      <d>25</d>
-      <d>26</d>
-      <d>27</d>
-      <d>29</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -460,13 +430,6 @@
       <d>5</d>
       <d>11</d>
       <d>16</d>
-      <d>20</d>
-      <d>22</d>
-      <d>23</d>
-      <d>26</d>
-      <d>28</d>
-      <d>29</d>
-      <d>31</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -477,13 +440,6 @@
       <d>15</d>
       <d>19</d>
       <d>23</d>
-      <d>27</d>
-      <d>30</d>
-      <d>33</d>
-      <d>35</d>
-      <d>40</d>
-      <d>40</d>
-      <d>42</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -494,13 +450,6 @@
       <d>0</d>
       <d>1</d>
       <d>4</d>
-      <d>8</d>
-      <d>10</d>
-      <d>14</d>
-      <d>16</d>
-      <d>17</d>
-      <d>18</d>
-      <d>21</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -511,13 +460,6 @@
       <d>10</d>
       <d>12</d>
       <d>16</d>
-      <d>18</d>
-      <d>16</d>
-      <d>7</d>
-      <d>9</d>
-      <d>7</d>
-      <d>3</d>
-      <d>2</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -528,13 +470,6 @@
       <d>9</d>
       <d>14</d>
       <d>17</d>
-      <d>21</d>
-      <d>24</d>
-      <d>25</d>
-      <d>26</d>
-      <d>27</d>
-      <d>24</d>
-      <d>22</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -545,13 +480,6 @@
       <d>9</d>
       <d>12</d>
       <d>15</d>
-      <d>15</d>
-      <d>18</d>
-      <d>19</d>
-      <d>20</d>
-      <d>21</d>
-      <d>20</d>
-      <d>16</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -562,13 +490,6 @@
       <d>9</d>
       <d>12</d>
       <d>14</d>
-      <d>16</d>
-      <d>19</d>
-      <d>19</d>
-      <d>22</d>
-      <d>23</d>
-      <d>24</d>
-      <d>24</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -579,13 +500,6 @@
       <d>6</d>
       <d>9</d>
       <d>12</d>
-      <d>13</d>
-      <d>14</d>
-      <d>16</d>
-      <d>17</d>
-      <d>18</d>
-      <d>18</d>
-      <d>15</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -596,13 +510,6 @@
       <d>0</d>
       <d>5</d>
       <d>8</d>
-      <d>10</d>
-      <d>12</d>
-      <d>13</d>
-      <d>14</d>
-      <d>16</d>
-      <d>16</d>
-      <d>17</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -613,13 +520,6 @@
       <d>8</d>
       <d>9</d>
       <d>11</d>
-      <d>12</d>
-      <d>13</d>
-      <d>6</d>
-      <d>5</d>
-      <d>3</d>
-      <d>3</d>
-      <d>2</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -630,13 +530,6 @@
       <d>9</d>
       <d>12</d>
       <d>16</d>
-      <d>18</d>
-      <d>19</d>
-      <d>22</d>
-      <d>21</d>
-      <d>21</d>
-      <d>21</d>
-      <d>19</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -647,13 +540,6 @@
       <d>9</d>
       <d>12</d>
       <d>14</d>
-      <d>17</d>
-      <d>19</d>
-      <d>21</d>
-      <d>23</d>
-      <d>24</d>
-      <d>26</d>
-      <d>26</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -664,13 +550,6 @@
       <d>9</d>
       <d>13</d>
       <d>15</d>
-      <d>17</d>
-      <d>18</d>
-      <d>19</d>
-      <d>20</d>
-      <d>21</d>
-      <d>22</d>
-      <d>22</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -681,13 +560,6 @@
       <d>6</d>
       <d>8</d>
       <d>9</d>
-      <d>12</d>
-      <d>13</d>
-      <d>14</d>
-      <d>15</d>
-      <d>15</d>
-      <d>16</d>
-      <d>17</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -698,13 +570,6 @@
       <d>6</d>
       <d>8</d>
       <d>10</d>
-      <d>12</d>
-      <d>13</d>
-      <d>14</d>
-      <d>15</d>
-      <d>16</d>
-      <d>16</d>
-      <d>17</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -715,13 +580,6 @@
       <d>13</d>
       <d>16</d>
       <d>19</d>
-      <d>20</d>
-      <d>21</d>
-      <d>22</d>
-      <d>14</d>
-      <d>12</d>
-      <d>4</d>
-      <d>4</d>
       </Subcolumn>
     </YColumn>
   <YColumn Width="243" Decimals="10" Subcolumns="26">
@@ -735,13 +593,6 @@
       <d>9</d>
       <d>10</d>
       <d>12</d>
-      <d>14</d>
-      <d>13</d>
-      <d>11</d>
-      <d>5</d>
-      <d>6</d>
-      <d>4</d>
-      <d>3</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -752,13 +603,6 @@
       <d>5</d>
       <d>8</d>
       <d>11</d>
-      <d>14</d>
-      <d>16</d>
-      <d>19</d>
-      <d>24</d>
-      <d>27</d>
-      <d>30</d>
-      <d>34</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -769,13 +613,6 @@
       <d>8</d>
       <d>10</d>
       <d>11</d>
-      <d>13</d>
-      <d>13</d>
-      <d>15</d>
-      <d>12</d>
-      <d>5</d>
-      <d>2</d>
-      <d>3</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -786,13 +623,6 @@
       <d>8</d>
       <d>15</d>
       <d>13</d>
-      <d>16</d>
-      <d>18</d>
-      <d>18</d>
-      <d>20</d>
-      <d>22</d>
-      <d>23</d>
-      <d>20</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -803,13 +633,6 @@
       <d>10</d>
       <d>13</d>
       <d>16</d>
-      <d>18</d>
-      <d>20</d>
-      <d>22</d>
-      <d>23</d>
-      <d>25</d>
-      <d>26</d>
-      <d>27</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -820,13 +643,6 @@
       <d>10</d>
       <d>15</d>
       <d>18</d>
-      <d>21</d>
-      <d>23</d>
-      <d>25</d>
-      <d>17</d>
-      <d>19</d>
-      <d>10</d>
-      <d>9</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -837,13 +653,6 @@
       <d>6</d>
       <d>11</d>
       <d>13</d>
-      <d>15</d>
-      <d>17</d>
-      <d>19</d>
-      <d>20</d>
-      <d>22</d>
-      <d>22</d>
-      <d>23</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -853,13 +662,6 @@
       <d>0</d>
       <d>0</d>
       <d>0</d>
-      <d>2</d>
-      <d>6</d>
-      <d>9</d>
-      <d>10</d>
-      <d>8</d>
-      <d>7</d>
-      <d>3</d>
       <d>2</d>
       </Subcolumn>
     <Subcolumn>
@@ -871,13 +673,6 @@
       <d>20</d>
       <d>26</d>
       <d>30</d>
-      <d>32</d>
-      <d>37</d>
-      <d>35</d>
-      <d>26</d>
-      <d>18</d>
-      <d>10</d>
-      <d>11</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -888,13 +683,6 @@
       <d>4</d>
       <d>7</d>
       <d>10</d>
-      <d>12</d>
-      <d>13</d>
-      <d>14</d>
-      <d>15</d>
-      <d>14</d>
-      <d>17</d>
-      <d>17</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -905,13 +693,6 @@
       <d>8</d>
       <d>11</d>
       <d>13</d>
-      <d>15</d>
-      <d>17</d>
-      <d>18</d>
-      <d>20</d>
-      <d>22</d>
-      <d>22</d>
-      <d>24</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -922,13 +703,6 @@
       <d>2</d>
       <d>6</d>
       <d>9</d>
-      <d>12</d>
-      <d>14</d>
-      <d>15</d>
-      <d>16</d>
-      <d>16</d>
-      <d>17</d>
-      <d>13</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -939,13 +713,6 @@
       <d>9</d>
       <d>13</d>
       <d>16</d>
-      <d>12</d>
-      <d>11</d>
-      <d>9</d>
-      <d>6</d>
-      <d>5</d>
-      <d>4</d>
-      <d>3</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -956,13 +723,6 @@
       <d>3</d>
       <d>5</d>
       <d>7</d>
-      <d>8</d>
-      <d>9</d>
-      <d>11</d>
-      <d>10</d>
-      <d>12</d>
-      <d>10</d>
-      <d>11</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -973,13 +733,6 @@
       <d>6</d>
       <d>8</d>
       <d>10</d>
-      <d>12</d>
-      <d>13</d>
-      <d>14</d>
-      <d>15</d>
-      <d>16</d>
-      <d>16</d>
-      <d>16</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -990,13 +743,6 @@
       <d>9</d>
       <d>11</d>
       <d>13</d>
-      <d>14</d>
-      <d>14</d>
-      <d>5</d>
-      <d>2</d>
-      <d>3</d>
-      <d>2</d>
-      <d>2</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1007,13 +753,6 @@
       <d>6</d>
       <d>10</d>
       <d>11</d>
-      <d>13</d>
-      <d>15</d>
-      <d>17</d>
-      <d>18</d>
-      <d>19</d>
-      <d>19</d>
-      <d>21</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1024,13 +763,6 @@
       <d>11</d>
       <d>15</d>
       <d>19</d>
-      <d>21</d>
-      <d>23</d>
-      <d>26</d>
-      <d>26</d>
-      <d>28</d>
-      <d>30</d>
-      <d>30</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1041,13 +773,6 @@
       <d>9</d>
       <d>12</d>
       <d>13</d>
-      <d>15</d>
-      <d>16</d>
-      <d>18</d>
-      <d>19</d>
-      <d>19</d>
-      <d>20</d>
-      <d>19</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1058,13 +783,6 @@
       <d>7</d>
       <d>10</d>
       <d>14</d>
-      <d>14</d>
-      <d>16</d>
-      <d>16</d>
-      <d>16</d>
-      <d>19</d>
-      <d>20</d>
-      <d>20</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1075,13 +793,6 @@
       <d>10</d>
       <d>13</d>
       <d>15</d>
-      <d>17</d>
-      <d>18</d>
-      <d>19</d>
-      <d>20</d>
-      <d>21</d>
-      <d>22</d>
-      <d>23</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1092,13 +803,6 @@
       <d>3</d>
       <d>7</d>
       <d>10</d>
-      <d>14</d>
-      <d>17</d>
-      <d>19</d>
-      <d>20</d>
-      <d>22</d>
-      <d>24</d>
-      <d>25</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1109,13 +813,6 @@
       <d>6</d>
       <d>8</d>
       <d>10</d>
-      <d>11</d>
-      <d>12</d>
-      <d>14</d>
-      <d>16</d>
-      <d>17</d>
-      <d>17</d>
-      <d>17</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1126,13 +823,6 @@
       <d>10</d>
       <d>14</d>
       <d>17</d>
-      <d>19</d>
-      <d>23</d>
-      <d>24</d>
-      <d>27</d>
-      <d>28</d>
-      <d>28</d>
-      <d>22</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1143,13 +833,6 @@
       <d>11</d>
       <d>13</d>
       <d>16</d>
-      <d>18</d>
-      <d>19</d>
-      <d>20</d>
-      <d>21</d>
-      <d>23</d>
-      <d>24</d>
-      <d>24</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1160,13 +843,6 @@
       <d>9</d>
       <d>13</d>
       <d>15</d>
-      <d>17</d>
-      <d>19</d>
-      <d>21</d>
-      <d>22</d>
-      <d>23</d>
-      <d>24</d>
-      <d>26</d>
       </Subcolumn>
     </YColumn>
   <YColumn Width="243" Decimals="10" Subcolumns="3">
@@ -1180,13 +856,6 @@
       <d>10</d>
       <d>10</d>
       <d>14</d>
-      <d>14</d>
-      <d>15</d>
-      <d>16</d>
-      <d>12</d>
-      <d>6</d>
-      <d>2</d>
-      <d>2</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1197,13 +866,6 @@
       <d>6</d>
       <d>8</d>
       <d>10</d>
-      <d>12</d>
-      <d>14</d>
-      <d>16</d>
-      <d>16</d>
-      <d>18</d>
-      <d>19</d>
-      <d>21</d>
       </Subcolumn>
     <Subcolumn>
         <d>0</d>
@@ -1214,1079 +876,6 @@
       <d>0</d>
       <d>0</d>
       <d>0</d>
-      <d>1</d>
-      <d>2</d>
-      <d>2</d>
-      <d>8</d>
-      <d>12</d>
-      <d>14</d>
-      <d>13</d>
-      </Subcolumn>
-    </YColumn>
-  </Table>
-<Table ID="3way_rowcols" XFormat="none" YFormat="replicates" Replicates="48" TableType="TwoWay" EVFormat="AsteriskAfterNumber">
-    <Title>3way_rowcols</Title>
-  <RowTitlesColumn Width="125">
-      <Subcolumn>
-        <d>C:/Users/SMest/Dropbox/PVN_MODELLING_WORK/data\2405\07</d>
-      <d>C:/Users/SMest/Dropbox/PVN_MODELLING_WORK/data\2405\10</d>
-      <d>C:/Users/SMest/Dropbox/PVN_MODELLING_WORK/data\2406\05</d>
-      <d>C:/Users/SMest/Dropbox/PVN_MODELLING_WORK/data\2406\27</d>
-      <d>C:/Users/SMest/Dropbox/PVN_MODELLING_WORK/data\2407\02</d>
-      <d>C:/Users/SMest/Dropbox/PVN_MODELLING_WORK/data\2407\16</d>
-      <d>C:/Users/SMest/Dropbox/PVN_MODELLING_WORK/data\2407\20</d>
-      <d>C:/Users/SMest/Dropbox/PVN_MODELLING_WORK/data\2410\23</d>
-      <d>C:/Users/SMest/Dropbox/PVN_MODELLING_WORK/data\2410\27</d>
-      </Subcolumn>
-    </RowTitlesColumn>
-  <SubColumnTitles OwnSet="1">
-      <Subcolumn>
-        <d>
-          <TextAlign align="Center">240507_0008</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240507_0000</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240605_0000</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240507_0017</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240507_0013</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240605_0007</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240510_0000</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240510_0003</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240605_0039</TextAlign>
-        </d>
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240510_0025</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240510_0009</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240510_0030</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240510_0012</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240510_0036</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240510_0042</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240510_0038</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240510_0051</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240510_0057</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240605_0010</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240605_0002</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240605_0012</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240605_0027</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240605_0016</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240702_0013</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240605_0025</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240702_0017</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240627_0002</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240702_0027</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240627_0014</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240716_0000</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240627_0027</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240716_0008</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240702_0002</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">240720_0001</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240720_0010</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">241023_0040</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">240720_0016</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">241027_0008</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">241023_0000</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>
-          <TextAlign align="Center">241027_0019</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">241023_0012</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>
-          <TextAlign align="Center">241023_0026</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>
-          <TextAlign align="Center">241023_0029</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>
-          <TextAlign align="Center">241023_0052</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>
-          <TextAlign align="Center">241027_0000</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>
-          <TextAlign align="Center">241027_0028</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>
-          <TextAlign align="Center">241027_0048</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>
-          <TextAlign align="Center">241027_0058</TextAlign>
-        </d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      </Subcolumn>
-    </SubColumnTitles>
-  <YColumn Width="243" Decimals="10" Subcolumns="19">
-      <Title>No</Title>
-    <Subcolumn>
-        <d>0.003096259</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>-0.009747809</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>0.030425927</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>0.078257866</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>-0.048639022</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>0.074035004</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>0.006003535</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>0.007777973</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d>0.017182361</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d>0.026883839</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d>0.010399627</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d>0.013158509</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d>0.008862603</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.061421745</d>
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.010009211</d>
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.013704655</d>
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.018023236</d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.016860055</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.027190171</d>
-      </Subcolumn>
-    </YColumn>
-  <YColumn Width="243" Decimals="10" Subcolumns="26">
-      <Title>Yes</Title>
-    <Subcolumn>
-        <d>-0.038400926</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d>0.024975521</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>0.003380034</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>0.071482599</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>0.02881813</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>-0.090760306</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d>0.043578174</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d>0.12639454</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d>0.006070022</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d>0.025045034</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d>0.00573158</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d>-0.016959788</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d>0.012115262</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d>-0.063889064</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d>0.029532192</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.010772263</d>
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.004242812</d>
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.033615757</d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.021814492</d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.038247034</d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.032719754</d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.114515863</d>
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.030100849</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.017129375</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.021033015</d>
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.049493659</d>
-      </Subcolumn>
-    </YColumn>
-  <YColumn Width="243" Decimals="10" Subcolumns="3">
-      <Title>nan</Title>
-    <Subcolumn>
-        <d />
-      <d />
-      <d>0.066597469</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d>0.009659879</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    <Subcolumn>
-        <d />
-      <d />
-      <d>0.024239181</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    </YColumn>
-  </Table>
-<Table ID="1way_rowcols" XFormat="none" YFormat="replicates" Replicates="1" TableType="TwoWay" EVFormat="AsteriskAfterNumber">
-    <Title>1way_rowcols</Title>
-  <SubColumnTitles OwnSet="1">
-      <Subcolumn>
-        <d>
-          <TextAlign align="Center">Sag Ratio</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">Sag Ratio</TextAlign>
-        </d>
-      <d>
-          <TextAlign align="Center">Sag Ratio</TextAlign>
-        </d>
-      </Subcolumn>
-    </SubColumnTitles>
-  <YColumn Width="243" Decimals="10" Subcolumns="1">
-      <Title>No</Title>
-    <Subcolumn>
-        <d />
-      <d>0.003096259</d>
-      <d />
-      <d>-0.009747809</d>
-      <d>0.030425927</d>
-      <d />
-      <d />
-      <d />
-      <d>0.078257866</d>
-      <d>-0.048639022</d>
-      <d>0.074035004</d>
-      <d>0.006003535</d>
-      <d />
-      <d />
-      <d>0.007777973</d>
-      <d />
-      <d>0.017182361</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.026883839</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.010399627</d>
-      <d>0.013158509</d>
-      <d>0.008862603</d>
-      <d>0.061421745</d>
-      <d>0.010009211</d>
-      <d>0.013704655</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.018023236</d>
-      <d />
-      <d />
-      <d>0.016860055</d>
-      <d>0.027190171</d>
-      <d />
-      <d />
-      <d />
-      </Subcolumn>
-    </YColumn>
-  <YColumn Width="243" Decimals="10" Subcolumns="1">
-      <Title>Yes</Title>
-    <Subcolumn>
-        <d>-0.038400926</d>
-      <d />
-      <d>0.024975521</d>
-      <d />
-      <d />
-      <d>0.003380034</d>
-      <d>0.071482599</d>
-      <d>0.02881813</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>-0.090760306</d>
-      <d>0.043578174</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.12639454</d>
-      <d>0.006070022</d>
-      <d>0.025045034</d>
-      <d>0.00573158</d>
-      <d />
-      <d />
-      <d>0.012115262</d>
-      <d>-0.016959788</d>
-      <d>-0.063889064</d>
-      <d>0.029532192</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.010772263</d>
-      <d>0.004242812</d>
-      <d>0.033615757</d>
-      <d>0.021814492</d>
-      <d>0.038247034</d>
-      <d>0.032719754</d>
-      <d />
-      <d>0.114515863</d>
-      <d>0.030100849</d>
-      <d />
-      <d />
-      <d>0.017129375</d>
-      <d>0.021033015</d>
-      <d>0.049493659</d>
-      </Subcolumn>
-    </YColumn>
-  <YColumn Width="243" Decimals="10" Subcolumns="1">
-      <Title>nan</Title>
-    <Subcolumn>
-        <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.066597469</d>
-      <d />
-      <d>0.009659879</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d>0.024239181</d>
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
-      <d />
       </Subcolumn>
     </YColumn>
   </Table>
