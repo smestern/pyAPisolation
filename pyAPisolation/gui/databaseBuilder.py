@@ -95,19 +95,47 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
         self.addCell.clicked.connect(self._addCell)
         self.addProtocol.clicked.connect(self._addProtocol)
 
-        # Initialize the cell index model with more columns for spreadsheet-like view
+        # Initialize the cell index model with Excel-like structure
+        # Each row represents a cell, columns represent different protocols/metadata
         self.cellIndexModel = QStandardItemModel()
-        self.cellIndexModel.setHorizontalHeaderLabels(['Cell Name', 'Protocol', 'Recording Path', 'Notes'])
+        self._initializeExcelLikeHeaders()
         self.cellIndex.setModel(self.cellIndexModel)
         
         # Set initial column widths for better spreadsheet appearance
-        self.cellIndex.setColumnWidth(0, 120)  # Cell Name
-        self.cellIndex.setColumnWidth(1, 150)  # Protocol
-        self.cellIndex.setColumnWidth(2, 300)  # Recording Path
-        self.cellIndex.setColumnWidth(3, 200)  # Notes
+        self.cellIndex.setColumnWidth(0, 150)  # Cell Name
+        self.cellIndex.setColumnWidth(1, 80)   # Date
+        self.cellIndex.setColumnWidth(2, 100)  # Drug
+        self.cellIndex.setColumnWidth(3, 120)  # Notes
+        # Protocol columns will be set dynamically
 
         self.cell_layout = None
         self.protocol_layout = None
+        self.protocol_columns = {}  # Track which columns correspond to protocols
+
+    def _initializeExcelLikeHeaders(self):
+        """Initialize headers for Excel-like spreadsheet view"""
+        # Basic metadata columns
+        base_headers = ['Cell Name', 'Date', 'Drug', 'Notes']
+        
+        # Get unique protocols from database to create dynamic columns
+        protocol_headers = []
+        if hasattr(self.database, 'getProtocols'):
+            protocols = self.database.getProtocols()
+            for protocol_name in protocols.keys():
+                protocol_headers.append(protocol_name)
+                self.protocol_columns[protocol_name] = len(base_headers) + len(protocol_headers) - 1
+        
+        # Combine headers
+        all_headers = base_headers + protocol_headers
+        self.cellIndexModel.setHorizontalHeaderLabels(all_headers)
+        
+        # Set appropriate column widths
+        for i, header in enumerate(all_headers):
+            if i < len(base_headers):
+                width = [150, 80, 100, 120][i]
+            else:
+                width = 100  # Protocol columns
+            self.cellIndex.setColumnWidth(i, width)
 
     def retranslateUi(self, MainWindow):
         super().retranslateUi(MainWindow)
@@ -510,60 +538,100 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
             )
 
     def _updateCellIndex(self):
-        """Update cell index treeview to display data in spreadsheet format"""
+        """Update cell index to display data in Excel-like spreadsheet format"""
         
-        # Get the expanded rows etc.
-        expanded_rows = []
-        for i in range(self.cellIndexModel.rowCount()):
-            if self.cellIndex.isExpanded(self.cellIndexModel.index(i, 0)):
-                expanded_rows.append(i)
-    
-        # Clear the existing model
+        # Store current selection
+        current_selection = self.cellIndex.currentIndex()
+        
+        # Clear the existing model and reinitialize headers
         self.cellIndexModel.clear()
-        self.cellIndexModel.setHorizontalHeaderLabels([
-            'Cell Name', 'Protocol', 'Recording Path', 'Notes'
-        ])
+        self._initializeExcelLikeHeaders()
         
+        # Get all cells from database
         cells = self.database.getCells()
-
+        
+        # Get all unique protocols to ensure consistent column structure
+        all_protocols = set()
         for cell_name, recordings in cells.items():
-            cell_item = QStandardItem(cell_name)
-            cell_protocol = QStandardItem("")  # Empty protocol for parent
-            cell_path = QStandardItem("")      # Empty path for parent
-            cell_notes = QStandardItem("")     # Notes could be added later
+            for recording_type in recordings.keys():
+                if recording_type not in ["name", "sweep"]:
+                    all_protocols.add(recording_type)
+        
+        # Update protocol columns mapping
+        base_headers = ['Cell Name', 'Date', 'Drug', 'Notes']
+        for i, protocol in enumerate(sorted(all_protocols)):
+            self.protocol_columns[protocol] = len(base_headers) + i
             
-            # Make the cell name row editable
-            cell_item.setEditable(True)
-            cell_notes.setEditable(True)
+        # Update headers with all protocols
+        all_headers = base_headers + sorted(all_protocols)
+        self.cellIndexModel.setHorizontalHeaderLabels(all_headers)
+        
+        # Create Excel-like rows - one row per cell
+        for cell_name, recordings in cells.items():
+            row_items = []
             
-            for recording_type, recording in recordings.items():
-                # Check to make sure its not in the utility columns
+            # Basic metadata columns
+            cell_name_item = QStandardItem(cell_name)
+            cell_name_item.setEditable(True)
+            row_items.append(cell_name_item)
+            
+            # Date column (extract from recordings if available)
+            date_item = QStandardItem("")
+            date_item.setEditable(True)
+            row_items.append(date_item)
+            
+            # Drug column
+            drug_item = QStandardItem("")
+            drug_item.setEditable(True)
+            row_items.append(drug_item)
+            
+            # Notes column
+            notes_item = QStandardItem("")
+            notes_item.setEditable(True)
+            row_items.append(notes_item)
+            
+            # Protocol columns - create empty cells first
+            protocol_items = {}
+            for protocol in sorted(all_protocols):
+                protocol_item = QStandardItem("")
+                protocol_item.setEditable(True)
+                protocol_items[protocol] = protocol_item
+                row_items.append(protocol_item)
+            
+            # Fill in actual recording data
+            for recording_type, recording_path in recordings.items():
                 if recording_type in ["name", "sweep"]:
                     continue
                     
-                # Create child items for each recording
-                protocol_item = QStandardItem(recording_type)
-                path_item = QStandardItem(str(recording) if recording else "")
-                notes_item = QStandardItem("")
-                empty_cell = QStandardItem("")  # For cell name column
-                
-                # Make items editable
-                protocol_item.setEditable(True)
-                path_item.setEditable(True)
-                notes_item.setEditable(True)
-                
-                cell_item.appendRow([empty_cell, protocol_item, path_item, notes_item])
-                
-            self.cellIndexModel.appendRow([cell_item, cell_protocol, cell_path, cell_notes])
-
-        # Expand the rows that were previously expanded
-        for row in expanded_rows:
-            self.cellIndex.setExpanded(self.cellIndexModel.index(row, 0), True)
+                if recording_type in protocol_items:
+                    # Set the recording path or file name
+                    if recording_path:
+                        # Extract just the filename for display
+                        if isinstance(recording_path, str):
+                            display_value = recording_path.split('/')[-1].split('\\')[-1]
+                            if display_value.endswith('.abf') or display_value.endswith('.nwb'):
+                                display_value = display_value[:-4]  # Remove extension
+                        else:
+                            display_value = str(recording_path)
+                        protocol_items[recording_type].setText(display_value)
+                        protocol_items[recording_type].setToolTip(str(recording_path))
             
-        # Resize columns to content after update
-        #self.cellIndex.resizeColumnsToContents()
-        for row in expanded_rows:
-            self.cellIndex.setExpanded(self.cellIndexModel.index(row, 0), True)
+            # Add the complete row to the model
+            self.cellIndexModel.appendRow(row_items)
+        
+        # Restore selection if possible
+        if current_selection.isValid() and current_selection.row() < self.cellIndexModel.rowCount():
+            self.cellIndex.setCurrentIndex(current_selection)
+        
+        # Auto-resize columns to fit content better
+        self.cellIndex.resizeColumnsToContents()
+        
+        # Ensure minimum widths
+        for i in range(self.cellIndexModel.columnCount()):
+            if self.cellIndex.columnWidth(i) < 80:
+                self.cellIndex.setColumnWidth(i, 80)
+            elif self.cellIndex.columnWidth(i) > 200:
+                self.cellIndex.setColumnWidth(i, 200)
 
     def _clearGroupBox(self):
         def _innerclear():
@@ -610,12 +678,13 @@ class CustomTreeView(QTreeView):
         self.setDragDropMode(QTreeView.DropOnly)
         self.setDefaultDropAction(Qt.CopyAction)
         
-        # Make it more spreadsheet-like
+        # Make it more spreadsheet-like (flat table, not tree)
         self.setAlternatingRowColors(True)
         self.setSelectionBehavior(QAbstractItemView.SelectItems)
         self.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
-        self.setItemsExpandable(True)
-        self.setRootIsDecorated(True)
+        self.setItemsExpandable(False)  # Disable tree expansion
+        self.setRootIsDecorated(False)  # No tree decorations
+        self.setIndentation(0)  # No indentation like Excel
         
         # Configure the header
         header = self.header()
