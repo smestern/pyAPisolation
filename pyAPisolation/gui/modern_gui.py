@@ -308,7 +308,7 @@ class ModernAnalysisGUI(analysis_gui):
         analyzer = registry.get_analyzer(analysis_type)
         
         # Run analysis
-        result = analyzer.analyze(file=self.abf.abfFilePath, parameters=parameters)
+        result = analyzer.analyze(file=self.abf.abfFilePath, **parameters)
 
         if result.success:
             # Store results in legacy format for compatibility
@@ -377,24 +377,20 @@ class ModernAnalysisGUI(analysis_gui):
         analyzer = registry.get_analyzer(analysis_type)
         _internal = analyzer.parameters
 
-        #legacy parameters
+        # legacy parameters
         if analysis_type == 'spike':
-            parameters.extra_params.update({
-                'dv_cutoff': float(self.dvdt_thres.text()) if hasattr(self, 'dvdt_thres') else 7.0,
-                'max_interval': float(self.thres_to_peak_time.text())/1000 if hasattr(self, 'thres_to_peak_time') else 0.010,
-                'min_height': float(self.thres_to_peak_height.text()) if hasattr(self, 'thres_to_peak_height') else 2.0,
-                'min_peak': float(self.min_peak_height.text()) if hasattr(self, 'min_peak_height') else -10.0,
-                'thresh_frac': float(self.thres_per.text()) if hasattr(self, 'thres_per') else 0.05,
-                'bessel_filter': float(self.bessel.text()) if hasattr(self, 'bessel') else 0.0,
-                'stim_find': self.bstim.isChecked() if hasattr(self, 'bstim') else False
-            })
+            parameters.set('dv_cutoff', float(self.dvdt_thres.text()) if hasattr(self, 'dvdt_thres') else 7.0)
+            parameters.set('max_interval', float(self.thres_to_peak_time.text())/1000 if hasattr(self, 'thres_to_peak_time') else 0.010)
+            parameters.set('min_height', float(self.thres_to_peak_height.text()) if hasattr(self, 'thres_to_peak_height') else 2.0)
+            parameters.set('min_peak', float(self.min_peak_height.text()) if hasattr(self, 'min_peak_height') else -10.0)
+            parameters.set('thresh_frac', float(self.thres_per.text()) if hasattr(self, 'thres_per') else 0.05)
+            parameters.set('bessel_filter', float(self.bessel.text()) if hasattr(self, 'bessel') else 0.0)
+            parameters.set('stim_find', self.bstim.isChecked() if hasattr(self, 'bstim') else False)
         
         elif analysis_type == 'subthreshold':
-            parameters.extra_params.update({
-                'time_after': float(self.stimPer.text()) if hasattr(self, 'stimPer') else 50.0,
-                'start_sear': float(self.startCM.text()) if hasattr(self, 'startCM') and self.startCM.text() else None,
-                'end_sear': float(self.endCM.text()) if hasattr(self, 'endCM') and self.endCM.text() else None,
-            })
+            parameters.set('time_after', float(self.stimPer.text()) if hasattr(self, 'stimPer') else 50.0)
+            parameters.set('start_sear', float(self.startCM.text()) if hasattr(self, 'startCM') and self.startCM.text() else None)
+            parameters.set('end_sear', float(self.endCM.text()) if hasattr(self, 'endCM') and self.endCM.text() else None)
             
             # Handle sweep specification
             if hasattr(self, 'subthresSweeps') and self.subthresSweeps.text():
@@ -402,28 +398,26 @@ class ModernAnalysisGUI(analysis_gui):
                     import numpy as np
                     sweeps = np.fromstring(self.subthresSweeps.text(), dtype=int, sep=',')
                     if len(sweeps) > 0:
-                        parameters.extra_params['subt_sweeps'] = sweeps.tolist()
+                        parameters.set('subt_sweeps', sweeps.tolist())
                 except:
                     pass
         
-        else:
-            # Get the widgets
-            # Update the parameters with the internals
-            parameters.extra_params.update(_internal.extra_params)
-            for p, a in self.parameter_widgets.items():
-                if "_label" in p:
-                    continue  # Skip labels
-                if p in _internal or p in parameters:
-                    #if its a line edit handle it differently
-                    if isinstance(a, QLineEdit):
-                        parameters[p] = a.text()
-                    else:
-                        parameters[p] = a.value()
-                if p in parameters.extra_params or p in _internal.extra_params:
-                    if isinstance(a, QLineEdit):
-                        parameters.extra_params[p] = a.text()
-                    else:
-                        parameters.extra_params[p] = a.value()
+        # Update the parameters with the internals
+        for p, a in self.parameter_widgets.items():
+            if "_label" in p:
+                continue  # Skip labels
+            if p in _internal or p in parameters:
+                # If it's a line edit handle it differently
+                if isinstance(a, QLineEdit):
+                    parameters[p] = a.text()
+                else:
+                    parameters[p] = a.value()
+            elif p not in ['start_time', 'end_time', 'protocol_filter']:
+                # Add as additional parameter
+                if isinstance(a, QLineEdit):
+                    parameters.set(p, a.text())
+                else:
+                    parameters.set(p, a.value())
 
         return parameters
     

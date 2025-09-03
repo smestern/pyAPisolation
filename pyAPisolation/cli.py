@@ -137,35 +137,31 @@ def create_parameters_from_args(args: argparse.Namespace) -> AnalysisParameters:
     
     # Add analyzer-specific parameters
     if args.analyzer == 'spike':
-        parameters.extra_params.update({
-            'dv_cutoff': args.dv_cutoff,
-            'max_interval': args.max_interval,
-            'min_height': args.min_height,
-            'min_peak': args.min_peak,
-            'thresh_frac': args.thresh_frac,
-            'bessel_filter': args.bessel_filter,
-            'stim_find': args.stim_find
-        })
+        parameters.set('dv_cutoff', args.dv_cutoff)
+        parameters.set('max_interval', args.max_interval)
+        parameters.set('min_height', args.min_height)
+        parameters.set('min_peak', args.min_peak)
+        parameters.set('thresh_frac', args.thresh_frac)
+        parameters.set('bessel_filter', args.bessel_filter)
+        parameters.set('stim_find', args.stim_find)
     elif args.analyzer == 'subthreshold':
-        parameters.extra_params.update({
-            'time_after': args.time_after,
-            'savfilter': args.savfilter,
-            'bplot': getattr(args, 'plot', False)
-        })
+        parameters.set('time_after', args.time_after)
+        parameters.set('savfilter', args.savfilter)
+        parameters.set('bplot', getattr(args, 'plot', False))
         
         # Handle sweep specification
         if hasattr(args, 'sweeps') and args.sweeps:
             try:
                 sweeps = [int(x.strip()) for x in args.sweeps.split(',')]
-                parameters.extra_params['subt_sweeps'] = sweeps
+                parameters.set('subt_sweeps', sweeps)
             except ValueError:
                 print("Warning: Invalid sweep specification, ignoring")
         
         # Handle search window
         if hasattr(args, 'start_search') and args.start_search is not None:
-            parameters.extra_params['start_sear'] = args.start_search
+            parameters.set('start_sear', args.start_search)
         if hasattr(args, 'end_search') and args.end_search is not None:
-            parameters.extra_params['end_sear'] = args.end_search
+            parameters.set('end_sear', args.end_search)
     
     return parameters
 

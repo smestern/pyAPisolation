@@ -698,16 +698,16 @@ class PrismWriterGUI(QWidget):
         # if len(data_cols) > 20 :
         #     data_cols = data_cols[:20]  # Limit to 20 columns for preview
        
-        self.prism_writer.make_group_table
+        self.prism_writer.make_group_table(
             group_name="__" + self.group_table_name.text().strip(),
             group_values=self.df.sample(frac=0.5).head(), # sample for preview, since full df may be large
-            groupby=main_group[0] if naub,
+            groupby=main_group[0] if main_group else None,
             cols=data_cols if data_cols else None,
             subgroupcols=sub_group if len(sub_group) > 0 else None,
             subgroupby=sub_group[0] if len(sub_group) == 1 else None,
             x=row_group if len(row_group) > 0 else None,
             rowgroupby=row_group[0] if len(row_group) == 1 else None
-        
+        )
         #preview += f"Table Preview:\n{preview_table}\n"
         #esssentially testing a data rountrip
 

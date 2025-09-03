@@ -65,6 +65,49 @@ class SpikeAnalysisModule(AnalysisModule):
             'thresh_frac': thresh_frac
         }
     
+    def analyze(self, data, selected_sweeps, param_dict):
+         # Import here to avoid circular imports
+        from ipfx.feature_extractor import SpikeFeatureExtractor
+        from ..featureExtractor import determine_rejected_spikes
+        from ..featureExtractor import process_file as legacy_analyze
+        
+        # Use both legacy param_dict and new parameters system
+        # Prefer param_dict for backward compatibility
+        temp_param_dict = copy.deepcopy(param_dict)
+        
+        # If param_dict is missing values, fall back to parameters
+        if 'dv_cutoff' not in temp_param_dict:
+            temp_param_dict['dv_cutoff'] = self.get_parameter('dv_cutoff', 20.0)
+        if 'max_interval' not in temp_param_dict:
+            temp_param_dict['max_interval'] = self.get_parameter('max_interval', 0.005)
+        if 'min_height' not in temp_param_dict:
+            temp_param_dict['min_height'] = self.get_parameter('min_height', 2.0)
+        if 'min_peak' not in temp_param_dict:
+            temp_param_dict['min_peak'] = self.get_parameter('min_peak', -30.0)
+        if 'thresh_frac' not in temp_param_dict:
+            temp_param_dict['thresh_frac'] = self.get_parameter('thresh_frac', 0.05)
+        
+        # Update start/end from parameters if available
+        if 'start' not in temp_param_dict:
+            temp_param_dict['start'] = self.get_parameter('start_time', 0.0)
+        if 'end' not in temp_param_dict:
+            temp_param_dict['end'] = self.get_parameter('end_time', 0.0)
+            
+        temp_param_dict = copy.deepcopy(param_dict)
+        
+        #drop param_dict keys that are not used
+        protocol = temp_param_dict.pop("protocol_name", None)
+        temp_param_dict.pop("param_dict", None)
+        res = legacy_analyze(data, param_dict=temp_param_dict, protocol_name=protocol)
+
+        return {
+            'spike_df': res[1],
+            'spike_summary': res[0],
+            'running_bin': res[2],
+            'subthres_df': None
+        }
+
+
     def run_individual_analysis(self, file, selected_sweeps, param_dict,
                                 popup=None, show_rejected=False):
         # Import here to avoid circular imports
@@ -207,6 +250,11 @@ class SubthresholdAnalysisModule(AnalysisModule):
         if param_dict is None:
             param_dict = {}
 
+        #fix the keywords
+        param_dict['start_sear'] = param_dict.pop('start', None)
+        param_dict['end_sear'] = param_dict.pop('end', None)
+        param_dict['savfilter'] = param_dict.pop('filter', None)
+        
         subthres_df, _ = analyze_subthres(abf, **param_dict)
         
         return {
@@ -242,13 +290,11 @@ class ResistanceLadder(AnalysisModule):
         return params
 
 
-    def run_individual_analysis(self, celldata, selected_sweeps, param_dict,
+    def analyze(self, celldata, selected_sweeps, param_dict,
                                 popup=None, show_rejected=False):
         
         # Placeholder for actual implementation
         from ..patch_subthres import ladder_rm
-        
-
         
     
     def run_batch_analysis(self, folder_path, param_dict, protocol_name):

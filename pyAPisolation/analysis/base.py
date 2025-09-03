@@ -117,58 +117,71 @@ class AnalysisParameters:
     """Parameters for analysis configuration"""
     
     # Common parameters
-    start_time: Parameter = Parameter("start_time", param_type=float, default=0.0, min_value=0.0, max_value=np.inf, description="Time in (s) to start analysis")
-    end_time: Parameter = Parameter("end_time", param_type=float, default=0.0, min_value=0.0, max_value=np.inf, description="Time in (s) to end analysis")
-    protocol_filter: Parameter = Parameter("protocol_filter", param_type=str, default="", description="Protocol filter")
-
-    # Additional parameters stored as dict for flexibility
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    start_time: Parameter = field(default_factory=lambda: Parameter(
+        "start_time", param_type=float, default=0.0, min_value=0.0,
+        max_value=np.inf, description="Time in (s) to start analysis"
+    ))
+    end_time: Parameter = field(default_factory=lambda: Parameter(
+        "end_time", param_type=float, default=0.0, min_value=0.0,
+        max_value=np.inf, description="Time in (s) to end analysis"
+    ))
+    protocol_filter: Parameter = field(default_factory=lambda: Parameter(
+        "protocol_filter", param_type=str, default="",
+        description="Protocol filter"
+    ))
     
     def list(self) -> List[str]:
-        """List all parameter names including extra params"""
-        common_parameters = [x for x in self.__dataclass_fields__.keys() if x != "extra_params"]
-        return common_parameters + list(self.extra_params.keys())
+        """List all parameter names"""
+        return list(self.__dict__.keys())
 
     def get(self, key: str, default: Any = None) -> Any:
-        """Get parameter value with fallback to extra_params"""
+        """Get parameter value"""
         if hasattr(self, key):
-            return getattr(self, key)
-        return self.extra_params.get(key, default)
+            param = getattr(self, key)
+            if hasattr(param, 'value'):
+                return param.value
+            return param
+        return default
     
     def set(self, key: str, value: Any) -> None:
         """Set parameter value"""
         if hasattr(self, key):
-            setattr(self, key, value)
+            param = getattr(self, key)
+            if hasattr(param, 'value'):
+                # Update existing Parameter object
+                param.value = param.validate_and_convert(value)
+            else:
+                setattr(self, key, value)
         else:
-            #create a new parameter instance
-            temp_parameter = Parameter(name=key, param_type=type(value), value=value)
-            self.extra_params[key] = temp_parameter
+            # Create a new parameter instance
+            temp_parameter = Parameter(
+                name=key, param_type=type(value), value=value
+            )
+            self.__dict__[key] = temp_parameter
 
     # --- Dict-like behavior ---
     def __getitem__(self, key):
-        if hasattr(self, key):
-            return getattr(self, key)
-        elif key in self.extra_params:
-            return self.extra_params[key]
+        if key in self.__dict__:
+            param = self.__dict__[key]
+            if hasattr(param, 'value'):
+                return param.value
+            return param
         else:
             raise KeyError(key)
 
     def __setitem__(self, key, value):
-        if hasattr(self, key):
-            setattr(self, key, value)
-        else:
-            temp_parameter = Parameter(name=key, param_type=type(value), value=value)
-            self.extra_params[key] = temp_parameter
+        self.set(key, value)
 
     def __contains__(self, key):
-        return hasattr(self, key) or key in self.extra_params
+        return hasattr(self, key)
 
     def __iter__(self):
         for k in self.__dataclass_fields__:
-            if k != "extra_params":
-                yield k
-        for k in self.extra_params:
             yield k
+        # Also yield any dynamically added parameters
+        for k in self.__dict__:
+            if k not in self.__dataclass_fields__:
+                yield k
 
     def keys(self):
         return list(iter(self))
@@ -299,14 +312,21 @@ class AnalysisModule:
     """
     
     def __init__(self, name: str, display_name: str = None,
-                 parameters: Optional[AnalysisParameters] = None):
+                 parameters: Optional[AnalysisParameters] = None, override=True):
         self.name = name
         self.display_name = display_name or name
         self._parameters = parameters or AnalysisParameters()
         # Keep param_dict for backward compatibility
         self.param_dict = {}
+        #override the childs analyze function to include our hook
+        self._child_analyze = self.analyze
+        self.analyze = self._analyze if override else self.analyze
+    
+    @abstractmethod
+    def analyze(self, **kwargs):
+        pass
         
-    def analyze(self, x=None, y=None, c=None, file=None, celldata=None, 
+    def _analyze(self, x=None, y=None, c=None, file=None, celldata=None, 
                 selected_sweeps=None, **kwargs) -> AnalysisResult:
         """
         Unified analysis interface that accepts various input types.
@@ -358,10 +378,7 @@ class AnalysisModule:
                 data, selected_sweeps, param_dict, 
                 popup=None, show_rejected=False
             )
-            
-           
-            
-            
+
         #except Exception as e:
         #    result.add_error(f"Analysis failed: {str(e)}")
             
@@ -417,16 +434,18 @@ class AnalysisModule:
         param_dict = {}
         
         # Add common parameters
-        param_dict['start'] = self.get_parameter('start_time', 0.0).value
-        param_dict['end'] = self.get_parameter('end_time', 0.0).value
+        param_dict['start'] = self.get_parameter('start_time', 0.0)
+        param_dict['end'] = self.get_parameter('end_time', 0.0)
         param_dict['filter'] = 0  # Default filter
         
-        # Add extra parameters
-        for key, param in self._parameters.extra_params.items():
-            if hasattr(param, 'value'):
-                param_dict[key] = param.value
-            else:
-                param_dict[key] = param
+        # Add all other parameters
+        for key in self._parameters.__dict__.keys():
+            if key not in ['start_time', 'end_time', 'protocol_filter']:
+                param = getattr(self._parameters, key)
+                if hasattr(param, 'value'):
+                    param_dict[key] = param.value
+                else:
+                    param_dict[key] = param
                 
         return param_dict
     
@@ -537,7 +556,7 @@ class AnalysisModule:
         for param_name in self._parameters.list():
             # param_type = self._parameters.get(param_name).param_type
             # param_value = self._parameters.get(param_name).value
-            ui_params[param_name] = self._parameters.get(param_name)
+            ui_params[param_name] = getattr(self._parameters, param_name)
         return ui_params
     
     @abstractmethod
