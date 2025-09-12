@@ -1,4 +1,6 @@
 # pyAPisolation Development Guide for AI Coding Agents
+ Note when testing, ensure you testing withing the conda enviroment 'pyAPisolation'
+`conda activate pyAPisolation` 
 
 ## Architecture Overview
 

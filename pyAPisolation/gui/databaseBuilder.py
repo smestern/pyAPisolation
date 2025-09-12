@@ -5,7 +5,7 @@ from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QTreeView,
 QFileSystemModel, QLabel, QLineEdit, QCommandLinkButton, QGroupBox, QTextEdit, QHeaderView, QAbstractItemView, \
 QMenu, QAction, QWizard, QWizardPage, QHBoxLayout, QPushButton, \
 QListWidget, QListWidgetItem, QProgressBar, QCheckBox, QSpinBox, \
-QDoubleSpinBox, QComboBox, QFormLayout, QTableWidget, QTableWidgetItem, QScrollArea
+QDoubleSpinBox, QComboBox, QFormLayout, QTableWidget, QTableWidgetItem, QScrollArea, QMessageBox
 from PySide2.QtGui import QStandardItem, QStandardItemModel, QPalette
 from PySide2.QtCore import QDir, Qt, QMimeData, QUrl, Signal
 import numpy as np
@@ -77,7 +77,9 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
 
         # Use the custom tree view for cellIndex with enhanced drag and drop
         self.cellIndexLayout = QVBoxLayout()
-        self.cellIndex = CustomTreeView(parent=self.cellIndexFrame, update_callback=self._handleDropEvent)
+        self.cellIndex = CustomTreeView(parent=self.cellIndexFrame, 
+                                       update_callback=self._handleDropEvent, 
+                                       db_builder=self)
         
         self.cellIndex.setGeometry(10, 50, 780, 500)
         self.cellIndexFrame.setAcceptDrops(True)
@@ -111,6 +113,7 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
         self.cell_layout = None
         self.protocol_layout = None
         self.protocol_columns = {}  # Track which columns correspond to protocols
+        self._first_update = True  # Track if this is the first update
 
     def _initializeExcelLikeHeaders(self):
         """Initialize headers for Excel-like spreadsheet view"""
@@ -537,15 +540,83 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
                 f'Added {files_added} file(s) to protocol "{protocol_name}" in cell "{cell_name}"'
             )
 
+    def _saveViewState(self):
+        """Save the current view state (scroll position, column widths, selection)"""
+        view_state = {}
+        
+        # Save scroll position
+        h_scroll = self.cellIndex.horizontalScrollBar()
+        v_scroll = self.cellIndex.verticalScrollBar()
+        view_state['h_scroll'] = h_scroll.value()
+        view_state['v_scroll'] = v_scroll.value()
+        
+        # Save column widths
+        view_state['column_widths'] = []
+        header = self.cellIndex.header()
+        for i in range(self.cellIndexModel.columnCount()):
+            view_state['column_widths'].append(header.sectionSize(i))
+        
+        # Save current selection
+        current_index = self.cellIndex.currentIndex()
+        view_state['current_row'] = current_index.row() if current_index.isValid() else -1
+        view_state['current_col'] = current_index.column() if current_index.isValid() else -1
+        
+        # Save selected items
+        selection_model = self.cellIndex.selectionModel()
+        if selection_model:
+            selected_indexes = selection_model.selectedIndexes()
+            view_state['selected_items'] = [(idx.row(), idx.column()) for idx in selected_indexes]
+        else:
+            view_state['selected_items'] = []
+            
+        return view_state
+    
+    def _restoreViewState(self, view_state):
+        """Restore the view state after update"""
+        if not view_state:
+            return
+            
+        # Restore column widths (but only if they were previously set)
+        if 'column_widths' in view_state and len(view_state['column_widths']) == self.cellIndexModel.columnCount():
+            header = self.cellIndex.header()
+            for i, width in enumerate(view_state['column_widths']):
+                if width > 0:  # Only restore if width was actually set
+                    header.resizeSection(i, width)
+        
+        # Restore selection
+        if view_state.get('current_row', -1) >= 0 and view_state.get('current_col', -1) >= 0:
+            if (view_state['current_row'] < self.cellIndexModel.rowCount() and 
+                view_state['current_col'] < self.cellIndexModel.columnCount()):
+                new_index = self.cellIndexModel.index(view_state['current_row'], view_state['current_col'])
+                self.cellIndex.setCurrentIndex(new_index)
+        
+        # Restore additional selections
+        selection_model = self.cellIndex.selectionModel()
+        if selection_model and 'selected_items' in view_state:
+            for row, col in view_state['selected_items']:
+                if (row < self.cellIndexModel.rowCount() and 
+                    col < self.cellIndexModel.columnCount() and 
+                    (row, col) != (view_state.get('current_row', -1), view_state.get('current_col', -1))):
+                    index = self.cellIndexModel.index(row, col)
+                    selection_model.select(index, selection_model.Select)
+        
+        # Restore scroll position (do this last, after other updates)
+        if 'h_scroll' in view_state and 'v_scroll' in view_state:
+            h_scroll = self.cellIndex.horizontalScrollBar()
+            v_scroll = self.cellIndex.verticalScrollBar()
+            h_scroll.setValue(view_state['h_scroll'])
+            v_scroll.setValue(view_state['v_scroll'])
+
     def _updateCellIndex(self):
         """Update cell index to display data in Excel-like spreadsheet format"""
         
-        # Store current selection
-        current_selection = self.cellIndex.currentIndex()
+        # Save current view state before making changes
+        view_state = None
+        if not self._first_update and self.cellIndexModel.rowCount() > 0:
+            view_state = self._saveViewState()
         
-        # Clear the existing model and reinitialize headers
-        self.cellIndexModel.clear()
-        self._initializeExcelLikeHeaders()
+        # Store current selection for fallback
+        current_selection = self.cellIndex.currentIndex()
         
         # Get all cells from database
         cells = self.database.getCells()
@@ -557,14 +628,32 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
                 if recording_type not in ["name", "sweep"]:
                     all_protocols.add(recording_type)
         
-        # Update protocol columns mapping
+        # Check if we need to rebuild headers (protocols changed)
         base_headers = ['Cell Name', 'Date', 'Drug', 'Notes']
-        for i, protocol in enumerate(sorted(all_protocols)):
-            self.protocol_columns[protocol] = len(base_headers) + i
+        new_headers = base_headers + sorted(all_protocols)
+        current_headers = []
+        for i in range(self.cellIndexModel.columnCount()):
+            header_data = self.cellIndexModel.horizontalHeaderItem(i)
+            current_headers.append(header_data.text() if header_data else "")
+        
+        headers_changed = current_headers != new_headers
+        
+        if headers_changed or self._first_update:
+            # Need to rebuild headers and structure
+            self.cellIndexModel.clear()
+            self._initializeExcelLikeHeaders()
             
-        # Update headers with all protocols
-        all_headers = base_headers + sorted(all_protocols)
-        self.cellIndexModel.setHorizontalHeaderLabels(all_headers)
+            # Update protocol columns mapping
+            for i, protocol in enumerate(sorted(all_protocols)):
+                self.protocol_columns[protocol] = len(base_headers) + i
+                
+            # Update headers with all protocols
+            self.cellIndexModel.setHorizontalHeaderLabels(new_headers)
+            view_state = None  # Can't restore view state when structure changes
+        
+        # Clear existing data but keep headers if structure didn't change
+        if not headers_changed and not self._first_update:
+            self.cellIndexModel.removeRows(0, self.cellIndexModel.rowCount())
         
         # Create Excel-like rows - one row per cell
         for cell_name, recordings in cells.items():
@@ -619,19 +708,32 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
             # Add the complete row to the model
             self.cellIndexModel.appendRow(row_items)
         
-        # Restore selection if possible
-        if current_selection.isValid() and current_selection.row() < self.cellIndexModel.rowCount():
+        # Handle view state restoration
+        if view_state:
+            # Restore the saved view state
+            self._restoreViewState(view_state)
+        elif current_selection.isValid() and current_selection.row() < self.cellIndexModel.rowCount():
+            # Fallback: restore basic selection if view state not available
             self.cellIndex.setCurrentIndex(current_selection)
         
-        # Auto-resize columns to fit content better
-        self.cellIndex.resizeColumnsToContents()
-        
-        # Ensure minimum widths
-        for i in range(self.cellIndexModel.columnCount()):
-            if self.cellIndex.columnWidth(i) < 80:
-                self.cellIndex.setColumnWidth(i, 80)
-            elif self.cellIndex.columnWidth(i) > 200:
-                self.cellIndex.setColumnWidth(i, 200)
+        # Only auto-resize columns and set constraints on first update
+        if self._first_update:
+            # Auto-resize columns to fit content better
+            self.cellIndex.resizeColumnsToContents()
+            
+            # Ensure minimum widths
+            for i in range(self.cellIndexModel.columnCount()):
+                if self.cellIndex.columnWidth(i) < 80:
+                    self.cellIndex.setColumnWidth(i, 80)
+                elif self.cellIndex.columnWidth(i) > 200:
+                    self.cellIndex.setColumnWidth(i, 200)
+            
+            self._first_update = False
+
+    def _forceRefreshCellIndex(self):
+        """Force a complete refresh of the cell index, resetting view state"""
+        self._first_update = True
+        self._updateCellIndex()
 
     def _clearGroupBox(self):
         def _innerclear():
@@ -667,9 +769,10 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
             self.statusBar.showMessage("CSV/Excel import completed successfully")
         
 class CustomTreeView(QTreeView):
-    def __init__(self, parent=None, update_callback=None):
+    def __init__(self, parent=None, update_callback=None, db_builder=None):
         super(CustomTreeView, self).__init__(parent)
         self.update_callback = update_callback
+        self.db_builder = db_builder  # Reference to the DatabaseBuilder instance
         
         # Enhanced drag and drop settings
         self.setDragEnabled(False)  # We don't want to drag from this view
@@ -734,6 +837,64 @@ class CustomTreeView(QTreeView):
         # Enable keyboard navigation
         self.setTabKeyNavigation(True)
         
+        # Add a method to preserve view state during updates
+        self._saved_view_state = None
+    
+    def saveViewState(self):
+        """Save current view state for restoration after model changes"""
+        view_state = {}
+        
+        # Save scroll position
+        h_scroll = self.horizontalScrollBar()
+        v_scroll = self.verticalScrollBar()
+        view_state['h_scroll'] = h_scroll.value()
+        view_state['v_scroll'] = v_scroll.value()
+        
+        # Save column widths
+        view_state['column_widths'] = []
+        header = self.header()
+        if self.model():
+            for i in range(self.model().columnCount()):
+                view_state['column_widths'].append(header.sectionSize(i))
+        
+        # Save current selection
+        current_index = self.currentIndex()
+        view_state['current_row'] = current_index.row() if current_index.isValid() else -1
+        view_state['current_col'] = current_index.column() if current_index.isValid() else -1
+        
+        self._saved_view_state = view_state
+        return view_state
+    
+    def restoreViewState(self, view_state=None):
+        """Restore previously saved view state"""
+        state = view_state or self._saved_view_state
+        if not state or not self.model():
+            return
+            
+        # Restore column widths
+        if 'column_widths' in state:
+            header = self.header()
+            for i, width in enumerate(state['column_widths']):
+                if i < self.model().columnCount() and width > 0:
+                    header.resizeSection(i, width)
+        
+        # Restore selection
+        if (state.get('current_row', -1) >= 0 and 
+            state.get('current_col', -1) >= 0 and
+            state['current_row'] < self.model().rowCount() and 
+            state['current_col'] < self.model().columnCount()):
+            new_index = self.model().index(state['current_row'], state['current_col'])
+            self.setCurrentIndex(new_index)
+        
+        # Restore scroll position (do this last)
+        if 'h_scroll' in state and 'v_scroll' in state:
+            h_scroll = self.horizontalScrollBar()
+            v_scroll = self.verticalScrollBar()
+            # Use QTimer to delay scroll restoration to ensure it works
+            from PySide2.QtCore import QTimer
+            QTimer.singleShot(10, lambda: h_scroll.setValue(state['h_scroll']))
+            QTimer.singleShot(10, lambda: v_scroll.setValue(state['v_scroll']))
+        
     def showContextMenu(self, position):
         """Show context menu with spreadsheet-like options"""
         index = self.indexAt(position)
@@ -765,7 +926,21 @@ class CustomTreeView(QTreeView):
         resize_action.triggered.connect(self.resizeColumnsToContents)
         menu.addAction(resize_action)
         
+        # Add option to force refresh view state
+        refresh_action = QAction("Reset View (Resize & Reposition)", self)
+        refresh_action.triggered.connect(self._forceViewRefresh)
+        menu.addAction(refresh_action)
+        
         menu.exec_(self.mapToGlobal(position))
+    
+    def _forceViewRefresh(self):
+        """Force a complete view refresh - resize columns and reset positions"""
+        if self.db_builder and hasattr(self.db_builder, '_forceRefreshCellIndex'):
+            # Call the DatabaseBuilder's force refresh method
+            self.db_builder._forceRefreshCellIndex()
+        else:
+            # Fallback: just resize columns
+            self.resizeColumnsToContents()
         
     def clearCell(self, index):
         """Clear the content of a cell"""
