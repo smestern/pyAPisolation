@@ -280,16 +280,29 @@ class AnalysisResult:
         _file_paths = []
         _errors = []
         for res in results:
-            if res.detailed_data is not None:
-                _detailed_df_list.append(res.detailed_data)
-            if res.summary_data is not None:
-                _summary_df_list.append(res.summary_data)
-            if res.sweep_data is not None:
-                _sweep_df_list.append(res.sweep_data)
-            if res.file_path:
-                _file_paths.append(res.file_path)
-            if res.errors:
-                _errors.extend(res.errors)
+            if isinstance(res, AnalysisResult):
+                if res.detailed_data is not None:
+                    _detailed_df_list.append(res.detailed_data)
+                if res.summary_data is not None:
+                    _summary_df_list.append(res.summary_data)
+                if res.sweep_data is not None:
+                    _sweep_df_list.append(res.sweep_data)
+                if res.file_path:
+                    _file_paths.append(res.file_path)
+                if res.errors:
+                    _errors.extend(res.errors)
+            elif isinstance(res, pd.DataFrame):
+                _detailed_df_list.append(res)
+            elif isinstance(res, dict):
+                #legacy spike and subthreshold
+                if 'spike_df' in res and isinstance(res['spike_df'], pd.DataFrame):
+                    _detailed_df_list.append(res['spike_df'])
+                if 'subthreshold_df' in res and isinstance(res['subthreshold_df'], pd.DataFrame):
+                    _detailed_df_list.append(res['subthreshold_df'])
+                if 'spike_summary' in res and isinstance(res['spike_summary'], pd.DataFrame):
+                    _summary_df_list.append(res['spike_summary'])
+                if 'running_bin' in res and isinstance(res['running_bin'], pd.DataFrame):
+                    _sweep_df_list.append(res['running_bin'])
 
         combined = AnalysisResult(
             analyzer_name=results[0].analyzer_name if results else 'NoAnalyzer',
