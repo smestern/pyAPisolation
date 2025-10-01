@@ -98,7 +98,7 @@ class SpikeAnalysisModule(AnalysisModule):
         #drop param_dict keys that are not used
         protocol = temp_param_dict.pop("protocol_name", None)
         temp_param_dict.pop("param_dict", None)
-        res = legacy_analyze(data, param_dict=temp_param_dict, protocol_name=protocol)
+        res = legacy_analyze(data.filePath, param_dict=temp_param_dict, protocol_name=protocol)
 
         return {
             'spike_df': res[1],

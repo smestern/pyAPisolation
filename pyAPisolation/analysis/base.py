@@ -8,6 +8,7 @@ analyzers must implement.
 from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
+from functools import partial
 import pandas as pd
 import numpy as np
 import glob
@@ -15,6 +16,7 @@ import logging
 import pyabf
 from ..dataset import cellData
 import copy
+import multiprocessing as mp
 logger = logging.getLogger(__name__)
 
 
@@ -304,6 +306,8 @@ class AnalysisResult:
         return combined
 
 
+    
+
 class AnalysisModule:
     """
     Abstract base class for analysis modules.
@@ -319,70 +323,17 @@ class AnalysisModule:
         # Keep param_dict for backward compatibility
         self.param_dict = {}
         #override the childs analyze function to include our hook
-        self._child_analyze = self.analyze
-        self.analyze = self._analyze if override else self.analyze
+        self.override = override
+        if override:
+            self._child_analyze = self.analyze
+            self.analyze = partial(self.input_wrapper, func=self._child_analyze)
+            
     
     @abstractmethod
-    def analyze(self, **kwargs):
+    def analyze(self, x,y,c, **kwargs):
+        """Perform the analysis. Must be implemented by subclasses. ideally this accepts data in the form of x,y,c arrays
+            and returns a AnalysisResult object"""
         pass
-        
-    def _analyze(self, x=None, y=None, c=None, file=None, celldata=None, 
-                selected_sweeps=None, **kwargs) -> AnalysisResult:
-        """
-        Unified analysis interface that accepts various input types.
-        
-        Args:
-            x (np.array, optional): Time array of the sweep(s)
-            y (np.array, optional): Voltage array of the sweep(s) 
-            c (np.array, optional): Current array of the sweep(s)
-            file (str, optional): File path to analyze
-            celldata (cellData, optional): cellData object to analyze
-            selected_sweeps (list, optional): List of sweep numbers to analyze
-            **kwargs: Additional parameters to override defaults
-            
-        Returns:
-            AnalysisResult: Container with analysis results and metadata
-        """
-        from ..patch_utils import parse_user_input  # Import here to avoid circular imports
-        
-        # Create result container
-        result = AnalysisResult(
-            analyzer_name=self.name,
-            file_path=file or getattr(celldata, 'filePath', 'unknown'),
-            success=True
-        )
-        if True:  # Uncomment to enable error handling
-        #try:
-            # Update parameters with any kwargs
-            if kwargs:
-                self.update_parameters(**kwargs)
-            
-            # Parse input to get consistent data format
-            if celldata is not None:
-                data = celldata
-            else:
-                data = parse_user_input(x, y, c, file)
-            
-            # Convert parameters to param_dict for compatibility
-            param_dict = self._parameters_to_dict()
-            
-            # Determine sweeps to analyze
-            if selected_sweeps is None:
-                if hasattr(data, 'sweepList'):
-                    selected_sweeps = data.sweepList
-                else:
-                    selected_sweeps = [0]
-            
-            # Run the analysis using the existing individual analysis method
-            analysis_results = self.run_individual_analysis(
-                data, selected_sweeps, param_dict, 
-                popup=None, show_rejected=False
-            )
-
-        #except Exception as e:
-        #    result.add_error(f"Analysis failed: {str(e)}")
-            
-        return analysis_results
     
     def run_batch_analysis(self, folder_path, param_dict=None, protocol_name=None):
         """
@@ -416,7 +367,7 @@ class AnalysisModule:
         n_jobs = param_dict.get('n_jobs', 1) if param_dict else 1
         if n_jobs > 1: #if we are using multiprocessing
             pool = mp.Pool(processes=n_jobs)
-            res = [pool.apply(self.analyze, args=(file, param_dict, protocol_name)) for file in filelist]
+            res = [pool.apply(self.analyze, kwds={'file': file, 'param_dict': copy.deepcopy(param_dict), 'protocol_name': protocol_name}) for file in filelist]
             pool.close()
            
             pool.join()
@@ -492,7 +443,68 @@ class AnalysisModule:
             return pd.concat(all_spikes, ignore_index=True)
         else:
             return pd.DataFrame()
+
+
+    def input_wrapper(self, *, x=None, y=None, c=None, file=None, celldata=None, 
+                selected_sweeps=None, func=None, **kwargs):
+        """
+            Unified analysis interface that accepts various input types.
+
+            Args:
+                x (np.array, optional): Time array of the sweep(s)
+                y (np.array, optional): Voltage array of the sweep(s) 
+                c (np.array, optional): Current array of the sweep(s)
+                file (str, optional): File path to analyze
+                celldata (cellData, optional): cellData object to analyze
+                selected_sweeps (list, optional): List of sweep numbers to analyze
+                **kwargs: Additional parameters to override defaults
+                
+            Returns:
+                AnalysisResult: Container with analysis results and metadata
+        """
+        from ..patch_utils import parse_user_input  # Import here to avoid circular imports
         
+        # Create result container
+        result = AnalysisResult(
+            analyzer_name=''.join(func.__qualname__.split('.')[:-1]),
+            file_path=file or getattr(celldata, 'filePath', 'unknown'),
+            success=True
+        )
+        if True:  # Uncomment to enable error handling
+        #try:
+            # Update parameters with any kwargs
+            if kwargs:
+                self.update_parameters(**kwargs)
+            
+            # Parse input to get consistent data format
+            if celldata is not None:
+                data = celldata
+            else:
+                data = parse_user_input(x, y, c, file)
+            
+            # Convert parameters to param_dict for compatibility
+            param_dict = self._parameters_to_dict()
+            
+            # Determine sweeps to analyze
+            if selected_sweeps is None:
+                if hasattr(data, 'sweepList'):
+                    selected_sweeps = data.sweepList
+                else:
+                    selected_sweeps = [0]
+            
+            # Run the analysis using the existing individual analysis method
+            analysis_results = func(
+                data=data,
+                selected_sweeps=selected_sweeps,
+                param_dict=param_dict
+            )
+            
+        #except Exception as e:
+        #    result.add_error(f"Analysis failed: {str(e)}")
+            
+        return analysis_results
+    
+
     @property
     def parameters(self) -> AnalysisParameters:
         """Get the analysis parameters object"""
