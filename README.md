@@ -3,8 +3,6 @@ This package facilitates batch feature extraction and data dashboarding of ABF f
 ![](PVN_CLAMP.PNG)
 
 
-![](PVN_CLAMP.PNG)
-
 ### Installation
 To install run
   `pip install git+https://github.com/smestern/pyAPisolation`
