@@ -7,7 +7,6 @@
 # The known good df is saved in the test_data folder
 
 import os
-from importlib_metadata import files
 import pandas as pd
 import numpy as np
 from joblib import dump, load
