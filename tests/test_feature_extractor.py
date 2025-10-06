@@ -10,7 +10,7 @@ import os
 import pandas as pd
 import numpy as np
 from joblib import dump, load
-from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, DEFAULT_DICT, analyze_spike_times
+from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, DEFAULT_DICT, analyze_spike_times, analyze_subthres
 from pyAPisolation.patch_utils import load_protocols
 from pyAPisolation.analysis import SpikeAnalysisModule
 import glob
@@ -104,8 +104,11 @@ def test_analyze_funcs():
     #try to load the protocols
     spike_times = analyze_spike_times(file=files[-1])
     print(spike_times)
-    
-def test_modular_analysis():
+
+def test_subthreshold_funcs():
+    #load a file
+    files = glob.glob(os.path.expanduser('./data/') + '/**/*.abf', recursive=True)
+    def test_modular_analysis():
     #we need to make sure the modular feature analysis is working:
     # Load the known good df
     df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
@@ -122,10 +125,13 @@ def test_modular_analysis():
     spike_analysis_module.run_batch_analysis(files, param_dict=dict_parallel)
     # Get the results
     results = spike_analysis_module.get_results()
+    # Test the analyze_subthres function
+    
+    dfs = analyze_subthres(file=files[0],  savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False)
+    print(dfs)
 
 
 if __name__ == '__main__':
-    test_modular_analysis()
     test_analyze_funcs()
     test_dataframe_save()
     test_feature_extractor()

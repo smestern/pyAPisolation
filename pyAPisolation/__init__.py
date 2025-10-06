@@ -1,5 +1,4 @@
 
-## to install.
 import os
 import sys
 
@@ -14,8 +13,7 @@ import sys
 try:
     import ipfx
 except:
-    #install_ipfx()
-    pass
+    install_ipfx()
 
 from . import patch_utils
 from . import dataset

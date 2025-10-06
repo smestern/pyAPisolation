@@ -26,7 +26,7 @@ exclude = ["tests"]  # exclude packages matching these glob patterns (empty by d
 
 [project.scripts]
 spike_finder = "pyAPisolation.bin:run_spike_finder.main"
-
+pyAPisolation_setup = "pyAPisolation.setup_install:install_ipfx"
 [tool.setuptools.package-data]
 "*" = ["*.pzfx", "*.ui"]
 

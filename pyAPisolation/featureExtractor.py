@@ -31,21 +31,31 @@ logger.info('Feature extractor loaded')
 
 #this is here, to swap functions in the feature extractor for ones specfic to the INOUE lab IC1 standard protocol
 IC1_SPECIFIC_FUNCTIONS = True
-DEFAULT_DICT = {'start': 0, 'end': 0, 'filter': 0, 'stim_find': True}
+DEFAULT_DICT = {'filter': 0, # lowpass filter frequency in Hz (for the allen inst. filter)
+                'dv_cutoff': 7.0, # min dV/dt to consider a spike (mV/ms)
+                'start': 0.0, # time to start looking for spikes (s)
+                'end': 0.0, # time to stop looking for spikes (s), if 0 will be set to end of sweep
+                'max_interval': 0.005, # max interval between spike peaks (s)
+                'min_height': 2.0, # min height of spike (mV)
+                'min_peak': -10.0, # min voltage at spike peak (mV)
+                'stim_find': True, # if True will try to find the stimulation time from the current trace
+                'thresh_frac': 0.2, # fraction of spike height to use for threshold (0.0-1.0)
+                'bessel_filter': -1, # cutoff frequency of bessel filter, if -1 no filter will be applied
+                }
 
 #=== functional interface for programmatic use ===
 def analyze(x=None, y=None, c=None, file=None, param_dict=DEFAULT_DICT, return_summary_frames=False):
     """ Runs the ipfx feature extractor over a single sweep, set of sweeps, or file. Returns the standard ipfx dataframe, and summary dataframes (if requested).
     Args:
-        x (np.array, optional): The time array of the sweep. Defaults to None.
-        y (np.array, optional): The voltage array of the sweep. Defaults to None.
-        c (np.array, optional): The current array of the sweep. Defaults to None.
-        file (str, optional): The file path of the sweep. Defaults to None.
+        x (np.array, optional): The time array of the sweeps. Defaults to None.
+        y (np.array, optional): The voltage array of the sweeps. Defaults to None.
+        c (np.array, optional): The current array of the sweeps. Defaults to None.
+        file (str, optional): The file path. Defaults to None.
         param_dict (dict, optional): The dictionary of parameters that will be passed to the feature extractor. Defaults to None.
         return_summary_frames (bool, optional): If True, will return the summary dataframes. Defaults to False.
     Returns:
-        df_raw_out: A dataframe of the full data as returned by the ipfx feature extractor. Consists of all the sweeps in the files stacked on top of each other.
-        (optional) df_spike_count (pd.DataFrame): The dataframe that contains the standard ipfx features for the sweep, oriented sweepwise
+        df_spike_count (pd.DataFrame): The dataframe that contains the standard ipfx features for the sweep, oriented sweepwise
+        (optional) df_raw_out: A dataframe of the full data as returned by the ipfx feature extractor. Consists of all the sweeps in the files stacked on top of each other.
         (optional) df_running_avg_count (pd.DataFrame): The dataframe that contains the standard ipfx features for the consecutive spikes in the sweep
     """
     data = parse_user_input(x, y, c, file)
@@ -521,8 +531,8 @@ def preprocess_abf_subthreshold(file_path, protocol_name='', param_dict={}):
     abf = pyabf.ABF(file_path, loadData=False)           
     if protocol_name in abf.protocol:
         print(file_path + ' import')
-        abf = pyabf.ABF(file_path)      
-        df, avg = analyze_subthres(abf, **param_dict)
+        #abf = pyabf.ABF(file_path)      
+        df, avg = analyze_subthres(file=file_path, **param_dict)
         return df, avg
     else:
         print('Not correct protocol: ' + abf.protocol)
@@ -530,16 +540,34 @@ def preprocess_abf_subthreshold(file_path, protocol_name='', param_dict={}):
     #except:
        #return pd.DataFrame(), pd.DataFrame()
 
-def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False):
+def analyze_subthres(x=None, y=None, c=None, file=None, protocol_name='', savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False):
+    """ This function will compute the subthreshold features for a given sweep or set of sweeps. It will return a dataframe of the features, as well as an average dataframe.
+    takes:
+        x (np.array): The time array of the cell (1d or 2d array)
+        y (np.array): The voltage array of the cell (1d or 2d  array)
+        c (np.array): The current array of the cell (1d or 2d  array)
+        file (str): The file path of the cell
+        protocol_name (str): The name of the protocol to filter by. Defaults to '' - no filtering.
+        savfilter (int): The window size of the savgol filter to apply to the data
+        start_sear (float): The start time to search for the subthreshold features. Defaults to None - start of sweep.
+        end_sear (float): The end time to search for the subthreshold features. Defaults to None - end of sweep.
+        subt_sweeps (list): The list of sweeps to analyze. Defaults to None - all sweeps.
+        time_after (float): The time after the start_sear to search for the subthreshold
+        bplot (bool): If True, will plot the subthreshold features. Defaults to False.
+    returns:
+        df (pd.DataFrame): The dataframe that contains the subthreshold features for the sweep
+        avg (pd.DataFrame): The dataframe that contains the average subthreshold features for the sweep
+    """
+    data = parse_user_input(x, y, c, file)
     dfs = []
     averages = []
     plt.close('all')
-    if (abf.sweepLabelY != 'Clamp Current (pA)' and abf.protocol != 'Gap free' and protocol_name in abf.protocol):
-        np.nan_to_num(abf.data, nan=-9999, copy=False)
+    if (data.sweepLabelY != 'Clamp Current (pA)' and data.protocol != 'Gap free' and protocol_name in data.protocol):
+        np.nan_to_num(data, nan=-9999, copy=False)
         if savfilter > 0:
-            abf.data = signal.savgol_filter(abf.data, savfilter, polyorder=3)
+            data.data = signal.savgol_filter(data.data, savfilter, polyorder=3)
 
-        dataT = abf.sweepX
+        dataT = data.sweepX
         if start_sear is not None:
             idx_start = np.argmin(np.abs(dataT - start_sear))
         else:
@@ -550,15 +578,15 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
         else:
             idx_end = -1
 
-        if abf.sweepCount > 1:
+        if data.sweepCount > 1:
             if subt_sweeps is None:
-                sweepList = determine_subt(abf, (idx_start, idx_end))
+                sweepList = determine_subt(data, (idx_start, idx_end))
                 if np.isscalar(sweepList):
                     sweepList = np.array([sweepList])
                 sweepcount = len(sweepList)
             else:
                 subt_sweeps_temp = subt_sweeps - 1
-                sweep_union = np.intersect1d(abf.sweepList, subt_sweeps_temp)
+                sweep_union = np.intersect1d(data.sweepList, subt_sweeps_temp)
                 sweepList = sweep_union
                 sweepcount = 1
         else:
@@ -566,24 +594,24 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
             sweepList = [0]
 
         temp_df = {}
-        temp_df['filename'] = [abf.abfID]
-        temp_df['foldername'] = [os.path.dirname(abf.abfFilePath)]
+        temp_df['filename'] = [data.abfID]
+        temp_df['foldername'] = [os.path.dirname(data.abfFilePath)]
         temp_avg = {}
-        temp_avg['filename'] = [abf.abfID]
-        temp_avg['foldername'] = [os.path.dirname(abf.abfFilePath)]
-
+        temp_avg['filename'] = [data.abfID]
+        temp_avg['foldername'] = [os.path.dirname(data.abfFilePath)]
+     
         full_dataI = []
         full_dataV = []
         for sweepNumber in sweepList:
-            real_sweep_length = abf.sweepLengthSec - 0.0001
+            real_sweep_length = data.sweepLengthSec - 0.0001
             real_sweep_number = sweepNumber_to_real_sweep_number(sweepNumber) 
 
-            abf.setSweep(sweepNumber)
-            dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+            data.setSweep(sweepNumber)
+            dataT, dataV, dataI = data.sweepX, data.sweepY, data.sweepC
             dataT, dataV, dataI = dataT[idx_start:idx_end], dataV[idx_start:idx_end], dataI[idx_start:idx_end]
             dataT = dataT - dataT[0]
 
-            decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=abf.abfID)
+            decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=data.abfID)
             resist = membrane_resistance(dataT, dataV, dataI)
             Cm2, Cm1 = mem_cap(resist, decay_slow)
             Cm3 = mem_cap_alt(resist, decay_slow, curve[3], np.amin(dataI))
@@ -617,22 +645,22 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
                 dataI = np.hstack((dataI, np.full(dataV.shape[0] - dataI.shape[0], 0)))
 
         if bplot:
-            plt.title(abf.abfID)
+            plt.title(data.abfID)
             plt.ylim(top=-40)
             plt.xlim(right=0.6)
-            plt.savefig(os.path.join(os.path.dirname(abf.abfFilePath), 'cm_plots', f'sagfit{abf.abfID}sweep{real_sweep_number}.png'))
+            plt.savefig(os.path.join(os.path.dirname(data.abfFilePath), 'cm_plots', f'sagfit{data.abfID}sweep{real_sweep_number}.png'))
 
         full_dataI = np.vstack(full_dataI)
         indices_of_same = np.arange(full_dataI.shape[0])
         full_dataV = np.vstack(full_dataV)
         temp_df = pd.DataFrame.from_dict(temp_df)
         decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0),
-                                                                                                  np.nanmean(full_dataI[indices_of_same, :], axis=0), time_after, abf_id=abf.abfID, plot=bplot, root_fold=os.path.dirname(abf.abfFilePath))
+                                                                                                  np.nanmean(full_dataI[indices_of_same, :], axis=0), time_after, abf_id=data.abfID, plot=bplot, root_fold=os.path.dirname(data.abfFilePath))
         temp_avg[f"Voltage sag mean"], temp_avg["Voltage Min point"] = compute_sag(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0), np.nanmean(full_dataI[indices_of_same, :], axis=0), time_after, plot=bplot)
         temp_avg[f"Sweepwise Voltage sag mean"], temp_avg["Sweepwise Voltage Min point"] = np.nanmean(df_select_by_col(temp_df, ['Voltage sag 0'])), np.nanmean(df_select_by_col(temp_df, ['Voltage min']))
         if bplot:
-            plt.title(abf.abfID)
-            plt.savefig(os.path.join(os.path.dirname(abf.abfFilePath), 'cm_plots', f'sagfit{abf.abfID}'))
+            plt.title(data.abfID)
+            plt.savefig(os.path.join(os.path.dirname(data.abfFilePath), 'cm_plots', f'sagfit{data.abfID}'))
 
         temp_avg["Averaged 1 phase tau "] = [p_decay]
         temp_avg["Averaged 2 phase fast tau "] = [decay_fast]
@@ -650,7 +678,7 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
             temp_avg["Averaged Best Fit"] = [1]
 
         resist = membrane_resistance(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0), np.nanmean(full_dataI[indices_of_same, :], axis=0))
-        resist_alt = exp_rm_factor(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0), np.nanmean(full_dataI[indices_of_same, :], axis=0), time_after, decay_slow, abf_id=abf.abfID, root_fold=os.path.dirname(abf.abfFilePath))
+        resist_alt = exp_rm_factor(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0), np.nanmean(full_dataI[indices_of_same, :], axis=0), time_after, decay_slow, abf_id=data.abfID, root_fold=os.path.dirname(data.abfFilePath))
         Cm2, Cm1 = mem_cap(resist, decay_slow, p_decay)
         Cm3 = mem_cap_alt(resist, decay_slow, curve[3], np.amin(np.nanmean(full_dataI[indices_of_same, :], axis=0)))
         rm_alt = mem_resist_alt(Cm3, decay_slow)
@@ -692,8 +720,8 @@ def analyze_subthres(abf, protocol_name='', savfilter=0, start_sear=None, end_se
             ladder_Y = []
             ladder_C = []
             for i in range(full_dataI.shape[0]):
-                abf.setSweep(i)
-                dataT, dataV, dataI = abf.sweepX, abf.sweepY, abf.sweepC
+                data.setSweep(i)
+                dataT, dataV, dataI = data.sweepX, data.sweepY, data.sweepC
                 ladder_X.append(dataT)
                 ladder_Y.append(dataV)
                 ladder_C.append(dataI)

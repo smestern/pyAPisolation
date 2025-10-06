@@ -73,6 +73,7 @@ class cellData(object):
             self.clampMode = clampMode
             self.stimUnits = stimUnits
             self.respUnits = respUnits
+            self.abfID = self.name
 
         #default values
         self.setSweep(0)
@@ -82,6 +83,14 @@ class cellData(object):
         self.dataX = self.data[0]
         self.dataY = self.data[1]
         self.dataC = self.data[2]
+    
+        self.stimUnits = self._file_obj.dacUnits
+        self.sweepLabelY = self._file_obj.sweepLabelY
+        self.respUnits = self._file_obj.adcUnits
+        self.sweepLabelC = self._file_obj.sweepLabelC
+        self.sweepLabelX = self._file_obj.sweepLabelX
+        self.abfID = getattr(self._file_obj, 'abfID', self.name)
+        self.abfFilePath = getattr(self._file_obj, 'abfFilePath', self.filePath)
 
     def setProtocol(self, protocol):
         """ Some files / datasets may have multiple protocols, this allows the user to set the protocol for the data.
@@ -112,6 +121,8 @@ class cellData(object):
     @property
     def sweepLengthSec(self):
         return self.sweepX[-1]
+    
+
 
     def __str__(self):
         return f"cellData object: {self.name}, loaded from {self.file}"
