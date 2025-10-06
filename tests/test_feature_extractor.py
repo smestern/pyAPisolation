@@ -10,7 +10,7 @@ import os
 import pandas as pd
 import numpy as np
 from joblib import dump, load
-from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, DEFAULT_DICT, analyze_spike_times
+from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, DEFAULT_DICT, analyze_spike_times, analyze_subthres
 from pyAPisolation.patch_utils import load_protocols
 import glob
 
@@ -103,11 +103,19 @@ def test_analyze_funcs():
     #try to load the protocols
     spike_times = analyze_spike_times(file=files[-1])
     print(spike_times)
-    
 
+def test_subthreshold_funcs():
+    #load a file
+    files = glob.glob(os.path.expanduser('./data/') + '/**/*.abf', recursive=True)
+    
+    # Test the analyze_subthres function
+    
+    dfs = analyze_subthres(file=files[0],  savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False)
+    print(dfs)
 
 
 if __name__ == '__main__':
-    test_analyze_funcs()
-    test_dataframe_save()
-    test_feature_extractor()
+    test_subthreshold_funcs()
+    # test_analyze_funcs()
+    # test_dataframe_save()
+    # test_feature_extractor()

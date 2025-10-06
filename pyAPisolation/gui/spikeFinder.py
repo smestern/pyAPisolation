@@ -397,10 +397,10 @@ class analysis_gui(object):
                 #self.rejected_spikes = None
                 self.indiv_popup.setValue(sweep)
             #self.spike_df = pd.concat(self.spike_df)
-        elif self.get_current_analysis() is 'subthres':
+        elif self.get_current_analysis() == 'subthres':
             self.spike_df = None
             self.rejected_spikes = None
-            self.subthres_df, _ = analyze_subthres(self.abf, **self.subt_param_dict)
+            self.subthres_df, _ = analyze_subthres(file=self.abf, **self.subt_param_dict)
         self.indiv_popup.hide()
             
     
@@ -465,7 +465,7 @@ class analysis_gui(object):
     
     def run_analysis(self):
         #check whether we are running spike or subthres
-        if self.get_current_analysis() is 'spike':
+        if self.get_current_analysis() == 'spike':
             #run the folder analysis
             self.get_analysis_params()
             self.get_selected_protocol()
@@ -474,7 +474,7 @@ class analysis_gui(object):
             save_data_frames(df[0], df[1], df[2], self.selected_dir, str(time.time())+self.outputTag.text(), self.bspikeFind.isChecked()
                              , self.brunningBin.isChecked(), self.brawData.isChecked())
             self.df = df[1]
-        elif self.get_current_analysis() is 'subthres':
+        elif self.get_current_analysis() == 'subthres':
             self.get_analysis_params()
             self.get_selected_protocol()
             sweepwise_df, avg_df = self._inner_analysis_loop_subthres(self.selected_dir, self.subt_param_dict,  self.selected_protocol)
@@ -601,6 +601,7 @@ class analysis_gui(object):
         else:
             for i, f in enumerate(filelist):
                 popup.setValue(i)
+                print(param_dict)
                 temp_df_spike_count, temp_full_df, temp_running_bin = process_file(f, copy.deepcopy(param_dict),protocol_name)
                 spike_count.append(temp_df_spike_count)
                 df_full.append(temp_full_df)
