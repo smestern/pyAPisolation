@@ -1,37 +1,38 @@
-# Analysis Framework for pyAPisolation
-# 
-# This package provides a modular analysis framework for electrophysiology data analysis.
-# It includes:
-# - Abstract base classes for analysis modules
-# - Registry system for managing analysis types
-# - Built-in analysis modules (spike, subthreshold)
-# - Utilities for easy module registration
+"""
+Core analysis module for pyAPisolation
 
-from .base import AnalysisModule
-from .registry import AnalysisRegistry, analysis_registry
-from .builtin_modules import SpikeAnalysisModule, SubthresholdAnalysisModule
-from .utilities import (
-    register_analysis_module,
-    register_analysis_with_tab,
-    list_available_analyses,
-    get_analysis_module,
-    analysis_module
-)
+This module provides a modular, extensible framework for electrophysiology analysis.
+It separates analysis logic from GUI code and enables easy CLI access.
+
+Key components:
+- BaseAnalyzer: Abstract base class for all analyzers
+- SpikeAnalyzer: Spike detection and feature extraction
+- SubthresholdAnalyzer: Subthreshold feature analysis
+- AnalysisRegistry: Registry for available analyzers
+- AnalysisRunner: Main runner for batch processing
+"""
+
+from .base import AnalysisResult, AnalysisParameters
+
+from .registry import AnalysisRegistry, registry
+from .runner import AnalysisRunner
+#from .legacy import LegacyAnalysisWrapper
+from .builtin_modules import SpikeAnalysisModule, SubthresholdAnalysisModule, ResistanceLadder
+
+# Initialize the registry with built-in analyzers
+
+registry.register_module(SpikeAnalysisModule())
+registry.register_module(SubthresholdAnalysisModule())
+registry.register_module(ResistanceLadder())
 
 __all__ = [
-    # Core classes
-    'AnalysisModule',
+    'BaseAnalyzer',
+    'AnalysisResult', 
+    'AnalysisParameters',
+    'SpikeAnalyzer',
+    'SubthresholdAnalyzer',
     'AnalysisRegistry',
-    'analysis_registry',
-    
-    # Built-in modules
-    'SpikeAnalysisModule', 
-    'SubthresholdAnalysisModule',
-    
-    # Utility functions
-    'register_analysis_module',
-    'register_analysis_with_tab', 
-    'list_available_analyses',
-    'get_analysis_module',
-    'analysis_module'
+    'AnalysisRunner',
+    'LegacyAnalysisWrapper',
+    'registry'
 ]

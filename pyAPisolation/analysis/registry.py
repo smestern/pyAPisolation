@@ -90,7 +90,14 @@ class AnalysisRegistry:
             'tab_mappings': dict(self.tab_mapping),
             'module_count': len(self.modules)
         }
+    
+    def get_analyzer(self, name: str) -> Optional[AnalysisModule]:
+        """
+        Get an analyzer module by name.
+        
+        This is a convenience method that is equivalent to get_module.
+        """
+        return self.get_module(name)
 
-
-# Global registry instance - will be populated with built-in modules
-analysis_registry = AnalysisRegistry()
+# Global registry instance
+registry = AnalysisRegistry()

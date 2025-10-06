@@ -41,11 +41,18 @@ def check_package(package_name, import_name=None):
 
 def install_package(package_name):
     """Install a package using pip"""
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
-        return True
-    except subprocess.CalledProcessError:
-        return False
+    if package_name == 'ipfx':
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package_name, "--no-deps"])
+        except subprocess.CalledProcessError:
+            print(f"❌ Failed to install {package_name}")
+            return False
+    else:
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+            return True
+        except subprocess.CalledProcessError:
+            return False
 
 
 def main():
@@ -67,6 +74,7 @@ def main():
         ("PySide2", "PySide2"),
         ("openpyxl", "openpyxl"),
         ("seaborn", "seaborn"),
+        ("ipfx", "ipfx"),
     ]
     
     # Check packages

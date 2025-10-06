@@ -1,14 +1,14 @@
 # This Python file uses the following encoding: utf-8
 
-import matplotlib
-matplotlib.use('QtAgg')
+
 import os
 import glob
 import pyabf
 import numpy as np
 import pandas as pd
 import multiprocessing as mp
-
+import matplotlib
+matplotlib.use('QtAgg')
 
 from sklearn.ensemble import IsolationForest
 from sklearn.impute import SimpleImputer
@@ -35,8 +35,6 @@ from matplotlib.widgets import SpanSelector
 
 print("Loaded external libraries")
 
-#let's import the prism writer
-
 #import pyAPisolation
 from pyAPisolation.featureExtractor import save_data_frames, save_subthres_data, \
 process_file, analyze_subthres, preprocess_abf_subthreshold, determine_rejected_spikes
@@ -47,7 +45,7 @@ from pyAPisolation.patch_utils import sweepNumber_to_real_sweep_number
 # Import the custom analysis modules
 from pyAPisolation.gui.wizard_integration import add_analysis_wizard_to_menu
 from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
-from pyAPisolation.analysis import analysis_registry
+from pyAPisolation.analysis import registry
 #from .mainwindow import Ui_MainWindow
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
@@ -75,8 +73,7 @@ class analysis_gui(object):
         #self.main_widget = self.children()[-1]
         self.abf = None
         self.current_filter = 0.
-        # Initialize the analysis registry
-        self.analysis_registry = analysis_registry
+        
         self.current_analysis_module = None
         self.bind_ui()
 
@@ -112,6 +109,7 @@ class analysis_gui(object):
             self.main_view = plot_widget
         elif PLOT_BACKEND == "matplotlib":
             import PySide2
+            import PySide2.QtCore
             assert "PySide2" in sys.modules
             self.main_view = FigureCanvas(Figure(figsize=(15, 5)))
             layout.addWidget(self.main_view)

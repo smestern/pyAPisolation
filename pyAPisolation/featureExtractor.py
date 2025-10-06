@@ -303,7 +303,9 @@ def process_file(file_path, param_dict, protocol_name):
         spike_dataframe, spikewise_dataframe, running_bin_data_frame : _description_
     """
     #try:
-    file = cellData(file=file_path)   
+    file = cellData(file=file_path)
+    if protocol_name is None:
+        protocol_name = ""  
     if protocol_name in file.protocol: 
         print(file_path + ' import')
         temp_spike_df, df, temp_running_bin = analyze_sweepset(file=file, sweeplist=None, param_dict=param_dict)

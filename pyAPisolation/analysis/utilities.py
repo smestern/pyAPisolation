@@ -7,7 +7,7 @@ the analysis module framework.
 
 from typing import Type, Any, Dict, Optional
 from .base import AnalysisModule
-from .registry import analysis_registry
+from .registry import registry
 
 
 def register_analysis_module(module_class: Type[AnalysisModule], 
