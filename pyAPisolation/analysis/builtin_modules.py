@@ -296,10 +296,7 @@ class ResistanceLadder(AnalysisModule):
         # Placeholder for actual implementation
         from ..patch_subthres import ladder_rm
         
-    
-    def run_batch_analysis(self, folder_path, param_dict, protocol_name):
-        # Placeholder for actual implementation
-        return ([], {})
+
     
     def save_results(self, results, output_dir, output_tag, save_options=None):
         # Placeholder for actual implementation

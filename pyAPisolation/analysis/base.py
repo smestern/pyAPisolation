@@ -15,6 +15,7 @@ import glob
 import logging
 import pyabf
 from ..dataset import cellData
+from .runner import AnalysisRunner
 import copy
 import multiprocessing as mp
 logger = logging.getLogger(__name__)
@@ -340,6 +341,8 @@ class AnalysisModule:
         if override:
             self._child_analyze = self.analyze
             self.analyze = partial(self.input_wrapper, func=self._child_analyze)
+
+        self.analysis_runner = AnalysisRunner(self)
             
     
     @abstractmethod
