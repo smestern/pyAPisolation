@@ -92,10 +92,32 @@ def test_specific_protocols():
         return False
 
 def test_indiv_rows():
+    """Test that individual rows are correctly imported into the database"""
     demo_path = os.path.join(os.path.dirname(__file__), 'test_data', 'demo_arb_data.csv')
+    if not os.path.exists(demo_path):
+        print(f"Demo data file not found: {demo_path}")
+        return False
     df = pd.read_csv(demo_path, skiprows=2)
-
-
+    db = tsDatabase()
+    result = db.from_dataframe(
+        df,
+        cell_id_col='CELL_ID',
+        metadata_cols=['DATE', 'drug', 'NOTE', 'Burst Adex', 'Burst Cadex']
+    )
+    if not result:
+        print("❌ Failed to import demo data in test_indiv_rows")
+        return False
+    # Check a few individual rows
+    sample_rows = df.head(3)
+    all_passed = True
+    for idx, row in sample_rows.iterrows():
+        cell_id = row['CELL_ID']
+        if cell_id not in db.cellindex.index:
+            print(f"❌ Cell ID {cell_id} not found in database index")
+            all_passed = False
+        else:
+            print(f"✅ Cell ID {cell_id} found in database index")
+    return all_passed
 if __name__ == "__main__":
     print("Testing tsDatabase.from_dataframe() with demo data...")
     print("=" * 60)
