@@ -21,11 +21,14 @@ jobs:
     - name: Install dependencies
       run: |
         conda init bash
-        source ~/.bashrc
+        conda init zsh
         conda config --set always_yes yes --set changeps1 no
         conda update -q conda
         conda info -a
         conda create -q -n test-env python=3.9
+        conda init bash
+        conda init zsh
+        source ~/.bashrc
         conda activate test-env
         conda install numpy pandas
         pip install -e .
