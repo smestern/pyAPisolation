@@ -37,10 +37,10 @@ DEFAULT_DICT = {'start': 0, 'end': 0, 'filter': 0, 'stim_find': True}
 def analyze(x=None, y=None, c=None, file=None, param_dict=DEFAULT_DICT, return_summary_frames=False):
     """ Runs the ipfx feature extractor over a single sweep, set of sweeps, or file. Returns the standard ipfx dataframe, and summary dataframes (if requested).
     Args:
-        x (np.array, optional): The time array of the sweep. Defaults to None.
-        y (np.array, optional): The voltage array of the sweep. Defaults to None.
-        c (np.array, optional): The current array of the sweep. Defaults to None.
-        file (str, optional): The file path of the sweep. Defaults to None.
+        x (np.array, optional): The time array of the sweeps. Defaults to None.
+        y (np.array, optional): The voltage array of the sweeps. Defaults to None.
+        c (np.array, optional): The current array of the sweeps. Defaults to None.
+        file (str, optional): The file path of the data. Defaults to None.
         param_dict (dict, optional): The dictionary of parameters that will be passed to the feature extractor. Defaults to None.
         return_summary_frames (bool, optional): If True, will return the summary dataframes. Defaults to False.
     Returns:
