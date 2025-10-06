@@ -1,0 +1,63 @@
+{
+  "spike_analysis_standard": {
+    "analyzer": "spike",
+    "parameters": {
+      "dv_cutoff": 7.0,
+      "max_interval": 0.010,
+      "min_height": 2.0,
+      "min_peak": -10.0,
+      "thresh_frac": 0.05,
+      "bessel_filter": 0.0,
+      "stim_find": false
+    },
+    "output": {
+      "format": "csv",
+      "prefix": "spike_analysis_"
+    }
+  },
+  
+  "spike_analysis_sensitive": {
+    "analyzer": "spike",
+    "parameters": {
+      "dv_cutoff": 5.0,
+      "max_interval": 0.015,
+      "min_height": 1.5,
+      "min_peak": -15.0,
+      "thresh_frac": 0.03,
+      "bessel_filter": 1000.0,
+      "stim_find": false
+    },
+    "output": {
+      "format": "excel",
+      "prefix": "sensitive_spike_"
+    }
+  },
+  
+  "subthreshold_standard": {
+    "analyzer": "subthreshold",
+    "parameters": {
+      "time_after": 50.0,
+      "savfilter": 0,
+      "bplot": false
+    },
+    "output": {
+      "format": "csv",
+      "prefix": "subthres_"
+    }
+  },
+  
+  "subthreshold_detailed": {
+    "analyzer": "subthreshold", 
+    "parameters": {
+      "time_after": 75.0,
+      "start_sear": 0.5,
+      "end_sear": 2.0,
+      "savfilter": 5,
+      "bplot": true
+    },
+    "output": {
+      "format": "excel",
+      "prefix": "detailed_subthres_"
+    }
+  }
+}

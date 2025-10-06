@@ -318,6 +318,8 @@ class tsDatabase:
         #update the cell index
         if path is not None:
             self.cellindex.loc[cell, protocol] = path
+        else:
+            self.cellindex.loc[cell, protocol] = None
 
     def __getitem__(self, key, protocol, column):
         return self.data[key]
@@ -562,7 +564,8 @@ class tsDatabase:
         Returns:
             bool: True if import was successful, False otherwise
         """
-        try:
+        if True:
+        #try:
             # Extract essential fields
             recording_path = row_data.get('Recording Path')
             if not recording_path:
@@ -639,6 +642,189 @@ class tsDatabase:
             
             return True
             
-        except Exception as e:
-            print(f"Error importing spike data row: {e}")
-            return False
+        #except Exception as e:
+            #print(f"Error importing spike data row: {e}")
+            #return False
+        
+
+    def from_xlsx(self, file_path, filename_cols, filepath_cols, protocol_col):
+        #read the 
+        pass
+
+    def from_csv(self, file_path, filename_cols, filepath_cols, protocol_col):
+        """
+        Create database from CSV file with arbitrary structure
+        """
+        import pandas as pd
+        df = pd.read_csv(file_path)
+        return self.from_dataframe(df, filename_cols, filepath_cols, protocol_col)
+
+    def from_dataframe(self, df, filename_cols=None, filepath_cols=None, protocol_file_col=None, 
+                      cell_id_col='CELL_ID', metadata_cols=None, skip_empty=True):
+            """
+            Create database from arbitrary dataframe structure where:
+            - Each row represents a cell/recording session
+            - Columns represent protocols with file IDs or paths
+            
+            Parameters:
+            -----------
+            df : pandas.DataFrame
+                Input dataframe with cell data
+            filename_cols : list, optional
+                List of column names that contain filenames/file IDs for protocols
+                If None, will auto-detect columns that contain file-like data
+            filepath_cols : dict, optional  
+                Dictionary mapping protocol names to file path columns
+                Format: {'protocol_name': 'filepath_column_name'}
+            protocol_file_col : str, optional
+                Column name containing base file paths (if different from filename columns)
+            cell_id_col : str, default 'CELL_ID'
+                Column name containing cell identifiers
+            metadata_cols : list, optional
+                List of column names to store as cell metadata (e.g., DATE, drug, NOTE)
+            skip_empty : bool, default True
+                Whether to skip empty cells in protocol columns
+                
+            Returns:
+            --------
+            bool : True if successful, False otherwise
+                
+            Example usage:
+            -------------
+            # Auto-detect protocol columns
+            db.from_dataframe(df, cell_id_col='CELL_ID')
+            
+            # Specify specific protocol columns  
+            db.from_dataframe(df, 
+                            filename_cols=['IC1', 'CTRL_PULSE', 'NET_PULSE'],
+                            cell_id_col='CELL_ID',
+                            metadata_cols=['DATE', 'drug', 'NOTE'])
+            """
+            #try:
+            logger.info("Creating database from arbitrary dataframe structure")
+            
+            # Validate input dataframe
+            if df.empty:
+                logger.error("Input dataframe is empty")
+                return False
+                
+            if cell_id_col not in df.columns:
+                logger.error(f"Cell ID column '{cell_id_col}' not found in dataframe")
+                return False
+            
+            # Clean the dataframe - remove rows where cell_id is empty/null or contains only underscores
+            df_clean = df[df[cell_id_col].notna() & (df[cell_id_col] != '') & (df[cell_id_col] != '_')].copy()
+            
+            if df_clean.empty:
+                logger.error("No valid cell data found after cleaning")
+                return False
+                
+            logger.info(f"Processing {len(df_clean)} cells from dataframe")
+            
+            # Auto-detect filename columns if not provided
+            if filename_cols is None:
+                filename_cols = []
+                # Look for columns that contain file-like data (numbers, letters, underscores)
+                # Exclude obvious metadata columns
+                exclude_cols = [cell_id_col] + (metadata_cols or [])
+                exclude_patterns = ['DATE', 'drug', 'NOTE', 'UNIQUE_ID', 'Burst', 'YES', 'NO']
+                
+                for col in df_clean.columns:
+                    if col in exclude_cols:
+                        continue
+                    if any(pattern.lower() in col.upper() for pattern in exclude_patterns):
+                        continue
+                    
+                    # Check if column contains file-like data (has non-empty string values)
+                    non_empty_values = df_clean[col].dropna()
+                    if len(non_empty_values) > 0:
+                        # Check if values look like file IDs (contain numbers/letters/underscores)
+                        sample_vals = non_empty_values.head(10).astype(str)
+                        if any(val for val in sample_vals if 
+                               val not in ['', 'nan', 'None'] and 
+                               any(c.isalnum() or c == '_' for c in val)):
+                            filename_cols.append(col)
+                            
+                logger.info(f"Auto-detected {len(filename_cols)} protocol columns: {filename_cols[:10]}{'...' if len(filename_cols) > 10 else ''}")
+            
+            # Initialize database if needed
+            if self.cellindex.empty:
+                self.cellindex = pd.DataFrame()
+            
+            # Process each cell
+            processed_cells = 0
+            for idx, row in df_clean.iterrows():
+                cell_name = str(row[cell_id_col]) if cell_id_col in row else None
+                if cell_id_col in row and pd.isna(cell_name):
+                    logger.warning(f"Cell ID is NaN for row {idx}")
+                    #making a cell ID?
+                    cell_name = f"Cell_{idx}"
+
+                if not cell_name or cell_name in ['nan', 'None', '_']:
+                    continue
+                    
+                logger.debug(f"Processing cell: {cell_name}")
+                
+                # Add cell to database if it doesn't exist
+                if cell_name not in self.cellindex.index:
+                    self.addEntry(cell_name)
+                    
+                # Add metadata columns
+                if metadata_cols:
+                    for meta_col in metadata_cols:
+                        if meta_col in df_clean.columns and pd.notna(row[meta_col]):
+                            # Add metadata column to cellindex if it doesn't exist
+                            if meta_col not in self.cellindex.columns:
+                                self.cellindex[meta_col] = None
+                            self.cellindex.loc[cell_name, meta_col] = row[meta_col]
+                
+                # Process protocol columns
+                protocols_added = 0
+                for protocol_col in filename_cols:
+                    if protocol_col in row.index and pd.notna(row[protocol_col]):
+                        file_value = str(row[protocol_col]).strip()
+                        
+                        # Skip empty values if requested
+                        if skip_empty and (not file_value or file_value in ['', 'nan', 'None']):
+                            continue
+                            
+                        # Determine file path
+                        file_path = file_value
+                        
+                        # Check if there's a specific filepath column for this protocol
+                        if filepath_cols and protocol_col in filepath_cols:
+                            filepath_col = filepath_cols[protocol_col]
+                            if filepath_col in row.index and pd.notna(row[filepath_col]):
+                                file_path = str(row[filepath_col]).strip()
+                        elif protocol_file_col and pd.notna(row[protocol_file_col]):
+                            # Use base file path if provided
+                            base_path = str(row[protocol_file_col]).strip()
+                            if base_path:
+                                file_path = os.path.join(base_path, file_value)
+                        
+                        # Add protocol to experimental structure and cell index
+                        try:
+                            self.addProtocol(cell_name, protocol_col, path=file_path)
+                            protocols_added += 1
+                            logger.debug(f"Added protocol '{protocol_col}' with path '{file_path}' to cell '{cell_name}'")
+                        except Exception as e:
+                            logger.warning(f"Failed to add protocol '{protocol_col}' to cell '{cell_name}': {e}")
+                            continue
+                
+                if protocols_added > 0:
+                    processed_cells += 1
+                    logger.debug(f"Added {protocols_added} protocols to cell {cell_name}")
+            
+            logger.info(f"Successfully processed {processed_cells} cells with protocol data")
+            
+            # Update experimental structure
+            logger.info(f"Database now contains {len(self.cellindex)} cells with {len(self.cellindex.columns)} total columns")
+            
+            return True
+            
+            # except Exception as e:
+            #     logger.error(f"Error creating database from dataframe: {e}")
+            #     import traceback
+            #     traceback.print_exc()
+            #     return False
+        

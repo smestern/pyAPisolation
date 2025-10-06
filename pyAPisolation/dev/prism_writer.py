@@ -77,7 +77,9 @@ class PrismFile():
         #clear the contents of the template
         if self.template_file is not None:
             self.main_file =self.clear_template_contents()
-        pass
+
+        self._internal_table_map = {} #this is a map of table names to their ycolumns, used for quick access
+
 
     def clear_template_contents(self):
         #first clear the table sequence
@@ -97,7 +99,7 @@ class PrismFile():
         return self.template_file
 
     def make_group_table(self, group_name, group_values, groupby=None, cols=None, subgroupcols=None,
-                          subgroupby=None, rowgroupcols=None, rowgroupby=None):
+                          subgroupby=None, rowgroupcols=None, rowgroupby=None, append=True):
         """ Create a prism "grouped" table from a pandas dataframe. This table has the following structure:
             | Groupby1     | Groupby2    | Groupby3    | Groupby4    | Groupby5    |
             | sub1 |  sub2 | sub1 | sub2 | sub1 | sub2 | sub1 | sub2 | sub1 | sub2 |
@@ -217,7 +219,8 @@ class PrismFile():
                 logging.info(f"Grouping rows by columns: {rowgroupcols}")
             else:
                 rowgroupby_func = 'row'
-                name_rows = None
+                name_rows = None #[f"Row {i}" for i in range(raveled_data_no_groupby.shape[0])]
+                num_rows = raveled_data_no_groupby.shape[0] #this is the number of rows
                 logging.info(f"Rows placed sequentially")
         elif isinstance(rowgroupby, str):
             raveled_data[rowgroupby] = raveled_data[rowgroupby].astype(str)
@@ -264,7 +267,7 @@ class PrismFile():
         
         
         #nestle the data points into nested dicts
-        ycols_map = {}
+        ycols_map = {} #this is a map of ycolumns to their subcolumns, and subcolumns to their data points
         for ycol, subycol, row in idxs_per_group:
             if ycol not in ycols_map: #if the ycol is not in the ycols_map
                 #make the ycolumn
@@ -286,14 +289,38 @@ class PrismFile():
                 subcolumn = group_str_template['subcolumn'] #make the subcolumn
                 subcolumn = ET.fromstring(subcolumn) 
                 subymap[f"{subycol}"] = subcolumn
+                subyrowmap = {}
+                #fill the subcolumn with blank data points
+                for i in range(num_rows):
+                    if name_rows is not None:
+                        row_name = name_rows[i]
+                    else:
+                        row_name = i
+                    map_row = ET.fromstring(group_str_template['data_point'].replace('DATA_POINT', ''))
+                    subcolumn.append(map_row)
+                    subyrowmap[f"{subycol}_{row_name}"] = map_row #map the subcolumn to the row
+                ycols_map[ycol]['subyrowmap'] = subyrowmap #update the subymap
             else:
                 subcolumn = subymap[f"{subycol}"]
 
+            
+            #now replace the empty data points with the actual data points
+            #get the data points for this ycol, subycol, row
             data_points = raveled_data.loc[idxs_per_group[(ycol, subycol, row)], 'data_point']
             for data_point in data_points:
                 data_point = group_str_template['data_point'].replace('DATA_POINT', str(data_point))
                 data_point = ET.fromstring(data_point)
-                subcolumn.append(data_point)
+                #track down the subcolumn and row
+                subyrow_key = f"{subycol}_{row}" #this is the key for the subyrowmap
+                if subyrow_key in ycols_map[ycol]['subyrowmap']:
+                    #remove the empty data point
+                    #ycols_map[ycol]['subyrowmap'][subyrow_key].clear()
+                    #append the data point to the subcolumn
+                    ycols_map[ycol]['subyrowmap'][subyrow_key].text = data_point.text
+                else:
+                    logging.warning(f"Subyrow key {subyrow_key} not found in subyrowmap for ycol {ycol}, subycol {subycol}")
+                    #if not found, then just append it to the subcolumn
+                    subcolumn.append(data_point)
 
         #now add all the subcolumns to their respective ycolumns
         for ycol in ycols_map.values():
@@ -325,11 +352,15 @@ class PrismFile():
         for ycolumn in ycols_map.values():
             new_table.append(ycolumn['object'])
         
+
+
         #close the table
         #add it to the TableSequence
-        self.append_xml_table(new_table, group_name)
-
-        return self.main_file
+        if append:
+            logging.info(f"Appending table {group_name} to the main file")
+            self.append_xml_table(new_table, group_name)
+            self._internal_table_map[group_name] = {'ycols': ycols_map, 'row_list': name_rows}
+        return new_table
     
     def append_xml_table(self, new_table, name):
         table_sequence = self.main_file.findall('{http://graphpad.com/prism/Prism.htm}TableSequence', ns)[0]
@@ -356,7 +387,48 @@ class PrismFile():
                     logging.info(f"Removing table {table_name} from main file")
                     self.main_file.getroot().remove(table)
                     break
+
+    def get_table(self, table_name):
+        """ Get a table from the main file by its name """
+        tables = self.main_file.findall('Table', ns)
+        for table in tables:
+            if 'ID' in table.attrib:
+                if table.attrib['ID'] == table_name:
+                    return table
+        raise ValueError(f"Table {table_name} not found in main file")
     
+    def to_dataframe(self, table_name):
+        """ Convert a table to a pandas dataframe """
+
+        table = self._internal_table_map.get(table_name, None)
+        #get the ycolumns
+        ycolumns = table['ycols'].keys()
+        row_list = table['row_list'] if 'row_list' in table else None
+        data = []
+        for ycolumn in ycolumns:
+            #get the subcolumns
+            subcolumns = table['ycols'][ycolumn]['subymap'].keys()
+            for subcolumn in subcolumns:
+                #get the data points
+                data_points = table['ycols'][ycolumn]['subymap'][subcolumn]
+                for i, data_point in enumerate(data_points):
+                    if row_list is None or i >= len(row_list):
+                        logging.warning(f"Row index {i} out of bounds for row_list in table {table_name}")
+                        row_name = f"Row {i}"  # Fallback if row_list is shorter than data points
+                    else:
+                        row_name = row_list[i]
+                    data.append({
+                        'ycol': ycolumn,
+                        'subycol': subcolumn,
+                        'row': row_name,
+                        'data_point': data_point.text
+                    })
+
+        #convert to dataframe
+        df = pd.DataFrame.from_dict(data)
+        df = df.pivot_table(index='row', columns=['ycol', 'subycol'], values='data_point')
+        return df
+
     def write(self, file_path, xml_declaration=True, encoding='utf-8', method="xml", default_namespace="", pretty_print=True):
         logging.info(f"Writing to {file_path}")
         if pretty_print:
