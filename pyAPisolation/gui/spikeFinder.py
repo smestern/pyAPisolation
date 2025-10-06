@@ -76,6 +76,7 @@ class analysis_gui(object):
         
         self.current_analysis_module = None
         self.bind_ui()
+        self.analysis_registry = registry
 
     def load_ui(self):
         loader = QUiLoader()

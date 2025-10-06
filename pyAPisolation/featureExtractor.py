@@ -734,7 +734,7 @@ def analyze_subthres(x=None, y=None, c=None, file=None, protocol_name='', savfil
             temp_avg["Rm Resistance Ladder"] = np.nan
             temp_avg["Resistance Ladder SweepCount Measured"] = np.nan
 
-        temp_avg = pd.DataFrame.from_dict(temp_avg).T
+        temp_avg = pd.DataFrame.from_dict(temp_avg)
         #now we can append the dataframes
         temp_avg = _merge_current_injection_features(sweepX=np.tile(dataT, (full_dataI.shape[0], 1)), sweepY=full_dataI, sweepC=full_dataI, spike_df=temp_avg)
 

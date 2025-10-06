@@ -41,7 +41,6 @@ class cellData(object):
         logger.info(f"Creating cellData object")
         # if the file is not none, then we are loading from a file
         self.protocolList = protocolList
-        self.protocol = None
         if file is not None:
             logger.info(f"Loading data from file: {file}")
             #if protocol list is provided, set the protocol
@@ -74,6 +73,11 @@ class cellData(object):
             self.stimUnits = stimUnits
             self.respUnits = respUnits
             self.abfID = self.name
+            self.sweepLabelY = 'Response (Y)'
+            self.sweepLabelC = 'Command (C)'
+            self.sweepLabelX = 'Time (X)'
+            self.abfFilePath = ''
+            self.protocol = ''
 
         #default values
         self.setSweep(0)

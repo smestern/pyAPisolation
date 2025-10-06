@@ -12,8 +12,8 @@ from typing import List, Dict, Any, Optional, Callable
 #from dataclasses import asdict#
 import pandas as pd
 
-from .base import AnalysisParameters, AnalysisResult
 from .registry import AnalysisRegistry
+from .base import AnalysisResult, AnalysisParameters
 
 
 class AnalysisRunner:
