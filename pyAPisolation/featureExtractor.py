@@ -585,6 +585,8 @@ def analyze_subthres(x=None, y=None, c=None, file=None, protocol_name='', savfil
                     sweepList = np.array([sweepList])
                 sweepcount = len(sweepList)
             else:
+                #try and catch if the user put in a sweep that is out of range
+                subt_sweeps = np.array(subt_sweeps)
                 subt_sweeps_temp = subt_sweeps - 1
                 sweep_union = np.intersect1d(data.sweepList, subt_sweeps_temp)
                 sweepList = sweep_union
@@ -648,7 +650,7 @@ def analyze_subthres(x=None, y=None, c=None, file=None, protocol_name='', savfil
             plt.title(data.abfID)
             plt.ylim(top=-40)
             plt.xlim(right=0.6)
-            plt.savefig(os.path.join(os.path.dirname(data.abfFilePath), 'cm_plots', f'sagfit{data.abfID}sweep{real_sweep_number}.png'))
+            #plt.savefig(os.path.join(os.path.dirname(data.abfFilePath), 'cm_plots', f'sagfit{data.abfID}sweep{real_sweep_number}.png'))
 
         full_dataI = np.vstack(full_dataI)
         indices_of_same = np.arange(full_dataI.shape[0])
