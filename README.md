@@ -9,6 +9,11 @@ This can be accomplished with the command:
 Then install the package:  
 `conda activate pyAPisolation && pip install   git+https://github.com/smestern/pyAPisolation`  
 
-pyAPIsolation uses IPFX on the backend. Occasionally, this install will fail due to strict requirements on the Allen Institute's end. If this occurs. Run the command:
-` pyAPisolation_setup`  
-Within the environment to force the installation of ipfx.****
+pyAPIsolation uses IPFX on the backend. Occasionally, this install will fail due to strict requirements on the Allen Institute's end.
+
+If this occurs. Run the command:
+`pyAPisolation_setup`  
+Within the environment to force the installation of ipfx.
+
+## Usage
+For Gui usage
