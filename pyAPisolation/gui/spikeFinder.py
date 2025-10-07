@@ -383,7 +383,7 @@ class analysis_gui(object):
         """Run individual analysis using modular framework with legacy fallback"""
         current_module = self.get_current_analysis_module()
         
-        if current_module is None:
+        if current_module is None or (current_module.name=="subthres" or current_module.name=="spike"):
             return self._run_indiv_analysis_legacy()
         
         try:
@@ -461,7 +461,7 @@ class analysis_gui(object):
         elif self.get_current_analysis() == 'subthres':
             self.spike_df = None
             self.rejected_spikes = None
-            self.subthres_df, _ = analyze_subthres(file=self.abf, **self.subt_param_dict)
+            self.subthres_df, _ = analyze_subthres(file=self.abf.abfFilePath, **self.subt_param_dict)
         self.indiv_popup.hide()
             
     
