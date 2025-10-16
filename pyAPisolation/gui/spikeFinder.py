@@ -528,7 +528,7 @@ class analysis_gui(object):
         """Run analysis using modular framework with legacy fallback"""
         current_module = self.get_current_analysis_module()
         
-        if current_module is None:
+        if current_module is None or (current_module.name=="subthres" or current_module.name=="spike"):
             # Fallback to legacy implementation
             return self._run_analysis_legacy()
         

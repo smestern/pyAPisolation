@@ -752,7 +752,7 @@ def analyze_subthres(x=None, y=None, c=None, file=None, protocol_name='', savfil
 # in the original code. The functions are copied from the IPFX package and modified to work with
 # the current version of the package. The functions are:
 # find_downstroke_indexes
-
+# find_upstroke_indexes
 def find_downstroke_indexes(v, t, peak_indexes, trough_indexes, clipped=None, filter=10., dvdt=None):
     """Find indexes of minimum voltage (troughs) between spikes.
 
@@ -804,8 +804,46 @@ def find_downstroke_indexes(v, t, peak_indexes, trough_indexes, clipped=None, fi
 
     return downstroke_indexes
 
+def find_upstroke_indexes(v, t, spike_indexes, peak_indexes, filter=10., dvdt=None):
+    """Find indexes of maximum upstroke of spike.
+
+    Parameters
+    ----------
+    v : numpy array of voltage time series in mV
+    t : numpy array of times in seconds
+    spike_indexes : numpy array of preliminary spike indexes
+    peak_indexes : numpy array of indexes of spike peaks
+    filter : cutoff frequency for 4-pole low-pass Bessel filter in kHz (optional, default 10)
+    dvdt : pre-calculated time-derivative of voltage (optional)
+
+    Returns
+    -------
+    upstroke_indexes : numpy array of upstroke indexes
+
+    """
+
+    if dvdt is None:
+        dvdt = tsu.calculate_dvdt(v, t, filter)
+    #handle argmax of empty array
+    if not spike_indexes.size or not peak_indexes.size:
+        return np.array([])
+    
+    zipped_idxs = []
+    for spike, peak in zip(spike_indexes, peak_indexes):
+        if peak <= spike:
+            peak = spike + 1
+        zipped_idxs.append((spike, peak))
+        
+
+    upstroke_indexes = [np.argmax(dvdt[spike:peak]) + spike for spike, peak in
+                        zipped_idxs]
+
+    return np.array(upstroke_indexes)
+
+
 #override
 ipfx.spike_detector.find_downstroke_indexes = find_downstroke_indexes
+ipfx.spike_detector.find_upstroke_indexes = find_upstroke_indexes
 
 
 from ipfx import spike_detector,time_series_utils
