@@ -124,7 +124,7 @@ def analyze_sweepset(x=None, y=None, c=None, file=None, sweeplist=None, param_di
     #memory copy the param_dict, as we will be popping values out of it
     param_dict = copy.deepcopy(param_dict)
     #for now if user wants to filter by stim time we will just use the first sweep
-    stim_find = param_dict.pop('stim_find')
+    stim_find = param_dict.pop('stim_find') if 'stim_find' in param_dict else False
     #if the user wants a bessel filter pop it out of the param_dict
     if 'bessel_filter' in param_dict:
         bessel_filter = param_dict.pop('bessel_filter')
