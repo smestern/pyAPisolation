@@ -11,6 +11,7 @@
 *.sln.docstates
 *.abf
 *.csv
+!data/*.abf
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

@@ -2,13 +2,19 @@ from . import databaseBuilderBase as dbb
 
 from ..database import tsDatabase
 from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QTreeView, QVBoxLayout, QWidget, \
-QFileSystemModel, QLabel, QLineEdit, QCommandLinkButton, QGroupBox, QTextEdit
-from PySide2.QtGui import QStandardItem, QStandardItemModel
-from PySide2.QtCore import QDir, Qt, QMimeData, QUrl
+QFileSystemModel, QLabel, QLineEdit, QCommandLinkButton, QGroupBox, QTextEdit, QHeaderView, QAbstractItemView, \
+QMenu, QAction, QWizard, QWizardPage, QHBoxLayout, QPushButton, \
+QListWidget, QListWidgetItem, QProgressBar, QCheckBox, QSpinBox, \
+QDoubleSpinBox, QComboBox, QFormLayout, QTableWidget, QTableWidgetItem, QScrollArea, QMessageBox
+from PySide2.QtGui import QStandardItem, QStandardItemModel, QPalette
+from PySide2.QtCore import QDir, Qt, QMimeData, QUrl, Signal
 import numpy as np
+import pandas as pd
 import sys
 import time
 import glob
+import os
+
 
 class CustomFileSystemModel(QFileSystemModel):
     def __init__(self):
@@ -40,14 +46,24 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
 
     def setupUi(self, MainWindow):
         super().setupUi(MainWindow)
+        
+        # Add status bar for drag and drop feedback
+        self.statusBar = MainWindow.statusBar()
+        self.statusBar.showMessage("Ready - Drag .abf or .nwb files to add them to the database")
+        
         # file should be the first menu in the menubar
         self.menuFile = self.menubar.children()[1]
         # add action to menuFile
         self.actionOpen = self.menuFile.addAction('Open Folder')
-        self.actionSave = self.menuFile.addAction('Save')
-        #add a seperator 
+        self.actionLoad = self.menuFile.addAction('Load Database')
+        self.actionSave = self.menuFile.addAction('Save Database')
+        # add a seperator 
+        self.menuFile.addSeparator()
+        self.actionImportSpike = self.menuFile.addAction('Import Spike Data')
+        self.actionImportDataframe = self.menuFile.addAction('Import from CSV/Excel')
+        self.menuFile.addSeparator()
         self.actionAddCell = self.menuFile.addAction('Add Cell')
-        #link the button 
+        # link the button 
 
         self.database = tsDatabase.tsDatabase()
 
@@ -55,43 +71,74 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
         self.folderView = QTreeView(self.fileTreeFrame)
         self.folderView.setGeometry(10, 50, 780, 500)  # Adjust the size and position as needed
         
-        self.folderView.setDragEnabled(True)
-        self.folderView.setDragDropMode(QTreeView.DragOnly)
-        self.folderView.setAcceptDrops(True)
-        self.folderView.setDropIndicatorShown(True)
-
+        # Enhanced drag settings will be set in openFolder method
         self.folderLayout.addWidget(self.folderView)
         self.fileTreeFrame.setLayout(self.folderLayout)
 
-        # Use the custom tree view for cellIndex
+        # Use the custom tree view for cellIndex with enhanced drag and drop
         self.cellIndexLayout = QVBoxLayout()
-        self.cellIndex = CustomTreeView(parent=self.cellIndexFrame, update_callback=self._handleDropEvent)
+        self.cellIndex = CustomTreeView(parent=self.cellIndexFrame, 
+                                       update_callback=self._handleDropEvent, 
+                                       db_builder=self)
         
-        self.cellIndex.setGeometry(10, 50, 780, 500)  # Adjust the size and position as needed
+        self.cellIndex.setGeometry(10, 50, 780, 500)
         self.cellIndexFrame.setAcceptDrops(True)
-        self.cellIndex.setDragDropMode(QTreeView.DropOnly)
-        self.cellIndex.setDragEnabled(True)
-        self.cellIndex.setDropIndicatorShown(True)
 
         self.cellIndexLayout.addWidget(self.cellIndex)
         self.cellIndexFrame.setLayout(self.cellIndexLayout)
+        
         # Connect the open action to the openFolder method
         self.actionOpen.triggered.connect(self.openFolder)
+        self.actionLoad.triggered.connect(self.loadDatabase)
+        self.actionSave.triggered.connect(self.saveDatabase)
+        self.actionImportSpike.triggered.connect(self.importSpikeData)
+        self.actionImportDataframe.triggered.connect(self.importDataframeData)
         self.actionAddCell.triggered.connect(self._addCell)
         self.addCell.clicked.connect(self._addCell)
         self.addProtocol.clicked.connect(self._addProtocol)
 
-
-        # Initialize the cell index model
+        # Initialize the cell index model with Excel-like structure
+        # Each row represents a cell, columns represent different protocols/metadata
         self.cellIndexModel = QStandardItemModel()
-        self.cellIndexModel.setHorizontalHeaderLabels(['Cell Name', 'Recordings'])
+        self._initializeExcelLikeHeaders()
         self.cellIndex.setModel(self.cellIndexModel)
-
-        self.cellIndex.setAcceptDrops(True)
-        self.cellIndex.setDragDropMode(QTreeView.DropOnly)
+        
+        # Set initial column widths for better spreadsheet appearance
+        self.cellIndex.setColumnWidth(0, 150)  # Cell Name
+        self.cellIndex.setColumnWidth(1, 80)   # Date
+        self.cellIndex.setColumnWidth(2, 100)  # Drug
+        self.cellIndex.setColumnWidth(3, 120)  # Notes
+        # Protocol columns will be set dynamically
 
         self.cell_layout = None
         self.protocol_layout = None
+        self.protocol_columns = {}  # Track which columns correspond to protocols
+        self._first_update = True  # Track if this is the first update
+
+    def _initializeExcelLikeHeaders(self):
+        """Initialize headers for Excel-like spreadsheet view"""
+        # Basic metadata columns
+        base_headers = ['Cell Name', 'Date', 'Drug', 'Notes']
+        
+        # Get unique protocols from database to create dynamic columns
+        protocol_headers = []
+        if hasattr(self.database, 'getProtocols'):
+            protocols = self.database.getProtocols()
+            for protocol_name in protocols.keys():
+                protocol_headers.append(protocol_name)
+                self.protocol_columns[protocol_name] = len(base_headers) + len(protocol_headers) - 1
+        
+        # Combine headers
+        all_headers = base_headers + protocol_headers
+        self.cellIndexModel.setHorizontalHeaderLabels(all_headers)
+        
+        # Set appropriate column widths
+        for i, header in enumerate(all_headers):
+            if i < len(base_headers):
+                width = [150, 80, 100, 120][i]
+            else:
+                width = 100  # Protocol columns
+            self.cellIndex.setColumnWidth(i, width)
 
     def retranslateUi(self, MainWindow):
         super().retranslateUi(MainWindow)
@@ -106,26 +153,131 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
             self.model.setRootPath(folderPath)
 
             # Set the name filters to only show .abf files
-            self.model.setNameFilters(["*.abf"])
+            self.model.setNameFilters(["*.abf", "*.nwb"])
             self.model.setNameFilterDisables(False)
 
-            # Set up the tree view
+            # Set up the tree view with enhanced drag capabilities
             self.folderView.setModel(self.model)
             self.folderView.setRootIndex(self.model.index(folderPath))
             self.folderView.setColumnHidden(1, True)  # Hide the size column
             self.folderView.setColumnHidden(2, True)  # Hide the type column       
+            
+            # Enhanced drag and drop settings
             self.folderView.setDragEnabled(True)
             self.folderView.setDragDropMode(QTreeView.DragOnly)
+            self.folderView.setDefaultDropAction(Qt.CopyAction)
+            self.folderView.setSelectionMode(QTreeView.ExtendedSelection)  # Allow multi-select
+            
             self.folderView.setColumnWidth(3, 200)  # Set the width of the protocol name column
+
+            # Add styling for drag feedback
+            self.folderView.setStyleSheet("""
+                QTreeView {
+                    selection-background-color: #3daee9;
+                    selection-color: white;
+                    alternate-background-color: #f9f9f9;
+                }
+                QTreeView::item:selected {
+                    background-color: #3daee9;
+                    color: white;
+                    border: 1px solid #2e86ab;
+                }
+                QTreeView::item:hover {
+                    background-color: #e8f4fd;
+                }
+            """)
 
             # Get protocol names and update the model
             file_list = glob.glob(folderPath + '/*.abf')
             file_list += glob.glob(folderPath + '/*.nwb')
             print(f'Found {len(file_list)} files in {folderPath}')
             for file in file_list:
-                protocol_name = self.database.parseFile(file)
-                self.model.setProtocolData(file, protocol_name)
+                try:
+                    protocol_name = self.database.parseFile(file)
+                    self.model.setProtocolData(file, protocol_name)
+                except Exception as e:
+                    print(f"Error parsing file {file}: {e}")
             print('Protocol names updated in the file system model.')
+
+    def saveDatabase(self):
+        """Save the database to an Excel file"""
+        from PySide2.QtWidgets import QFileDialog, QMessageBox
+        
+        # Open file dialog to get save location
+        file_path, _ = QFileDialog.getSaveFileName(
+            None,
+            "Save Database",
+            "database.xlsx",
+            "Excel Files (*.xlsx);;All Files (*)"
+        )
+        
+        if file_path:
+            try:
+                # Save the database using the tsDatabase save method
+                saved_path = self.database.save(file_path)
+                
+                # Show success message
+                QMessageBox.information(
+                    None,
+                    'Database Saved',
+                    f'Database successfully saved to:\n{saved_path}\n\n'
+                    f'The file contains multiple sheets:\n'
+                    f'• CellIndex: Main cell and protocol data\n'
+                    f'• Protocols: Protocol definitions\n'
+                    f'• _cdb_config: Configuration data\n'
+                    f'• _cdb_metadata: Database metadata'
+                )
+                
+                # Update status bar
+                self.statusBar.showMessage(f"Database saved to {saved_path}")
+                
+            except Exception as e:
+                # Show error message
+                QMessageBox.critical(
+                    None,
+                    'Save Error',
+                    f'Failed to save database:\n{str(e)}'
+                )
+                print(f"Error saving database: {e}")
+
+    def loadDatabase(self):
+        """Load a database from an Excel file"""
+        from PySide2.QtWidgets import QFileDialog, QMessageBox
+        
+        # Open file dialog to get file to load
+        file_path, _ = QFileDialog.getOpenFileName(
+            None,
+            "Load Database",
+            "",
+            "Excel Files (*.xlsx);;All Files (*)"
+        )
+        
+        if file_path:
+            try:
+                # Load the database using the tsDatabase load method
+                self.database.load_from_excel(file_path)
+                
+                # Update the cell index display
+                self._updateCellIndex()
+                
+                # Show success message
+                QMessageBox.information(
+                    None,
+                    'Database Loaded',
+                    f'Database successfully loaded from:\n{file_path}'
+                )
+                
+                # Update status bar
+                self.statusBar.showMessage(f"Database loaded from {file_path}")
+                
+            except Exception as e:
+                # Show error message
+                QMessageBox.critical(
+                    None,
+                    'Load Error',
+                    f'Failed to load database:\n{str(e)}'
+                )
+                print(f"Error loading database: {e}")
 
     def _addCell(self):
         self._clearGroupBox()
@@ -200,106 +352,388 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
         # Clear the cell form fields
         self._clearGroupBox()
 
-    def _handleDropEvent(self, event):
-        # Handle the drop event and update the cell index model
-        mime_data = event.mimeData()
-        drop_position = event.pos()  # Get the position of the drop event
-
-        # Get the index of the item at the drop position
-        index = self.cellIndex.indexAt(drop_position)
-        if not index.isValid():
-            # if the drop position is not created on an item, likely on an empty space
-            # prompt the user to add a cell
-            #create a popup to add a cell
-            self._addCell()
-
-        # Get the item at the drop position
-        item = self.cellIndexModel.itemFromIndex(index)
-        #if the user drops a file on a cell, add the file to the cell
-        #get the type of the item
-        item_type = item.hasChildren()
-        # cheap way to check if the item is a cell
-        # if the item is a cell, the item will have children
-        if item_type:
-            self._updateCellIndexWithFile(mime_data, item)
+    def _handleDropEvent(self, event_info):
+        """Enhanced drop event handler with better file path handling"""
+        if hasattr(event_info, 'file_paths'):
+            # New enhanced event info
+            file_paths = event_info.file_paths
+            target_index = event_info.target_index
+            mime_data = event_info.mime_data
         else:
-            #the item is not a cell, likely a protocol/recordings
-            #get the parent of the item
-            parent = item.parent()
-            self._updateCellIndexWithFile(mime_data, parent, item)
-
-
-    def _updateCellIndexWithFile(self, mime_data, cell=None, protocol=None):
-        # Update the cell index model with the file path
-        if cell is None:
-            # we need to make a new cell,
-            # this gets tricky because we need to check if the file is a protocol
-            # TODO: Implement this
-             #this will get tricky, we need to check the primary protocol and structure accordingly
-            pass
-        elif cell is not None and protocol is None:
-            # Add the file to the protocol
-            # we need to open the file to get the protocol name, etc. Luckily, we can use the tsDatabase class to do this
-            file_dicts = {} #handle multiple files, this means the user can drop multiple files at once
-            protocol_list = []
+            # Legacy event handling
+            mime_data = event_info.mimeData()
+            target_index = self.cellIndex.indexAt(event_info.pos())
+            file_paths = []
             if mime_data.hasUrls():
                 for url in mime_data.urls():
-                    url = url.toLocalFile()
-                    file_dicts[url] = self.database.parseFile(url)
-                    self.database.addProtocol(cell.text(), file_dicts[url]['protocol'], path=url)
+                    file_path = url.toLocalFile()
+                    if file_path and (file_path.endswith('.abf') or file_path.endswith('.nwb')):
+                        file_paths.append(file_path)
+
+        if not file_paths:
+            print("No valid files to process")
+            return
+
+        # Determine target type and handle accordingly
+        if not target_index.isValid():
+            # Dropped in empty space - create new cell
+            self._handleDropOnEmptySpace(file_paths)
+        else:
+            item = self.cellIndexModel.itemFromIndex(target_index)
+            #get the items cell name, should be the first column of whatever row is dropped on
+            temp_index = self.cellIndexModel.index(target_index.row(), 0, target_index.parent())
+            cell_name = self.cellIndexModel.data(temp_index, Qt.DisplayRole)
+    
+            # Check if this is a top-level cell item (parent) or a protocol item (child)
+            if item.parent() is None or cell_name != "":
+                # This is a top-level cell item (no parent)
+                if item.text() == cell_name:
+                    # Handle dropping on a cell
+                    self._handleDropOnCell(file_paths, item)
+                else:
+                    self._handleDropOnCell(file_paths, self.cellIndexModel.itemFromIndex(temp_index))
             else:
-                # I don't know what to do here, print a warning
-                print('No file found')
-        elif cell is not None and protocol is not None:
-            #then the user is trying to add a recording to the protocol
-            #we need to check if the file is a recording
-            file_dicts = {} #handle multiple files, this means the user can drop multiple files at once
-            protocol_list = []
-            if mime_data.hasUrls():
-                for url in mime_data.urls():
-                    url = url.toLocalFile()
-                    file_dicts[url] = self.database.parseFile(url)
-                    self.database.updateEntry(cell.text(),**{protocol.text(): url})
-            else:
-                # I don't know what to do here, print a warning
-                print('No file found')
+                # This is a child item (protocol/recording)
+                #but we also need to figure out if its the protocol column or the recording column
+                protocol_index = self.cellIndexModel.index(target_index.row(), 1, target_index.parent())
+                recording_index = self.cellIndexModel.index(target_index.row(), 2, target_index.parent())
+                parent_item = item.parent()
+                self._handleDropOnProtocol(file_paths, parent_item, self.cellIndexModel.itemFromIndex(protocol_index))
+
+    def _handleDropOnEmptySpace(self, file_paths):
+        """Handle dropping files in empty space - prompt for new cell creation"""
+        from PySide2.QtWidgets import QInputDialog, QMessageBox
+        
+        # Prompt user for cell name
+        cell_name, ok = QInputDialog.getText(
+            None, 
+            'Create New Cell', 
+            f'Enter name for new cell with {len(file_paths)} file(s):'
+        )
+        
+        if ok and cell_name.strip():
+            cell_name = cell_name.strip()
+            
+            # Add cell to database
+            self.database.addEntry(cell_name)
+            
+            # Process each file and add to the cell
+            protocols_added = set()
+            for file_path in file_paths:
+                try:
+                    file_info = self.database.parseFile(file_path)
+                    protocol_name = file_info.get('protocol', 'Unknown')
+                    
+                    # Add protocol if not already added
+                    if protocol_name not in protocols_added:
+                        self.database.addProtocol(cell_name, protocol_name, path=file_path)
+                        protocols_added.add(protocol_name)
+                    else:
+                        # Update existing protocol with additional recording
+                        self.database.updateEntry(cell_name, **{protocol_name: file_path})
+                        
+                except Exception as e:
+                    print(f"Error processing file {file_path}: {e}")
+            
+            # Update the display
+            self._updateCellIndex()
+            
+            # Show success message
+            QMessageBox.information(
+                None, 
+                'Success', 
+                f'Created cell "{cell_name}" with {len(file_paths)} file(s) across {len(protocols_added)} protocol(s)'
+            )
+
+    def _handleDropOnCell(self, file_paths, cell_item):
+        """Handle dropping files on an existing cell"""
+        cell_name = cell_item.text()
+        
+        protocols_added = set()
+        protocols_updated = set()
+        
+        for file_path in file_paths:
+            try:
+                file_info = self.database.parseFile(file_path)
+                protocol_name = file_info.get('protocol', 'Unknown')
+                
+                # Check if protocol already exists for this cell
+                cells = self.database.getCells()
+                cell_data = cells.get(cell_name, {})
+                
+                if protocol_name in cell_data:
+                    # Protocol exists, update it
+                    self.database.updateEntry(cell_name, **{protocol_name: file_path})
+                    protocols_updated.add(protocol_name)
+                else:
+                    # New protocol for this cell
+                    self.database.addProtocol(cell_name, protocol_name, path=file_path)
+                    protocols_added.add(protocol_name)
+                    
+            except Exception as e:
+                print(f"Error processing file {file_path}: {e}")
+        
+        # Update the display
         self._updateCellIndex()
         
+        # Show feedback
+        message_parts = []
+        if protocols_added:
+            message_parts.append(f"Added {len(protocols_added)} new protocol(s)")
+        if protocols_updated:
+            message_parts.append(f"Updated {len(protocols_updated)} existing protocol(s)")
+        
+        if message_parts:
+            from PySide2.QtWidgets import QMessageBox
+            QMessageBox.information(
+                None, 
+                'Files Added', 
+                f'Cell "{cell_name}": {", ".join(message_parts)}'
+            )
 
-    def _removeCell(self):
-        pass 
+    def _handleDropOnProtocol(self, file_paths, cell_item, protocol_item):
+        """Handle dropping files on a specific protocol"""
+        cell_name = cell_item.text()
+        protocol_name = protocol_item.text()
+        
+        files_added = 0
+        for file_path in file_paths:
+            try:
+                # Verify the file matches the protocol
+                file_info = self.database.parseFile(file_path)
+                file_protocol = file_info.get('protocol', 'Unknown')
+                
+                if file_protocol == protocol_name:
+                    # File matches protocol, add it
+                    self.database.updateEntry(cell_name, **{protocol_name: file_path})
+                    files_added += 1
+                else:
+                    # File doesn't match, could offer to add as new protocol
+                    from PySide2.QtWidgets import QMessageBox
+                    reply = QMessageBox.question(
+                        None,
+                        'Protocol Mismatch',
+                        f'File protocol "{file_protocol}" doesn\'t match target protocol "{protocol_name}".\n'
+                        f'Add as new protocol instead?',
+                        QMessageBox.Yes | QMessageBox.No
+                    )
+                    
+                    if reply == QMessageBox.Yes:
+                        self.database.addProtocol(cell_name, file_protocol, path=file_path)
+                        files_added += 1
+                    else:
+                        #add it not as a protocol but as 
+                        self.database.updateEntry(cell_name, **{protocol_name: file_path})
+                        
+            except Exception as e:
+                print(f"Error processing file {file_path}: {e}")
+        
+        # Update the display
+        self._updateCellIndex()
+        
+        # Show feedback
+        if files_added > 0:
+            from PySide2.QtWidgets import QMessageBox
+            QMessageBox.information(
+                None,
+                'Files Added',
+                f'Added {files_added} file(s) to protocol "{protocol_name}" in cell "{cell_name}"'
+            )
+
+    def _saveViewState(self):
+        """Save the current view state (scroll position, column widths, selection)"""
+        view_state = {}
+        
+        # Save scroll position
+        h_scroll = self.cellIndex.horizontalScrollBar()
+        v_scroll = self.cellIndex.verticalScrollBar()
+        view_state['h_scroll'] = h_scroll.value()
+        view_state['v_scroll'] = v_scroll.value()
+        
+        # Save column widths
+        view_state['column_widths'] = []
+        header = self.cellIndex.header()
+        for i in range(self.cellIndexModel.columnCount()):
+            view_state['column_widths'].append(header.sectionSize(i))
+        
+        # Save current selection
+        current_index = self.cellIndex.currentIndex()
+        view_state['current_row'] = current_index.row() if current_index.isValid() else -1
+        view_state['current_col'] = current_index.column() if current_index.isValid() else -1
+        
+        # Save selected items
+        selection_model = self.cellIndex.selectionModel()
+        if selection_model:
+            selected_indexes = selection_model.selectedIndexes()
+            view_state['selected_items'] = [(idx.row(), idx.column()) for idx in selected_indexes]
+        else:
+            view_state['selected_items'] = []
+            
+        return view_state
+    
+    def _restoreViewState(self, view_state):
+        """Restore the view state after update"""
+        if not view_state:
+            return
+            
+        # Restore column widths (but only if they were previously set)
+        if 'column_widths' in view_state and len(view_state['column_widths']) == self.cellIndexModel.columnCount():
+            header = self.cellIndex.header()
+            for i, width in enumerate(view_state['column_widths']):
+                if width > 0:  # Only restore if width was actually set
+                    header.resizeSection(i, width)
+        
+        # Restore selection
+        if view_state.get('current_row', -1) >= 0 and view_state.get('current_col', -1) >= 0:
+            if (view_state['current_row'] < self.cellIndexModel.rowCount() and 
+                view_state['current_col'] < self.cellIndexModel.columnCount()):
+                new_index = self.cellIndexModel.index(view_state['current_row'], view_state['current_col'])
+                self.cellIndex.setCurrentIndex(new_index)
+        
+        # Restore additional selections
+        selection_model = self.cellIndex.selectionModel()
+        if selection_model and 'selected_items' in view_state:
+            for row, col in view_state['selected_items']:
+                if (row < self.cellIndexModel.rowCount() and 
+                    col < self.cellIndexModel.columnCount() and 
+                    (row, col) != (view_state.get('current_row', -1), view_state.get('current_col', -1))):
+                    index = self.cellIndexModel.index(row, col)
+                    selection_model.select(index, selection_model.Select)
+        
+        # Restore scroll position (do this last, after other updates)
+        if 'h_scroll' in view_state and 'v_scroll' in view_state:
+            h_scroll = self.cellIndex.horizontalScrollBar()
+            v_scroll = self.cellIndex.verticalScrollBar()
+            h_scroll.setValue(view_state['h_scroll'])
+            v_scroll.setValue(view_state['v_scroll'])
 
     def _updateCellIndex(self):
-        #update cell index treeview to display the nested data
-
-        #get the expanded rows etc.
-        expanded_rows = []
-        for i in range(self.cellIndexModel.rowCount()):
-            if self.cellIndex.isExpanded(self.cellIndexModel.index(i, 0)):
-                expanded_rows.append(i)
-    
-
-        # Clear the existing model
-        self.cellIndexModel.clear()
-        self.cellIndexModel.setHorizontalHeaderLabels(['Cell Name', 'Recordings'])
+        """Update cell index to display data in Excel-like spreadsheet format"""
         
+        # Save current view state before making changes
+        view_state = None
+        if not self._first_update and self.cellIndexModel.rowCount() > 0:
+            view_state = self._saveViewState()
+        
+        # Store current selection for fallback
+        current_selection = self.cellIndex.currentIndex()
+        
+        # Get all cells from database
         cells = self.database.getCells()
-
+        
+        # Get all unique protocols to ensure consistent column structure
+        all_protocols = set()
         for cell_name, recordings in cells.items():
-            cell_item = QStandardItem(cell_name)
-            for recording_type, recording in recordings.items():
-                #check to make sure its not in the utility columns
-                if (recording_type == "name" or recording_type == "sweep"):
+            for recording_type in recordings.keys():
+                if recording_type not in ["name", "sweep"]:
+                    all_protocols.add(recording_type)
+        
+        # Check if we need to rebuild headers (protocols changed)
+        base_headers = ['Cell Name', 'Date', 'Drug', 'Notes']
+        new_headers = base_headers + sorted(all_protocols)
+        current_headers = []
+        for i in range(self.cellIndexModel.columnCount()):
+            header_data = self.cellIndexModel.horizontalHeaderItem(i)
+            current_headers.append(header_data.text() if header_data else "")
+        
+        headers_changed = current_headers != new_headers
+        
+        if headers_changed or self._first_update:
+            # Need to rebuild headers and structure
+            self.cellIndexModel.clear()
+            self._initializeExcelLikeHeaders()
+            
+            # Update protocol columns mapping
+            for i, protocol in enumerate(sorted(all_protocols)):
+                self.protocol_columns[protocol] = len(base_headers) + i
+                
+            # Update headers with all protocols
+            self.cellIndexModel.setHorizontalHeaderLabels(new_headers)
+            view_state = None  # Can't restore view state when structure changes
+        
+        # Clear existing data but keep headers if structure didn't change
+        if not headers_changed and not self._first_update:
+            self.cellIndexModel.removeRows(0, self.cellIndexModel.rowCount())
+        
+        # Create Excel-like rows - one row per cell
+        for cell_name, recordings in cells.items():
+            row_items = []
+            
+            # Basic metadata columns
+            cell_name_item = QStandardItem(cell_name)
+            cell_name_item.setEditable(True)
+            row_items.append(cell_name_item)
+            
+            # Date column (extract from recordings if available)
+            date_item = QStandardItem("")
+            date_item.setEditable(True)
+            row_items.append(date_item)
+            
+            # Drug column
+            drug_item = QStandardItem("")
+            drug_item.setEditable(True)
+            row_items.append(drug_item)
+            
+            # Notes column
+            notes_item = QStandardItem("")
+            notes_item.setEditable(True)
+            row_items.append(notes_item)
+            
+            # Protocol columns - create empty cells first
+            protocol_items = {}
+            for protocol in sorted(all_protocols):
+                protocol_item = QStandardItem("")
+                protocol_item.setEditable(True)
+                protocol_items[protocol] = protocol_item
+                row_items.append(protocol_item)
+            
+            # Fill in actual recording data
+            for recording_type, recording_path in recordings.items():
+                if recording_type in ["name", "sweep"]:
                     continue
-                #if recording is not None:  # Only add if there is a recording
-                recording_type_item = QStandardItem(recording_type)
-                recording_item = QStandardItem(recording)
-                cell_item.appendRow([recording_type_item, recording_item])
-            self.cellIndexModel.appendRow(cell_item)
+                    
+                if recording_type in protocol_items:
+                    # Set the recording path or file name
+                    if recording_path:
+                        # Extract just the filename for display
+                        if isinstance(recording_path, str):
+                            display_value = recording_path.split('/')[-1].split('\\')[-1]
+                            if display_value.endswith('.abf') or display_value.endswith('.nwb'):
+                                display_value = display_value[:-4]  # Remove extension
+                        else:
+                            display_value = str(recording_path)
+                        protocol_items[recording_type].setText(display_value)
+                        protocol_items[recording_type].setToolTip(str(recording_path))
+            
+            # Add the complete row to the model
+            self.cellIndexModel.appendRow(row_items)
+        
+        # Handle view state restoration
+        if view_state:
+            # Restore the saved view state
+            self._restoreViewState(view_state)
+        elif current_selection.isValid() and current_selection.row() < self.cellIndexModel.rowCount():
+            # Fallback: restore basic selection if view state not available
+            self.cellIndex.setCurrentIndex(current_selection)
+        
+        # Only auto-resize columns and set constraints on first update
+        if self._first_update:
+            # Auto-resize columns to fit content better
+            self.cellIndex.resizeColumnsToContents()
+            
+            # Ensure minimum widths
+            for i in range(self.cellIndexModel.columnCount()):
+                if self.cellIndex.columnWidth(i) < 80:
+                    self.cellIndex.setColumnWidth(i, 80)
+                elif self.cellIndex.columnWidth(i) > 200:
+                    self.cellIndex.setColumnWidth(i, 200)
+            
+            self._first_update = False
 
-        # Expand the rows that were previously expanded
-        for row in expanded_rows:
-            self.cellIndex.setExpanded(self.cellIndexModel.index(row, 0), True)
+    def _forceRefreshCellIndex(self):
+        """Force a complete refresh of the cell index, resetting view state"""
+        self._first_update = True
+        self._updateCellIndex()
 
     def _clearGroupBox(self):
         def _innerclear():
@@ -317,27 +751,1914 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
             self.protocol_layout = None
             return False
         _innerclear()
+
+    def importSpikeData(self):
+        """Launch a wizard to import spike analysis data from CSV files"""
+        wizard = SpikeDataImportWizard(self.database, self)
+        if wizard.exec_() == wizard.Accepted:
+            # Update the cell index display after successful import
+            self._updateCellIndex()
+            self.statusBar.showMessage("Spike data import completed successfully")
+
+    def importDataframeData(self):
+        """Launch a wizard to import arbitrary CSV/Excel files"""
+        wizard = DataframeImportWizard(self.database, self)
+        if wizard.exec_() == wizard.Accepted:
+            # Update the cell index display after successful import
+            self._updateCellIndex()
+            self.statusBar.showMessage("CSV/Excel import completed successfully")
         
 class CustomTreeView(QTreeView):
-    def __init__(self, parent=None, update_callback=None):
+    def __init__(self, parent=None, update_callback=None, db_builder=None):
         super(CustomTreeView, self).__init__(parent)
         self.update_callback = update_callback
-        self.setDragEnabled(False)
+        self.db_builder = db_builder  # Reference to the DatabaseBuilder instance
+        
+        # Enhanced drag and drop settings
+        self.setDragEnabled(False)  # We don't want to drag from this view
         self.setAcceptDrops(True)
         self.setDropIndicatorShown(True)
         self.setDragDropMode(QTreeView.DropOnly)
+        self.setDefaultDropAction(Qt.CopyAction)
+        
+        # Make it more spreadsheet-like (flat table, not tree)
+        self.setAlternatingRowColors(True)
+        self.setSelectionBehavior(QAbstractItemView.SelectItems)
+        self.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
+        self.setItemsExpandable(False)  # Disable tree expansion
+        self.setRootIsDecorated(False)  # No tree decorations
+        self.setIndentation(0)  # No indentation like Excel
+        
+        # Configure the header
+        header = self.header()
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        header.setDefaultSectionSize(150)
+        header.setMinimumSectionSize(80)
+        
+        # Enhanced styling with drop indicators
+        self.setStyleSheet("""
+            QTreeView {
+                gridline-color: #d0d0d0;
+                alternate-background-color: #f9f9f9;
+                background-color: white;
+                selection-background-color: #3daee9;
+                selection-color: white;
+                show-decoration-selected: 1;
+            }
+            QTreeView::item {
+                border-right: 1px solid #d0d0d0;
+                padding: 4px;
+                min-height: 20px;
+            }
+            QTreeView::item:selected {
+                background-color: #3daee9;
+                color: white;
+            }
+            QTreeView::item:hover {
+                background-color: #e8f4fd;
+            }
+            QTreeView::drop-indicator {
+                background-color: #ff6b6b;
+                height: 3px;
+            }
+            QHeaderView::section {
+                background-color: #f0f0f0;
+                border: 1px solid #d0d0d0;
+                padding: 4px;
+                font-weight: bold;
+            }
+        """)
+        
+        # Enable context menu
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.showContextMenu)
+        
+        # Enable keyboard navigation
+        self.setTabKeyNavigation(True)
+        
+        # Add a method to preserve view state during updates
+        self._saved_view_state = None
+    
+    def saveViewState(self):
+        """Save current view state for restoration after model changes"""
+        view_state = {}
+        
+        # Save scroll position
+        h_scroll = self.horizontalScrollBar()
+        v_scroll = self.verticalScrollBar()
+        view_state['h_scroll'] = h_scroll.value()
+        view_state['v_scroll'] = v_scroll.value()
+        
+        # Save column widths
+        view_state['column_widths'] = []
+        header = self.header()
+        if self.model():
+            for i in range(self.model().columnCount()):
+                view_state['column_widths'].append(header.sectionSize(i))
+        
+        # Save current selection
+        current_index = self.currentIndex()
+        view_state['current_row'] = current_index.row() if current_index.isValid() else -1
+        view_state['current_col'] = current_index.column() if current_index.isValid() else -1
+        
+        self._saved_view_state = view_state
+        return view_state
+    
+    def restoreViewState(self, view_state=None):
+        """Restore previously saved view state"""
+        state = view_state or self._saved_view_state
+        if not state or not self.model():
+            return
+            
+        # Restore column widths
+        if 'column_widths' in state:
+            header = self.header()
+            for i, width in enumerate(state['column_widths']):
+                if i < self.model().columnCount() and width > 0:
+                    header.resizeSection(i, width)
+        
+        # Restore selection
+        if (state.get('current_row', -1) >= 0 and 
+            state.get('current_col', -1) >= 0 and
+            state['current_row'] < self.model().rowCount() and 
+            state['current_col'] < self.model().columnCount()):
+            new_index = self.model().index(state['current_row'], state['current_col'])
+            self.setCurrentIndex(new_index)
+        
+        # Restore scroll position (do this last)
+        if 'h_scroll' in state and 'v_scroll' in state:
+            h_scroll = self.horizontalScrollBar()
+            v_scroll = self.verticalScrollBar()
+            # Use QTimer to delay scroll restoration to ensure it works
+            from PySide2.QtCore import QTimer
+            QTimer.singleShot(10, lambda: h_scroll.setValue(state['h_scroll']))
+            QTimer.singleShot(10, lambda: v_scroll.setValue(state['v_scroll']))
+        
+    def showContextMenu(self, position):
+        """Show context menu with spreadsheet-like options"""
+        index = self.indexAt(position)
+        menu = QMenu(self)
+        
+        if index.isValid():
+            # Add common spreadsheet actions
+            edit_action = QAction("Edit Cell", self)
+            edit_action.triggered.connect(lambda: self.edit(index))
+            menu.addAction(edit_action)
+            
+            clear_action = QAction("Clear Cell", self)
+            clear_action.triggered.connect(lambda: self.clearCell(index))
+            menu.addAction(clear_action)
+            
+            menu.addSeparator()
+            
+            copy_action = QAction("Copy", self)
+            copy_action.triggered.connect(self.copySelection)
+            menu.addAction(copy_action)
+            
+            paste_action = QAction("Paste", self)
+            paste_action.triggered.connect(self.pasteSelection)
+            menu.addAction(paste_action)
+            
+        menu.addSeparator()
+        
+        resize_action = QAction("Resize Columns to Contents", self)
+        resize_action.triggered.connect(self.resizeColumnsToContents)
+        menu.addAction(resize_action)
+        
+        # Add option to force refresh view state
+        refresh_action = QAction("Reset View (Resize & Reposition)", self)
+        refresh_action.triggered.connect(self._forceViewRefresh)
+        menu.addAction(refresh_action)
+        
+        menu.exec_(self.mapToGlobal(position))
+    
+    def _forceViewRefresh(self):
+        """Force a complete view refresh - resize columns and reset positions"""
+        if self.db_builder and hasattr(self.db_builder, '_forceRefreshCellIndex'):
+            # Call the DatabaseBuilder's force refresh method
+            self.db_builder._forceRefreshCellIndex()
+        else:
+            # Fallback: just resize columns
+            self.resizeColumnsToContents()
+        
+    def clearCell(self, index):
+        """Clear the content of a cell"""
+        if index.isValid() and index.flags() & Qt.ItemIsEditable:
+            self.model().setData(index, "", Qt.EditRole)
+            
+    def copySelection(self):
+        """Copy selected cell content to clipboard"""
+        selection = self.selectionModel().selectedIndexes()
+        if selection:
+            app = QApplication.instance()
+            clipboard = app.clipboard()
+            clipboard.setText(selection[0].data(Qt.DisplayRole) or "")
+            
+    def pasteSelection(self):
+        """Paste clipboard content to current cell"""
+        current = self.currentIndex()
+        if current.isValid() and current.flags() & Qt.ItemIsEditable:
+            app = QApplication.instance()
+            clipboard = app.clipboard()
+            text = clipboard.text()
+            self.model().setData(current, text, Qt.EditRole)
+        
+    def keyPressEvent(self, event):
+        """Enhanced keyboard navigation for spreadsheet-like behavior"""
+        if event.key() == Qt.Key_Tab:
+            # Move to next column
+            current = self.currentIndex()
+            if current.isValid():
+                next_column = current.sibling(current.row(), current.column() + 1)
+                if next_column.isValid():
+                    self.setCurrentIndex(next_column)
+                else:
+                    # Move to first column of next row
+                    next_row = current.sibling(current.row() + 1, 0)
+                    if next_row.isValid():
+                        self.setCurrentIndex(next_row)
+            event.accept()
+            return
+        elif event.key() == Qt.Key_Backtab:
+            # Move to previous column
+            current = self.currentIndex()
+            if current.isValid():
+                prev_column = current.sibling(current.row(), current.column() - 1)
+                if prev_column.isValid():
+                    self.setCurrentIndex(prev_column)
+                else:
+                    # Move to last column of previous row
+                    prev_row = current.sibling(current.row() - 1, self.model().columnCount() - 1)
+                    if prev_row.isValid():
+                        self.setCurrentIndex(prev_row)
+            event.accept()
+            return
+        elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
+            # Move to next row, same column
+            current = self.currentIndex()
+            if current.isValid():
+                next_row = current.sibling(current.row() + 1, current.column())
+                if next_row.isValid():
+                    self.setCurrentIndex(next_row)
+            event.accept()
+            return
+        elif event.key() == Qt.Key_F2:
+            # Start editing current cell
+            current = self.currentIndex()
+            if current.isValid():
+                self.edit(current)
+            event.accept()
+            return
+        elif event.key() == Qt.Key_Delete:
+            # Clear current cell content
+            current = self.currentIndex()
+            if current.isValid() and current.flags() & Qt.ItemIsEditable:
+                self.model().setData(current, "", Qt.EditRole)
+            event.accept()
+            return
+        
+        # For arrow keys, ensure single cell selection
+        if event.key() in [Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right]:
+            super().keyPressEvent(event)
+            # Ensure only one cell is selected
+            current = self.currentIndex()
+            if current.isValid():
+                self.selectionModel().clearSelection()
+                self.selectionModel().select(current, self.selectionModel().Select)
+            return
+            
+        super().keyPressEvent(event)
 
-    def dropEvent(self, event):
-        super(CustomTreeView, self).dropEvent(event)
-        if self.update_callback:
-            self.update_callback(event)
+    def mousePressEvent(self, event):
+        """Enhanced mouse behavior for spreadsheet-like cell selection"""
+        super().mousePressEvent(event)
+        if event.button() == Qt.LeftButton:
+            index = self.indexAt(event.pos())
+            if index.isValid():
+                # Clear selection and select only the clicked cell
+                self.selectionModel().clearSelection()
+                self.selectionModel().select(index, self.selectionModel().Select)
+                self.setCurrentIndex(index)
 
     def dragEnterEvent(self, event):
-        event.acceptProposedAction()
+        """Handle drag enter events for files"""
+        if event.mimeData().hasUrls():
+            # Check if any of the URLs are valid file paths
+            valid_files = []
+            for url in event.mimeData().urls():
+                file_path = url.toLocalFile()
+                if file_path and (file_path.endswith('.abf') or file_path.endswith('.nwb')):
+                    valid_files.append(file_path)
+            
+            if valid_files:
+                event.acceptProposedAction()
+                self.setStyleSheet(self.styleSheet() + """
+                    QTreeView {
+                        border: 2px dashed #3daee9;
+                        background-color: #f0f8ff;
+                    }
+                """)
+            else:
+                event.ignore()
+        else:
+            event.ignore()
 
     def dragMoveEvent(self, event):
-        event.acceptProposedAction()
- 
+        """Handle drag move events to show drop indicators"""
+        if event.mimeData().hasUrls():
+            # Get the index under the cursor
+            index = self.indexAt(event.pos())
+            
+            if index.isValid():
+                # Highlight the target item
+                self.setCurrentIndex(index)
+                event.acceptProposedAction()
+            else:
+                # Allow dropping in empty space to create new cells
+                event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragLeaveEvent(self, event):
+        """Reset styling when drag leaves the widget"""
+        # Reset the styling
+        self.setStyleSheet("""
+            QTreeView {
+                gridline-color: #d0d0d0;
+                alternate-background-color: #f9f9f9;
+                background-color: white;
+                selection-background-color: #3daee9;
+                selection-color: white;
+                show-decoration-selected: 1;
+            }
+            QTreeView::item {
+                border-right: 1px solid #d0d0d0;
+                padding: 4px;
+                min-height: 20px;
+            }
+            QTreeView::item:selected {
+                background-color: #3daee9;
+                color: white;
+            }
+            QTreeView::item:hover {
+                background-color: #e8f4fd;
+            }
+            QTreeView::drop-indicator {
+                background-color: #ff6b6b;
+                height: 3px;
+            }
+            QHeaderView::section {
+                background-color: #f0f0f0;
+                border: 1px solid #d0d0d0;
+                padding: 4px;
+                font-weight: bold;
+            }
+        """ )
+
+    def dropEvent(self, event):
+        """Enhanced drop event handling"""
+        # Reset styling first
+        self.dragLeaveEvent(event)
+        
+        if event.mimeData().hasUrls():
+            # Get drop position and target
+            drop_position = event.pos()
+            target_index = self.indexAt(drop_position)
+            
+            # Extract file paths
+            file_paths = []
+            for url in event.mimeData().urls():
+                file_path = url.toLocalFile()
+                if file_path and (file_path.endswith('.abf') or file_path.endswith('.nwb')):
+                    file_paths.append(file_path)
+            
+            if file_paths:
+                # Show visual feedback
+                self._showDropFeedback(len(file_paths), target_index)
+                
+                # Call the update callback with enhanced information
+                if self.update_callback:
+                    enhanced_event = DropEventInfo(
+                        mime_data=event.mimeData(),
+                        target_index=target_index,
+                        file_paths=file_paths,
+                        drop_position=drop_position
+                    )
+                    self.update_callback(enhanced_event)
+                
+                event.acceptProposedAction()
+            else:
+                event.ignore()
+        else:
+            event.ignore()
+
+    def _showDropFeedback(self, file_count, target_index):
+        """Show visual feedback for successful drop"""
+        from PySide2.QtWidgets import QMessageBox
+        
+        if target_index.isValid():
+            item = self.model().itemFromIndex(target_index)
+            if item and item.hasChildren():
+                # Dropped on a cell
+                message = f"Added {file_count} file(s) to cell: {item.text()}"
+            else:
+                # Dropped on a protocol/recording
+                parent = item.parent() if item else None
+                if parent:
+                    message = f"Added {file_count} file(s) to protocol in cell: {parent.text()}"
+                else:
+                    message = f"Added {file_count} file(s)"
+        else:
+            # Dropped in empty space
+            message = f"Ready to create new cell with {file_count} file(s)"
+        
+        # You could replace this with a status bar message or tooltip
+        print(f"Drop feedback: {message}")
+
+# Add a helper class for enhanced drop event information
+class DropEventInfo:
+    def __init__(self, mime_data, target_index, file_paths, drop_position):
+        self.mime_data = mime_data
+        self.target_index = target_index
+        self.file_paths = file_paths
+        self.drop_position = drop_position
+        self.pos = lambda: drop_position  # For compatibility with existing code
+
+    def mimeData(self):
+        return self.mime_data
+
+
+class SpikeDataImportWizard(QWizard):
+    """Wizard for importing spike analysis data"""
+    
+    # Page IDs
+    PAGE_INTRO = 0
+    PAGE_FILE_SELECT = 1
+    PAGE_PREVIEW = 2
+    PAGE_MAPPING = 3
+    PAGE_OPTIONS = 4
+    PAGE_IMPORT = 5
+    PAGE_COMPLETE = 6
+    
+    def __init__(self, database, parent=None):
+        super().__init__(parent.centralwidget)
+        self.database = database
+        self.csv_files = []
+        self.selected_files = []
+        self.preview_data = {}
+        self.column_mappings = {}
+        self.import_options = {}
+        
+        self.setWindowTitle("Spike Data Import Wizard")
+        self.setWizardStyle(QWizard.ModernStyle)
+        self.setFixedSize(800, 600)
+        
+        # Add pages
+        self.addPage(IntroPage())
+        self.addPage(FileSelectionPage())
+        self.addPage(PreviewPage())
+        self.addPage(ColumnMappingPage())
+        self.addPage(ImportOptionsPage())
+        self.addPage(ImportProgressPage())
+        self.addPage(CompletePage())
+
+class IntroPage(QWizardPage):
+    """Introduction page explaining the import process"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Spike Data Import Wizard")
+        self.setSubTitle("Import spike analysis data from CSV files into your database")
+        
+        layout = QVBoxLayout()
+        
+        intro_text = QLabel("""
+        <h3>Welcome to the Spike Data Import Wizard</h3>
+        
+        <p>This wizard will help you import spike analysis data from CSV files (like spike_count_.csv) 
+        into your cell database. The process involves the following steps:</p>
+        
+        <ol>
+        <li><b>File Selection:</b> Choose the CSV files containing spike analysis data</li>
+        <li><b>Data Preview:</b> Review the structure and content of your data</li>
+        <li><b>Column Mapping:</b> Map CSV columns to database fields</li>
+        <li><b>Import Options:</b> Configure how the data should be imported</li>
+        <li><b>Import Process:</b> Import the data into your database</li>
+        </ol>
+        
+        <p><b>Supported file formats:</b> CSV files with spike analysis results</p>
+        <p><b>Expected data:</b> Files should contain recording paths, spike counts, and analysis metrics</p>
+        
+        <p>Click <b>Next</b> to begin the import process.</p>
+        """)
+        intro_text.setWordWrap(True)
+        layout.addWidget(intro_text)
+        
+        self.setLayout(layout)
+
+class FileSelectionPage(QWizardPage):
+    """Page for selecting CSV files to import"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Select CSV Files")
+        self.setSubTitle("Choose the CSV files containing spike analysis data")
+        
+        layout = QVBoxLayout()
+        
+        # Instructions
+        instructions = QLabel("Select one or more CSV files containing spike analysis data:")
+        layout.addWidget(instructions)
+        
+        # File selection buttons
+        button_layout = QHBoxLayout()
+        self.browse_button = QPushButton("Browse for Files...")
+        self.browse_button.clicked.connect(self.browseFiles)
+        button_layout.addWidget(self.browse_button)
+        
+        self.browse_folder_button = QPushButton("Browse Folder...")
+        self.browse_folder_button.clicked.connect(self.browseFolder)
+        button_layout.addWidget(self.browse_folder_button)
+        
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+        
+        # File list
+        self.file_list = QListWidget()
+        self.file_list.setSelectionMode(QListWidget.ExtendedSelection)
+        layout.addWidget(self.file_list)
+        
+        # Remove button
+        self.remove_button = QPushButton("Remove Selected")
+        self.remove_button.clicked.connect(self.removeSelected)
+        self.remove_button.setEnabled(False)
+        layout.addWidget(self.remove_button)
+        
+        self.file_list.itemSelectionChanged.connect(self.updateRemoveButton)
+        
+        
+        self.setLayout(layout)
+        self.registerField("file_list*", self.file_list)
+
+    def browseFiles(self):
+        """Browse for individual CSV or XLSX files"""
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Select Data Files",
+            "",
+            "Data Files (*.csv *.xlsx);;CSV Files (*.csv);;Excel Files (*.xlsx);;All Files (*)"
+        )
+        if files:
+            wizard = self.wizard()
+            for file_path in files:
+                if file_path not in wizard.csv_files:
+                    wizard.csv_files.append(file_path)
+                    item = QListWidgetItem(os.path.basename(file_path))
+                    item.setData(Qt.UserRole, file_path)
+                    item.setToolTip(file_path)
+                    self.file_list.addItem(item)
+            
+    def browseFolder(self):
+        """Browse for a folder containing CSV or XLSX files"""
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder Containing Data Files")
+        if folder:
+            data_files = []
+            for file in os.listdir(folder):
+                if file.lower().endswith('.csv') or file.lower().endswith('.xlsx'):
+                    data_files.append(os.path.join(folder, file))
+            if data_files:
+                wizard = self.wizard()
+                for file_path in data_files:
+                    if file_path not in wizard.csv_files:
+                        wizard.csv_files.append(file_path)
+                        item = QListWidgetItem(os.path.basename(file_path))
+                        item.setData(Qt.UserRole, file_path)
+                        item.setToolTip(file_path)
+                        self.file_list.addItem(item)
+            else:
+                QMessageBox.information(self, "No Data Files", "No CSV or XLSX files found in the selected folder.")
+    
+    def removeSelected(self):
+        """Remove selected files from the list"""
+        wizard = self.wizard()
+        for item in self.file_list.selectedItems():
+            file_path = item.data(Qt.UserRole)
+            if file_path in wizard.csv_files:
+                wizard.csv_files.remove(file_path)
+            self.file_list.takeItem(self.file_list.row(item))
+    
+    def updateRemoveButton(self):
+        """Enable/disable remove button based on selection"""
+        self.remove_button.setEnabled(len(self.file_list.selectedItems()) > 0)
+    
+    def isComplete(self):
+        """Page is complete when at least one file is selected"""
+        return len(self.wizard().csv_files) > 0
+
+class PreviewPage(QWizardPage):
+    """Page for previewing the selected CSV files"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Data Preview")
+        self.setSubTitle("Review the structure and content of your CSV files")
+        
+        layout = QVBoxLayout()
+        
+        # File selector
+        file_layout = QHBoxLayout()
+        file_layout.addWidget(QLabel("Preview file:"))
+        self.file_combo = QComboBox()
+        self.file_combo.currentTextChanged.connect(self.updatePreview)
+        file_layout.addWidget(self.file_combo)
+        file_layout.addStretch()
+        layout.addLayout(file_layout)
+        
+        # Preview table
+        self.preview_table = QTableWidget()
+        self.preview_table.setAlternatingRowColors(True)
+        self.preview_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        layout.addWidget(self.preview_table)
+        
+        # Info labels
+        self.info_label = QLabel()
+        layout.addWidget(self.info_label)
+        
+        self.setLayout(layout)
+    
+    def initializePage(self):
+        """Initialize the page when entering"""
+        wizard = self.wizard()
+        # Clear and populate file combo
+        self.file_combo.clear()
+        for file_path in wizard.csv_files:
+            self.file_combo.addItem(os.path.basename(file_path), file_path)
+        # Load preview data for all files
+        wizard.preview_data = {}
+        for file_path in wizard.csv_files:
+            try:
+                if file_path.lower().endswith('.csv'):
+                    df = pd.read_csv(file_path, nrows=10)
+                elif file_path.lower().endswith('.xlsx'):
+                    df = pd.read_excel(file_path, nrows=10)
+                else:
+                    continue
+                wizard.preview_data[file_path] = df
+            except Exception as e:
+                QMessageBox.warning(self, "Preview Error", 
+                                  f"Could not preview file {os.path.basename(file_path)}:\n{str(e)}")
+        # Update preview for first file
+        if wizard.csv_files:
+            self.updatePreview()
+    
+    def updatePreview(self):
+        """Update the preview table for the selected file"""
+        current_file = self.file_combo.currentData()
+        if not current_file:
+            return
+        
+        wizard = self.wizard()
+        if current_file in wizard.preview_data:
+            df = wizard.preview_data[current_file]
+            
+            # Update table
+            self.preview_table.setRowCount(len(df))
+            self.preview_table.setColumnCount(len(df.columns))
+            self.preview_table.setHorizontalHeaderLabels(df.columns.tolist())
+            
+            for row in range(len(df)):
+                for col in range(len(df.columns)):
+                    item = QTableWidgetItem(str(df.iloc[row, col]))
+                    self.preview_table.setItem(row, col, item)
+            
+            # Resize columns to content
+            self.preview_table.resizeColumnsToContents()
+            
+            # Update info label
+            try:
+                full_df = pd.read_csv(current_file)
+                self.info_label.setText(f"File: {os.path.basename(current_file)} | "
+                                      f"Rows: {len(full_df)} | "
+                                      f"Columns: {len(full_df.columns)} | "
+                                      f"Showing first 10 rows")
+            except:
+                self.info_label.setText(f"File: {os.path.basename(current_file)} | "
+                                      f"Showing first 10 rows")
+
+class ColumnMappingPage(QWizardPage):
+    """Page for mapping CSV columns to database fields"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Column Mapping")
+        self.setSubTitle("Map CSV columns to database fields")
+        
+        layout = QVBoxLayout()
+        
+        instructions = QLabel("""
+        Map the columns from your CSV files to the appropriate database fields.
+        The wizard will attempt to auto-detect common column mappings based on column names.
+        """)
+        instructions.setWordWrap(True)
+        layout.addWidget(instructions)
+        
+        # Mapping form
+        self.mapping_form = QFormLayout()
+        
+        # Common field mappings
+        self.field_combos = {}
+        common_fields = [
+            ("Recording Path", "path to the recording file"),
+            ("Cell Name", "name or identifier of the cell"),
+            ("Protocol", "protocol or experiment type"),
+            ("Spike Count", "number of spikes detected"),
+            ("Spike Rate", "firing rate (Hz)"),
+            ("ISI Mean", "mean inter-spike interval"),
+            ("ISI CV", "coefficient of variation of ISI"),
+            ("First Spike Latency", "latency to first spike"),
+            ("Sweep Number", "sweep or trial number")
+        ]
+        
+        for field_name, description in common_fields:
+            combo = QComboBox()
+            combo.addItem("-- Not Mapped --", None)
+            self.field_combos[field_name] = combo
+            self.mapping_form.addRow(f"{field_name}:", combo)
+        
+        layout.addLayout(self.mapping_form)
+        
+        # Auto-detect button
+        self.auto_detect_button = QPushButton("Auto-Detect Mappings")
+        self.auto_detect_button.clicked.connect(self.autoDetectMappings)
+        layout.addWidget(self.auto_detect_button)
+        
+        self.setLayout(layout)
+    
+    def initializePage(self):
+        """Initialize the page when entering"""
+        wizard = self.wizard()
+        
+        # Get all unique columns from all files
+        all_columns = set()
+        for file_path in wizard.csv_files:
+            if file_path in wizard.preview_data:
+                df = wizard.preview_data[file_path]
+                all_columns.update(df.columns.tolist())
+        
+        # Populate combo boxes with available columns
+        for combo in self.field_combos.values():
+            combo.clear()
+            combo.addItem("-- Not Mapped --", None)
+            for column in sorted(all_columns):
+                combo.addItem(column, column)
+        
+        # Auto-detect mappings
+        self.autoDetectMappings()
+    
+    def autoDetectMappings(self):
+        """Auto-detect column mappings based on common patterns"""
+        wizard = self.wizard()
+        
+        # Get all columns
+        all_columns = set()
+        for file_path in wizard.csv_files:
+            if file_path in wizard.preview_data:
+                df = wizard.preview_data[file_path]
+                all_columns.update(df.columns.tolist())
+        
+        # Mapping patterns (field_name -> [possible_column_names])
+        patterns = {
+            "Recording Path": ["path", "file_path", "recording_path", "filename", "file"],
+            "Cell Name": ["cell", "cell_name", "cell_id", "name"],
+            "Protocol": ["protocol", "experiment", "condition", "stim", "stimulus"],
+            "Spike Count": ["spike_count", "n_spikes", "spikes", "count"],
+            "Spike Rate": ["spike_rate", "firing_rate", "rate", "frequency", "hz"],
+            "ISI Mean": ["isi_mean", "mean_isi", "isi_avg", "avg_isi"],
+            "ISI CV": ["isi_cv", "cv_isi", "isi_variability"],
+            "First Spike Latency": ["first_spike_latency", "latency", "first_spike"],
+            "Sweep Number": ["sweep", "sweep_number", "trial", "trial_number"]
+        }
+        
+        # Auto-detect mappings
+        for field_name, possible_names in patterns.items():
+            combo = self.field_combos.get(field_name)
+            if combo:
+                for column in all_columns:
+                    column_lower = column.lower()
+                    for pattern in possible_names:
+                        if pattern in column_lower or column_lower in pattern:
+                            # Find the index of this column in the combo box
+                            for i in range(combo.count()):
+                                if combo.itemData(i) == column:
+                                    combo.setCurrentIndex(i)
+                                    break
+                            break
+    
+    def validatePage(self):
+        """Validate that essential mappings are set"""
+        wizard = self.wizard()
+        
+        # Store mappings
+        wizard.column_mappings = {}
+        for field_name, combo in self.field_combos.items():
+            column = combo.currentData()
+            if column:
+                wizard.column_mappings[field_name] = column
+        
+        # Check for essential mappings
+        if "Recording Path" not in wizard.column_mappings:
+            QMessageBox.warning(self, "Missing Mapping", 
+                              "Recording Path mapping is required to proceed.")
+            return False
+        
+        return True
+
+class ImportOptionsPage(QWizardPage):
+    """Page for configuring import options"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Import Options")
+        self.setSubTitle("Configure how the data should be imported")
+        
+        layout = QVBoxLayout()
+        
+        # Cell handling options
+        cell_group = QGroupBox("Cell Handling")
+        cell_layout = QFormLayout()
+        
+        self.create_cells_check = QCheckBox("Create new cells if they don't exist")
+        self.create_cells_check.setChecked(True)
+        cell_layout.addRow(self.create_cells_check)
+        
+        self.update_existing_check = QCheckBox("Update existing cell data")
+        self.update_existing_check.setChecked(True)
+        cell_layout.addRow(self.update_existing_check)
+        
+        cell_group.setLayout(cell_layout)
+        layout.addWidget(cell_group)
+        
+        # Protocol handling
+        protocol_group = QGroupBox("Protocol Handling")
+        protocol_layout = QFormLayout()
+        
+        self.create_protocols_check = QCheckBox("Create new protocols if they don't exist")
+        self.create_protocols_check.setChecked(True)
+        protocol_layout.addRow(self.create_protocols_check)
+        
+        self.default_protocol_edit = QLineEdit("Unknown")
+        protocol_layout.addRow("Default protocol name:", self.default_protocol_edit)
+        
+        protocol_group.setLayout(protocol_layout)
+        layout.addWidget(protocol_group)
+        
+        # Data validation
+        validation_group = QGroupBox("Data Validation")
+        validation_layout = QFormLayout()
+        
+        self.skip_invalid_check = QCheckBox("Skip rows with invalid data")
+        self.skip_invalid_check.setChecked(True)
+        validation_layout.addRow(self.skip_invalid_check)
+        
+        self.log_errors_check = QCheckBox("Log import errors")
+        self.log_errors_check.setChecked(True)
+        validation_layout.addRow(self.log_errors_check)
+        
+        validation_group.setLayout(validation_layout)
+        layout.addWidget(validation_group)
+        
+        # Advanced options
+        advanced_group = QGroupBox("Advanced Options")
+        advanced_layout = QFormLayout()
+        
+        self.batch_size_spin = QSpinBox()
+        self.batch_size_spin.setRange(1, 1000)
+        self.batch_size_spin.setValue(100)
+        advanced_layout.addRow("Batch size:", self.batch_size_spin)
+        
+        advanced_group.setLayout(advanced_layout)
+        layout.addWidget(advanced_group)
+        
+        layout.addStretch()
+        self.setLayout(layout)
+    
+    def validatePage(self):
+        """Store import options"""
+        wizard = self.wizard()
+        wizard.import_options = {
+            'create_cells': self.create_cells_check.isChecked(),
+            'update_existing': self.update_existing_check.isChecked(),
+            'create_protocols': self.create_protocols_check.isChecked(),
+            'default_protocol': self.default_protocol_edit.text(),
+            'skip_invalid': self.skip_invalid_check.isChecked(),
+            'log_errors': self.log_errors_check.isChecked(),
+            'batch_size': self.batch_size_spin.value()
+        }
+        return True
+
+class ImportProgressPage(QWizardPage):
+    """Page showing import progress"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Importing Data")
+        self.setSubTitle("Please wait while the data is being imported...")
+        
+        layout = QVBoxLayout()
+        
+        # Progress bars
+        self.overall_progress = QProgressBar()
+        layout.addWidget(QLabel("Overall Progress:"))
+        layout.addWidget(self.overall_progress)
+        
+        self.file_progress = QProgressBar()
+        layout.addWidget(QLabel("Current File:"))
+        layout.addWidget(self.file_progress)
+        
+        # Status label
+        self.status_label = QLabel("Preparing import...")
+        layout.addWidget(self.status_label)
+        
+        # Log area
+        self.log_text = QTextEdit()
+        self.log_text.setMaximumHeight(200)
+        layout.addWidget(QLabel("Import Log:"))
+        layout.addWidget(self.log_text)
+        
+        self.setLayout(layout)
+        
+        # Track import state
+        self.import_completed = False
+        self.import_successful = False
+    
+    def initializePage(self):
+        """Start the import process"""
+        self.import_completed = False
+        self.import_successful = False
+        self.log_text.clear()
+        
+        # Start import in a separate thread (simplified for now)
+        self.performImport()
+    
+    def performImport(self):
+        """Perform the actual data import"""
+        wizard = self.wizard()
+        
+        try:
+            total_files = len(wizard.csv_files)
+            self.overall_progress.setMaximum(total_files)
+            
+            imported_count = 0
+            error_count = 0
+            
+            for file_idx, file_path in enumerate(wizard.csv_files):
+                self.status_label.setText(f"Processing {os.path.basename(file_path)}...")
+                self.overall_progress.setValue(file_idx)
+                
+                try:
+                    # Load the full CSV file
+                    df = pd.read_csv(file_path)
+                    self.file_progress.setMaximum(len(df))
+                    
+                    self.log_text.append(f"Processing {os.path.basename(file_path)} ({len(df)} rows)")
+                    
+                    # Process each row
+                    for row_idx, row in df.iterrows():
+                        self.file_progress.setValue(row_idx + 1);
+                        
+                        try:
+                            # Extract data based on mappings
+                            row_data = {}
+                            for field_name, column_name in wizard.column_mappings.items():
+                                if column_name in df.columns:
+                                    row_data[field_name] = row[column_name]
+                            
+                            # Import the row data
+                            success = wizard.database.import_spike_data_row(
+                                row_data, wizard.import_options
+                            )
+                            
+                            if success:
+                                imported_count += 1
+                            else:
+                                error_count += 1
+                                if wizard.import_options.get('log_errors', True):
+                                    self.log_text.append(f"Warning: Row {row_idx + 1} - import failed")
+                        
+                        except Exception as e:
+                            error_count += 1
+                            if wizard.import_options.get('log_errors', True):
+                                self.log_text.append(f"Error: Row {row_idx + 1} - {str(e)}")
+                            
+                            if not wizard.import_options.get('skip_invalid', True):
+                                raise
+                
+                except Exception as e:
+                    self.log_text.append(f"Error processing file {os.path.basename(file_path)}: {str(e)}")
+                    if not wizard.import_options.get('skip_invalid', True):
+                        raise
+            
+            self.overall_progress.setValue(total_files)
+            self.status_label.setText("Import completed!")
+            
+            self.log_text.append(f"\nImport Summary:")
+            self.log_text.append(f"Successfully imported: {imported_count} rows")
+            self.log_text.append(f"Errors encountered: {error_count} rows")
+            
+            self.import_successful = True;
+            
+        except Exception as e:
+            self.status_label.setText("Import failed!")
+            self.log_text.append(f"\nImport failed with error: {str(e)}")
+            self.import_successful = False
+        
+        finally:
+            self.import_completed = True
+            # Enable the Next button
+            self.wizard().button(QWizard.NextButton).setEnabled(True)
+    
+    def isComplete(self):
+        """Page is complete when import is finished"""
+        return self.import_completed
+
+class CompletePage(QWizardPage):
+    """Final page showing import results"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Import Complete")
+        self.setSubTitle("The spike data import process has finished")
+        
+        layout = QVBoxLayout()
+        
+        self.result_label = QLabel()
+        layout.addWidget(self.result_label)
+        
+        self.details_text = QTextEdit()
+        self.details_text.setMaximumHeight(150)
+        layout.addWidget(self.details_text)
+        
+        layout.addStretch()
+        self.setLayout(layout)
+    
+    def initializePage(self):
+        """Initialize the completion page"""
+        import_page = self.wizard().page(SpikeDataImportWizard.PAGE_IMPORT)
+        
+        if import_page.import_successful:
+            self.result_label.setText("✓ Import completed successfully!")
+            self.result_label.setStyleSheet("color: green; font-weight: bold;")
+            
+            self.details_text.setPlainText(
+                "The spike analysis data has been successfully imported into your database. "
+                "You can now view and analyze the imported data in the main interface."
+            )
+        else:
+            self.result_label.setText("⚠ Import completed with errors")
+            self.result_label.setStyleSheet("color: orange; font-weight: bold;")
+            
+            self.details_text.setPlainText(
+                "The import process encountered some errors. Please review the import log "
+                "to see which data could not be imported. You may need to fix the source "
+                "data and retry the import."
+            )
+
+
+class DataframeImportWizard(QWizard):
+    """Wizard for importing arbitrary CSV/Excel files"""
+    
+    # Page IDs
+    PAGE_INTRO = 0
+    PAGE_FILE_SELECT = 1
+    PAGE_PREVIEW = 2
+    PAGE_COLUMN_CONFIG = 3
+    PAGE_OPTIONS = 4
+    PAGE_IMPORT = 5
+    PAGE_COMPLETE = 6
+    
+    def __init__(self, database, parent=None):
+        super().__init__(parent.centralwidget)
+        self.database = database
+        self.data_files = []
+        self.preview_data = {}
+        self.column_config = {}
+        self.import_options = {}
+        
+        self.setWindowTitle("CSV/Excel Import Wizard")
+        self.setWizardStyle(QWizard.ModernStyle)
+        self.setFixedSize(900, 700)
+        
+        # Add pages
+        self.addPage(DataframeIntroPage())
+        self.addPage(DataframeFileSelectionPage())
+        self.addPage(DataframePreviewPage())
+        self.addPage(DataframeColumnConfigPage())
+        self.addPage(DataframeImportOptionsPage())
+        self.addPage(DataframeImportProgressPage())
+        self.addPage(DataframeCompletePage())
+
+
+class DataframeIntroPage(QWizardPage):
+    """Introduction page explaining the dataframe import process"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("CSV/Excel Import Wizard")
+        self.setSubTitle("Import arbitrary CSV/Excel files with cell and protocol data")
+        
+        layout = QVBoxLayout()
+        
+        intro_text = QLabel("""
+        <h3>Welcome to the CSV/Excel Import Wizard</h3>
+        
+        <p>This wizard will help you import data from CSV or Excel files where:</p>
+        
+        <ul>
+        <li><b>Each row</b> represents an individual cell/recording session</li>
+        <li><b>Some columns</b> are metadata (subject, drug, date, etc.)</li>
+        <li><b>Some columns</b> contain recording file names/IDs for different protocols</li>
+        <li><b>Optionally</b> there may be additional columns with full file paths</li>
+        </ul>
+        
+        <p>The import process involves:</p>
+        
+        <ol>
+        <li><b>File Selection:</b> Choose your CSV/Excel files</li>
+        <li><b>Data Preview:</b> Review the structure of your data</li>
+        <li><b>Column Configuration:</b> Specify which columns contain what information</li>
+        <li><b>Import Options:</b> Configure import settings</li>
+        <li><b>Import Process:</b> Import the data into your database</li>
+        </ol>
+        
+        <p><b>Supported formats:</b> CSV (.csv) and Excel (.xlsx) files</p>
+        
+        <p>Click <b>Next</b> to begin the import process.</p>
+        """)
+        intro_text.setWordWrap(True)
+        layout.addWidget(intro_text)
+        
+        self.setLayout(layout)
+
+
+class DataframeFileSelectionPage(QWizardPage):
+    """Page for selecting CSV/Excel files to import"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Select Data Files")
+        self.setSubTitle("Choose the CSV or Excel files containing your data")
+        
+        layout = QVBoxLayout()
+        
+        # Instructions
+        instructions = QLabel("Select one or more CSV or Excel files to import:")
+        layout.addWidget(instructions)
+        
+        # File selection buttons
+        button_layout = QHBoxLayout()
+        self.browse_button = QPushButton("Browse for Files...")
+        self.browse_button.clicked.connect(self.browseFiles)
+        button_layout.addWidget(self.browse_button)
+        
+        self.browse_folder_button = QPushButton("Browse Folder...")
+        self.browse_folder_button.clicked.connect(self.browseFolder)
+        button_layout.addWidget(self.browse_folder_button)
+        
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+        
+        # File list
+        self.file_list = QListWidget()
+        self.file_list.setSelectionMode(QListWidget.ExtendedSelection)
+        layout.addWidget(self.file_list)
+        
+        # Remove button
+        self.remove_button = QPushButton("Remove Selected")
+        self.remove_button.clicked.connect(self.removeSelected)
+        self.remove_button.setEnabled(False)
+        layout.addWidget(self.remove_button)
+        
+        self.file_list.itemSelectionChanged.connect(self.updateRemoveButton)
+        
+        self.setLayout(layout)
+        self.registerField("file_list*", self.file_list)
+    
+    def browseFiles(self):
+        """Browse for individual CSV or Excel files"""
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Select Data Files",
+            "",
+            "Data Files (*.csv *.xlsx);;CSV Files (*.csv);;Excel Files (*.xlsx);;All Files (*)"
+        )
+        if files:
+            wizard = self.wizard()
+            for file_path in files:
+                if file_path not in wizard.data_files:
+                    wizard.data_files.append(file_path)
+                    item = QListWidgetItem(os.path.basename(file_path))
+                    item.setData(Qt.UserRole, file_path)
+                    item.setToolTip(file_path)
+                    self.file_list.addItem(item)
+    
+    def browseFolder(self):
+        """Browse for a folder containing CSV or Excel files"""
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder Containing Data Files")
+        if folder:
+            data_files = []
+            for file in os.listdir(folder):
+                if file.lower().endswith('.csv') or file.lower().endswith('.xlsx'):
+                    data_files.append(os.path.join(folder, file))
+            if data_files:
+                wizard = self.wizard()
+                for file_path in data_files:
+                    if file_path not in wizard.data_files:
+                        wizard.data_files.append(file_path)
+                        item = QListWidgetItem(os.path.basename(file_path))
+                        item.setData(Qt.UserRole, file_path)
+                        item.setToolTip(file_path)
+                        self.file_list.addItem(item)
+            else:
+                QMessageBox.information(self, "No Data Files", "No CSV or Excel files found in the selected folder.")
+    
+    def removeSelected(self):
+        """Remove selected files from the list"""
+        for item in self.file_list.selectedItems():
+            file_path = item.data(Qt.UserRole)
+            wizard = self.wizard()
+            if file_path in wizard.data_files:
+                wizard.data_files.remove(file_path)
+            self.file_list.takeItem(self.file_list.row(item))
+    
+    def updateRemoveButton(self):
+        """Enable/disable remove button based on selection"""
+        self.remove_button.setEnabled(len(self.file_list.selectedItems()) > 0)
+    
+    def isComplete(self):
+        """Page is complete when at least one file is selected"""
+        return self.file_list.count() > 0
+
+
+class DataframePreviewPage(QWizardPage):
+    """Page for previewing the selected data files"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Preview Data")
+        self.setSubTitle("Review the structure and content of your data files")
+        
+        layout = QVBoxLayout()
+        
+        # File selector
+        file_layout = QHBoxLayout()
+        file_layout.addWidget(QLabel("Preview file:"))
+        self.file_combo = QComboBox()
+        self.file_combo.currentTextChanged.connect(self.updatePreview)
+        file_layout.addWidget(self.file_combo)
+        file_layout.addStretch()
+        layout.addLayout(file_layout)
+        
+        # Data options
+        options_group = QGroupBox("Data Reading Options")
+        options_layout = QFormLayout()
+        
+        self.skip_rows_spin = QSpinBox()
+        self.skip_rows_spin.setRange(0, 50)
+        self.skip_rows_spin.setValue(0)
+        self.skip_rows_spin.valueChanged.connect(self.updatePreview)
+        options_layout.addRow("Skip rows:", self.skip_rows_spin)
+        
+        self.has_header_check = QCheckBox("First row contains column headers")
+        self.has_header_check.setChecked(True)
+        self.has_header_check.toggled.connect(self.updatePreview)
+        options_layout.addRow(self.has_header_check)
+        
+        options_group.setLayout(options_layout)
+        layout.addWidget(options_group)
+        
+        # Preview table
+        self.preview_table = QTableWidget()
+        layout.addWidget(self.preview_table)
+        
+        # Info label
+        self.info_label = QLabel()
+        layout.addWidget(self.info_label)
+        
+        self.setLayout(layout)
+    
+    def initializePage(self):
+        """Initialize the preview page"""
+        wizard = self.wizard()
+        self.file_combo.clear()
+        for file_path in wizard.data_files:
+            self.file_combo.addItem(os.path.basename(file_path), file_path)
+        
+        self.updatePreview()
+    
+    def updatePreview(self):
+        """Update the preview table"""
+        if self.file_combo.count() == 0:
+            return
+            
+        file_path = self.file_combo.currentData()
+        if not file_path:
+            return
+            
+        try:
+            # Load data based on file type
+            skip_rows = self.skip_rows_spin.value()
+            
+            if file_path.lower().endswith('.xlsx'):
+                df = pd.read_excel(file_path, skiprows=skip_rows)
+            else:
+                df = pd.read_csv(file_path, skiprows=skip_rows)
+            
+            # Store the preview data
+            wizard = self.wizard()
+            wizard.preview_data[file_path] = df.copy()
+            
+            # Update table
+            self.preview_table.setRowCount(min(20, len(df)))
+            self.preview_table.setColumnCount(len(df.columns))
+            
+            # Set headers
+            if self.has_header_check.isChecked():
+                self.preview_table.setHorizontalHeaderLabels([str(col) for col in df.columns])
+            else:
+                self.preview_table.setHorizontalHeaderLabels([f"Column {i+1}" for i in range(len(df.columns))])
+            
+            # Fill data (show first 20 rows)
+            for row in range(min(20, len(df))):
+                for col in range(len(df.columns)):
+                    value = df.iloc[row, col]
+                    if pd.isna(value):
+                        value = ""
+                    else:
+                        value = str(value)
+                    item = QTableWidgetItem(value)
+                    self.preview_table.setItem(row, col, item)
+            
+            # Update info
+            self.info_label.setText(f"File: {os.path.basename(file_path)} | Rows: {len(df)} | Columns: {len(df.columns)}")
+            
+        except Exception as e:
+            QMessageBox.warning(self, "Preview Error", f"Error loading file preview: {str(e)}")
+            self.info_label.setText(f"Error loading file: {str(e)}")
+
+
+class DataframeColumnConfigPage(QWizardPage):
+    """Page for configuring column mappings"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Configure Columns")
+        self.setSubTitle("Specify which columns contain cell IDs, metadata, and protocol data")
+        
+        layout = QVBoxLayout()
+        
+        # File selector
+        file_layout = QHBoxLayout()
+        file_layout.addWidget(QLabel("Configure file:"))
+        self.file_combo = QComboBox()
+        self.file_combo.currentTextChanged.connect(self.updateColumnConfig)
+        file_layout.addWidget(self.file_combo)
+        file_layout.addStretch()
+        layout.addLayout(file_layout)
+        
+        # Scroll area for configuration
+        scroll = QScrollArea()
+        scroll_widget = QWidget()
+        self.scroll_layout = QVBoxLayout(scroll_widget)
+        
+        # Cell ID configuration
+        cell_group = QGroupBox("Cell Identification")
+        cell_layout = QFormLayout()
+        
+        self.cell_id_combo = QComboBox()
+        cell_layout.addRow("Cell ID column:", self.cell_id_combo)
+        
+        cell_group.setLayout(cell_layout)
+        self.scroll_layout.addWidget(cell_group)
+        
+        # Metadata configuration
+        metadata_group = QGroupBox("Metadata Columns")
+        metadata_layout = QVBoxLayout()
+        
+        metadata_info = QLabel("Select columns that contain metadata (subject, drug, date, notes, etc.):")
+        metadata_layout.addWidget(metadata_info)
+        
+        self.metadata_list = QListWidget()
+        self.metadata_list.setSelectionMode(QListWidget.ExtendedSelection)
+        metadata_layout.addWidget(self.metadata_list)
+        
+        metadata_group.setLayout(metadata_layout)
+        self.scroll_layout.addWidget(metadata_group)
+        
+        # Protocol configuration
+        protocol_group = QGroupBox("Protocol Columns")
+        protocol_layout = QVBoxLayout()
+        
+        protocol_info = QLabel("Select columns that contain protocol file names/IDs:")
+        protocol_layout.addWidget(protocol_info)
+        
+        # Auto-detection option
+        auto_detect_layout = QHBoxLayout()
+        self.auto_detect_check = QCheckBox("Auto-detect protocol columns")
+        self.auto_detect_check.setChecked(True)
+        self.auto_detect_check.toggled.connect(self.toggleAutoDetect)
+        auto_detect_layout.addWidget(self.auto_detect_check)
+        
+        self.detect_button = QPushButton("Detect Now")
+        self.detect_button.clicked.connect(self.detectProtocolColumns)
+        auto_detect_layout.addWidget(self.detect_button)
+        auto_detect_layout.addStretch()
+        protocol_layout.addLayout(auto_detect_layout)
+        
+        self.protocol_list = QListWidget()
+        self.protocol_list.setSelectionMode(QListWidget.ExtendedSelection)
+        protocol_layout.addWidget(self.protocol_list)
+        
+        protocol_group.setLayout(protocol_layout)
+        self.scroll_layout.addWidget(protocol_group)
+        
+        # File path configuration
+        filepath_group = QGroupBox("File Path Configuration (Optional)")
+        filepath_layout = QVBoxLayout()
+        
+        filepath_info = QLabel("If you have separate columns with full file paths, configure them here:")
+        filepath_layout.addWidget(filepath_info)
+        
+        self.use_filepath_check = QCheckBox("Use separate file path columns")
+        self.use_filepath_check.toggled.connect(self.toggleFilePaths)
+        filepath_layout.addWidget(self.use_filepath_check)
+        
+        self.filepath_table = QTableWidget()
+        self.filepath_table.setColumnCount(2)
+        self.filepath_table.setHorizontalHeaderLabels(["Protocol Column", "File Path Column"])
+        self.filepath_table.setEnabled(False)
+        filepath_layout.addWidget(self.filepath_table)
+        
+        filepath_group.setLayout(filepath_layout)
+        self.scroll_layout.addWidget(filepath_group)
+        
+        scroll.setWidget(scroll_widget)
+        layout.addWidget(scroll)
+        
+        self.setLayout(layout)
+    
+    def initializePage(self):
+        """Initialize the column configuration page"""
+        wizard = self.wizard()
+        self.file_combo.clear()
+        
+        # Add files to combo
+        for file_path in wizard.data_files:
+            self.file_combo.addItem(os.path.basename(file_path), file_path)
+        
+        self.updateColumnConfig()
+    
+    def updateColumnConfig(self):
+        """Update column configuration for the selected file"""
+        file_path = self.file_combo.currentData()
+        if not file_path:
+            return
+            
+        wizard = self.wizard()
+        if file_path not in wizard.preview_data:
+            return
+            
+        df = wizard.preview_data[file_path]
+        columns = [str(col) for col in df.columns]
+        
+        # Update cell ID combo
+        self.cell_id_combo.clear()
+        self.cell_id_combo.addItems(columns)
+        
+        # Try to auto-select cell ID column
+        for col in columns:
+            if 'cell' in col.lower() and 'id' in col.lower():
+                index = self.cell_id_combo.findText(col)
+                if index >= 0:
+                    self.cell_id_combo.setCurrentIndex(index)
+                    break
+        
+        # Update metadata list
+        self.metadata_list.clear()
+        for col in columns:
+            item = QListWidgetItem(col)
+            item.setCheckState(Qt.Unchecked)
+            # Auto-select common metadata columns
+            if any(meta.lower() in col.lower() for meta in ['date', 'drug', 'note', 'subject', 'animal', 'age']):
+                item.setCheckState(Qt.Checked)
+            self.metadata_list.addItem(item)
+        
+        # Update protocol list
+        self.protocol_list.clear()
+        for col in columns:
+            item = QListWidgetItem(col)
+            item.setCheckState(Qt.Unchecked)
+            self.protocol_list.addItem(item)
+        
+        # Auto-detect protocol columns if enabled
+        if self.auto_detect_check.isChecked():
+            self.detectProtocolColumns()
+    
+    def detectProtocolColumns(self):
+        """Auto-detect protocol columns based on data content"""
+        file_path = self.file_combo.currentData()
+        if not file_path:
+            return
+            
+        wizard = self.wizard()
+        if file_path not in wizard.preview_data:
+            return
+            
+        df = wizard.preview_data[file_path]
+        
+        # Get currently selected cell ID and metadata columns
+        cell_id_col = self.cell_id_combo.currentText()
+        metadata_cols = []
+        for i in range(self.metadata_list.count()):
+            item = self.metadata_list.item(i)
+            if item.checkState() == Qt.Checked:
+                metadata_cols.append(item.text())
+        
+        # Auto-detect protocol columns (similar to tsDatabase logic)
+        exclude_cols = [cell_id_col] + metadata_cols
+        exclude_patterns = ['DATE', 'drug', 'NOTE', 'UNIQUE_ID', 'Burst', 'YES', 'NO']
+        
+        for i in range(self.protocol_list.count()):
+            item = self.protocol_list.item(i)
+            col = item.text()
+            
+            # Reset first
+            item.setCheckState(Qt.Unchecked)
+            
+            if col in exclude_cols:
+                continue
+            if any(pattern.lower() in col.upper() for pattern in exclude_patterns):
+                continue
+            
+            # Check if column contains file-like data
+            non_empty_values = df[col].dropna()
+            if len(non_empty_values) > 0:
+                sample_vals = non_empty_values.head(10).astype(str)
+                if any(val for val in sample_vals if 
+                       val not in ['', 'nan', 'None'] and 
+                       any(c.isalnum() or c == '_' for c in val)):
+                    item.setCheckState(Qt.Checked)
+    
+    def toggleAutoDetect(self, enabled):
+        """Enable/disable auto-detection"""
+        self.detect_button.setEnabled(enabled)
+        if enabled:
+            self.detectProtocolColumns()
+    
+    def toggleFilePaths(self, enabled):
+        """Enable/disable file path configuration"""
+        self.filepath_table.setEnabled(enabled)
+        if enabled:
+            self.updateFilePathTable()
+    
+    def updateFilePathTable(self):
+        """Update the file path mapping table"""
+        # Get selected protocol columns
+        protocol_cols = []
+        for i in range(self.protocol_list.count()):
+            item = self.protocol_list.item(i)
+            if item.checkState() == Qt.Checked:
+                protocol_cols.append(item.text())
+        
+        # Update table
+        self.filepath_table.setRowCount(len(protocol_cols))
+        
+        file_path = self.file_combo.currentData()
+        wizard = self.wizard()
+        if file_path in wizard.preview_data:
+            columns = [str(col) for col in wizard.preview_data[file_path].columns]
+            
+            for i, protocol_col in enumerate(protocol_cols):
+                # Protocol column (read-only)
+                protocol_item = QTableWidgetItem(protocol_col)
+                protocol_item.setFlags(protocol_item.flags() & ~Qt.ItemIsEditable)
+                self.filepath_table.setItem(i, 0, protocol_item)
+                
+                # File path column (combo box)
+                combo = QComboBox()
+                combo.addItem("")  # Empty option
+                combo.addItems(columns)
+                self.filepath_table.setCellWidget(i, 1, combo)
+    
+    def validatePage(self):
+        """Store column configuration"""
+        wizard = self.wizard()
+        file_path = self.file_combo.currentData()
+        
+        if not file_path:
+            return False
+            
+        # Get configuration
+        cell_id_col = self.cell_id_combo.currentText()
+        if not cell_id_col:
+            QMessageBox.warning(self, "Configuration Error", "Please select a cell ID column.")
+            return False
+        
+        # Get metadata columns
+        metadata_cols = []
+        for i in range(self.metadata_list.count()):
+            item = self.metadata_list.item(i)
+            if item.checkState() == Qt.Checked:
+                metadata_cols.append(item.text())
+        
+        # Get protocol columns
+        protocol_cols = []
+        for i in range(self.protocol_list.count()):
+            item = self.protocol_list.item(i)
+            if item.checkState() == Qt.Checked:
+                protocol_cols.append(item.text())
+        
+        if not protocol_cols:
+            result = QMessageBox.question(
+                self, 
+                "No Protocol Columns", 
+                "No protocol columns selected. Continue anyway?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if result == QMessageBox.No:
+                return False
+        
+        # Get file path mappings if enabled
+        filepath_mappings = {}
+        if self.use_filepath_check.isChecked():
+            for i in range(self.filepath_table.rowCount()):
+                protocol_col = self.filepath_table.item(i, 0).text()
+                combo = self.filepath_table.cellWidget(i, 1)
+                if combo and combo.currentText():
+                    filepath_mappings[protocol_col] = combo.currentText()
+        
+        # Store configuration
+        wizard.column_config[file_path] = {
+            'cell_id_col': cell_id_col,
+            'metadata_cols': metadata_cols,
+            'protocol_cols': protocol_cols,
+            'filepath_mappings': filepath_mappings,
+            'auto_detect': self.auto_detect_check.isChecked()
+        }
+        
+        return True
+
+
+class DataframeImportOptionsPage(QWizardPage):
+    """Page for configuring dataframe import options"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Import Options")
+        self.setSubTitle("Configure how the data should be imported")
+        
+        layout = QVBoxLayout()
+        
+        # Cell handling options
+        cell_group = QGroupBox("Cell Handling")
+        cell_layout = QFormLayout()
+        
+        self.create_cells_check = QCheckBox("Create new cells if they don't exist")
+        self.create_cells_check.setChecked(True)
+        cell_layout.addRow(self.create_cells_check)
+        
+        self.update_existing_check = QCheckBox("Update existing cell data")
+        self.update_existing_check.setChecked(True)
+        cell_layout.addRow(self.update_existing_check)
+        
+        cell_group.setLayout(cell_layout)
+        layout.addWidget(cell_group)
+        
+        # Protocol handling
+        protocol_group = QGroupBox("Protocol Handling")
+        protocol_layout = QFormLayout()
+        
+        self.create_protocols_check = QCheckBox("Create new protocols if they don't exist")
+        self.create_protocols_check.setChecked(True)
+        protocol_layout.addRow(self.create_protocols_check)
+        
+        protocol_group.setLayout(protocol_layout)
+        layout.addWidget(protocol_group)
+        
+        # Data validation
+        validation_group = QGroupBox("Data Validation")
+        validation_layout = QFormLayout()
+        
+        self.skip_empty_check = QCheckBox("Skip empty protocol cells")
+        self.skip_empty_check.setChecked(True)
+        validation_layout.addRow(self.skip_empty_check)
+        
+        self.skip_invalid_check = QCheckBox("Skip rows with invalid data")
+        self.skip_invalid_check.setChecked(True)
+        validation_layout.addRow(self.skip_invalid_check)
+        
+        self.log_errors_check = QCheckBox("Log import errors and warnings")
+        self.log_errors_check.setChecked(True)
+        validation_layout.addRow(self.log_errors_check)
+        
+        validation_group.setLayout(validation_layout)
+        layout.addWidget(validation_group)
+        
+        layout.addStretch()
+        self.setLayout(layout)
+    
+    def validatePage(self):
+        """Store import options"""
+        wizard = self.wizard()
+        wizard.import_options = {
+            'create_cells': self.create_cells_check.isChecked(),
+            'update_existing': self.update_existing_check.isChecked(),
+            'create_protocols': self.create_protocols_check.isChecked(),
+            'skip_empty': self.skip_empty_check.isChecked(),
+            'skip_invalid': self.skip_invalid_check.isChecked(),
+            'log_errors': self.log_errors_check.isChecked()
+        }
+        return True
+
+
+class DataframeImportProgressPage(QWizardPage):
+    """Page showing dataframe import progress"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Importing Data")
+        self.setSubTitle("Please wait while the data is being imported...")
+        
+        layout = QVBoxLayout()
+        
+        # Progress bars
+        self.overall_progress = QProgressBar()
+        layout.addWidget(QLabel("Overall Progress:"))
+        layout.addWidget(self.overall_progress)
+        
+        self.file_progress = QProgressBar()
+        layout.addWidget(QLabel("Current File:"))
+        layout.addWidget(self.file_progress)
+        
+        # Status label
+        self.status_label = QLabel("Preparing import...")
+        layout.addWidget(self.status_label)
+        
+        # Log area
+        self.log_text = QTextEdit()
+        self.log_text.setMaximumHeight(200)
+        layout.addWidget(QLabel("Import Log:"))
+        layout.addWidget(self.log_text)
+        
+        self.setLayout(layout)
+        
+        # Track import state
+        self.import_completed = False
+        self.import_successful = False
+    
+    def initializePage(self):
+        """Start the import process"""
+        self.import_completed = False
+        self.import_successful = False
+        self.log_text.clear()
+        
+        # Disable the Next button during import
+        self.wizard().button(QWizard.NextButton).setEnabled(False)
+        
+        # Start import
+        self.performImport()
+    
+    def performImport(self):
+        """Perform the actual data import"""
+        wizard = self.wizard()
+        
+        try:
+            total_files = len(wizard.data_files)
+            self.overall_progress.setMaximum(total_files)
+            
+            imported_count = 0
+            error_count = 0
+            
+            for file_idx, file_path in enumerate(wizard.data_files):
+                self.status_label.setText(f"Processing {os.path.basename(file_path)}...")
+                self.overall_progress.setValue(file_idx)
+                
+                try:
+                    # Get configuration for this file
+                    if file_path not in wizard.column_config:
+                        self.log_text.append(f"Warning: No configuration found for {os.path.basename(file_path)}")
+                        continue
+                        
+                    config = wizard.column_config[file_path]
+                    
+                    # Load the data
+                    if file_path not in wizard.preview_data:
+                        # Load fresh if not in preview
+                        if file_path.lower().endswith('.xlsx'):
+                            df = pd.read_excel(file_path)
+                        else:
+                            df = pd.read_csv(file_path)
+                    else:
+                        df = wizard.preview_data[file_path]
+                    
+                    self.file_progress.setMaximum(len(df))
+                    self.log_text.append(f"Processing {os.path.basename(file_path)} ({len(df)} rows)")
+                    
+                    # Import using tsDatabase.from_dataframe method
+                    success = wizard.database.from_dataframe(
+                        df,
+                        filename_cols=config['protocol_cols'],
+                        filepath_cols=config.get('filepath_mappings', {}),
+                        cell_id_col=config['cell_id_col'],
+                        metadata_cols=config['metadata_cols'],
+                        skip_empty=wizard.import_options.get('skip_empty', True)
+                    )
+                    
+                    if success:
+                        imported_count += 1
+                        self.log_text.append(f"✓ Successfully imported {os.path.basename(file_path)}")
+                    else:
+                        error_count += 1
+                        self.log_text.append(f"✗ Failed to import {os.path.basename(file_path)}")
+                
+                except Exception as e:
+                    error_count += 1
+                    if wizard.import_options.get('log_errors', True):
+                        self.log_text.append(f"Error processing {os.path.basename(file_path)}: {str(e)}")
+                    if not wizard.import_options.get('skip_invalid', True):
+                        raise
+                
+                self.file_progress.setValue(len(df) if 'df' in locals() else 0)
+            
+            self.overall_progress.setValue(total_files)
+            self.status_label.setText("Import completed!")
+            
+            self.log_text.append(f"\nImport Summary:")
+            self.log_text.append(f"Successfully imported: {imported_count} files")
+            self.log_text.append(f"Errors encountered: {error_count} files")
+            
+            self.import_successful = imported_count > 0
+            
+        except Exception as e:
+            self.status_label.setText("Import failed!")
+            self.log_text.append(f"\nImport failed with error: {str(e)}")
+            self.import_successful = False
+        
+        finally:
+            self.import_completed = True
+            # Enable the Next button
+            self.wizard().button(QWizard.NextButton).setEnabled(True)
+    
+    def isComplete(self):
+        """Page is complete when import is finished"""
+        return self.import_completed
+
+
+class DataframeCompletePage(QWizardPage):
+    """Final page showing dataframe import results"""
+    
+    def __init__(self):
+        super().__init__()
+        self.setTitle("Import Complete")
+        self.setSubTitle("The CSV/Excel import process has finished")
+        
+        layout = QVBoxLayout()
+        
+        self.result_label = QLabel()
+        layout.addWidget(self.result_label)
+        
+        self.details_text = QTextEdit()
+        self.details_text.setMaximumHeight(150)
+        layout.addWidget(self.details_text)
+        
+        layout.addStretch()
+        self.setLayout(layout)
+    
+    def initializePage(self):
+        """Initialize the completion page"""
+        import_page = self.wizard().page(DataframeImportWizard.PAGE_IMPORT)
+        
+        if import_page.import_successful:
+            self.result_label.setText("✓ Import completed successfully!")
+            self.result_label.setStyleSheet("color: green; font-weight: bold;")
+            
+            self.details_text.setPlainText(
+                "Your CSV/Excel data has been successfully imported into the database. "
+                "The files have been processed and cell/protocol information has been added "
+                "to your database. You can now view and work with the imported data in the main interface."
+            )
+        else:
+            self.result_label.setText("⚠ Import completed with errors")
+            self.result_label.setStyleSheet("color: orange; font-weight: bold;")
+            
+            self.details_text.setPlainText(
+                "The import process encountered some errors. Please review the import log "
+                "to see which files could not be imported. You may need to check the file "
+                "formats and column configurations and retry the import."
+            )
+
+
 def run():
     app = QApplication(sys.argv)
     MainWindow = QMainWindow()

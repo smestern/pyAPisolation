@@ -10,14 +10,19 @@ import os
 import pandas as pd
 import numpy as np
 from joblib import dump, load
-from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, DEFAULT_DICT, analyze_spike_times
+from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, analyze_spike_times, analyze_subthres
 from pyAPisolation.patch_utils import load_protocols
+from pyAPisolation.ipfx_df import save_subthres_data
+#from pyAPisolation.analysis import SpikeAnalysisModule
 import glob
 
 COLS_TO_SKIP = ['Best Fit', 'Curve fit b1', #random / moving api
                  'foldername', 'protocol', #not a feature
                  ]
 
+
+DEFAULT_DICT = {'filter': 0,
+                 'start_search': None,}
 
 def test_dataframe_save():
     # Run the feature extractor
@@ -103,11 +108,36 @@ def test_analyze_funcs():
     #try to load the protocols
     spike_times = analyze_spike_times(file=files[-1])
     print(spike_times)
-    
 
+def test_subthreshold_funcs():
+    #load a file
+    files = glob.glob(os.path.expanduser('./data/') + '/**/*.abf', recursive=True)
+    
+    
+    dfs = analyze_subthres(file=files[0],  savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False)
+    save_subthres_data(dfs[1], dfs[0], root_fold=os.path.dirname(__file__))
+
+def test_modular_analysis():
+    #we need to make sure the modular feature analysis is working:
+    # Load the known good df
+    df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
+    files = glob.glob(os.path.expanduser('~/Dropbox/sara_cell_v2') + '/**/*.abf', recursive=True)
+    # Run the feature extractor
+    #spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), DEFAULT_DICT)
+
+    # Initialize the SpikeAnalysisModule
+    spike_analysis_module = SpikeAnalysisModule()
+    #run one file
+    res = spike_analysis_module.analyze(file=files[-1])
+    dict_parallel = DEFAULT_DICT.copy()
+    dict_parallel['n_jobs'] = 4
+    spike_analysis_module.run_batch_analysis(files, param_dict=dict_parallel)
+    # Get the results
+    results = spike_analysis_module.get_results()
+    # Test the analyze_subthres function
 
 
 if __name__ == '__main__':
-    test_analyze_funcs()
+    test_subthreshold_funcs()
     test_dataframe_save()
     test_feature_extractor()

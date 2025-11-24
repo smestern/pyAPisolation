@@ -20,71 +20,87 @@ class Ui_databaseBuilderBase(object):
         databaseBuilderBase.resize(1196, 671)
         self.centralwidget = QWidget(databaseBuilderBase)
         self.centralwidget.setObjectName(u"centralwidget")
+        
+        # Main grid layout with column stretch factors for 75%-25% split
         self.gridLayout = QGridLayout(self.centralwidget)
         self.gridLayout.setObjectName(u"gridLayout")
-        self.verticalLayout = QVBoxLayout()
-        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.gridLayout.setColumnStretch(0, 75)  # Left column (75% width)
+        self.gridLayout.setColumnStretch(1, 25)  # Right column (25% width)
+
+        # Left column layout (75% width)
+        self.leftColumnLayout = QVBoxLayout()
+        self.leftColumnLayout.setObjectName(u"leftColumnLayout")
+        
+        # Cell Index section (75% of left column height)
+        self.cellIndexContainer = QVBoxLayout()
+        self.cellIndexContainer.setObjectName(u"cellIndexContainer")
+        
         self.label = QLabel(self.centralwidget)
         self.label.setObjectName(u"label")
-
-        self.verticalLayout.addWidget(self.label)
+        self.cellIndexContainer.addWidget(self.label)
 
         self.cellIndexFrame = QFrame(self.centralwidget)
         self.cellIndexFrame.setObjectName(u"cellIndexFrame")
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHorizontalStretch(75)
+        sizePolicy.setVerticalStretch(75)
         sizePolicy.setHeightForWidth(self.cellIndexFrame.sizePolicy().hasHeightForWidth())
         self.cellIndexFrame.setSizePolicy(sizePolicy)
         self.cellIndexFrame.setFrameShape(QFrame.StyledPanel)
         self.cellIndexFrame.setFrameShadow(QFrame.Raised)
         self.cellIndexFrame.setAcceptDrops(True)
-
-        self.verticalLayout.addWidget(self.cellIndexFrame)
-
+        
+        self.cellIndexContainer.addWidget(self.cellIndexFrame)
+        
+        # Add button layout
         self.horizontalLayout = QHBoxLayout()
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.addCell = QCommandLinkButton(self.centralwidget)
         self.addCell.setObjectName(u"addCell")
-
         self.horizontalLayout.addWidget(self.addCell)
 
         self.addProtocol = QCommandLinkButton(self.centralwidget)
         self.addProtocol.setObjectName(u"addProtocol")
-
         self.horizontalLayout.addWidget(self.addProtocol)
+        
+        self.cellIndexContainer.addLayout(self.horizontalLayout)
+        
+        self.leftColumnLayout.addLayout(self.cellIndexContainer, 75)  # 75% of left column height
 
-
-        self.verticalLayout.addLayout(self.horizontalLayout)
-
-
-        self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
-
+        # Metadata section (25% of left column height)
         self.groupBox = QGroupBox(self.centralwidget)
         self.groupBox.setObjectName(u"groupBox")
-        self.groupBox.setMinimumSize(QSize(370, 0))
+        self.groupBox.setMinimumSize(QSize(0, 150))
+        metadataSizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        metadataSizePolicy.setHorizontalStretch(75)
+        metadataSizePolicy.setVerticalStretch(25)
+        self.groupBox.setSizePolicy(metadataSizePolicy)
+        
+        self.leftColumnLayout.addWidget(self.groupBox, 25)  # 25% of left column height
 
-        self.gridLayout.addWidget(self.groupBox, 0, 1, 1, 1)
+        # Add left column to main grid
+        self.gridLayout.addLayout(self.leftColumnLayout, 0, 0, 1, 1)
 
+        # Right column layout (25% width) - File Tree
         self.verticalLayout_2 = QVBoxLayout()
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
         self.label_2 = QLabel(self.centralwidget)
         self.label_2.setObjectName(u"label_2")
-
         self.verticalLayout_2.addWidget(self.label_2)
 
         self.fileTreeFrame = QFrame(self.centralwidget)
         self.fileTreeFrame.setObjectName(u"fileTreeFrame")
-        sizePolicy.setHeightForWidth(self.fileTreeFrame.sizePolicy().hasHeightForWidth())
-        self.fileTreeFrame.setSizePolicy(sizePolicy)
+        fileTreeSizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        fileTreeSizePolicy.setHorizontalStretch(25)
+        fileTreeSizePolicy.setVerticalStretch(0)
+        fileTreeSizePolicy.setHeightForWidth(self.fileTreeFrame.sizePolicy().hasHeightForWidth())
+        self.fileTreeFrame.setSizePolicy(fileTreeSizePolicy)
         self.fileTreeFrame.setFrameShape(QFrame.StyledPanel)
         self.fileTreeFrame.setFrameShadow(QFrame.Raised)
-        
-
         self.verticalLayout_2.addWidget(self.fileTreeFrame)
 
-
-        self.gridLayout.addLayout(self.verticalLayout_2, 0, 2, 1, 1)
+        # Add right column to main grid
+        self.gridLayout.addLayout(self.verticalLayout_2, 0, 1, 1, 1)
 
         databaseBuilderBase.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(databaseBuilderBase)
@@ -105,12 +121,12 @@ class Ui_databaseBuilderBase(object):
     # setupUi
 
     def retranslateUi(self, databaseBuilderBase):
-        databaseBuilderBase.setWindowTitle(QCoreApplication.translate("databaseBuilderBase", u"MainWindow", None))
-        self.label.setText(QCoreApplication.translate("databaseBuilderBase", u"Cell Index", None))
+        databaseBuilderBase.setWindowTitle(QCoreApplication.translate("databaseBuilderBase", u"Database Builder - pyAPisolation", None))
+        self.label.setText(QCoreApplication.translate("databaseBuilderBase", u"Cell Index (Excel-like view)", None))
         self.addCell.setText(QCoreApplication.translate("databaseBuilderBase", u"Add Cell", None))
         self.addProtocol.setText(QCoreApplication.translate("databaseBuilderBase", u"Add Protocol", None))
-        self.groupBox.setTitle(QCoreApplication.translate("databaseBuilderBase", u"Cell Data", None))
-        self.label_2.setText(QCoreApplication.translate("databaseBuilderBase", u"Protocol Table", None))
+        self.groupBox.setTitle(QCoreApplication.translate("databaseBuilderBase", u"Cell Metadata", None))
+        self.label_2.setText(QCoreApplication.translate("databaseBuilderBase", u"File Browser", None))
         self.menuFile.setTitle(QCoreApplication.translate("databaseBuilderBase", u"File", None))
     # retranslateUi
 
