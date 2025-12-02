@@ -492,6 +492,7 @@ def main(database_file=None, config=None, static=False):
         server_object = HTTPServer(server_address=('', 8000), RequestHandlerClass=CGIHTTPRequestHandler)
         #spawn a new thread for the server to run on
         server_object.server_activate()
+        print(f"Serving static web viz at http://localhost:8000")
         
         
         #start the server
