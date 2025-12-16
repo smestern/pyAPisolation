@@ -1,16 +1,46 @@
 import numpy as np
 import pandas as pd
 import sys
+import functools
+import inspect
+import numpy as np
 
 DEBUG = True
-def debug_wrap(func):
+
+def debug_wrap(func, returns=None):
+    """
+    Decorator that wraps functions in try-except when DEBUG=False.
+    When DEBUG=True, exceptions are raised normally for easier debugging.
+    Automatically returns appropriate number of np.nan values based on function signature.
+    """
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if DEBUG:
+            # Debug mode: let exceptions propagate for full traceback
             return func(*args, **kwargs)
         else:
+            # Production mode: catch exceptions and return np.nan
             try:
                 return func(*args, **kwargs)
             except Exception as e:
+                # Determine number of return values from type hints or docstring
+                if returns is not None:
+                    if isinstance(returns, int):
+                        n_returns = returns
+                    elif isinstance(returns, tuple) or isinstance(returns, list):
+                        return tuple(np.nan for _ in returns)
+                sig = inspect.signature(func)
+                return_annotation = sig.return_annotation
+                
+                # Check if return type hint indicates tuple
+                if hasattr(return_annotation, '__origin__'):
+                    if return_annotation.__origin__ is tuple:
+                        # Return tuple of nans matching the type hint
+                        n_returns = len(return_annotation.__args__)
+                        return tuple(np.nan for _ in range(n_returns))
+                
+                # Default: single np.nan
+                print(f"Warning: {func.__name__} failed with {type(e).__name__}: {e}")
                 return np.nan
     return wrapper
 

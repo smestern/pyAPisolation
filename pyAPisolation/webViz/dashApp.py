@@ -203,7 +203,7 @@ class dashBackend():
             #if the data is not embedded, embed it
             #first preprocess the data
             pre_df, outliers = preprocess_df(self.df)
-            data = dense_umap(pre_df)
+            data = run_umap(pre_df)
             labels = cluster_df(pre_df)
             hover_names = self.df.iloc[[x not in outliers for x in np.arange(len(self.df))], :]['id'].to_numpy()
         fig = px.scatter(x=data[:, 0], y=data[:, 1], color=labels.astype(str), hover_name=hover_names)

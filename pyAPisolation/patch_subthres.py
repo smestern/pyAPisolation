@@ -11,6 +11,7 @@ from scipy.stats import mode
 from ipfx import subthresh_features as subt
 from ipfx import feature_extractor as fx
 from . import patch_utils
+from . import utils
 import pyabf
 from . import loadFile
 #from brian2.units import ohm, Gohm, amp, volt, mV, second, pA
@@ -79,6 +80,7 @@ def mem_resist_alt(cm_alt, slow_decay):
     rm_alt = cm_alt / slow_decay
     return 1/rm_alt
 
+
 def exp_rm_factor(dataT,dataV,dataI, time_aft, decay_slow, abf_id='abf', plot=False, root_fold=''):
     try:
         time_aft = time_aft / 100
@@ -126,51 +128,57 @@ def find_downward(dataI):
     downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
     return downwardinfl
 
+@utils.debug_wrap
 def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold=''):
-     try:
-        time_aft = time_aft / 100
-        if time_aft > 1:
-            time_aft = 1
+    
+    time_aft = time_aft / 100
+    if time_aft > 1:
+        time_aft = 1
 
-        diff_I = np.diff(dataI)
-        downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
-        end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
-        
-        upperC = np.amax(dataV[downwardinfl:end_index])
-        lowerC = np.amin(dataV[downwardinfl:end_index])
-        diff = np.abs(upperC - lowerC)
-        t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
-        SpanFast=(upperC-lowerC)*1*.01
-        curve, pcov_2p = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=([-np.inf,  0, 0.1,  0, 0], [np.inf, np.inf, 500, np.inf, np.inf]), xtol=None)
-        curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=(-np.inf, np.inf))
-        residuals_2p = dataV[downwardinfl:end_index]- exp_decay_2p(t1, *curve)
-        residuals_1p = dataV[downwardinfl:end_index]- exp_decay_1p(t1, *curve2)
-        ss_res_2p = np.sum(residuals_2p**2)
-        ss_res_1p = np.sum(residuals_1p**2)
-        ss_tot = np.sum((dataV[downwardinfl:end_index]-np.mean(dataV[downwardinfl:end_index]))**2)
-        r_squared_2p = 1 - (ss_res_2p / ss_tot)
-        r_squared_1p = 1 - (ss_res_1p / ss_tot)
-        if plot == True:
+    diff_I = np.diff(dataI)
+    downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+    end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
+    
+    upperC = np.amax(dataV[downwardinfl:end_index])
+    lowerC = np.amin(dataV[downwardinfl:end_index])
+    diff = np.abs(upperC - lowerC)
+    t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
+    SpanFast=(upperC-lowerC)*1*.01
 
-            plt.figure(2)
-            plt.clf()
-            plt.plot(t1, dataV[downwardinfl:end_index], label='Data')
-            plt.plot(t1, exp_decay_2p(t1, *curve), label='2 phase fit')
-            plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3]/4, curve[2]) + np.abs(upperC - np.amax(exp_decay_1p(t1, curve[0], curve[3]/4, curve[2]))), label='Phase 1', zorder=9999)
-            plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3], curve[4]) + np.abs(upperC - np.amax(exp_decay_1p(t1, curve[0], curve[3], curve[4]))), label='Phase 2')
-            plt.legend()
-            plt.title(abf_id)
-            plt.pause(3)
-            plt.savefig(root_fold+ '//cm_plots//' + abf_id+'.png')
-            #plt.close() 
-        tau1 = 1/curve[2]
-        tau2 = 1/curve[4]
-        tau_1p = 1/curve2[2]
-        fast = np.min([tau1, tau2])
-        slow = np.max([tau1, tau2])
-        return tau1, tau2, curve, r_squared_2p, r_squared_1p, tau_1p
-     except:
-        return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
+    curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=(-np.inf, np.inf))
+
+    p_guess = (curve2[0], curve2[1], curve2[-1]*0.1, curve2[1], curve2[-1])
+    curve, pcov_2p = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], p0=p_guess,
+                               maxfev=50000,  bounds=([-np.inf,  0, (1/500),  0, 0], [np.inf, np.inf, 500, np.inf, np.inf]),
+                                 xtol=None)
+    
+    residuals_2p = dataV[downwardinfl:end_index]- exp_decay_2p(t1, *curve)
+    residuals_1p = dataV[downwardinfl:end_index]- exp_decay_1p(t1, *curve2)
+    ss_res_2p = np.sum(residuals_2p**2)
+    ss_res_1p = np.sum(residuals_1p**2)
+    ss_tot = np.sum((dataV[downwardinfl:end_index]-np.mean(dataV[downwardinfl:end_index]))**2)
+    r_squared_2p = 1 - (ss_res_2p / ss_tot)
+    r_squared_1p = 1 - (ss_res_1p / ss_tot)
+    if plot == True:
+
+        plt.figure(2)
+        plt.clf()
+        plt.plot(t1, dataV[downwardinfl:end_index], label='Data')
+        plt.plot(t1, exp_decay_2p(t1, *curve), label='2 phase fit')
+        plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3]/4, curve[2]) + np.abs(upperC - np.amax(exp_decay_1p(t1, curve[0], curve[3]/4, curve[2]))), label='Phase 1', zorder=9999)
+        plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3], curve[4]) + np.abs(upperC - np.amax(exp_decay_1p(t1, curve[0], curve[3], curve[4]))), label='Phase 2')
+        plt.legend()
+        plt.title(abf_id)
+        plt.pause(3)
+        plt.savefig(root_fold+ '//cm_plots//' + abf_id+'.png')
+        #plt.close() 
+    tau1 = 1/curve[2]
+    tau2 = 1/curve[4]
+    tau_1p = 1/curve2[2]
+    fast = np.min([tau1, tau2])
+    slow = np.max([tau1, tau2])
+    return tau1, tau2, curve, r_squared_2p, r_squared_1p, tau_1p
+    
 
 
 def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold=''):

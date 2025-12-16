@@ -9,8 +9,21 @@ from sklearn.ensemble import RandomForestClassifier, IsolationForest
 from sklearn.manifold import TSNE
 import umap
 
-def dense_umap(df):
-    dens_map = umap.UMAP( metric='euclidean', min_dist=0.5, n_components=2).fit_transform(df)
+def run_umap(df, **kwargs):
+    """Run UMAP on the given dataframe with optional keyword arguments for UMAP parameters.
+    takes:
+    df: pandas DataFrame
+        The input data for UMAP.
+    kwargs: dict
+        Optional keyword arguments for UMAP parameters.
+    returns:
+    map: numpy array
+        The UMAP transformed data.
+    """
+    if kwargs:
+        dens_map = umap.UMAP( **kwargs).fit_transform(df)
+    else:
+        dens_map = umap.UMAP(metric='euclidean', min_dist=0.5, n_components=2 ).fit_transform(df)
     return dens_map
 
 def preprocess_df(df, remove_outliers=True): 
