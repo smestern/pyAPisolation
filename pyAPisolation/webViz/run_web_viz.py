@@ -82,7 +82,7 @@ if __name__ == '__main__':
         print("\nFirst generate the HTML with:")
         app = run_web_viz(data_folder, database_file=data_df, config=config_obj, backend=args.backend)
         print("\nNow start the gunicorn server in the output directory.")
-        return
+        
 
     app = run_web_viz(data_folder, database_file=data_df, config=config_obj, backend=args.backend)
 

@@ -46,8 +46,8 @@ def generate_plots(df, static, filename='filename', foldername='foldername.1'):
     full_y = []   
     for f, fp in zip(ids, folders):
         x, y, z = loadABF(os.path.join(fp,f+'.abf')) 
-        y = decimate(y, 4, axis=1)
-        x = decimate(x, 4, axis=1)
+        y = decimate(y, 10, axis=1)  # Increased from 4 for better performance
+        x = decimate(x, 10, axis=1)
         idx = np.argmin(np.abs(x-2.5))
         y = y[:, :idx]
         y = np.vstack((x[0, :idx], y))
@@ -396,6 +396,7 @@ def main(database_file=None, config=None, static=False):
         mode_script['src'] = 'assets/template_dyn.js'
         script_tag.append(mode_script)
     else:
+        pass
         # Static mode: use template.js (already in HTML)
 
     #generate the umap and paracoords scripts

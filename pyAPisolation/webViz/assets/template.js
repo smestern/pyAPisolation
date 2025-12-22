@@ -1,6 +1,6 @@
 // This script is used to generate the table and parallel coordinates plot in the web application
 // wrap this in a on load function to ensure the page is loaded before the script runs
-$( document ).ready(function() {
+$(document).ready(function () {
 
     /* data_tb */
 
@@ -26,9 +26,11 @@ $( document ).ready(function() {
     var prev_ranges = {};
     var prev_filter = "";
 
+    var prev_rows = [];
+
     function unpack(rows, key) {
-        return rows.map(function(row) { 
-        return row[key]; 
+        return rows.map(function (row) {
+            return row[key];
         });
     }
     function filterByID(ids) {
@@ -42,16 +44,16 @@ $( document ).ready(function() {
         }
     }
 
-            
+
     function isContinuousFloat(labels) {
         return labels.every(label => typeof label === 'number' || label === undefined || label === null);
     }
 
-    function table_concatenator(labels){
+    function table_concatenator(labels) {
 
         //update the global table data_tb with the selected labels
         data_tb = []
-        labels.forEach(function(label) {
+        labels.forEach(function (label) {
             // Assuming you have a way to get data for each label
             var dataForLabel = subtables[label]
             //we also want rename the columns in the subcolumn with the split label
@@ -81,7 +83,7 @@ $( document ).ready(function() {
     }
 
 
-    function generate_paracoords(data_tb, keys=['rheobase_thres', 'rheobase_width', 'rheobase_latency'], color='rheobase_thres', filter=[]) {
+    function generate_paracoords(data_tb, keys = ['rheobase_thres', 'rheobase_width', 'rheobase_latency'], color = 'rheobase_thres', filter = []) {
         //create out plotly fr
 
         if (filter.length > 0) {
@@ -103,7 +105,7 @@ $( document ).ready(function() {
         }
         //check if the color key is in embed_colors
         if (Object.keys(embed_colors).includes(color)) {
-            colorscale =  embed_colors[color];
+            colorscale = embed_colors[color];
             // affix a white color to the start of the colorscale
             //filter the colorscale to only colors found in encoded
             // Filter the colorscale to only include colors found in encoded_labels[1]
@@ -111,25 +113,25 @@ $( document ).ready(function() {
             colorscale = Object.fromEntries(
                 Object.entries(colorscale).filter(([key, value]) => encodedKeys.includes(key))
             );
-            
+
             //colorscale needs to be mapped to a range of 0-1 of the normalized values
             var min = Math.min(...color_vals);
             var max = Math.max(...color_vals);
             color_vals = color_vals.map(function (el) { return ((el - min) / (max - min)); });
             // colorscale is an object with keys being the actual label, and value being the color
             colorscale = Object.values(colorscale)
-            colorscale = colorscale.map(function (el, i) { return [(i / (colorscale.length - 1)), "#"+el]; });;
-            
+            colorscale = colorscale.map(function (el, i) { return [(i / (colorscale.length - 1)), "#" + el]; });;
+
         }
         else {
             // Generate a colorscale using Plotly's category10 scale
             var colorscale = 'Portland';
-            
+
             // Normalize color values to a range of 0-1
             var min = Math.min(...color_vals);
             var max = Math.max(...color_vals);
             color_vals = color_vals.map(function (el) { return ((el - min) / (max - min)); });
-            
+
             // Map the normalized values to the colorscale
             var colorMap = {};
             color_vals.forEach(function (val, index) {
@@ -137,30 +139,30 @@ $( document ).ready(function() {
                 colorMap[data_para[index]['ID']] = colorscale[colorIndex];
             });
         }
-    
+
         //filter color_vals by our indices
         color_vals = color_vals.filter((el, i) => indices.includes(data_para[i]['ID']))
-        .map(el => el);
+            .map(el => el);
 
         var data = [{
             type: 'parcoords',
             line: {
-            colorscale: colorscale,
-            color: color_vals,
-            cauto: false,
-            cmin: 0,
-            cmax: 1,
+                colorscale: colorscale,
+                color: color_vals,
+                cauto: false,
+                cmin: 0,
+                cmax: 1,
             },
             ids: unpack(data_para, 'ID'),
             customdata: unpack(data_para, 'ID'),
-        
+
             dimensions: keys.map(function (key) {
                 values = unpack(data_para, key)
                 //check if its a string
-                if (typeof values[0] === 'string'){
+                if (typeof values[0] === 'string') {
                     //encode the labels
                     var encoded_labels = encode_labels(data_para, key);
-                    if (encoded_labels[1].length < 2){
+                    if (encoded_labels[1].length < 2) {
                         range = [-1, 1];
                     } else {
                         range = [0, encoded_labels[1].length - 1];
@@ -170,7 +172,7 @@ $( document ).ready(function() {
                     //filter by our indices
                     // Filter out elements not in indices and then map
                     values = values.filter((el, i) => indices.includes(data_para[i]['ID']))
-                    .map(el => el);
+                        .map(el => el);
 
                     var out = {
                         range: range,
@@ -180,21 +182,21 @@ $( document ).ready(function() {
                         values: values,
                         multiselect: true
                     }
-                    
+
                 } else {
-                //replace null / nan with the mean
-                mean_values = values.reduce((a, b) => a + b, 0) / values.length;
-                //unfiltered_vals = unpack(data_tb, key);
-                values = values.map(function (el) { return el == null || el != el ? mean_values : el; });
-                //filter by our indices
-                values = values.filter((el, i) => indices.includes(data_para[i]['ID']))
-                .map(el => el);
-                //unfiltered_vals = unfiltered_vals.map(function (el) { return el == null || el != el ? mean_values : el; });
-                var out = {
-                    range: [Math.min(...values), Math.max(...values)],
-                    label: key,
-                    values: values,
-                    multiselect: false
+                    //replace null / nan with the mean
+                    mean_values = values.reduce((a, b) => a + b, 0) / values.length;
+                    //unfiltered_vals = unpack(data_tb, key);
+                    values = values.map(function (el) { return el == null || el != el ? mean_values : el; });
+                    //filter by our indices
+                    values = values.filter((el, i) => indices.includes(data_para[i]['ID']))
+                        .map(el => el);
+                    //unfiltered_vals = unfiltered_vals.map(function (el) { return el == null || el != el ? mean_values : el; });
+                    var out = {
+                        range: [Math.min(...values), Math.max(...values)],
+                        label: key,
+                        values: values,
+                        multiselect: false
                     }
                 }
                 return out
@@ -202,50 +204,50 @@ $( document ).ready(function() {
             labelangle: 45,
             labelside: 'bottom',
         }]; // create the data object
-        
+
         var layout = {
             autosize: true,
             height: 300,
             margin: {                           // update the left, bottom, right, top margin
-            b: 120, r: 40, t: 30, l: 40
-        },
+                b: 120, r: 40, t: 30, l: 40
+            },
         };
-        
-        fig = Plotly.newPlot('graphDiv_parallel', data, layout, {responsive: true, displayModeBar: false}); // create the plots
+
+        fig = Plotly.newPlot('graphDiv_parallel', data, layout, { responsive: true, displayModeBar: false }); // create the plots
         var graphDiv_parallel = document.getElementById("graphDiv_parallel") // get the plot div
-        graphDiv_parallel.on('plotly_restyle', function(data){
+        graphDiv_parallel.on('plotly_restyle', function (data) {
             var keys = []
             var ranges = []
 
-            graphDiv_parallel.data[0].dimensions.forEach(function(d) {
-                    if (d.constraintrange === undefined){
-                        keys.push(d.label);
-                        ranges.push([-9999,9999]);
-                    }
-                    else{
-                        keys.push(d.label);
-                        var allLengths = d.constraintrange.flat();
-                        //check if the label is actually categorical, by looking at ticktext
-                        if (d.ticktext !== undefined){
-                            //find the tickvals that are selected
-                            var selected = d.tickvals.filter(function(value, index) { return (d.constraintrange[0] <= value && d.constraintrange[1] >= value); });
-                            //find the ticktext that corresponds to the tickvals
-                            var selected_text = selected.map(function(value, index) { return d.ticktext[value]; });
-                            ranges.push(selected_text);
-                            
-                        }else {
-                            if (allLengths.length > 2){
-                            ranges.push([d.constraintrange[0][0],d.constraintrange[0][1]]); //return only the first filter applied per feature
+            graphDiv_parallel.data[0].dimensions.forEach(function (d) {
+                if (d.constraintrange === undefined) {
+                    keys.push(d.label);
+                    ranges.push([-9999, 9999]);
+                }
+                else {
+                    keys.push(d.label);
+                    var allLengths = d.constraintrange.flat();
+                    //check if the label is actually categorical, by looking at ticktext
+                    if (d.ticktext !== undefined) {
+                        //find the tickvals that are selected
+                        var selected = d.tickvals.filter(function (value, index) { return (d.constraintrange[0] <= value && d.constraintrange[1] >= value); });
+                        //find the ticktext that corresponds to the tickvals
+                        var selected_text = selected.map(function (value, index) { return d.ticktext[value]; });
+                        ranges.push(selected_text);
 
-                            }else{
-                                ranges.push(d.constraintrange);
-                            }
-                        }   
-                    } // => use this to find values are selected
+                    } else {
+                        if (allLengths.length > 2) {
+                            ranges.push([d.constraintrange[0][0], d.constraintrange[0][1]]); //return only the first filter applied per feature
+
+                        } else {
+                            ranges.push(d.constraintrange);
+                        }
+                    }
+                } // => use this to find values are selected
             })
 
             filterByPlot(keys, ranges);
-        }); 
+        });
     };
 
     //encode labels
@@ -258,21 +260,25 @@ $( document ).ready(function() {
 
 
     //umap plot
-    function generate_umap(rows, keys=['Umap X', 'Umap Y', 'label'], colors=embed_colors, dataset_en='Species', dataset_shapes=['o', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross'], dataset_opacity=[0.25, 1]) {
+    function generate_umap(rows, keys = ['Umap X', 'Umap Y', 'label'], colors = embed_colors, dataset_en = 'Species', dataset_shapes = ['o', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross'], dataset_opacity = [0.25, 1]) {
 
-        
+
         var encoded_labels = encode_labels(rows, keys[2]);
         var encoded_dataset = encode_labels(rows, dataset_en);
-        
+
+
+
         if (Object.keys(colors).includes(keys[2])) {
             label_color = colors[keys[2]];
         } else {
-            label_color = Plotly.d3.scale.category10().range();
+            // Use a fallback color palette compatible with newer Plotly versions
+            label_color = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
+                          '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
         }
-        
+
         // make a trace array for each label
         var traces = [];
-        
+
         if (isContinuousFloat(encoded_labels[1])) {
             // Create a single trace for continuous float labels
             traces.push({
@@ -282,9 +288,11 @@ $( document ).ready(function() {
                 customdata: [],
                 mode: 'markers',
                 name: 'Continuous Data',
-                marker: { color: unpack(rows, keys[2]), size: 5, symbol: 'circle', 
-                    colorscale: 'Portland', showscale: true, 
-                    colorbar: { title: {text: keys[2]}} }
+                marker: {
+                    color: cliptoNinety(unpack(rows, keys[2])), size: 5, symbol: 'circle',
+                    colorscale: 'Portland', showscale: true,
+                    colorbar: { title: { text: keys[2] } }
+                }
             });
         } else {
             encoded_labels[1].forEach(function (label, i) {
@@ -341,7 +349,8 @@ $( document ).ready(function() {
         // create the data array
         var data = traces;
 
-        var layout = {dragmode: 'lasso',
+        var layout = {
+            dragmode: 'lasso',
             autosize: true,
             margin: {                           // update the left, bottom, right, top margin
                 b: 20, r: 20, t: 20, l: 20
@@ -354,13 +363,13 @@ $( document ).ready(function() {
                 //yanchor: 'top',
                 y: 0.5
             },
-            scene: {aspectmode: "cube", xaxis: {title: keys[0]}, yaxis: {title: keys[1]}}
+            scene: { aspectmode: "cube", xaxis: { title: keys[0] }, yaxis: { title: keys[1] } }
         };
 
         // if there is only one trace, set the legend to false
         if (traces.length == 1) {
             layout.showlegend = false;
-            
+
         }
 
 
@@ -370,7 +379,7 @@ $( document ).ready(function() {
             var ids = []
             var ranges = []
             if (typeof eventData !== 'undefined') {
-                eventData.points.forEach(function (pt) { 
+                eventData.points.forEach(function (pt) {
                     ids.push(pt.text);
                 });
             }
@@ -408,14 +417,14 @@ $( document ).ready(function() {
     //table functions
     function traceFormatter(index, row) {
         var html = []
-        
-        
-        
+
+
+
         html.push('<div id="' + row.ID + '"></div>');
-        
+
         html.push('</div>');
-        
-        setTimeout(() =>{maketrace(row)}, 1000);
+
+        setTimeout(() => { maketrace(row) }, 1000);
         return html.join('');
     }
 
@@ -425,51 +434,51 @@ $( document ).ready(function() {
     };
 
 
-    function maketrace(row){
+    function maketrace(row) {
         var url = "./data/traces/" + row.ID + ".svg"
         var html = []
         html.push('<img src="' + url + '" alt="Traces">');
         //get the div
-        var div = document.getElementById("graphDiv_"+row.ID+"_plot")
+        var div = document.getElementById("graphDiv_" + row.ID + "_plot")
         div.innerHTML = html.join('');
-        
+
     };
-    function makerheo(row){
+    function makerheo(row) {
         var url = "./data/traces/" + row.ID + "_rheo.png"
         var html = []
         html.push('<img src="' + url + '" alt="Rheobase" style="width: 10%">');
         //get the div
-        var div = document.getElementById("graphDiv_"+row.ID+"_plot_rheo")
+        var div = document.getElementById("graphDiv_" + row.ID + "_plot_rheo")
         div.innerHTML = html.join('');
     };
-    function makefi(row){
+    function makefi(row) {
         var url = "./data/traces/" + row.ID + "_FI.svg"
         var html = []
         html.push('<img src="' + url + '" alt="FI">');
         //get the div
-        var div = document.getElementById("graphDiv_"+row.ID+"_plot_fi")
+        var div = document.getElementById("graphDiv_" + row.ID + "_plot_fi")
         div.innerHTML = html.join('');
     };
 
-    function makeephys(row, keys=ekeys){
+    function makeephys(row, keys = ekeys) {
         var html = [];
-        
+
         //we just need to populate it with rows
         html.push('<div class="col table-ephys">');
-        
+
         //loop through the keys
-        keys.forEach(function(key){
+        keys.forEach(function (key) {
             html.push('<div class="row">');
-            html.push('<span class="ephys-key">'+key+'</span>');
-            html.push('<span class="ephys-value"> '+row[key]+'</span>');
+            html.push('<span class="ephys-key">' + key + '</span>');
+            html.push('<span class="ephys-value"> ' + row[key] + '</span>');
             html.push('</div>');
-        
-            
+
+
         });
         html.push('</div>');
         //get the div
 
-        var div = document.getElementById("table_"+row.ID)
+        var div = document.getElementById("table_" + row.ID)
         div.innerHTML = html.join('');
     };
 
@@ -477,17 +486,17 @@ $( document ).ready(function() {
         if (table_links.length > 0) {
             // Get the row ID
             var ID = row.ID;
-            
+
             // Get the div
             var div = document.getElementById("link_" + ID);
-            
+
             if (!div) {
                 console.error(`Div with ID link_${ID} not found.`);
                 return;
             }
-            
+
             // Create a dropdown (select element)
-            var parent_drop = document.createElement("div"); 
+            var parent_drop = document.createElement("div");
             parent_drop.className = "dropdown";
 
             var drop_button = document.createElement("button");
@@ -504,7 +513,7 @@ $( document ).ready(function() {
             var select = document.createElement("div");
             select.className = "dropdown-menu";
             select.setAttribute("aria-labelledby", "dropdownMenuButton" + ID);
-            
+
             // Add options for each link
             for (var i = 0; i < table_links.length; i++) {
                 var link = table_links[i];
@@ -515,7 +524,7 @@ $( document ).ready(function() {
                 option.href = url;
                 select.appendChild(option);
             }
-            
+
             // Clear the div and append the dropdown
             div.innerHTML = "";
             parent_drop.appendChild(select);
@@ -523,7 +532,7 @@ $( document ).ready(function() {
         }
     };
 
-    function filterByPlot(keys, ranges){
+    function filterByPlot(keys, ranges) {
         // check to see if the ranges are the same as the previous ranges, or within the bounds of the previous ranges
         var same = true;
         for (var i = 0; i < keys.length; i++) {
@@ -556,13 +565,14 @@ $( document ).ready(function() {
                     }
 
                     //get the IDs of the selected points
-                    var selectedIDs = selectedIndices.map(function(value, index) {
+                    var selectedIDs = selectedIndices.map(function (value, index) {
                         return trace.text[value
                         ];
                     });
                     //update the selected array
                     selected.push(...selectedIDs);
-                }};
+                }
+            };
         }
         //if the total number of selected points is 0, skip this step
         if (selected.length == 0) {
@@ -571,28 +581,29 @@ $( document ).ready(function() {
             //filter the data_tb by the selected IDs
             var newArray = data_tb.filter(function (el) {
                 return selected.includes(el.ID);
-        })};
+            })
+        };
         //now we want to filter the data_tb by the selected ranges
         var newArray = newArray.filter(function (el) {
-                return keys.every(function (key, i) {
-                    if (ranges[i][0] == -9999){
-                        return true;
-                    }
-                    else if (typeof ranges[i][0] === 'string'){
-                        return ranges[i].includes(el[key]);
-                    }
-                    else{
-                        return el[key] >= ranges[i][0] && el[key] <= ranges[i][1];
-                    }
-                });	
+            return keys.every(function (key, i) {
+                if (ranges[i][0] == -9999) {
+                    return true;
+                }
+                else if (typeof ranges[i][0] === 'string') {
+                    return ranges[i].includes(el[key]);
+                }
+                else {
+                    return el[key] >= ranges[i][0] && el[key] <= ranges[i][1];
+                }
             });
-        let result = newArray.map(function(a) { return a.ID; });
+        });
+        let result = newArray.map(function (a) { return a.ID; });
 
-        $('#table').bootstrapTable('filterBy',{'ID': result});
+        $('#table').bootstrapTable('filterBy', { 'ID': result });
         crossfilter(data_tb, result, "parallel");
     };
 
-    function crossfilter(data_tb, IDs, sender='') { 
+    function crossfilter(data_tb, IDs, sender = '') {
         //set the restyle flag to true
         restyle_programmatically = true; //this way we can avoid the plotly_restyle event loop
         var graphDiv_parallel = document.getElementById("graphDiv_parallel");
@@ -605,16 +616,16 @@ $( document ).ready(function() {
             for (var i = 0; i < graphDiv_scatter.data.length; i++) {
                 var trace = graphDiv_scatter.data[i];
                 //figure out if trace.text is in the selected IDs
-                var trace_selectedIndices = trace.text.map(function(value, index) {
+                var trace_selectedIndices = trace.text.map(function (value, index) {
                     return IDs.includes(value) ? index : undefined;
-                }).filter(function(index) {
+                }).filter(function (index) {
                     return index !== undefined;
                 });
                 //update the selected array
                 selected.push(trace_selectedIndices);
             }
             //now we want to update the layout
-            Plotly.update(graphDiv_scatter, {'selectedpoints': selected});
+            Plotly.update(graphDiv_scatter, { 'selectedpoints': selected });
             prev_filter = "parallel";
         } else if (sender == "scatter") {
             //in this case we completely reset the parallel plot
@@ -631,17 +642,17 @@ $( document ).ready(function() {
 
     function cellStyle(value, row, index) {
         var classes = [
-        'bg-blue',
-        'bg-green',
-        'bg-orange',
-        'bg-yellow',
-        'bg-red'
+            'bg-blue',
+            'bg-green',
+            'bg-orange',
+            'bg-yellow',
+            'bg-red'
         ]
 
         if (value > 0) {
             return {
                 css: {
-                    'background-color': 'hsla(0, 100%, 50%,' + (value/40) + ')'
+                    'background-color': 'hsla(0, 100%, 50%,' + (value / 40) + ')'
                 }
             }
         }
@@ -653,9 +664,16 @@ $( document ).ready(function() {
     }
 
     function generate_plots() {
-        console.log("Generating plots...");
         $table.bootstrapTable('showLoading');
-        var rows = $table.bootstrapTable('getData', {useCurrentPage: true}); // get the rows, only the visible ones
+        var rows = $table.bootstrapTable('getData', { useCurrentPage: true }); // get the rows, only the visible ones\
+        //determine if the visible rows are the same as the previous rows
+        if (JSON.stringify(rows) === JSON.stringify(prev_rows)) {
+            $table.bootstrapTable('hideLoading');
+            return;
+        } else {
+            prev_rows = rows;
+        }
+        console.log("Generating plots...");
         let promises = rows.map(row => {
             return new Promise(resolve => {
                 setTimeout(() => {
@@ -666,23 +684,23 @@ $( document ).ready(function() {
                     makefi(row);
                     makeLink(row);
                     resolve();
-                }, 1000);
+                }, 50);  // Reduced from 1000ms for faster rendering
             });
         });
-    
+
         Promise.all(promises).then(() => {
             $table.bootstrapTable('hideLoading');
         });
     }
 
-    function dataset_selector(){
+    function dataset_selector() {
         var selectedCheckboxes = document.querySelectorAll('input[name="dataset-select"]:checked');
         var selectedValues = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
         table_concatenator(selectedValues);
         //complete refresh
         var selected = $('input[name="label-select"]:checked').val();
         generate_umap(data_tb, ['Umap X', 'Umap Y', selected]);
-        generate_paracoords(data_tb, para_keys,  selected)
+        generate_paracoords(data_tb, para_keys, selected)
         $table.bootstrapTable('load', data_tb)
         //$table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
         $table.bootstrapTable('refresh')
@@ -690,21 +708,24 @@ $( document ).ready(function() {
     }
 
 
-    // create the table
+    // create the table with pagination for better performance
     // find the table div
     var $table = $('#table')
-    // create the table
-    //%table.bootstrapTable({data: data_tb})
+    // create the table with pagination enabled
     $table.bootstrapTable('load', data_tb)
-    //$table.bootstrapTable('refreshOptions', {detailView: true, detailFormatter : traceFormatter})
+    $table.bootstrapTable('refreshOptions', {
+        pagination: true,
+        pageSize: 50,
+        pageList: [25, 50, 100, 200]
+    })
     $table.bootstrapTable('refresh')
 
     /* onload */
-    
+
     //find the elements of 
     var drop_parent = document.getElementById("umap-drop-menu");
     //this is a bootsrap select
-    
+
     //add an event listener
     drop_parent.addEventListener('change', function (e) {
         var selected = $('input[name="label-select"]:checked').val();
@@ -723,16 +744,16 @@ $( document ).ready(function() {
             var checkboxes = document.querySelectorAll('input[name="dataset-select"]');
             checkboxes.forEach(checkbox => checkbox.checked = true);
             dataset_selector();
-        } else if (pre_selected_datasets.length > 0){ 
+        } else if (pre_selected_datasets.length > 0) {
             //we want to restore the preselected datasets
-            pre_selected_datasets.forEach(function(dataset){
+            pre_selected_datasets.forEach(function (dataset) {
                 var checkbox = document.getElementById(dataset);
                 checkbox.checked = true;
             });
             //uncheck any other checkboxes
             var checkboxes = document.querySelectorAll('input[name="dataset-select"]');
             checkboxes.forEach(checkbox => {
-                if (!pre_selected_datasets.includes(checkbox.value)){
+                if (!pre_selected_datasets.includes(checkbox.value)) {
                     checkbox.checked = false;
                 }
             });
@@ -743,8 +764,8 @@ $( document ).ready(function() {
 
             var keys = ['Umap X', 'Umap Y', selected]
             generate_umap(data_tb, keys);
-            generate_paracoords(data_tb, paracoordskeys, selected) 
-    
+            generate_paracoords(data_tb, paracoordskeys, selected)
+
         };
     });
 
@@ -756,7 +777,7 @@ $( document ).ready(function() {
     } else {
         var drop_parent = document.getElementById("dataset-drop-menu");
         //this is a bootsrap select
-        
+
         //add an event listener
         drop_parent.addEventListener('change', function (e) {
             dataset_selector();
@@ -771,11 +792,11 @@ $( document ).ready(function() {
     $table.on('all.bs.table', function (e, name, args) {
         console.log(e, name, args)
         //if its a click cell, we actually want to just ignore it
-        if (name == "click-cell.bs.table" || name == "click-row.bs.table" || name == "dbl-click-row.bs.table"){ 
+        if (name == "click-cell.bs.table" || name == "click-row.bs.table" || name == "dbl-click-row.bs.table") {
             return;
         } else {
             generate_plots();
-          
+
         }
     });
 
@@ -786,6 +807,6 @@ $( document ).ready(function() {
 
 
     //now create our cell plots
-    
+
 
 });

@@ -79,9 +79,9 @@ class tsServer:
                 # Load ABF file
                 x, y, z = loadFile.loadABF(full_path)
                 
-                # Decimate to reduce data size for web transfer
-                y = decimate(y, 4, axis=1)
-                x = decimate(x, 4, axis=1)
+                # Decimate to reduce data size for web transfer (increased from 4 for performance)
+                y = decimate(y, 10, axis=1)
+                x = decimate(x, 10, axis=1)
                 
                 # Trim to 2.5 seconds
                 idx = np.argmin(np.abs(x-2.5))

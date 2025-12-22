@@ -66,7 +66,7 @@ $( document ).ready(function() {
             traces.push({
                 x: time,
                 y: data[i],
-                type: 'scatter',
+                type: 'scattergl',  // WebGL for better performance
                 mode: 'lines',
                 name: 'Sweep ' + i,
                 line: {width: 1},
@@ -119,7 +119,7 @@ $( document ).ready(function() {
         var trace = {
             x: data.current,
             y: data.rate,
-            type: 'scatter',
+            type: 'scattergl',  // WebGL for better performance
             mode: 'lines+markers',
             marker: {size: 8, color: 'black'},
             line: {width: 2, color: 'black'}
@@ -388,6 +388,11 @@ $( document ).ready(function() {
 
     var $table = $('#table')
     $table.bootstrapTable('load', data_tb)
+    $table.bootstrapTable('refreshOptions', {
+        pagination: true,
+        pageSize: 50,
+        pageList: [25, 50, 100, 200]
+    })
     $table.bootstrapTable('refresh')
 
     /* onload */

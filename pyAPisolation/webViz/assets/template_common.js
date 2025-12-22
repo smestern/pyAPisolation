@@ -20,6 +20,29 @@ function encode_labels(data, label) {
     return [encoded_labels, unique_labels];
 }
 
+function cliptoNinety(data) {
+    // Clip data to 5th and 95th percentiles to avoid outliers skewing the plot
+    var values = data.filter(function(value) { return typeof value === 'number'; });
+    values.sort(function(a, b) { return a - b; });
+    var lowerIndex = Math.floor(0.05 * values.length);
+    var upperIndex = Math.ceil(0.95 * values.length) - 1;
+    var lowerBound = values[lowerIndex];
+    var upperBound = values[upperIndex];
+
+    var clippedData = data.map(function(value) {
+        if (typeof value !== 'number') {
+            return value; // Keep non-numeric values unchanged
+        } else if (value < lowerBound) {
+            return lowerBound;
+        } else if (value > upperBound) {
+            return upperBound;
+        } else {
+            return value;
+        }
+    });
+    return clippedData;
+}
+
 // ============ Table Formatting Functions ============
 
 function valFormatter(value, row, index, field) {
