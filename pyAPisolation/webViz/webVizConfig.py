@@ -1,7 +1,37 @@
+"""
+Configuration class for webViz visualization settings
+
+Supports both JSON and YAML formats for backward compatibility and ease of use.
+"""
 import json
+import yaml
+import os
 
 class webVizConfig():
+    """Configuration for webViz electrophysiology visualization
+    
+    This class manages all settings for the web visualization including:
+    - Table columns to display
+    - UMAP embedding parameters  
+    - Parallel coordinates variables
+    - Color schemes
+    - File paths and extensions
+    
+    Configuration can be loaded from JSON or YAML files, or set programmatically.
+    
+    Examples:
+        # Load from YAML
+        config = webVizConfig(file='config.yaml')
+        
+        # Load from JSON (backward compatible)
+        config = webVizConfig(file='config.json')
+        
+        # Set programmatically
+        config = webVizConfig(table_vars=['voltage', 'current'], output_path='./results')
+    """
+    
     def __init__(self, file = None, **kwargs):
+        # Default configuration values
         self.file_index = 'filename.1'
         self.folder_path = 'foldername.1'
         self.file_path = "foldername.1"
@@ -18,14 +48,64 @@ class webVizConfig():
         self.plots_path = None
         self.output_path = './'
         self.ext='.abf'
+        
+        # Update with provided kwargs first
         self.__dict__.update(kwargs)
+        
+        # Load from file if provided
         if file:
-            with open(file, 'r') as f:
-                self.__dict__.update(json.load(f))
+            self.load_from_file(file)
 
-
+        # Clean up col_rename if present
         if self.col_rename:
             self.col_rename = {k:v for k,v in self.col_rename.items() if v}
+
+    def load_from_file(self, filepath):
+        """Load configuration from JSON or YAML file
+        
+        Format is auto-detected based on file extension.
+        
+        Args:
+            filepath: Path to .json or .yaml/.yml file
+        """
+        _, ext = os.path.splitext(filepath)
+        ext = ext.lower()
+        
+        with open(filepath, 'r') as f:
+            if ext in ['.yaml', '.yml']:
+                config_data = yaml.safe_load(f)
+            elif ext == '.json':
+                config_data = json.load(f)
+            else:
+                # Try JSON first, fallback to YAML
+                f.seek(0)
+                try:
+                    config_data = json.load(f)
+                except json.JSONDecodeError:
+                    f.seek(0)
+                    config_data = yaml.safe_load(f)
+        
+        self.__dict__.update(config_data)
+    
+    def save_to_json(self, filepath):
+        """Save configuration to JSON file
+        
+        Args:
+            filepath: Path to output .json file
+        """
+        config_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        with open(filepath, 'w') as f:
+            json.dump(config_dict, f, indent=2)
+    
+    def save_to_yaml(self, filepath):
+        """Save configuration to YAML file
+        
+        Args:
+            filepath: Path to output .yaml file
+        """
+        config_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        with open(filepath, 'w') as f:
+            yaml.safe_dump(config_dict, f, default_flow_style=False, sort_keys=False)
 
     
     def update(self, kwargs):

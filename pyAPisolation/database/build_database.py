@@ -39,7 +39,7 @@ import ipfx.feature_vectors as fv
 
 # Import custom functions
 from pyAPisolation import patch_utils
-from pyAPisolation.utils import arg_wrap
+from pyAPisolation.utils import arg_wrap, debug_wrap
 from pyAPisolation.loadFile.loadNWB import loadNWB, GLOBAL_STIM_NAMES
 from pyAPisolation.featureExtractor import analyze_spike_times
 try:
@@ -66,7 +66,7 @@ def glob_files(folder, ext="nwb"):
 def run_analysis(folder, backend="ipfx", outfile='out.csv', ext="nwb", parallel=False):
     files = glob_files(folder)[::-1]
     file_idx = np.arange(len(files))
-     
+    import joblib
     if backend == "ipfx":
         # Use ipfx to extract features
         #get_stimulus_protocols(files)
@@ -123,6 +123,7 @@ def main():
 #======== IPFX functions ===========
 #clone the function from ipfx/stimulus_protocol_analysis.py
 # here we will modify it to handle test pulses intelligently, then overwrite the function in ipfx for this session
+
 def get_stim_characteristics(i, t, test_pulse=True, start_epoch=None, end_epoch=None, test_pulse_length=0.250):
     """
     Identify the start time, duration, amplitude, start index, and end index of a general stimulus.
@@ -217,11 +218,11 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
     
     result = {}
     result["specimen_id"] = file_list[specimen_id]
-
+    #if True:
     try:
         #this is a clone of the function in ipfx/bin/run_feature_collection.py,
         # here we are gonna try to use it to handle data that may not be in an NWB format IPFX can handle
-        _, _, _, _, data_set = loadNWB(file_list[specimen_id], return_obj=True)
+        _, _, _, data_set = loadNWB(file_list[specimen_id], return_obj=True)
         if data_set is None or len(data_set.dataY)<1:
             return result
         #here we are going to perform long square analysis on the data, 
@@ -231,7 +232,7 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
         sweeps = []
         start_times = []
         end_times = []
-        
+        stim_amps = []
         debug_log = {}
         for sweep in np.arange(len(data_set.dataY)):
             i = np.nan_to_num(data_set.dataC[sweep]*1)
@@ -275,10 +276,18 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
                 debug_log[sweep] = "failed QC"
                 continue
             #construct a sweep obj
+
+            #again floating point errors can cause issues here, so we will round to the nearest ms, pA, and uV
+            #t = np.round(t, decimals=3)
+            i = np.round(i, decimals=1) #since we are doing long square, round to nearest 0.1 pA, 
+            #if this was ramp or noise or something this is bad.
+            #v = np.round(v, decimals=3)
+
             start_times.append(start_time)
             end_times.append(start_time+duration)
             sweep_item = Sweep(t, v, i, clamp_mode="CurrentClamp", sampling_rate=int(1/dt), sweep_number=sweep)
             sweeps.append(sweep_item)
+            stim_amps.append(amplitude)
         if debug:
             for sweep in debug_log.keys():
                 print(f"sweep {sweep} failed QC because it was {debug_log[sweep]}")
@@ -293,11 +302,15 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
         if len(sweeps) < 1:
             return result
         #get the most common start and end times
-        start_time = scipy.stats.mode(np.array(start_times))[0][0]
-        end_time = scipy.stats.mode(np.array(end_times))[0][0]
+        paired_times = np.hstack((np.array(start_times).reshape(-1,1), np.array(end_times).reshape(-1,1)))
+        #round to the nearest ms to avoid floating point issues
+        paired_times = np.round(paired_times, decimals=3)
+        unique_times, counts = np.unique(paired_times, axis=0, return_counts=True)
+        most_common_idx = np.argmax(counts)
+        start_time, end_time = unique_times[most_common_idx]
         #index out the sweeps that have the most common start and end times
-        idx_pass = np.where((np.array(start_times) == start_time) & (np.array(end_times) == end_time))[0]
-        sweeps = SweepSet(np.array(sweeps, dtype=object)[idx_pass].tolist())
+        #idx_pass = np.where((np.isclose(np.array(start_times), start_time)) & (np.isclose(np.array(end_times), end_time)))[0]
+        sweeps = SweepSet(np.array(sweeps, dtype=object).tolist())#[idx_pass].tolist())
 
         lsq_spx, lsq_spfx = dsf.extractors_for_sweeps(
             sweeps,
@@ -306,7 +319,7 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
             min_peak=-25,
         )
         lsq_an = spa.LongSquareAnalysis(lsq_spx, lsq_spfx,
-            subthresh_min_amp=-100.0)
+            subthresh_min_amp=-200.0)
         if np.mean(start_times) < 0.01:
            lsq_an.sptx.baseline_interval = np.mean(start_times)*0.1
            lsq_an.sptx.sag_baseline_interval = np.mean(start_times)*0.1
@@ -365,10 +378,10 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
 
         
     except Exception as e:
-        print("error with specimen_id: ", specimen_id)
-        print(e)
-        plt.close()
-        return result
+       print("error with specimen_id: ", specimen_id)
+       print(e)
+       plt.close()
+       return result
     plt.close()
     return result
 
@@ -385,7 +398,7 @@ def find_time_index(t, t_0):
     -------
     idx: index of t closest to t_0
     """
-    if t[0] <= t_0 <= t[-1]: "Given time ({:f}) is outside of time range ({:f}, {:f})".format(t_0, t[0], t[-1])
+    if t[0] <= t_0 <= t[-1]: f"Given time ({t_0}) is outside of time range ({t[0]}, {t[-1]})"
     if t_0 < t[0]:
         t_0 = t[0]
     if t_0 > t[-1]:
@@ -469,7 +482,7 @@ def match_long_square_protocol(i, t, start_idx, end_idx):
     di_idx = np.flatnonzero(di)   # != 0
 
     if len(di_idx) == 0:
-        #if there are no up/down transitions, then this is not a long square
+        #if there are no up/down transitions, then this is not a long square, or a zero-pulse long square but we will just have to accept that for now
         return None
     if len(di_idx) == 1:
         #if there is only one up/down transition, then this is not a long square
@@ -577,14 +590,9 @@ def build_dataset_traces(folder, ids =None, ext="nwb", parallel=True):
     #results = joblib.Parallel(n_jobs=parallel)(joblib.delayed(plot_data)(specimen_id, files) for specimen_id in file_idx)
     results = [plot_data(specimen_id, files) for specimen_id in file_idx]
 
-def plot_wrap(*args, **kwargs):
-    try:
-        return plot_data(*args, **kwargs)
-    except Exception as e:
-        print(e)
-        return None
 
-def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150, 250, 500, 1000], debug=True, overwrite=True):
+@debug_wrap
+def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150, 250, 500, 1000], debug=True, overwrite=False) -> None:
     result = {}
     if os.path.exists(f"{file_list[specimen_id]}.svg") and overwrite == False:
         logging.debug(f"skipping {file_list[specimen_id]} because it already exists")

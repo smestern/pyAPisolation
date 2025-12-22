@@ -1,0 +1,91 @@
+# pyAPisolation WebViz Configuration
+# This file configures the web visualization for electrophysiology data
+# Save as webviz_config.yaml and load with: webVizConfig(file='webviz_config.yaml')
+
+# ============ File Path Configuration ============
+# Column names in your database CSV that contain file information
+file_index: filename.1              # Column with unique file identifiers
+folder_path: foldername.1           # Column with folder paths
+file_path: foldername.1             # Column with full file paths
+ext: .abf                           # File extension for electrophysiology data
+
+# ============ Output Configuration ============
+output_path: ./                     # Where to save generated HTML/assets
+plots_path: null                    # Optional: Path for pre-generated plots
+
+# ============ Table Configuration ============
+# Variables displayed in the main data table
+table_vars_rq:                      # Required columns (always shown)
+  - filename
+  - foldername
+table_vars:                         # Optional columns (shown if available)
+  - rheo
+  - QC
+  - label_c
+table_vars_limit: 5                 # Maximum number of table columns
+hidden_table: false                 # Hide table initially (default: false)
+
+# Table column specifications (advanced)
+table_spec: {}                      # Custom table column configurations
+
+# ============ UMAP Embedding Configuration ============
+# UMAP scatter plot settings
+umap_cols:                          # Column names for UMAP coordinates
+  - Umap X
+  - Umap Y
+umap_labels:                        # Variables to use for coloring points
+  - label
+  - CRH
+  - AVP
+  - foldername.1
+
+# ============ Parallel Coordinates Configuration ============
+# Variables shown in parallel coordinates plot
+para_vars:
+  - rheo
+  - CRH
+  - label_c
+para_var_colors: rheobase_width     # Variable to use for line coloring
+para_vars_limit: 10                 # Maximum number of parallel axes
+
+# ============ Visualization Styling ============
+# Color schemes available for plots (Matplotlib/Plotly names)
+color_schemes:
+  - viridis
+  - plasma
+  - inferno
+  - magma
+  - cividis
+  - Greys
+  - Purples
+  - Blues
+  - Greens
+  - Oranges
+  - Reds
+  - YlOrBr
+  - YlOrRd
+  - OrRd
+  - PuRd
+  - RdPu
+  - BuPu
+  - GnBu
+  - PuBu
+  - YlGnBu
+  - PuBuGn
+  - BuGn
+  - YlGn
+
+# ============ Data Labeling ============
+primary_label: null                 # Primary categorical label (if available)
+
+# ============ Column Renaming (Optional) ============
+# Rename columns from your database for better display
+col_rename: {}                      # Example: {'old_name': 'New Display Name'}
+
+# ============ Pre-generation Options ============
+pre_static_plot_gen: false          # Pre-generate static SVG plots (slower but no server needed)
+
+# ============ Advanced Options ============
+# These are typically set programmatically, not in config files
+# dataset_label_col: null           # For multi-dataset visualization
+# split_strs: null                  # Dataset splitting configuration

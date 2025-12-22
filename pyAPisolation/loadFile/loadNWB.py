@@ -45,7 +45,6 @@ def loadNWB(file_path, return_obj=False, old=False, load_into_mem=True):
         dataX: time (should be seconds)
         dataY: voltage (should be mV)
         dataC: current (should be pA)
-        dt: time step (should be seconds)
         obj: the nwb object (optional)
     """    
    
@@ -108,7 +107,13 @@ class nwbFile(object):
                 self.sweepYVars = np.nan
                 self.sweepCVars = np.nan
             else:
-                self.rate = dict(f['acquisition'][index_to_use[-1][0]]['starting_time'].attrs.items())
+                if "starting_time" in f['acquisition'][index_to_use[-1][0]]:
+                    self.rate = dict(f['acquisition'][index_to_use[-1][0]]['starting_time'].attrs.items())
+                elif "starting_time" in f['stimulus']['presentation'][stim_keys[-1]]:
+                    self.rate = dict(f['stimulus']['presentation'][stim_keys[-1]]['starting_time'].attrs.items())
+                else:
+                    self.rate = {'rate':np.nan}
+                
                 self.sweepYVars = dict(f['acquisition'][index_to_use[0][0]]['data'].attrs.items())
                 self.sweepCVars = dict(f['stimulus']['presentation'][stim_keys[-1]]['data'].attrs.items())
            
@@ -157,7 +162,7 @@ class nwbFile(object):
 
 class stim_names:
     stim_inc = ['long', '1000']
-    stim_exc = ['rheo', 'Rf50_']
+    stim_exc = ['rheo', 'Rf50_', 'stimulus_apwaveform', 'extracellular']
     stim_type = ['']
     def __init__(self):
         self.stim_inc = stim_names.stim_inc

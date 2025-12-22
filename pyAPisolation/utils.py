@@ -5,7 +5,8 @@ import functools
 import inspect
 import numpy as np
 
-DEBUG = True
+DEBUG = False
+
 
 def debug_wrap(func, returns=None):
     """
@@ -31,16 +32,22 @@ def debug_wrap(func, returns=None):
                         return tuple(np.nan for _ in returns)
                 sig = inspect.signature(func)
                 return_annotation = sig.return_annotation
-                
-                # Check if return type hint indicates tuple
+
+                # Check if return type hint indicates tuple, including nested tuples
+                def make_nan_from_typehint(typehint):
+                    # Recursively build tuple of np.nan matching the structure of typehint
+                    if hasattr(typehint, '__origin__') and typehint.__origin__ is tuple:
+                        return tuple(make_nan_from_typehint(arg) for arg in typehint.__args__)
+                    else:
+                        return np.nan
+
                 if hasattr(return_annotation, '__origin__'):
                     if return_annotation.__origin__ is tuple:
-                        # Return tuple of nans matching the type hint
-                        n_returns = len(return_annotation.__args__)
-                        return tuple(np.nan for _ in range(n_returns))
-                
+                        return make_nan_from_typehint(return_annotation)
+
                 # Default: single np.nan
-                print(f"Warning: {func.__name__} failed with {type(e).__name__}: {e}")
+                print(
+                    f"Warning: {func.__name__} failed with {type(e).__name__}: {e}")
                 return np.nan
     return wrapper
 
@@ -49,11 +56,14 @@ class arg_wrap(object):
     """
     Wraps the argparser to catch any exceptions and query the user for the input again
     """
+
     def __init__(self, argparser, cli_prompt=True, gui_prompt=False, **kwargs):
-        #determine which args are needed
+        # determine which args are needed
         self.argparser = argparser
-        self.required_args = [action.dest for action in self.argparser._actions if action.required]
-        self.optional_args = [action.dest for action in self.argparser._actions if not action.required]
+        self.required_args = [
+            action.dest for action in self.argparser._actions if action.required]
+        self.optional_args = [
+            action.dest for action in self.argparser._actions if not action.required]
         self.parse_args = None
 
         if cli_prompt and gui_prompt:
@@ -65,7 +75,7 @@ class arg_wrap(object):
 
     def __call__(self):
         return self.parse_args()
-    
+
     def _determine_missing_args(self):
         missing_args = []
         sys_input = sys.argv
@@ -75,14 +85,14 @@ class arg_wrap(object):
         return missing_args
 
     def _prompt_cli(self):
-        try: #try to parse the args
+        try:  # try to parse the args
             args = self.argparser.parse_args()
         except:
             missing_args = self._determine_missing_args()
             args = self._query_args()
-        
+
         return args
-    
+
     def _query_args(self):
         args = {}
         for arg in self.required_args:

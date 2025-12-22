@@ -6,16 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>template2</title>
     <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;700&amp;display=swap">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;700&amp;display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&amp;display=swap">
     <link rel="stylesheet" href="assets/css/bs-theme-overrides.css">
     <link rel="stylesheet" href="assets/css/styles.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.css">
     <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.22.4/dist/bootstrap-table.min.css">
 </head>
 
 <body class="fs-6 fw-lighter focus-ring focus-ring-primary">
-    <div class="container-fluid d-flex flex-column flex-grow-1 flex-shrink-1 flex-fill justify-content-center align-items-center align-content-center align-items-xxl-center" style="position: static;background: var(--bs-body-bg);">
+    <div class="container-fluid d-flex flex-column flex-grow-1 flex-shrink-1 flex-fill justify-content-center align-items-center align-content-center align-items-xxl-center"
+        style="position: static;background: var(--bs-body-bg);">
         <div class="row" id="header-row">
             <div class="col-md">
                 <div class="row">
@@ -24,7 +27,10 @@
                             <div class="card-body">
                                 <h4 class="card-title" id="db_title">Title</h4>
                                 <h6 class="text-muted card-subtitle mb-2" id="db_subtitle">Subtitle</h6>
-                                <p class="card-text" id="db_desc">Nullam id dolor id nibh ultricies vehicula ut id elit. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida at eget metus.</p><a class="card-link" href="#">Link</a><a class="card-link" href="#">Link</a>
+                                <p class="card-text" id="db_desc">Nullam id dolor id nibh ultricies vehicula ut id elit.
+                                    Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi
+                                    porta gravida at eget metus.</p><a class="card-link" href="#">Link</a><a
+                                    class="card-link" href="#">Link</a>
                             </div>
                         </div>
                     </div>
@@ -71,58 +77,57 @@
                 </div>
             </div>
         </div>
-        <div class="row"><table id="table"
-data-toggle="table"
-data-detail-view="false"
-data-show-header="false"
-data-show-export="false"
-data-show-columns="false"
-data-search="false"
-data-resizable="true"
-data-pagination="true"
-data-classes="table table-responsive table-card-alt">
-<thead>
-    <tr>
-    </tr>
-</thead>
-</table></div>
-    </div><div>
-    <script>
-    function plotFormatterDummy(value, row, index,field) {
-        return '<div id="graphDiv_' + row['ID'] + field + '"></div>';
-    }
-    function valFormatter(value, row, index, field) {
-        //make a nice text for the value
-        html = []
-        html.push('<div class="col">')
-        html.push('<div class="feat-title">' + field + '</div>')
-        html.push('<span class="feat-value">' + value + '</span>')
-        html.push('</div>')
-        return html.join('')
+        <div class="row">
+            <table id="table" data-toggle="table" data-detail-view="false" data-show-header="false"
+                data-show-export="false" data-show-columns="false" data-search="false" data-resizable="true"
+                data-pagination="true" data-classes="table table-responsive table-card-alt">
+                <thead>
+                    <tr>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+    <div>
+        <script>
+            function plotFormatterDummy(value, row, index, field) {
+                return '<div id="graphDiv_' + row['ID'] + field + '"></div>';
+            }
+            function valFormatter(value, row, index, field) {
+                //make a nice text for the value
+                html = []
+                html.push('<div class="col">')
+                html.push('<div class="feat-title">' + field + '</div>')
+                html.push('<span class="feat-value">' + value + '</span>')
+                html.push('</div>')
+                return html.join('')
 
-    }
-    function ephysFormatterDummy(value, row, index, field)
-    {
-        return '<div id="table_' + row['ID'] + '"></div>';
-    }
-    function linkFormatterDummy(value, row, index, field)
-    {
-        return '<div id="link_' + row['ID'] + '" class="file-link"></div>';
-    }
-    </script>
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-	<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-	<script src="assets/bootstrap/js/bootstrap.min.js"></script>
-	<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.22.4/dist/bootstrap-table.min.css">
-    
-    <script src="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
-    <script src="https://unpkg.com/bootstrap-table@1.22.4/dist/bootstrap-table.min.js"></script>
-    
-    <script src="./assets/data.js"></script>
-	<script src="./assets/template.js"></script>
-    
+            }
+            function ephysFormatterDummy(value, row, index, field) {
+                return '<div id="table_' + row['ID'] + '"></div>';
+            }
+            function linkFormatterDummy(value, row, index, field) {
+                return '<div id="link_' + row['ID'] + '" class="file-link"></div>';
+            }
+        </script>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+            integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+            crossorigin="anonymous"></script>
+        <script src="assets/bootstrap/js/bootstrap.min.js"></script>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.css"
+            rel="stylesheet">
+        <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.22.4/dist/bootstrap-table.min.css">
+
+        <script
+            src="https://cdn.jsdelivr.net/npm/jquery-resizable-columns@0.2.3/dist/jquery.resizableColumns.min.js"></script>
+        <script src="https://unpkg.com/bootstrap-table@1.22.4/dist/bootstrap-table.min.js"></script>
+
+        <script src="./assets/data.js"></script>
+        <script src="./assets/template.js"></script>
+
 </body>
 
 </html>

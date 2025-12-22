@@ -15,7 +15,10 @@ dependencies = [
     "anndata",
     "scikit-learn",
     "joblib",
-    "allensdk"
+    "allensdk",
+    "plotly",
+    "pyyaml",
+    "beautifulsoup4"
 ]
 
 
@@ -32,17 +35,13 @@ pyAPisolation_setup = "pyAPisolation.setup_install:install_ipfx"
 
 [project.optional-dependencies]
 gui = ["PySide2", "pyqtgraph"]
-web = ["dash", 
-        "flask",
-        "dash_ag_grid",
-        "dash_bootstrap_components",
-        "beautifulsoup4",]
+web = ["flask"]
+server = ["gunicorn", "flask-cors", "flask"]
 dev = ["torch"]
-full = ["PySide2", 
-"pyqtgraph", 
-"dash", 
-"flask",
-"dash_ag_grid",
-        "dash_bootstrap_components",
-        "beautifulsoup4",
-        ]
+full = [
+    "PySide2", 
+    "pyqtgraph", 
+    "flask",
+    "gunicorn",
+    "flask-cors"
+]

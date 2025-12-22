@@ -129,7 +129,7 @@ def find_downward(dataI):
     return downwardinfl
 
 @utils.debug_wrap
-def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold=''):
+def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold='') -> tuple[float, float, tuple[float, float, float, float, float], float, float, float]:
     
     time_aft = time_aft / 100
     if time_aft > 1:
@@ -139,6 +139,8 @@ def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root
     downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
     end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
     
+    if end_index - downwardinfl < 10:
+        return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
     upperC = np.amax(dataV[downwardinfl:end_index])
     lowerC = np.amin(dataV[downwardinfl:end_index])
     diff = np.abs(upperC - lowerC)

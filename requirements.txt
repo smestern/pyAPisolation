@@ -14,4 +14,7 @@ joblib
 matplotlib>=3.7.2
 seaborn
 PySide2
+plotly
+pyyaml
+beautifulsoup4
 

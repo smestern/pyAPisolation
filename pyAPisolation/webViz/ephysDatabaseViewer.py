@@ -104,7 +104,7 @@ def main(database_file=None, config=None, static=False):
     
 
     #load the data
-    full_dataframe = pd.DataFrame()
+    dataframes = []
     for x in fileList:
         if x.endswith('.csv'):
             temp_df = pd.read_csv(x)
@@ -117,7 +117,8 @@ def main(database_file=None, config=None, static=False):
         else:
             print("File type not supported")
             return
-        full_dataframe = full_dataframe.append(temp_df)
+        dataframes.append(temp_df)
+    full_dataframe = pd.concat(dataframes, ignore_index=True) if dataframes else pd.DataFrame()
 
     ### Preprocess the data, 
     #get the columns that are required by the config    
@@ -380,14 +381,22 @@ def main(database_file=None, config=None, static=False):
                 test = gen_table_head_str_(col, soup, dict_args={'data-visible': 'false', 'data-searchable': 'false', 'data-sortable': 'true'})
                 table_head.append(test)
 
+    # Add script tags for common functions and mode-specific template
+    script_tag = soup.find_all('head')[0]
+    
+    # Always include common JavaScript functions
+    common_script = soup.new_tag('script')
+    common_script['src'] = 'assets/template_common.js'
+    script_tag.append(common_script)
+    
+    # Add mode-specific template
     if not static:
-        #replace the template.js import in the html with 
-        #template_dyn.js import
-        script_tag = soup.find_all('head')[0]
-        #add a new script tag onto the end of the list
-        new_tag = soup.new_tag('script')
-        new_tag['src'] = 'assets/template_dyn.js'
-        script_tag.append(new_tag)
+        # Dynamic mode: use template_dyn.js
+        mode_script = soup.new_tag('script')
+        mode_script['src'] = 'assets/template_dyn.js'
+        script_tag.append(mode_script)
+    else:
+        # Static mode: use template.js (already in HTML)
 
     #generate the umap and paracoords scripts
     umap_script = generate_umap('data_tb', [*config.umap_cols, config.umap_labels[0]])
@@ -458,26 +467,24 @@ def main(database_file=None, config=None, static=False):
     #copy the 'assets' folder
     shutil.copytree(os.path.join(_LOCAL_PATH, "assets"), os.path.join(config.output_path,"assets"), dirs_exist_ok=True)
 
-    #load the template.js file as a string
-    template_js = os.path.join(_LOCAL_PATH, "assets/template.js")
-    with open(template_js) as inf:
+    # Determine which template file to use based on mode
+    template_filename = "template.js" if static else "template_dyn.js"
+    template_js_path = os.path.join(_LOCAL_PATH, "assets", template_filename)
+    
+    # Load and modify the template
+    with open(template_js_path) as inf:
         template_js = inf.read()
-        #add the onload script to the template.js file
+        # Add the onload script to the template file
         template_js = template_js.replace("/* onload */", umap_script + "\n \t" + paracoords_script)
-        #template_js = template_js.replace("/* data_tb */", json_var)
         template_js = template_js.replace("/* colors */", colors+str(config.color_schemes))
-
         template_js = template_js.replace("/* ekeys */", "var ekeys = " + json.dumps(visible_cols.tolist()))
-
         template_js = template_js.replace("/* para_keys */", "var para_keys = "+ json.dumps(config.para_vars))
-
         template_js = template_js.replace("/* umap_labels */", "var umap_labels = " + json.dumps(config.umap_labels))
-
         template_js = template_js.replace("/* table_links */", "var table_links = " + json.dumps(link_cols))
 
-
-    #save the template.js file
-    with open(os.path.join(config.output_path, "assets/template.js"), "w") as outf:
+    # Save the modified template
+    output_template_path = os.path.join(config.output_path, "assets", template_filename)
+    with open(output_template_path, "w") as outf:
         outf.write(template_js)
     #this si instered into the assets/data.js file
     with open(os.path.join(config.output_path, "assets/data.js"), "w") as outf:
