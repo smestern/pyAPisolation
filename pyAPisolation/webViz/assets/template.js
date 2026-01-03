@@ -252,9 +252,19 @@ $(document).ready(function () {
 
     //encode labels
     function encode_labels(data, label) {
-        var labels = data.map(function (a) { return a[label] });
-        var unique_labels = [...new Set(labels)];
-        var encoded_labels = labels.map(function (a) { return unique_labels.indexOf(a) });
+        var labelToIndex = {};
+        var unique_labels = [];
+        var encoded_labels = [];
+        
+        for (var i = 0; i < data.length; i++) {
+            var value = data[i][label];
+            if (!(value in labelToIndex)) {
+                labelToIndex[value] = unique_labels.length;
+                unique_labels.push(value);
+            }
+            encoded_labels.push(labelToIndex[value]);
+        }
+        
         return [encoded_labels, unique_labels];
     };
 
