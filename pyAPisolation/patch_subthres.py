@@ -260,71 +260,71 @@ def df_select_by_col(df, string_to_find):
     return df[out]
 
 
-
-def compute_sag(dataT,dataV,dataI, time_aft, plot=False, clear=True):
-   try:
-         time_aft = time_aft / 100
-         if time_aft > 1:
-                time_aft = 1   
-         diff_I = np.diff(dataI)
-         upwardinfl = np.nonzero(np.where(diff_I>0, diff_I, 0))[0][0]
-         test = dataT[upwardinfl]
-         diff_I = np.diff(dataI)
-         downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
-         dt = dataT[1] - dataT[0] #in s
-         end_index = upwardinfl - int(0.100/dt)
-         end_index2 = upwardinfl - int((upwardinfl - downwardinfl) * time_aft)
-         if end_index<downwardinfl:
-             end_index = upwardinfl - 5
-         vm = np.nanmean(dataV[end_index:upwardinfl])
-         
-         min_point = downwardinfl + np.argmin(dataV[downwardinfl:end_index2])
-         test = dataT[downwardinfl]
-         test2 = dataT[end_index]
-         avg_min = np.nanmean(dataV[min_point])
-         sag_diff = avg_min - vm
-         sag_diff_plot = np.arange(avg_min, vm, 1)
-         if plot==True:
-             try:
-                 plt.figure(num=99)
-                 if clear:
-                    plt.clf()
-                 plt.plot(dataT[downwardinfl:int(upwardinfl+1000)], dataV[downwardinfl:int(upwardinfl + 1000)], label="Data")
-                 plt.scatter(dataT[min_point], dataV[min_point], c='r', marker='x', zorder=99, label="Min Point")
-                 plt.scatter(dataT[end_index:upwardinfl], dataV[end_index:upwardinfl], c='g', zorder=99, label="Mean Vm Measured")
-                 plt.plot(dataT[np.full(sag_diff_plot.shape[0], min_point, dtype=np.int64)], sag_diff_plot, label=f"Sag of {sag_diff}")
-                 #plt.legend()
-                 plt.pause(0.05)
-             except:
-                 print("plot fail")
-         
-         return sag_diff, avg_min
-   except:
-         return np.nan, np.nan
+@utils.debug_wrap
+def compute_sag(dataT,dataV,dataI, time_aft, plot=False, clear=True) -> tuple[float, float]:
+    """
+    Computes the sag amplitude during a hyperpolarizing current injection.
+    Takes:
+    :param dataT: Description
+    :param dataV: Description
+    :param dataI: Description
+    :param time_aft: Description
+    :param plot: Description
+    :param clear: Description
+    :return: Description
+    :rtype: tuple[float, float]
+    """
+    time_aft = time_aft / 100 #convert to proportion
+    if time_aft > 1:
+        time_aft = 1   #convert to proportion
+    diff_I = np.diff(dataI) # find the points where current changes
+    upwardinfl = np.nonzero(np.where(diff_I>0, diff_I, 0))[0][0] #first point where current goes up
+    downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0] #first point where current goes down
+    dt = dataT[1] - dataT[0] #in s #time difference between points
+    end_index = upwardinfl - int(0.100/dt) #calculate end index based on 100ms before end of pulse
+    end_index2 = upwardinfl - int((upwardinfl - downwardinfl) * time_aft) #calculate end index based on time after
+    if end_index<downwardinfl:
+        end_index = upwardinfl - 5 #ensure we have at least some points
+    vm = np.nanmean(dataV[end_index:upwardinfl])
+    
+    min_point = downwardinfl + np.argmin(dataV[downwardinfl:end_index2]) #index of the min point
+    avg_min = np.nanmean(dataV[min_point]) #average of the min point
+    sag_diff = avg_min - vm #sag amplitude
+    #sag_diff_plot = np.arange(avg_min, vm, 1)
+    #plotting code removed for clarity
+    return sag_diff, avg_min
+   
         
 
 
+@utils.debug_wrap
+def membrane_resistance(dataT,dataV,dataI) -> float:
+    """
+    Computes the membrane resistance using the hyperpolarization segment of the current injection. (Assumes a square pulse)
+    
+    :param dataT: Description
+    :param dataV: Description
+    :param dataI: Description
+    :return: Description
+    :rtype: float
+    """
+    diff_I = np.diff(dataI)
+    downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+    end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl)/2)
+    
+    upperC = np.mean(dataV[:downwardinfl-100])
+    lowerC = np.mean(dataV[downwardinfl+100:end_index-100])
+    diff = -1 * np.abs(upperC - lowerC)
+    I_lower = dataI[downwardinfl+1]
+    t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
+    #v = IR
+    #r = v/I
+    v_ = diff / 1000 # in mv -> V
+    I_ = I_lower / 1000000000000 #in pA -> A
+    r = v_/I_
 
-def membrane_resistance(dataT,dataV,dataI):
-    try:
-        diff_I = np.diff(dataI)
-        downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
-        end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl)/2)
-        
-        upperC = np.mean(dataV[:downwardinfl-100])
-        lowerC = np.mean(dataV[downwardinfl+100:end_index-100])
-        diff = -1 * np.abs(upperC - lowerC)
-        I_lower = dataI[downwardinfl+1]
-        t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
-        #v = IR
-        #r = v/I
-        v_ = diff / 1000 # in mv -> V
-        I_ = I_lower / 1000000000000 #in pA -> A
-        r = v_/I_
-
-        return r #in ohms
-    except: 
-        return np.nan
+    return r #in ohms
+    
 
 def mem_cap(resist, tau_2p, tau_1p =np.nan):
     #tau = RC
@@ -339,9 +339,14 @@ def mem_cap_alt(resist, tau, b2, deflection):
     return cm
 
 def determine_subt(abf, idx_bounds, filter_spikes=False):
-    
-  
-
+    """Determine which sweeps are subthreshold based on the current injection.
+    Args:
+        abf (_type_): _description_
+        idx_bounds (_type_): _description_
+        filter_spikes (bool, optional): _description_. Defaults to False.
+    Returns:
+        _type_: _description_
+    """
     #for compat reasons this function needs to open the abf file itself. ideally this should be done in the main script, but for now we will do it here.
     if isinstance(abf, str):
         abf = loadFile.loadFile(abf)
