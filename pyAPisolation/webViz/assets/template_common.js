@@ -167,7 +167,7 @@ function crossfilter(data_tb, IDs, sender='') {
         //now we want to get the embedded graphDiv
         var graphDiv_scatter = document.getElementById("graphDiv_scatter");
 
-        console.log("Crossfiltering data...");
+        console.log("Crossfiltering from parallel to scatter...");
         var selected = [];
         for (var i = 0; i < graphDiv_scatter.data.length; i++) {
             var trace = graphDiv_scatter.data[i];
@@ -184,8 +184,16 @@ function crossfilter(data_tb, IDs, sender='') {
         Plotly.update(graphDiv_scatter, {'selectedpoints': selected});
         prev_filter = "parallel";
     } else if (sender == "scatter") {
-        //in this case we completely reset the parallel plot
-        generate_paracoords(data_tb, paracoordskeys, paracoordscolors, IDs);
+        // Check if the selection has actually changed before regenerating parallel plot
+        var IDsHash = IDs.length === 0 ? "empty" : IDs.slice().sort().join(',');
+        
+        if (prev_parallel_IDs !== IDsHash) {
+            console.log("Crossfiltering from scatter - regenerating parallel plot");
+            generate_paracoords(data_tb, paracoordskeys, paracoordscolors, IDs);
+            prev_parallel_IDs = IDsHash;
+        } else {
+            console.log("Crossfiltering from scatter - selection unchanged, skipping regeneration");
+        }
         prev_filter = "scatter";
     } else {
         //do nothing

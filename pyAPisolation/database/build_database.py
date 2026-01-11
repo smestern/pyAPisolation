@@ -592,9 +592,10 @@ def build_dataset_traces(folder, ids =None, ext="nwb", parallel=True):
 
 
 @debug_wrap
-def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150, 250, 500, 1000], debug=True, overwrite=False) -> None:
+def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150, 250, 500, 1000], overwrite=False, save=True, stim_override=None) -> dict:
     result = {}
     if os.path.exists(f"{file_list[specimen_id]}.svg") and overwrite == False:
+        print(f"skipping {file_list[specimen_id]} because it already exists")
         logging.debug(f"skipping {file_list[specimen_id]} because it already exists")
         return
     elif os.path.exists(f"{file_list[specimen_id]}.svg") and overwrite == True:
@@ -602,9 +603,14 @@ def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150,
         pass
     else:
         pass
+
+    if stim_override is not None:
+        GLOBAL_STIM_NAMES.stim_inc = [stim_override]
+
     result["specimen_id"] = file_list[specimen_id]
     _, _, _,  data_set = loadNWB(file_list[specimen_id], return_obj=True)
     if data_set is None or len(data_set.dataY)<1:
+        print(f"data_set is None for {file_list[specimen_id]}")
         return result
     #here we are going to perform long square analysis on the data,
     #hopefully this will be fixed in the future and we can use ipfx for this
@@ -683,12 +689,16 @@ def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150,
     fi_s = []
     fi_i = []
     plotted = []
+    sweep_ys = []
+    sweep_xs = []
     for i, sweep in enumerate(sweeps.sweeps):
         idx_start = find_time_index(sweep.t, np.clip(start_time*0.8, 0.0, np.inf))
         idx_end = find_time_index(sweep.t, np.clip(end_time*1.4, end_time, sweep.t[-1]))
         if i in idx_pass and i not in plotted:
             plotted.append(i)
             ax.plot(sweep.t[idx_start:idx_end], sweep.v[idx_start:idx_end], label=f"sweep {i}", c='k', alpha=0.5)
+            sweep_ys.append(sweep.v[idx_start:idx_end])
+            sweep_xs.append(sweep.t[idx_start:idx_end])
 
         spikes = analyze_spike_times(sweep.t, sweep.v, sweep.i)
         fi_s.append(len(spikes) / (end_time - start_time))
@@ -703,10 +713,9 @@ def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150,
     
     #save the figure as a svg
 
-    plt.savefig(f"{file_list[specimen_id]}.svg", bbox_inches='tight')
+    plt.savefig(f"{file_list[specimen_id]}.svg", bbox_inches='tight') if save==True else None
 
-    plt.figure(figsize=(3,3))
-    ax = plt.gca()
+    fig2,ax = plt.subplots(figsize=(3,3))
 
     #if there is the same sweep_amp, average it
     fi_s = np.array(fi_s)
@@ -733,11 +742,13 @@ def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150,
     plt.ylabel("Firing Rate (Hz)")
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
-    plt.savefig(f"{file_list[specimen_id]}_FI.svg", bbox_inches='tight')
-    plt.close('all')
+    plt.savefig(f"{file_list[specimen_id]}_FI.svg", bbox_inches='tight') if save==True else None
+    plt.close('all') if save==True else None
 
 
-    print(f"saved {file_list[specimen_id]}.svg", end="\r")
+
+    print(f"saved {file_list[specimen_id]}.svg", end="\r") if save==True else None
+    return {'fig_trace': fig, 'fi_i': fi_i, 'fi_s': fi_s, 'sweep_ys': sweep_ys, 'sweep_xs': sweep_xs, 'fi_fig':  fig2}
     
 
 if __name__ == "__main__":

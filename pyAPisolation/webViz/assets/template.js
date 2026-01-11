@@ -25,6 +25,7 @@ $(document).ready(function () {
 
     var prev_ranges = {};
     var prev_filter = "";
+    var prev_parallel_IDs = null;
 
     var prev_rows = [];
 
@@ -216,6 +217,11 @@ $(document).ready(function () {
         fig = Plotly.newPlot('graphDiv_parallel', data, layout, { responsive: true, displayModeBar: false }); // create the plots
         var graphDiv_parallel = document.getElementById("graphDiv_parallel") // get the plot div
         graphDiv_parallel.on('plotly_restyle', function (data) {
+            // Prevent event loop when restyle is triggered programmatically
+            if (restyle_programmatically) {
+                return;
+            }
+            console.log("Parallel plot restyled, updating table...");
             var keys = []
             var ranges = []
 
@@ -271,13 +277,13 @@ $(document).ready(function () {
 
     //umap plot
     function generate_umap(rows, keys = ['Umap X', 'Umap Y', 'label'], colors = embed_colors, dataset_en = 'Species', dataset_shapes = ['o', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross', 'x', 'square', 'triangle-up', 'triangle-down', 'diamond', 'cross'], dataset_opacity = [0.25, 1]) {
-
+        console.log("Generating UMAP plot...");
 
         var encoded_labels = encode_labels(rows, keys[2]);
         var encoded_dataset = encode_labels(rows, dataset_en);
 
 
-
+        
         if (Object.keys(colors).includes(keys[2])) {
             label_color = colors[keys[2]];
         } else {
@@ -392,9 +398,11 @@ $(document).ready(function () {
                 eventData.points.forEach(function (pt) {
                     ids.push(pt.text);
                 });
-            }
-            else {
-                console.log(ids)
+            } else if (eventData.length == 0) {
+                console.log("No points selected, resetting table...");
+                ids = undefined
+            } else {
+                console.log("No points selected, resetting table...");
                 ids = undefined
             }
             filterByID(ids);
@@ -613,43 +621,6 @@ $(document).ready(function () {
         crossfilter(data_tb, result, "parallel");
     };
 
-    function crossfilter(data_tb, IDs, sender = '') {
-        //set the restyle flag to true
-        restyle_programmatically = true; //this way we can avoid the plotly_restyle event loop
-        var graphDiv_parallel = document.getElementById("graphDiv_parallel");
-        if (sender == "parallel") {
-            //now we want to get the embedded graphDiv
-            var graphDiv_scatter = document.getElementById("graphDiv_scatter");
-
-            console.log("Crossfiltering data...");
-            var selected = [];
-            for (var i = 0; i < graphDiv_scatter.data.length; i++) {
-                var trace = graphDiv_scatter.data[i];
-                //figure out if trace.text is in the selected IDs
-                var trace_selectedIndices = trace.text.map(function (value, index) {
-                    return IDs.includes(value) ? index : undefined;
-                }).filter(function (index) {
-                    return index !== undefined;
-                });
-                //update the selected array
-                selected.push(trace_selectedIndices);
-            }
-            //now we want to update the layout
-            Plotly.update(graphDiv_scatter, { 'selectedpoints': selected });
-            prev_filter = "parallel";
-        } else if (sender == "scatter") {
-            //in this case we completely reset the parallel plot
-            generate_paracoords(data_tb, paracoordskeys, paracoordscolors, IDs);
-            prev_filter = "scatter";
-        } else {
-            //do nothing
-        };
-        //set the restyle flag to false
-        restyle_programmatically = false
-
-    }
-
-
     function cellStyle(value, row, index) {
         var classes = [
             'bg-blue',
@@ -738,6 +709,7 @@ $(document).ready(function () {
 
     //add an event listener
     drop_parent.addEventListener('change', function (e) {
+        console.log("Umap label changed...");
         var selected = $('input[name="label-select"]:checked').val();
         // if the selected has the class multi-select, then this element has a sibiling that holds the actual selected value
         if ($('input[name="label-select"]:checked')[0].classList.contains('multi-key')) {
@@ -773,7 +745,9 @@ $(document).ready(function () {
         } else {
 
             var keys = ['Umap X', 'Umap Y', selected]
-            generate_umap(data_tb, keys);
+            // Get the currently filtered data from the table to preserve filtering
+            var filtered_data = $table.bootstrapTable('getData');
+            generate_umap(filtered_data.length > 0 ? filtered_data : data_tb, keys);
             generate_paracoords(data_tb, paracoordskeys, selected)
 
         };
@@ -799,24 +773,14 @@ $(document).ready(function () {
 
 
     //add an event listener for table changes
-    $table.on('all.bs.table', function (e, name, args) {
+    $table.on('refresh.bs.table', function (e, name, args) {
         console.log(e, name, args)
         //if its a click cell, we actually want to just ignore it
-        if (name == "click-cell.bs.table" || name == "click-row.bs.table" || name == "dbl-click-row.bs.table") {
-            return;
-        } else {
-            generate_plots();
-
-        }
+        generate_plots();
     });
 
     generate_plots();
 
-    // refresh the table
-    // set the table to be responsive
-
-
-    //now create our cell plots
 
 
 });

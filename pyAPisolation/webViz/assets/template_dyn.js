@@ -26,6 +26,7 @@ $( document ).ready(function() {
     var pre_selected_datasets = [];
     var prev_ranges = {};
     var prev_filter = "";
+    var prev_parallel_IDs = null;
 
     // ============ Dynamic Mode Plot Functions (AJAX Loading) ============
 
@@ -236,6 +237,11 @@ $( document ).ready(function() {
         fig = Plotly.newPlot('graphDiv_parallel', data, layout, {responsive: true, displayModeBar: false});
         var graphDiv_parallel = document.getElementById("graphDiv_parallel")
         graphDiv_parallel.on('plotly_restyle', function(data){
+            // Prevent event loop when restyle is triggered programmatically
+            if (restyle_programmatically) {
+                return;
+            }
+            
             var keys = []
             var ranges = []
 
