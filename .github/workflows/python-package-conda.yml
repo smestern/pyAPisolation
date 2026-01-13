@@ -5,6 +5,7 @@ on: [push]
 jobs:
   build-linux:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       max-parallel: 5
 
