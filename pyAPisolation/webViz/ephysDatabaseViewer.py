@@ -384,11 +384,7 @@ def main(database_file=None, config=None, static=False):
     # Add script tags for common functions and mode-specific template
     script_tag = soup.find_all('head')[0]
     
-    # Always include common JavaScript functions
-    common_script = soup.new_tag('script')
-    common_script['src'] = 'assets/template_common.js'
-    script_tag.append(common_script)
-    
+  
     # Add mode-specific template
     if not static:
         # Dynamic mode: use template_dyn.js
@@ -482,6 +478,11 @@ def main(database_file=None, config=None, static=False):
         template_js = template_js.replace("/* para_keys */", "var para_keys = "+ json.dumps(config.para_vars))
         template_js = template_js.replace("/* umap_labels */", "var umap_labels = " + json.dumps(config.umap_labels))
         template_js = template_js.replace("/* table_links */", "var table_links = " + json.dumps(link_cols))
+        #load the common functions
+        common_js_path = os.path.join(_LOCAL_PATH, "assets", "template_common.js")
+        with open(common_js_path) as inf:
+            common_js = inf.read()
+            template_js = template_js.replace("/* common functions */", common_js)
 
     # Save the modified template
     output_template_path = os.path.join(config.output_path, "assets", template_filename)

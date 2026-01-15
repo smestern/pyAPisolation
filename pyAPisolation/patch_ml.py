@@ -27,7 +27,7 @@ def run_umap(df, **kwargs):
     return dens_map
 
 def preprocess_df(df, remove_outliers=True): 
-    df = df.select_dtypes(["float32", "float64", "int32", "int64"]).drop(columns=["GMM cluster label"])
+    df = df.select_dtypes(["float32", "float64", "int32", "int64"])
     scaler = StandardScaler()
     impute = SimpleImputer()
     

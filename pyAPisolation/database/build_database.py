@@ -591,7 +591,7 @@ def build_dataset_traces(folder, ids =None, ext="nwb", parallel=True):
     results = [plot_data(specimen_id, files) for specimen_id in file_idx]
 
 
-@debug_wrap
+
 def plot_data(specimen_id, file_list=None, target_amps=[-100, -20, 20, 100, 150, 250, 500, 1000], overwrite=False, save=True, stim_override=None) -> dict:
     result = {}
     if os.path.exists(f"{file_list[specimen_id]}.svg") and overwrite == False:

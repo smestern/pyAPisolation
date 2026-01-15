@@ -81,13 +81,17 @@ function cellStyle(value, row, index) {
 // ============ Filter Functions ============
 
 function filterByID(ids) {
-    if (ids === undefined) {
+    if (ids === undefined || ids.length <= 0) {
         $('#table').bootstrapTable('filterBy', {})
         crossfilter(data_tb, [], "scatter");
+        //trigger a table refresh to make sure the table updates
+        $table.bootstrapTable('refresh');
     }
     else {
-        $('#table').bootstrapTable('filterBy', { ID: ids })
+        $('#table').bootstrapTable('filterBy',{'ID': ids});
         crossfilter(data_tb, ids, "scatter");
+        //trigger a table refresh to make sure the table updates
+        $table.bootstrapTable('refresh');
     }
 }
 
@@ -157,6 +161,8 @@ function filterByPlot(keys, ranges){
 
     $('#table').bootstrapTable('filterBy',{'ID': result});
     crossfilter(data_tb, result, "parallel");
+    //trigger a table refresh to make sure the table updates
+    $table.bootstrapTable('refresh');
 }
 
 function crossfilter(data_tb, IDs, sender='') { 
@@ -215,77 +221,77 @@ function table_concatenator(labels){
     });
 }
 
-// ============ Electrophysiology Data Display ============
+// // ============ Electrophysiology Data Display ============
 
-function makeephys(row, keys=ekeys){
-    var html = [];
+// function makeephys(row, keys=ekeys){
+//     var html = [];
     
-    //we just need to populate it with rows
-    html.push('<div class="col table-ephys">');
+//     //we just need to populate it with rows
+//     html.push('<div class="col table-ephys">');
     
-    //loop through the keys
-    keys.forEach(function(key){
-        html.push('<div class="row">');
-        html.push('<span class="ephys-key">'+key+'</span>');
-        html.push('<span class="ephys-value"> '+row[key]+'</span>');
-        html.push('</div>');
-    });
-    html.push('</div>');
-    //get the div
-    var div = document.getElementById("table_"+row.ID)
-    if (div) {
-        div.innerHTML = html.join('');
-    }
-}
+//     //loop through the keys
+//     keys.forEach(function(key){
+//         html.push('<div class="row">');
+//         html.push('<span class="ephys-key">'+key+'</span>');
+//         html.push('<span class="ephys-value"> '+row[key]+'</span>');
+//         html.push('</div>');
+//     });
+//     html.push('</div>');
+//     //get the div
+//     var div = document.getElementById("table_"+row.ID)
+//     if (div) {
+//         div.innerHTML = html.join('');
+//     }
+// }
 
-function makeLink(row) {
-    if (table_links.length > 0) {
-        // Get the row ID
-        var ID = row.ID;
+// function makeLink(row) {
+//     if (table_links.length > 0) {
+//         // Get the row ID
+//         var ID = row.ID;
         
-        // Get the div
-        var div = document.getElementById("link_" + ID);
+//         // Get the div
+//         var div = document.getElementById("link_" + ID);
         
-        if (!div) {
-            console.error(`Div with ID link_${ID} not found.`);
-            return;
-        }
+//         if (!div) {
+//             console.error(`Div with ID link_${ID} not found.`);
+//             return;
+//         }
         
-        // Create a dropdown (select element)
-        var parent_drop = document.createElement("div"); 
-        parent_drop.className = "dropdown";
+//         // Create a dropdown (select element)
+//         var parent_drop = document.createElement("div"); 
+//         parent_drop.className = "dropdown";
 
-        var drop_button = document.createElement("button");
-        drop_button.className = "btn btn-secondary dropdown-toggle";
-        drop_button.type = "button";
-        drop_button.id = "dropdownMenuButton" + ID;
-        drop_button.setAttribute("data-bs-toggle", "dropdown");
-        drop_button.setAttribute("aria-haspopup", "true");
-        drop_button.setAttribute("aria-expanded", "false");
-        drop_button.innerHTML = "Links";
-        parent_drop.appendChild(drop_button);
+//         var drop_button = document.createElement("button");
+//         drop_button.className = "btn btn-secondary dropdown-toggle";
+//         drop_button.type = "button";
+//         drop_button.id = "dropdownMenuButton" + ID;
+//         drop_button.setAttribute("data-bs-toggle", "dropdown");
+//         drop_button.setAttribute("aria-haspopup", "true");
+//         drop_button.setAttribute("aria-expanded", "false");
+//         drop_button.innerHTML = "Links";
+//         parent_drop.appendChild(drop_button);
 
-        var select = document.createElement("div");
-        select.className = "dropdown-menu";
-        select.setAttribute("aria-labelledby", "dropdownMenuButton" + ID);
+//         var select = document.createElement("div");
+//         select.className = "dropdown-menu";
+//         select.setAttribute("aria-labelledby", "dropdownMenuButton" + ID);
         
-        // Add options for each link
-        for (var i = 0; i < table_links.length; i++) {
-            var link = table_links[i];
-            var url = row[link];
-            var option = document.createElement("a");
-            option.className = "dropdown-item";
-            option.text = link;
-            option.href = url;
-            select.appendChild(option);
-        }
+//         // Add options for each link
+//         for (var i = 0; i < table_links.length; i++) {
+//             var link = table_links[i];
+//             var url = row[link];
+//             var option = document.createElement("a");
+//             option.className = "dropdown-item";
+//             option.text = link;
+//             option.href = url;
+//             select.appendChild(option);
+//         }
         
-        // Clear the div and append the dropdown
-        div.innerHTML = "";
-        parent_drop.appendChild(select);
-        div.appendChild(parent_drop);
-    }
-}
+//         // Clear the div and append the dropdown
+//         div.innerHTML = "";
+//         parent_drop.appendChild(select);
+//         div.appendChild(parent_drop);
+//     }
+// }
 
 // ============ Dataset Selector ============
 
