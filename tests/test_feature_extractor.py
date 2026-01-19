@@ -13,6 +13,7 @@ from joblib import dump, load
 from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, analyze_spike_times, analyze_subthres
 from pyAPisolation.patch_utils import load_protocols
 from pyAPisolation.ipfx_df import save_subthres_data
+import pyAPisolation.utils as utils
 #from pyAPisolation.analysis import SpikeAnalysisModule
 import glob
 
@@ -23,6 +24,8 @@ COLS_TO_SKIP = ['Best Fit', 'Curve fit b1', #random / moving api
 
 DEFAULT_DICT = {'filter': 0,
                  'start_search': None,}
+
+utils.DEBUG = True #enable debug mode for more verbose output
 
 def test_dataframe_save():
     # Run the feature extractor
