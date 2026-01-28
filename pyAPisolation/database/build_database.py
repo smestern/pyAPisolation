@@ -26,7 +26,7 @@ from multiprocessing import pool, freeze_support
 import ipfx
 import ipfx.script_utils as su
 from ipfx.stimulus import StimulusOntology
-import allensdk.core.json_utilities as ju
+import ipfx.json_utilities as ju
 from ipfx.bin import run_feature_collection
 from ipfx import script_utils as su
 from ipfx.sweep import SweepSet, Sweep

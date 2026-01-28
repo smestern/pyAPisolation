@@ -4,21 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyAPisolation"
-version = "0.7.1"
+version = "0.9.1"
+requires-python = ">=3.11"
 dependencies = [
-    "numpy>=1.21.0, <1.24",
-    "h5py>=2.10",
-    "pyabf",
-    "matplotlib",
-    "pandas",
-    "scipy",
-    "anndata",
-    "scikit-learn",
-    "joblib",
-    "allensdk",
-    "plotly",
-    "pyyaml",
-    "beautifulsoup4"
+    "numpy>=1.21.0",
+    "h5py>=3.0",
+    "pyabf>=2.3.0",
+    "matplotlib>=3.5.0",
+    "pandas>=1.3.0",
+    "scipy>=1.7.0",
+    "ipfx>=2.1.0"
 ]
 
 
@@ -29,19 +24,48 @@ exclude = ["tests"]  # exclude packages matching these glob patterns (empty by d
 
 [project.scripts]
 spike_finder = "pyAPisolation.bin:run_spike_finder.main"
-pyAPisolation_setup = "pyAPisolation.setup_install:install_ipfx"
+
 [tool.setuptools.package-data]
 "*" = ["*.pzfx", "*.ui"]
 
 [project.optional-dependencies]
-gui = ["PySide2", "pyqtgraph"]
-web = ["flask"]
-server = ["gunicorn", "flask-cors", "flask"]
-dev = ["torch"]
+# Desktop GUI application
+gui = [
+    "PySide2>=5.15",
+    "pyqtgraph>=0.12",
+    "prismWriter",
+    "seaborn>=0.11"
+]
+
+# Web visualization and database
+web = [
+    "flask>=2.0",
+    "beautifulsoup4>=4.9",
+    "pyyaml>=6.0",
+    "anndata>=0.8",
+    "openpyxl>=3.0"
+]
+
+# Production web server
+server = [
+    "pyAPisolation[web]",
+    "gunicorn>=20.0",
+    "flask-cors>=3.0"
+]
+
+# Machine learning features
+ml = [
+    "scikit-learn>=1.0",
+    "joblib>=1.0",
+    "umap-learn>=0.5"
+]
+
+# Development/experimental
+dev = ["torch>=1.10"]
+
+# Full installation (all features except dev)
 full = [
-    "PySide2", 
-    "pyqtgraph", 
-    "flask",
-    "gunicorn",
-    "flask-cors"
+    "pyAPisolation[gui]",
+    "pyAPisolation[web]",
+    "pyAPisolation[ml]"
 ]
