@@ -31,10 +31,10 @@ spike_finder = "pyAPisolation.bin:run_spike_finder.main"
 [project.optional-dependencies]
 # Desktop GUI application
 gui = [
-    "PySide2>=5.15",
-    "pyqtgraph>=0.12",
+    "PySide2",
+    "pyqtgraph",
     "prismWriter",
-    "seaborn>=0.11"
+    "seaborn"
 ]
 
 # Web visualization and database
