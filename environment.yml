@@ -26,4 +26,5 @@ dependencies:
     - pyyaml>=6.0
     - beautifulsoup4>=4.9
     - openpyxl>=3.0
+    - scikit-learn
     - -e .

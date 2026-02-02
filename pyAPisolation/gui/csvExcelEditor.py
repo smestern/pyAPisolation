@@ -7,12 +7,12 @@ from . import csvEditorBase
 from .dragDropTable import DragDropTableWidget
 from .fileBrowser import FileBrowser
 
-from PySide2.QtWidgets import (QApplication, QMainWindow, QFileDialog, 
+from PySide6.QtWidgets import (QApplication, QMainWindow, QFileDialog, 
                                QVBoxLayout, QWidget, QMessageBox, 
                                QTreeView, QFileSystemModel, QHeaderView,
                                QHBoxLayout, QProgressDialog)
-from PySide2.QtCore import QDir, Qt, QThread, Signal
-from PySide2.QtGui import QFont, QKeySequence
+from PySide6.QtCore import QDir, Qt, QThread, Signal
+from PySide6.QtGui import QFont, QKeySequence
 import pandas as pd
 import numpy as np
 import sys
@@ -379,7 +379,7 @@ def main():
     MainWindow.show()
     
     # Start event loop
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

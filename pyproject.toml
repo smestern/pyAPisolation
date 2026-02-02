@@ -31,7 +31,7 @@ spike_finder = "pyAPisolation.bin:run_spike_finder.main"
 [project.optional-dependencies]
 # Desktop GUI application
 gui = [
-    "PySide2",
+    "PySide6",
     "pyqtgraph",
     "prismWriter",
     "seaborn"

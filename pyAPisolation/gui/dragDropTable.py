@@ -2,10 +2,10 @@
 Custom table widget with drag-and-drop file support for CSV/Excel editor
 """
 
-from PySide2.QtWidgets import (QTableWidget, QTableWidgetItem, QHeaderView, 
+from PySide6.QtWidgets import (QTableWidget, QTableWidgetItem, QHeaderView, 
                                QAbstractItemView, QApplication, QMenu)
-from PySide2.QtCore import Qt, Signal, QMimeData, QUrl
-from PySide2.QtGui import QDragEnterEvent, QDropEvent, QContextMenuEvent
+from PySide6.QtCore import Qt, Signal, QMimeData, QUrl
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QContextMenuEvent
 import os
 import pandas as pd
 
@@ -66,7 +66,7 @@ class DragDropTableWidget(QTableWidget):
     def dropEvent(self, event: QDropEvent):
         """Handle drop events - populate cell with file path"""
         if event.mimeData().hasUrls():
-            position = event.pos()
+            position = event.position().toPoint()
             item = self.itemAt(position)
             
             if item is None:
@@ -106,7 +106,7 @@ class DragDropTableWidget(QTableWidget):
         
     def contextMenuEvent(self, event: QContextMenuEvent):
         """Handle right-click context menu"""
-        item = self.itemAt(event.pos())
+        item = self.itemAt(event.position().toPoint())
         if item is not None:
             menu = QMenu(self)
             
@@ -123,7 +123,7 @@ class DragDropTableWidget(QTableWidget):
                 copy_path_action.setEnabled(False)
                 open_location_action.setEnabled(False)
                 
-            action = menu.exec_(self.mapToGlobal(event.pos()))
+            action = menu.exec(self.mapToGlobal(event.position().toPoint()))
             
             if action == clear_action:
                 item.setText("")

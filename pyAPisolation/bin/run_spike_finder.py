@@ -1,11 +1,11 @@
 
 import multiprocessing
+from pyAPisolation.gui.spikeFinder import main as spike_finder_main
 
 def main():
     # This function is a placeholder for the main functionality of the spike finder.
     # It can be replaced with the actual implementation.
     print("Spike Finder GUI is starting...")
-    from pyAPisolation.gui.spikeFinder import main as spike_finder_main
     spike_finder_main()
 
 if __name__ == "__main__":

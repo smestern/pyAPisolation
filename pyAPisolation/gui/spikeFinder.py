@@ -17,11 +17,12 @@ from functools import partial
 import scipy.signal as signal
 print("Loaded basic libraries; importing QT")
 
-from PySide2.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog, QAction, QMainWindow
-from PySide2.QtCore import QFile, QAbstractTableModel, Qt, QModelIndex
-from PySide2 import QtGui
-import PySide2.QtCore as QtCore
-from PySide2.QtUiTools import QUiLoader
+from PySide6.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QHBoxLayout, QProgressDialog, QMainWindow
+from PySide6.QtCore import QFile, QAbstractTableModel, Qt, QModelIndex
+from PySide6 import QtGui
+from PySide6.QtGui import QAction
+import PySide6.QtCore as QtCore
+from PySide6.QtUiTools import QUiLoader
 
 print("Loaded QT libraries")
 
@@ -44,13 +45,19 @@ from pyAPisolation.patch_utils import sweepNumber_to_real_sweep_number
 
 # Import the custom analysis modules
 from pyAPisolation.gui.wizard_integration import add_analysis_wizard_to_menu
-from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
+
+try:
+    from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
+except ImportError:
+    print("Prism Writer GUI not found; skipping import.")
+    PrismWriterGUI = None
+
 from pyAPisolation.analysis import registry
 #from .mainwindow import Ui_MainWindow
 import time
 from ipfx.feature_extractor import SpikeFeatureExtractor
 import sys
-import PySide2
+import PySide6
 
 try:
     import shap
@@ -109,9 +116,9 @@ class analysis_gui(object):
             layout.addWidget(plot_widget)
             self.main_view = plot_widget
         elif PLOT_BACKEND == "matplotlib":
-            import PySide2
-            import PySide2.QtCore
-            assert "PySide2" in sys.modules
+            import PySide6
+            import PySide6.QtCore
+            assert "PySide6" in sys.modules
             self.main_view = FigureCanvas(Figure(figsize=(15, 5)))
             layout.addWidget(self.main_view)
             self.toolbar = NavigationToolbar(self.main_view, self.frame)
@@ -365,7 +372,7 @@ class analysis_gui(object):
             pop.setText("The filter is above the nyquist frequency, do you want to adjust the filter? Otherwise no filter will be applied.")
             pop.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
             pop.setDefaultButton(QtWidgets.QMessageBox.No)
-            ret = pop.exec_()
+            ret = pop.exec()
             if ret == QtWidgets.QMessageBox.No:
                 return abf
             else:
@@ -1161,4 +1168,4 @@ def main():
     #pull focus to the ui
     #widget.children()[1].raise_()
 
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
