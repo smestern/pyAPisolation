@@ -563,7 +563,9 @@ def analyze_subthres(x=None, y=None, c=None, file=None, protocol_name='', savfil
     averages = []
     plt.close('all')
     if (data.sweepLabelY != 'Clamp Current (pA)' and data.protocol != 'Gap free' and protocol_name in data.protocol):
-        np.nan_to_num(data, nan=-9999, copy=False)
+        #nan to num the data
+        data.dataX, data.dataY, data.dataC = np.nan_to_num(data.dataX, nan=-9999, copy=True), np.nan_to_num(data.dataY, nan=-9999, copy=True), np.nan_to_num(data.dataC, nan=-9999, copy=True)
+        
         if savfilter > 0:
             data.data = signal.savgol_filter(data.data, savfilter, polyorder=3)
 
