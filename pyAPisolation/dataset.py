@@ -63,7 +63,7 @@ class cellData(object):
             else:
                 logger.info(f"Generating name from data")
                 # create a unique name by hashing the data
-                self.name = "unamed_" + str(hash(dataY[0].tostring()))
+                self.name = "unamed_" + str(hash(str(dataY[0])))
 
             self.dataX = dataX
             self.dataY = dataY

@@ -3,9 +3,13 @@ import sys
 import subprocess
 import logging
 
+if os.getenv('GITHUB_ACTIONS') == 'true': #this is basically tested anyway by the CI workflow, so we can skip it here
+    print("Running in GitHub Actions, skipping test_install")
+    exit()
+
 #create a conda env called pyAPisolation_test and install the package in it
 def test_install():
-    p = subprocess.Popen('conda create -n pyAPisolation_test python=3.9 -y', shell=True)
+    p = subprocess.Popen('conda create -n pyAPisolation_test python=3.11 -y', shell=True)
     p.wait()
     p = subprocess.Popen('conda activate pyAPisolation_test && pip install -e .', shell=True)
     p.wait()

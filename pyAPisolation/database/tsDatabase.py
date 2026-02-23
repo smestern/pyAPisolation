@@ -51,10 +51,10 @@ class experimentalStructure:
                             continue
                         if flags[key] != self.protocols[key][i]:
                             logger.info(f'Flags for protocol {name} are different, making a new entry')
-                            self.protocols = self.protocols.append(pd.DataFrame(data={'name': name, **flags}))
+                            self.protocols = pd.concat([self.protocols, pd.DataFrame(data={'name': name, **flags}, index=[0])], ignore_index=True)
                             
         else:
-            self.protocols = self.protocols.append(pd.DataFrame(data={'name': name, 'altnames': [name], **flags}))
+            self.protocols = pd.concat([self.protocols, pd.DataFrame(data={'name': name, **flags}, index=[0])], ignore_index=True)
 
         #deep copy the dataframe to avoid any issues
         self.protocols = self.protocols.copy() #this is a bit of a hack, but it works for now

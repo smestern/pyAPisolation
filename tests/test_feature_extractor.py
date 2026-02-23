@@ -28,6 +28,13 @@ DEFAULT_DICT = {'filter': 0,
 
 utils.DEBUG = True #enable debug mode for more verbose output
 
+#figure out if this is running in github actions or locally
+if os.getenv('GITHUB_ACTIONS') == 'true':
+    #if we are in github actions, we need to skip the test
+    print("Running in GitHub Actions, skipping test_feature_extractor")
+    exit()
+
+
 def test_dataframe_save():
     # Run the feature extractor
     spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), DEFAULT_DICT)
@@ -37,7 +44,7 @@ def test_dataframe_save():
 
 def test_feature_extractor():
     # Load the known good df
-    #df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
+    df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
 
     # Run the feature extractor
     spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), DEFAULT_DICT)

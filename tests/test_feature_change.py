@@ -5,6 +5,10 @@ from tkinter import filedialog
 import os
 
 
+if os.ENV['GITHUB_ACTIONS'] == 'true':
+    print("Running in GitHub Actions, skipping test_feature_change")
+    exit()
+
 def compare_excel_files(file1, file2, sheet_name='full sheet'):
     df1 = pd.read_excel(file1, sheet_name =sheet_name)
     df2 = pd.read_excel(file2, sheet_name =sheet_name)
