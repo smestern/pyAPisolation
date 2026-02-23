@@ -37,7 +37,7 @@ def test_dataframe_save():
 
 def test_feature_extractor():
     # Load the known good df
-    df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
+    #df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
 
     # Run the feature extractor
     spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), DEFAULT_DICT)
@@ -142,6 +142,6 @@ def test_modular_analysis():
 
 
 if __name__ == '__main__':
-    test_subthreshold_funcs()
-    test_dataframe_save()
+    #test_subthreshold_funcs()
+    #test_dataframe_save()
     test_feature_extractor()
