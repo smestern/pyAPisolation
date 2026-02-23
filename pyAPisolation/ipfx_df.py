@@ -3,6 +3,7 @@
 #  we will be computing some features needed / desired for the inoue lab
 # here we will be wrangling some of the data frames and saving them to csv files
 # we will also be generating some plots and saving them to the same folder
+# This script is a nightmare, it is a mess, but it works, and it is not worth the time to clean it up right now, but it should be cleaned up eventually
 #############
 import numpy as np
 import os
@@ -24,6 +25,7 @@ subsheets_spike = {'full sheet': ['']}
 
 
 def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag='', savespikeFinder=True, saveRunningAvg=True, saveRaw=False):
+    print("saving data frames to excel")
     dfs, df_spike_count, df_running_avg_count = organize_data_frames(dfs, df_spike_count, df_running_avg_count)
     if savespikeFinder:
         with pd.ExcelWriter(root_fold + '/spike_count_' + tag + '.xlsx') as runf:

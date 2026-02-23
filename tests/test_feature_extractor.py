@@ -23,7 +23,8 @@ COLS_TO_SKIP = ['Best Fit', 'Curve fit b1', #random / moving api
 
 
 DEFAULT_DICT = {'filter': 0,
-                 'start_search': None,}
+                 'start':0,
+                 'end': 0,}
 
 utils.DEBUG = True #enable debug mode for more verbose output
 

@@ -130,30 +130,46 @@ def find_downward(dataI):
 
 @utils.debug_wrap
 def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold='') -> tuple[float, float, tuple[float, float, float, float, float], float, float, float]:
+    """
+    Fits a 2 phase exponential decay to the voltage response of a hyperpolarizing current injection, and returns the time constants of the fast and slow decay, as well as the R-squared values of the fit. Also returns the time constant of a 1 phase exponential decay for comparison.
+    :param dataT: Description
+    :param dataV: Description
+    :param dataI: Description
+    :param time_aft: Description
+    :param abf_id: Description
+    :param plot: Description
+    :param root_fold: Description
+    :return: Description
+    :rtype: tuple[float, float, tuple[float, float, float, float, float], float, float, float]
     
-    time_aft = time_aft / 100
-    if time_aft > 1:
+    """
+    time_aft = time_aft / 100 #convert to proportion
+    if time_aft > 1: #ensure time_aft is a proportion, if they somehow input a value greater than 1, we will set it to 1
         time_aft = 1
 
-    diff_I = np.diff(dataI)
-    downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
-    end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
+    diff_I = np.diff(dataI) #find the points where current changes, we assume the first one is the start of the hyperpolarization
+    downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0] #find the first point where the current goes down, we assume this is the start of the hyperpolarization
+    end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft) #we want to analyze the segment of the hyperpolarization that is within the time_aft proportion of the total hyperpolarization, we assume the total hyperpolarization ends at the point where the current goes back up, which should be the next point where the diff_I goes positive, but to be safe we will just use the max of diff_I as the end point, and then take a proportion of that distance from the start of the hyperpolarization. This is because sometimes the current may not go back up within the sweep, or there may be noise that causes false positives in the diff_I.
     
-    if end_index - downwardinfl < 10:
+    if end_index - downwardinfl < 10: #if the end index is too close to the start index, we likely have a problem with the data, and we will return nans
         return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
-    upperC = np.amax(dataV[downwardinfl:end_index])
-    lowerC = np.amin(dataV[downwardinfl:end_index])
-    diff = np.abs(upperC - lowerC)
-    t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
-    SpanFast=(upperC-lowerC)*1*.01
+    upperC = np.amax(dataV[downwardinfl:end_index]) #we take the max and min of the voltage in this segment as the upper and lower bounds for the exponential decay, this is because sometimes there may be noise that causes false positives in the diff_I, and we want to ensure that we are fitting the exponential decay to the correct segment of the data. We also add a small buffer to the bounds to ensure that we are capturing the full range of the decay.
+    lowerC = np.amin(dataV[downwardinfl:end_index]) #we take the max and min of the voltage in this segment as the upper and lower bounds for the exponential decay, this is because sometimes there may be noise that causes false positives in the diff_I, and we want to ensure that we are fitting the exponential decay to the correct segment of the data. We also add a small buffer to the bounds to ensure that we are capturing the full range of the decay.
+    diff = np.abs(upperC - lowerC) #we take the difference between the upper and lower bounds as an estimate of the amplitude of the decay, this is used to help guide the curve fitting algorithm, as it can be sensitive to the initial parameters, and having a good estimate of the amplitude can help ensure that we are fitting the correct segment of the data.
+    t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl] #we take the time vector for the segment of the data that we are analyzing, we also shift it so that it starts at 0, this is because the exponential decay functions that we are fitting are defined to start at time 0, and this will help ensure that we are fitting the correct segment of the data.
+    SpanFast=(upperC-lowerC)*1*.01 #we take the span of the fast decay as 1% of the total amplitude of the decay, this is used to help guide the curve fitting algorithm, as it can be sensitive to the initial parameters, and having a good estimate of the span of the fast decay can help ensure that we are fitting the correct segment of the data.
 
-    curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=(-np.inf, np.inf))
-
+    #fit a one phase exponential decay to the data, we use the upper and lower bounds as the bounds for the curve fitting algorithm, and we also set the initial parameters for the curve fitting algorithm based on the upper and lower bounds, and the span of the fast decay, this is because the curve fitting algorithm can be sensitive to the initial parameters, and having good initial parameters can help ensure that we are fitting the correct segment of the data.
+    curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=(-np.inf, np.inf)) 
+    # guess for two phase will be a fast decay that accounts for 1% of the total decay, and a slow decay that accounts for the rest of the decay, we also set the initial parameters for the curve fitting algorithm based on the upper and lower bounds, and the span of the fast decay, this is because the curve fitting algorithm can be sensitive to the initial parameters, and having good initial parameters can help ensure that we are fitting the correct segment of the data.
     p_guess = (curve2[0], curve2[1], curve2[-1]*0.1, curve2[1], curve2[-1])
+    # if the fast decay is negative, we likely have a problem with the data, and we will set the fast decay to be 10% of the total decay, and the slow decay to be the rest of the decay, this is because sometimes there may be noise that causes false positives in the diff_I, and we want to ensure that we are fitting the correct segment of the data.
+    p_guess = np.clip(p_guess, a_min=[-np.inf,  0, (1/500),  0, 0], a_max=[np.inf, np.inf, 500, np.inf, np.inf])
     curve, pcov_2p = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], p0=p_guess,
                                maxfev=50000,  bounds=([-np.inf,  0, (1/500),  0, 0], [np.inf, np.inf, 500, np.inf, np.inf]),
                                  xtol=None)
-    
+    # compute some metrics to evaluate the fit, we compute the residuals of the fit, 
+    # and then compute the R-squared value of the fit, this is because sometimes the curve fitting algorithm can converge to a local minimum that does not actually fit the data well, and having a good R-squared value can help ensure that we are fitting the correct segment of the data.
     residuals_2p = dataV[downwardinfl:end_index]- exp_decay_2p(t1, *curve)
     residuals_1p = dataV[downwardinfl:end_index]- exp_decay_1p(t1, *curve2)
     ss_res_2p = np.sum(residuals_2p**2)
@@ -161,7 +177,7 @@ def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root
     ss_tot = np.sum((dataV[downwardinfl:end_index]-np.mean(dataV[downwardinfl:end_index]))**2)
     r_squared_2p = 1 - (ss_res_2p / ss_tot)
     r_squared_1p = 1 - (ss_res_1p / ss_tot)
-    if plot == True:
+    if plot == True: #Old school method of plotting the fit. Probably should not be done here, but it is useful for debugging, and we can always remove it later if we want to clean up the code.
 
         plt.figure(2)
         plt.clf()
@@ -174,69 +190,68 @@ def exp_decay_factor(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root
         plt.pause(3)
         plt.savefig(root_fold+ '//cm_plots//' + abf_id+'.png')
         #plt.close() 
+    tau1 = 1/curve[2] #the time constant of the fast decay is the inverse of the alpha parameter of the fast decay
+    tau2 = 1/curve[4] #the time constant of the slow decay is the inverse of the alpha parameter of the slow decay
+    tau_1p = 1/curve2[2] #the time constant of the one phase decay is the inverse of the alpha parameter of the one phase decay
+    fast = np.min([tau1, tau2]) #the fast decay is the one with the smaller time constant
+    slow = np.max([tau1, tau2]) #the slow decay is the one with the larger time constant
+    return tau1, tau2, curve, r_squared_2p, r_squared_1p, tau_1p
+    
+
+@utils.debug_wrap
+def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold='') -> tuple[float, float, tuple[float, float, float, float, float], float, float, float]:
+    
+    time_aft = time_aft / 100
+    if time_aft > 1:
+        time_aft = 1
+
+    diff_I = np.diff(dataI)
+    downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+    
+    end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
+    upperC = np.amax(dataV[downwardinfl:end_index])
+    lowerC = np.amin(dataV[downwardinfl:end_index])
+    minpoint = np.argmin(dataV[downwardinfl:end_index])
+    end_index = downwardinfl + int(.95 * minpoint)
+    downwardinfl = downwardinfl + int(.10 * minpoint)
+
+    diff = np.abs(upperC - lowerC) + 5
+    t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
+    SpanFast=(upperC-lowerC)*1*.01
+
+    guess = (lowerC, diff, 50)
+    curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000, p0=guess,
+                                    bounds=([-np.inf, diff-15, 2], [np.inf, diff+15, 750]), xtol=None)
+    curve, pcov_2p = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=([-np.inf,  0, 100,  0, 0], [np.inf, np.inf, 500, np.inf, np.inf]), xtol=None)
+    
+    residuals_2p = dataV[downwardinfl:end_index]- exp_decay_2p(t1, *curve)
+    residuals_1p = dataV[downwardinfl:end_index]- exp_decay_1p(t1, *curve2)
+    ss_res_2p = np.sum(residuals_2p**2)
+    ss_res_1p = np.sum(residuals_1p**2)
+    ss_tot = np.sum((dataV[downwardinfl:end_index]-np.mean(dataV[downwardinfl:end_index]))**2)
+    r_squared_2p = 1 - (ss_res_2p / ss_tot)
+    r_squared_1p = 1 - (ss_res_1p / ss_tot)
+    if plot == True:
+        end_index2 = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
+        t1 = dataT[downwardinfl:end_index2] - dataT[downwardinfl]
+        plt.figure(2)
+        plt.clf()
+        plt.plot(t1, dataV[downwardinfl:end_index2], label='Data')
+        plt.plot(t1, exp_decay_2p(t1, *curve), label='2 phase fit')
+        plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3]/4, curve[2]), label='Phase 1', zorder=9999)
+        plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3], curve[4]), label='Phase 2')
+        plt.legend()
+        plt.title(abf_id)
+        plt.pause(3)
+        plt.savefig(root_fold+ '//cm_plots//' + abf_id+'.png')
+        #plt.close() 
     tau1 = 1/curve[2]
     tau2 = 1/curve[4]
     tau_1p = 1/curve2[2]
     fast = np.min([tau1, tau2])
     slow = np.max([tau1, tau2])
     return tau1, tau2, curve, r_squared_2p, r_squared_1p, tau_1p
-    
-
-
-def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, root_fold=''):
-     try:
-        time_aft = time_aft / 100
-        if time_aft > 1:
-            time_aft = 1
-
-        diff_I = np.diff(dataI)
-        downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
-        
-        end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
-        upperC = np.amax(dataV[downwardinfl:end_index])
-        lowerC = np.amin(dataV[downwardinfl:end_index])
-        minpoint = np.argmin(dataV[downwardinfl:end_index])
-        end_index = downwardinfl + int(.95 * minpoint)
-        downwardinfl = downwardinfl + int(.10 * minpoint)
-
-        diff = np.abs(upperC - lowerC) + 5
-        t1 = dataT[downwardinfl:end_index] - dataT[downwardinfl]
-        SpanFast=(upperC-lowerC)*1*.01
-
-        guess = (lowerC, diff, 50)
-        curve2, pcov_1p = curve_fit(exp_decay_1p, t1, dataV[downwardinfl:end_index], maxfev=50000, p0=guess,
-                                      bounds=([-np.inf, diff-15, 2], [np.inf, diff+15, 750]), xtol=None)
-        curve, pcov_2p = curve_fit(exp_decay_2p, t1, dataV[downwardinfl:end_index], maxfev=50000,  bounds=([-np.inf,  0, 100,  0, 0], [np.inf, np.inf, 500, np.inf, np.inf]), xtol=None)
-        
-        residuals_2p = dataV[downwardinfl:end_index]- exp_decay_2p(t1, *curve)
-        residuals_1p = dataV[downwardinfl:end_index]- exp_decay_1p(t1, *curve2)
-        ss_res_2p = np.sum(residuals_2p**2)
-        ss_res_1p = np.sum(residuals_1p**2)
-        ss_tot = np.sum((dataV[downwardinfl:end_index]-np.mean(dataV[downwardinfl:end_index]))**2)
-        r_squared_2p = 1 - (ss_res_2p / ss_tot)
-        r_squared_1p = 1 - (ss_res_1p / ss_tot)
-        if plot == True:
-            end_index2 = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
-            t1 = dataT[downwardinfl:end_index2] - dataT[downwardinfl]
-            plt.figure(2)
-            plt.clf()
-            plt.plot(t1, dataV[downwardinfl:end_index2], label='Data')
-            plt.plot(t1, exp_decay_2p(t1, *curve), label='2 phase fit')
-            plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3]/4, curve[2]), label='Phase 1', zorder=9999)
-            plt.plot(t1, exp_decay_1p(t1, curve[0], curve[3], curve[4]), label='Phase 2')
-            plt.legend()
-            plt.title(abf_id)
-            plt.pause(3)
-            plt.savefig(root_fold+ '//cm_plots//' + abf_id+'.png')
-            #plt.close() 
-        tau1 = 1/curve[2]
-        tau2 = 1/curve[4]
-        tau_1p = 1/curve2[2]
-        fast = np.min([tau1, tau2])
-        slow = np.max([tau1, tau2])
-        return tau1, tau2, curve, r_squared_2p, r_squared_1p, tau_1p
-     except:
-        return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
+    return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
 
 def df_select_by_col(df, string_to_find):
     def flatten_stf(lis):
@@ -325,18 +340,21 @@ def membrane_resistance(dataT,dataV,dataI) -> float:
 
     return r #in ohms
     
-
-def mem_cap(resist, tau_2p, tau_1p =np.nan):
+#Given the membrane resistance and the time constant of the decay, we can compute the membrane capacitance using the formula tau = R * C, where tau is the time constant, R is the membrane resistance, and C is the membrane capacitance. We can rearrange this formula to solve for C: C = tau / R. We can compute this for both the fast and slow time constants to get two estimates of the membrane capacitance.
+def mem_cap(resist, tau_2p, tau_1p=np.nan):
     #tau = RC
     #C = R/tau
     C_2p = tau_2p / resist
     C_1p = tau_1p / resist
     return C_2p, C_1p ##In farads?
-
+#The resistance results can be very noisy, and the time constant results can also be very noisy, 
+# but if we assume that the membrane capacitance is relatively constant across sweeps,
+#  we can use the time constant results to compute an alternative estimate of the membrane resistance, using the formula R = tau / C. This can help to smooth out some of the noise in the resistance results, and provide a more stable estimate of the membrane resistance.
 def mem_cap_alt(resist, tau, b2, deflection):
     rm2 = np.abs((b2/1000)/(deflection /1000000000000))#in pA -> A)
     cm = tau / rm2
     return cm
+
 
 def determine_subt(abf, idx_bounds, filter_spikes=False):
     """Determine which sweeps are subthreshold based on the current injection.
