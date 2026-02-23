@@ -16,6 +16,7 @@ from pyAPisolation.ipfx_df import save_subthres_data
 import pyAPisolation.utils as utils
 #from pyAPisolation.analysis import SpikeAnalysisModule
 import glob
+import pytest
 
 COLS_TO_SKIP = ['Best Fit', 'Curve fit b1', #random / moving api
                  'foldername', 'protocol', #not a feature
@@ -28,20 +29,16 @@ DEFAULT_DICT = {'filter': 0,
 
 utils.DEBUG = True #enable debug mode for more verbose output
 
-#figure out if this is running in github actions or locally
-if os.getenv('GITHUB_ACTIONS') == 'true':
-    #if we are in github actions, we need to skip the test
-    print("Running in GitHub Actions, skipping test_feature_extractor")
-    exit()
 
 
+@pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
 def test_dataframe_save():
     # Run the feature extractor
     spike, feat_df, running = batch_feature_extract(os.path.expanduser('~/Dropbox/sara_cell_v2'), DEFAULT_DICT)
     #also test the save_data_frames function
     save_data_frames(spike, feat_df, running, root_fold=os.path.dirname(__file__))
     #checked manually later
-
+@pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
 def test_feature_extractor():
     # Load the known good df
     df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
@@ -112,14 +109,14 @@ def test_feature_extractor():
 
 
         assert False, f"Dataframes are not equal, mean percent error is {np.nanmean(diff)*100}"
-
+@pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
 def test_analyze_funcs():
     files = glob.glob(os.path.expanduser('~/Dropbox/sara_cell_v2') + '/**/*.abf', recursive=True)
     #load the protocols
     #try to load the protocols
     spike_times = analyze_spike_times(file=files[-1])
     print(spike_times)
-
+@pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
 def test_subthreshold_funcs():
     #load a file
     files = glob.glob(os.path.expanduser('./data/') + '/**/*.abf', recursive=True)
@@ -127,7 +124,7 @@ def test_subthreshold_funcs():
     
     dfs = analyze_subthres(file=files[0],  savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False)
     save_subthres_data(dfs[1], dfs[0], root_fold=os.path.dirname(__file__))
-
+@pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
 def test_modular_analysis():
     #we need to make sure the modular feature analysis is working:
     # Load the known good df
