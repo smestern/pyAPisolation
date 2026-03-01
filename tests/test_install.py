@@ -2,10 +2,7 @@ import os
 import sys
 import subprocess
 import logging
-
-if os.getenv('GITHUB_ACTIONS') == 'true': #this is basically tested anyway by the CI workflow, so we can skip it here
-    print("Running in GitHub Actions, skipping test_install")
-    exit()
+import pytest
 
 #create a conda env called pyAPisolation_test and install the package in it
 @pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
