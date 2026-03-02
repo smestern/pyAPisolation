@@ -1,103 +1,128 @@
 """
-Registry system for managing analysis modules.
+Module registry for discovering and retrieving analysis modules.
 
-This module provides the AnalysisRegistry class and global registry instance
-for managing and accessing analysis modules.
+Usage
+-----
+::
+
+    from pyAPisolation.analysis import register, get, list_modules
+
+    # Register by class (auto-instantiated)
+    register(MyAnalysis)
+
+    # Or register an instance
+    register(MyAnalysis(dv_cutoff=10.0))
+
+    # Retrieve
+    module = get("my_analysis")
+
+    # List everything
+    print(list_modules())
 """
 
-from typing import Dict, Optional
-from .base import AnalysisModule
+import logging
+from typing import Dict, List, Optional
+
+from .base import AnalysisBase
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Internal storage
+# ---------------------------------------------------------------------------
+_registry: Dict[str, AnalysisBase] = {}
 
 
-class AnalysisRegistry:
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+def register(cls_or_instance, **kwargs) -> AnalysisBase:
     """
-    Registry for managing analysis modules
+    Register an analysis module.
+
+    Parameters
+    ----------
+    cls_or_instance : type | AnalysisBase
+        Either an ``AnalysisBase`` **subclass** (will be instantiated) or
+        an already-instantiated module.
+    **kwargs
+        Forwarded to the constructor when *cls_or_instance* is a class.
+
+    Returns
+    -------
+    AnalysisBase
+        The registered instance (useful when used as a decorator).
+
+    Examples
+    --------
+    ::
+
+        # As a function call
+        register(SpikeAnalysis)
+
+        # With overrides
+        register(SpikeAnalysis, dv_cutoff=10.0)
+
+        # As a decorator
+        @register
+        class MyAnalysis(AnalysisBase):
+            ...
     """
-    
-    def __init__(self):
-        self.modules: Dict[str, AnalysisModule] = {}
-        self.tab_mapping: Dict[int, str] = {}
-    
-    def register_module(self, module: AnalysisModule):
-        """Register a new analysis module"""
-        if not isinstance(module, AnalysisModule):
+    # If called with a class, instantiate it
+    if isinstance(cls_or_instance, type):
+        if not issubclass(cls_or_instance, AnalysisBase):
             raise TypeError(
-                f"Module must be an instance of AnalysisModule, "
-                f"got {type(module)}"
+                f"Expected an AnalysisBase subclass, got {cls_or_instance}"
             )
-        
-        if module.name in self.modules:
-            print(f"Warning: Overwriting existing module '{module.name}'")
-        
-        self.modules[module.name] = module
-        print(f"Registered analysis module: {module.display_name} "
-              f"('{module.name}')")
-    
-    def get_module(self, name: str) -> Optional[AnalysisModule]:
-        """Get an analysis module by name"""
-        return self.modules.get(name)
-    
-    def get_module_by_tab(self, tab_index: int) -> Optional[AnalysisModule]:
-        """Get analysis module by tab index (for legacy compatibility)"""
-        module_name = self.tab_mapping.get(tab_index)
-        return self.get_module(module_name) if module_name else None
-    
-    def list_modules(self):
-        """List all registered modules"""
-        return list(self.modules.keys())
-    
-    def list_modules_detailed(self):
-        """List all registered modules with detailed information"""
-        return {name: module.display_name 
-                for name, module in self.modules.items()}
-    
-    def add_tab_mapping(self, tab_index: int, module_name: str):
-        """Add a new tab mapping"""
-        if module_name not in self.modules:
-            raise ValueError(f"Module '{module_name}' is not registered")
-        
-        if tab_index in self.tab_mapping:
-            old_module = self.tab_mapping[tab_index]
-            print(f"Warning: Tab {tab_index} already mapped to "
-                  f"'{old_module}', overwriting with '{module_name}'")
-        
-        self.tab_mapping[tab_index] = module_name
-        print(f"Mapped tab {tab_index} to module '{module_name}'")
-    
-    def unregister_module(self, name: str):
-        """Unregister an analysis module"""
-        if name in self.modules:
-            del self.modules[name]
-            # Remove from tab mappings
-            tabs_to_remove = [tab for tab, module_name in self.tab_mapping.items()
-                             if module_name == name]
-            for tab in tabs_to_remove:
-                del self.tab_mapping[tab]
-            print(f"Unregistered module '{name}'")
-        else:
-            print(f"Module '{name}' was not registered")
-    
-    def clear_registry(self):
-        """Clear all registered modules and tab mappings"""
-        self.modules.clear()
-        self.tab_mapping.clear()
-        print("Cleared all registered modules")
-    
-    def get_registry_info(self):
-        """Get detailed information about the registry state"""
-        return {
-            'modules': self.list_modules_detailed(),
-            'tab_mappings': dict(self.tab_mapping),
-            'module_count': len(self.modules)
-        }
-    
-    def get_analyzer(self, name: str) -> Optional[AnalysisModule]:
-        """
-        Get an analyzer module by name.
-        
-        This is a convenience method that is equivalent to get_module.
-        """
-        return self.get_module(name)
+        instance = cls_or_instance(**kwargs)
+    elif isinstance(cls_or_instance, AnalysisBase):
+        instance = cls_or_instance
+    else:
+        raise TypeError(
+            f"register() expects an AnalysisBase class or instance, "
+            f"got {type(cls_or_instance)}"
+        )
 
-# Global registry instance
-registry = AnalysisRegistry()
+    name = instance.name
+    if name in _registry:
+        logger.info(f"Overwriting existing module '{name}'")
+    _registry[name] = instance
+    logger.debug(f"Registered analysis module: '{name}' ({instance.display_name})")
+
+    # Return the class so register() works as a decorator
+    return cls_or_instance
+
+
+def get(name: str) -> Optional[AnalysisBase]:
+    """
+    Look up a registered module by name.
+
+    Parameters
+    ----------
+    name : str
+        The module name (e.g. ``"spike"``).
+
+    Returns
+    -------
+    AnalysisBase or None
+    """
+    module = _registry.get(name)
+    if module is None:
+        logger.warning(f"No module registered with name '{name}'")
+    return module
+
+
+def list_modules() -> List[str]:
+    """Return a list of all registered module names."""
+    return list(_registry.keys())
+
+
+def get_all() -> Dict[str, AnalysisBase]:
+    """Return a copy of the full registry dict."""
+    return dict(_registry)
+
+
+def clear():
+    """Remove all registered modules (mainly for testing)."""
+    _registry.clear()

@@ -1,655 +1,403 @@
 """
-Base classes for the analysis framework
+Base class for all analysis modules.
 
-This module defines the core interfaces and data structures that all
-analyzers must implement.
+Subclass ``AnalysisBase`` and implement **one method** — ``analyze()`` — to
+create a new analysis.  The framework handles input normalization, sweep
+iteration, batching, and result packaging automatically.
+
+Quickstart
+----------
+::
+
+    from pyAPisolation.analysis import AnalysisBase, register
+    import numpy as np
+
+    class PeakDetector(AnalysisBase):
+        \"\"\"Find the peak voltage in each sweep.\"\"\"
+        name = "peak_detector"
+        sweep_mode = "per_sweep"          # framework calls analyze() once per sweep
+
+        # Parameters — just typed class attributes
+        min_voltage: float = -20.0
+
+        def analyze(self, x, y, c, **kwargs):
+            peak_v = float(np.max(y))
+            peak_t = float(x[np.argmax(y)])
+            if peak_v < self.min_voltage:
+                return {"peak_found": False}
+            return {"peak_voltage": peak_v, "peak_time": peak_t, "peak_found": True}
+
+    register(PeakDetector)
 """
 
-from abc import abstractmethod
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
-from functools import partial
-import pandas as pd
-import numpy as np
-import glob
-import logging
-import pyabf
-from ..dataset import cellData
 import copy
-import multiprocessing as mp
+import logging
+from typing import Any, Dict, List, Optional, Union
+
+import numpy as np
+import pandas as pd
+
+from .result import AnalysisResult
+
 logger = logging.getLogger(__name__)
 
-
-@dataclass
-class Parameter:
-    """Individual parameter definition with metadata"""
-    
-    name: str
-    param_type: type = None
-    default: Any = None
-    value: Any = None
-    min_value: Optional[Union[int, float]] = None
-    max_value: Optional[Union[int, float]] = None
-    description: Optional[str] = None
-    options: Optional[List[Any]] = None  # For choice/enum parameters
-    
-    def __post_init__(self):
-        """Validate parameter definition"""
-        if self.min_value is not None and self.max_value is not None:
-            if self.min_value > self.max_value:
-                msg = (f"min_value ({self.min_value}) cannot be greater "
-                       f"than max_value ({self.max_value})")
-                raise ValueError(msg)
-        # Validate default value
-        if self.default is not None:
-            if not self.is_valid(self.default):
-                msg = (f"Default value {self.default} is not valid "
-                    f"for parameter {self.name}")
-                raise ValueError(msg)
-        
-        if self.value is None and self.default is not None:
-            self.value = self.default
-    
-    def is_valid(self, value: Any) -> bool:
-        """Check if a value is valid for this parameter"""
-        # Type check
-        if not isinstance(value, self.param_type):
-            try:
-                # Try to convert to the expected type
-                value = self.param_type(value)
-            except (ValueError, TypeError):
-                return False
-        
-        # Range check for numeric types
-        if (self.min_value is not None and hasattr(value, '__lt__')
-                and value < self.min_value):
-            return False
-        if (self.max_value is not None and hasattr(value, '__gt__')
-                and value > self.max_value):
-            return False
-        
-        # Options check
-        if self.options is not None and value not in self.options:
-            return False
-        
-        return True
-    
-    def validate_and_convert(self, value: Any) -> Any:
-        """Validate and convert a value to the correct type"""
-        if not isinstance(value, self.param_type):
-            try:
-                value = self.param_type(value)
-            except (ValueError, TypeError):
-                msg = (f"Cannot convert {value} to type "
-                       f"{self.param_type.__name__} for parameter {self.name}")
-                raise ValueError(msg)
-        
-        if not self.is_valid(value):
-            constraints = []
-            if self.min_value is not None:
-                constraints.append(f"min: {self.min_value}")
-            if self.max_value is not None:
-                constraints.append(f"max: {self.max_value}")
-            if self.options is not None:
-                constraints.append(f"options: {self.options}")
-            
-            constraint_str = ", ".join(constraints)
-            msg = (f"Value {value} is not valid for parameter {self.name}. "
-                   f"Constraints: {constraint_str}")
-            raise ValueError(msg)
-        
-        return value
-    
-    def get(self, key, val=None):
-        if hasattr(self, key):
-            return getattr(self, key)
-        else:
-            return val
-        
-    def set(self, key, value):
-        if hasattr(self, key):
-            setattr(self, key, value)
-        else:
-            #create the property?
-            self.__dict__[key] = value
+# Sentinel used to distinguish "user params" from "internal attrs"
+_INTERNAL_ATTRS = frozenset({
+    "name", "display_name", "sweep_mode",
+    # private / dunder attrs are filtered automatically
+})
 
 
-@dataclass
-class AnalysisParameters:
-    """Parameters for analysis configuration"""
-    
-    # Common parameters
-    start_time: Parameter = field(default_factory=lambda: Parameter(
-        "start_time", param_type=float, default=0.0, min_value=0.0,
-        max_value=np.inf, description="Time in (s) to start analysis"
-    ))
-    end_time: Parameter = field(default_factory=lambda: Parameter(
-        "end_time", param_type=float, default=0.0, min_value=0.0,
-        max_value=np.inf, description="Time in (s) to end analysis"
-    ))
-    protocol_filter: Parameter = field(default_factory=lambda: Parameter(
-        "protocol_filter", param_type=str, default="",
-        description="Protocol filter"
-    ))
-    
-    def list(self) -> List[str]:
-        """List all parameter names"""
-        return list(self.__dict__.keys())
+class AnalysisBase:
+    """
+    Base class for analysis modules.
 
-    def get(self, key: str, default: Any = None) -> Any:
-        """Get parameter value"""
-        if hasattr(self, key):
-            param = getattr(self, key)
-            if hasattr(param, 'value'):
-                return param.value
-            return param
-        return default
-    
-    def set(self, key: str, value: Any) -> None:
-        """Set parameter value"""
-        if hasattr(self, key):
-            param = getattr(self, key)
-            if hasattr(param, 'value'):
-                # Update existing Parameter object
-                param.value = param.validate_and_convert(value)
-            else:
+    Subclasses **must** implement :meth:`analyze`.
+
+    Class attributes
+    ----------------
+    name : str
+        Short identifier used for registry look-up (e.g. ``"spike"``).
+        Defaults to the lower-cased class name.
+    display_name : str
+        Human-readable label (e.g. ``"Spike Analysis"``).
+        Defaults to *name*.
+    sweep_mode : str
+        ``"per_sweep"`` — framework iterates sweeps and calls *analyze()*
+        with 1-D arrays for each sweep, then aggregates.
+        ``"per_file"`` — *analyze()* receives 2-D arrays
+        ``(sweeps × samples)`` and is responsible for its own iteration.
+
+    Parameters
+    ----------
+    Define parameters as **typed class attributes** with defaults::
+
+        dv_cutoff: float = 7.0
+        min_peak: float = -10.0
+
+    The framework discovers them via ``__annotations__`` and provides
+    :meth:`get_parameters`, :meth:`set_parameters`,
+    and :meth:`_collect_param_dict` automatically.
+    """
+
+    # ---- class-level configuration ----
+    name: str = ""
+    display_name: str = ""
+    sweep_mode: str = "per_sweep"  # "per_sweep" or "per_file"
+
+    def __init__(self, **overrides):
+        """
+        Instantiate the module, optionally overriding parameter defaults.
+
+        Parameters
+        ----------
+        **overrides
+            Parameter values to override, e.g. ``SpikeAnalysis(dv_cutoff=10)``.
+        """
+        # Derive name / display_name if not set
+        if not self.name:
+            self.name = type(self).__name__.lower()
+        if not self.display_name:
+            self.display_name = self.name
+
+        # Apply any overrides the user passed in
+        for key, value in overrides.items():
+            if key in self._param_names():
                 setattr(self, key, value)
-        else:
-            # Create a new parameter instance
-            temp_parameter = Parameter(
-                name=key, param_type=type(value), value=value
-            )
-            self.__dict__[key] = temp_parameter
+            else:
+                logger.warning(
+                    f"{self.name}: unknown parameter '{key}' ignored"
+                )
 
-    # --- Dict-like behavior ---
-    def __getitem__(self, key):
-        if key in self.__dict__:
-            param = self.__dict__[key]
-            if hasattr(param, 'value'):
-                return param.value
-            return param
-        else:
-            raise KeyError(key)
+    # ==================================================================
+    # Abstract method — the only thing users MUST implement
+    # ==================================================================
 
-    def __setitem__(self, key, value):
-        self.set(key, value)
+    def analyze(self, x, y, c, **kwargs) -> dict:
+        """
+        Run the analysis on one unit of data.
 
-    def __contains__(self, key):
-        return hasattr(self, key)
+        Parameters
+        ----------
+        x : np.ndarray
+            Time array.  1-D in *per_sweep* mode, 2-D in *per_file* mode.
+        y : np.ndarray
+            Voltage / response array (same shape as *x*).
+        c : np.ndarray
+            Current / command array (same shape as *x*).
+        **kwargs
+            Extra context injected by the framework:
 
-    def __iter__(self):
-        for k in self.__dataclass_fields__:
-            yield k
-        # Also yield any dynamically added parameters
-        for k in self.__dict__:
-            if k not in self.__dataclass_fields__:
-                yield k
+            * ``sweep_number`` (int) — current sweep index (per_sweep only)
+            * ``file_path`` (str)   — source file path, if available
+            * ``celldata``          — the ``cellData`` object, if available
 
-    def keys(self):
-        return list(iter(self))
-
-    def values(self):
-        return [self[k] for k in self]
-
-    def items(self):
-        return [(k, self[k]) for k in self]
-
-
-@dataclass
-class AnalysisResult:
-    """Container for analysis results"""
-    
-    analyzer_name: str
-    file_path: str
-    success: bool
-    
-    # Main results
-    summary_data: Optional[pd.DataFrame] = None
-    detailed_data: Optional[pd.DataFrame] = None
-    sweep_data: Optional[pd.DataFrame] = None
-    
-    # Metadata and diagnostics
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    
-    def add_error(self, error: str) -> None:
-        """Add an error message"""
-        self.errors.append(error)
-        self.success = False
-    
-    def add_warning(self, warning: str) -> None:
-        """Add a warning message"""
-        self.warnings.append(warning)
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert result to a dictionary for serialization"""
-        return {
-            'analyzer_name': self.analyzer_name,
-            'file_path': self.file_path,
-            'success': self.success,
-            'summary_data': self.summary_data.to_dict() if self.summary_data is not None else None,
-            'detailed_data': self.detailed_data.to_dict() if self.detailed_data is not None else None,
-            'sweep_data': self.sweep_data.to_dict() if self.sweep_data is not None else None,
-            'metadata': self.metadata,
-            'errors': self.errors,
-            'warnings': self.warnings
-        }
-
-    def __add__(self, other: 'AnalysisResult') -> 'AnalysisResult':
-        """Combine two AnalysisResults"""
-        _detailed_df_list = []
-        _summary_df_list = []
-        _sweep_df_list = []
-        _file_paths = set()
-        _errors = []
-        for res in [self, other]:
-            if res.detailed_data is not None:
-                _detailed_df_list.append(res.detailed_data)
-            if res.summary_data is not None:
-                _summary_df_list.append(res.summary_data)
-            if res.sweep_data is not None:
-                _sweep_df_list.append(res.sweep_data)
-            if res.file_path:
-                _file_paths.add(res.file_path)
-            if res.errors:
-                _errors.extend(res.errors)
-
-        combined = AnalysisResult(
-            analyzer_name=self.analyzer_name,
-            file_path=_file_paths.pop() if _file_paths else None,
-            success=all(res.success for res in [self, other]),
-            summary_data=pd.concat(_summary_df_list) if _summary_df_list else None,
-            detailed_data=pd.concat(_detailed_df_list) if _detailed_df_list else None,
-            sweep_data=pd.concat(_sweep_df_list) if _sweep_df_list else None,
-            metadata={**self.metadata, **other.metadata},
-            errors=_errors,
-            warnings=self.warnings + other.warnings
+        Returns
+        -------
+        dict
+            A flat dictionary of results.
+            Keys become column names in the output DataFrame.
+        """
+        raise NotImplementedError(
+            f"{type(self).__name__} must implement analyze()"
         )
-        return combined
+
+    # ==================================================================
+    # Framework entry point — handles input, sweep loop, result wrapping
+    # ==================================================================
+
+    def run(
+        self,
+        x=None, y=None, c=None,
+        file=None,
+        celldata=None,
+        selected_sweeps=None,
+        **kwargs
+    ) -> AnalysisResult:
+        """
+        Main entry point. Accepts raw arrays, a file path, or a cellData
+        object.  The framework normalizes the input, iterates sweeps
+        (if ``sweep_mode == "per_sweep"``), and wraps the output in an
+        :class:`AnalysisResult`.
+
+        Parameters
+        ----------
+        x, y, c : np.ndarray, optional
+            Raw data arrays (1-D or 2-D).
+        file : str, optional
+            Path to an ABF file.
+        celldata : cellData, optional
+            Pre-loaded data container.
+        selected_sweeps : list[int], optional
+            Subset of sweeps to analyze.  ``None`` ⇒ all sweeps.
+
+        Returns
+        -------
+        AnalysisResult
+        """
+        from ..patch_utils import parse_user_input  # lazy to avoid circular
+
+        # --- resolve input to a cellData ----------------------------------
+        if celldata is not None:
+            data = celldata
+        else:
+            data = parse_user_input(x, y, c, file)
+
+        file_path = getattr(data, "filePath", None) or \
+                    getattr(data, "file", None) or \
+                    (file if isinstance(file, str) else "array_input")
+
+        result = AnalysisResult(
+            name=self.name,
+            file_path=file_path,
+            success=True,
+        )
+
+        # --- determine sweeps to process ----------------------------------
+        if selected_sweeps is None:
+            selected_sweeps = list(range(data.sweepCount))
+
+        result.metadata["sweep_count"] = len(selected_sweeps)
+        result.metadata["protocol"] = getattr(data, "protocol", "")
+
+        # --- run analysis -------------------------------------------------
+        try:
+            if self.sweep_mode == "per_sweep":
+                result = self._run_per_sweep(data, selected_sweeps, result, **kwargs)
+            elif self.sweep_mode == "per_file":
+                result = self._run_per_file(data, selected_sweeps, result, **kwargs)
+            else:
+                raise ValueError(
+                    f"Unknown sweep_mode '{self.sweep_mode}'. "
+                    f"Use 'per_sweep' or 'per_file'."
+                )
+        except Exception as exc:
+            result.add_error(f"{type(exc).__name__}: {exc}")
+            logger.exception("Analysis failed for %s", file_path)
+
+        return result
+
+    # ------------------------------------------------------------------
+    # Internal sweep-dispatch helpers
+    # ------------------------------------------------------------------
+
+    def _run_per_sweep(self, data, sweeps, result, **kwargs) -> AnalysisResult:
+        """Call analyze() once per sweep with 1-D arrays."""
+        for sweep_idx in sweeps:
+            data.setSweep(sweep_idx)
+            sweep_x = np.asarray(data.sweepX, dtype=np.float64)
+            sweep_y = np.asarray(data.sweepY, dtype=np.float64)
+            sweep_c = np.asarray(data.sweepC, dtype=np.float64)
+
+            try:
+                out = self.analyze(
+                    sweep_x, sweep_y, sweep_c,
+                    sweep_number=sweep_idx,
+                    file_path=result.file_path,
+                    celldata=data,
+                    **kwargs,
+                )
+            except Exception as exc:
+                result.add_warning(
+                    f"Sweep {sweep_idx} failed: {type(exc).__name__}: {exc}"
+                )
+                out = {"_error": str(exc)}
+
+            if not isinstance(out, dict):
+                # If the user returned a DataFrame, convert to dict
+                if isinstance(out, pd.DataFrame):
+                    out = out.to_dict(orient="list")
+                else:
+                    out = {"result": out}
+
+            out["sweep_number"] = sweep_idx
+            result.sweep_results.append(out)
+
+        return result
+
+    def _run_per_file(self, data, sweeps, result, **kwargs) -> AnalysisResult:
+        """Call analyze() once with full 2-D arrays."""
+        # Build 2-D arrays for the selected sweeps
+        xs, ys, cs = [], [], []
+        for sweep_idx in sweeps:
+            data.setSweep(sweep_idx)
+            xs.append(np.asarray(data.sweepX, dtype=np.float64))
+            ys.append(np.asarray(data.sweepY, dtype=np.float64))
+            cs.append(np.asarray(data.sweepC, dtype=np.float64))
+
+        x_2d = np.array(xs)
+        y_2d = np.array(ys)
+        c_2d = np.array(cs)
+
+        try:
+            out = self.analyze(
+                x_2d, y_2d, c_2d,
+                file_path=result.file_path,
+                celldata=data,
+                selected_sweeps=sweeps,
+                **kwargs,
+            )
+        except Exception as exc:
+            result.add_error(f"{type(exc).__name__}: {exc}")
+            return result
+
+        if isinstance(out, dict):
+            result.data = out
+        elif isinstance(out, pd.DataFrame):
+            result.data = out.to_dict(orient="list")
+        else:
+            result.data = {"result": out}
+
+        return result
+
+    # ==================================================================
+    # Parameter introspection
+    # ==================================================================
 
     @classmethod
-    def concatenate(cls, results: List['AnalysisResult']) -> 'AnalysisResult':
-        """Concatenate multiple AnalysisResults into one"""
-        if not results:
-            return cls(analyzer_name='NoAnalyzer', file_path='NoFile', success=False)
-        
-        _detailed_df_list = []
-        _summary_df_list = []
-        _sweep_df_list = []
-        _file_paths = []
-        _errors = []
-        for res in results:
-            if isinstance(res, AnalysisResult):
-                if res.detailed_data is not None:
-                    _detailed_df_list.append(res.detailed_data)
-                if res.summary_data is not None:
-                    _summary_df_list.append(res.summary_data)
-                if res.sweep_data is not None:
-                    _sweep_df_list.append(res.sweep_data)
-                if res.file_path:
-                    _file_paths.append(res.file_path)
-                if res.errors:
-                    _errors.extend(res.errors)
-            elif isinstance(res, pd.DataFrame):
-                _detailed_df_list.append(res)
-            elif isinstance(res, dict):
-                #legacy spike and subthreshold
-                if 'spike_df' in res and isinstance(res['spike_df'], pd.DataFrame):
-                    _detailed_df_list.append(res['spike_df'])
-                if 'subthreshold_df' in res and isinstance(res['subthreshold_df'], pd.DataFrame):
-                    _detailed_df_list.append(res['subthreshold_df'])
-                if 'spike_summary' in res and isinstance(res['spike_summary'], pd.DataFrame):
-                    _summary_df_list.append(res['spike_summary'])
-                if 'running_bin' in res and isinstance(res['running_bin'], pd.DataFrame):
-                    _sweep_df_list.append(res['running_bin'])
-
-        combined = AnalysisResult(
-            analyzer_name=results[0].analyzer_name if results else 'NoAnalyzer',
-            file_path=_file_paths,
-            success=all(res.success for res in results),
-            summary_data=pd.concat(_summary_df_list) if _summary_df_list else None,
-            detailed_data=pd.concat(_detailed_df_list) if _detailed_df_list else None,
-            sweep_data=pd.concat(_sweep_df_list) if _sweep_df_list else None,
-            metadata={},
-            errors=_errors,
-            warnings=[warning for res in results for warning in res.warnings]
-        )
-        
-        return combined
-
-
-    
-
-class AnalysisModule:
-    """
-    Abstract base class for analysis modules.
-    Each analysis type should inherit from this class and implement the
-    required methods.
-    """
-    
-    def __init__(self, name: str, display_name: str = None,
-                 parameters: Optional[AnalysisParameters] = None, override=True):
-        self.name = name
-        self.display_name = display_name or name
-        self._parameters = parameters or AnalysisParameters()
-        # Keep param_dict for backward compatibility
-        self.param_dict = {}
-        #override the childs analyze function to include our hook
-        self.override = override
-        if override:
-            self._child_analyze = self.analyze
-            self.analyze = partial(self.input_wrapper, func=self._child_analyze)
-
-        self.analysis_runner = None
-            
-    
-    @abstractmethod
-    def analyze(self, x,y,c, **kwargs):
-        """Perform the analysis. Must be implemented by subclasses. ideally this accepts data in the form of x,y,c arrays
-            and returns a AnalysisResult object"""
-        pass
-    
-    def run_batch_analysis(self, folder_path, param_dict=None, protocol_name=None):
+    def _param_names(cls) -> List[str]:
         """
-        Run analysis on a folder of files.
-        
-        Args:
-            folder_path: Path to folder containing files
-            param_dict: Analysis parameters
-            protocol_name: Protocol filter
-            
-        Returns:
-            tuple: (dataframes, summary_data) - format depends on analysis type
+        Discover user-defined parameter names by inspecting annotations
+        on this class and all its bases (excluding AnalysisBase internals).
         """
-        if isinstance(folder_path, str) or not isinstance(folder_path, list):
-            filelist = glob.glob(folder_path + "/**/*.abf", recursive=True)
-        elif isinstance(folder_path, list):
-            #check if the folder_path are strings or cellData objects
-            if isinstance(folder_path[0], str):
-                filelist = folder_path
-            elif isinstance(folder_path[0], cellData):
-                filelist = [x.file for x in folder_path]
-            elif isinstance(folder_path[0], pyabf.ABF):
-                filelist = [x.name for x in folder_path]
-            elif isinstance(folder_path[0], np.ndarray):
-                filelist = folder_path
-        else:
-            logger.error('Folder_path must be a list of strings, a string, or a list of cellData objects')
-            return None, None, None
-        
-        #run the feature extractor
-        n_jobs = param_dict.get('n_jobs', 1) if param_dict else 1
-        if n_jobs > 1: #if we are using multiprocessing
-            pool = mp.Pool(processes=n_jobs)
-            res = [pool.apply(self.analyze, kwds={'file': file, 'param_dict': copy.deepcopy(param_dict), 'protocol_name': protocol_name}) for file in filelist]
-            pool.close()
-           
-            pool.join()
-        #if we are not using multiprocessing
-        else:
-            for f in filelist:
-                res = self.analyze(file=f, param_dict=copy.deepcopy(param_dict), protocol_name=protocol_name)
+        params = []
+        # Walk MRO (most specific first) and collect annotated attrs
+        for klass in cls.__mro__:
+            if klass is object:
+                continue
+            for attr_name in getattr(klass, "__annotations__", {}):
+                if attr_name.startswith("_"):
+                    continue
+                if attr_name in _INTERNAL_ATTRS:
+                    continue
+                if attr_name not in params:
+                    params.append(attr_name)
+        return params
 
-        #now we combine the results, each is a analysis result
-        results = AnalysisResult.concatenate(res)
-        return results
+    def get_parameters(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Return a dict describing all user-defined parameters.
 
-    def _parameters_to_dict(self) -> dict:
-        """Convert AnalysisParameters to dict for backward compatibility"""
-        param_dict = {}
-        
-        # Add common parameters
-        param_dict['start'] = self.get_parameter('start_time', 0.0)
-        param_dict['end'] = self.get_parameter('end_time', 0.0)
-        param_dict['filter'] = 0  # Default filter
-        
-        # Add all other parameters
-        for key in self._parameters.__dict__.keys():
-            if key not in ['start_time', 'end_time', 'protocol_filter']:
-                param = getattr(self._parameters, key)
-                if hasattr(param, 'value'):
-                    param_dict[key] = param.value
-                else:
-                    param_dict[key] = param
-                
-        return param_dict
-    
-    def _populate_result(self, result: AnalysisResult, analysis_results: dict, data) -> None:
+        Returns
+        -------
+        dict
+            ``{param_name: {"type": <type>, "default": <val>, "value": <val>}}``
         """
-        Populate the AnalysisResult with data from run_individual_analysis.
-        Override in subclasses for analysis-specific formatting.
-        """
-        # Add basic metadata
-        result.metadata['sweep_count'] = getattr(data, 'sweepCount', 1)
-        result.metadata['protocol'] = getattr(data, 'protocol', 'unknown')
-        
-        # This is a basic implementation - subclasses should override
-        #just shove it through sweepwise
-        if isinstance(analysis_results, dict):
-            result.detailed_data = self._convert_data_to_summary(analysis_results.get('spike_df', {}))
-            result.summary_data = analysis_results.get('spike_summary', pd.DataFrame())
-            result.sweep_data = analysis_results.get('running_bin', pd.DataFrame())
-        else:
-            # If analysis_results is not a dict, assume it's a DataFrame
-            result.detailed_data = analysis_results
-            result.summary_data = pd.DataFrame()
+        info = {}
+        for name in self._param_names():
+            ann = self._get_annotation(name)
+            default = self._get_class_default(name)
+            info[name] = {
+                "type": ann,
+                "default": default,
+                "value": getattr(self, name, default),
+            }
+        return info
 
-        
-    
-    def _convert_data_to_summary(self, df_dict=None) -> pd.DataFrame:
+    def set_parameters(self, **kwargs) -> None:
         """
-        Convert spike dataframe dictionary to summary format.
-        Override in subclasses for specific formatting needs.
-        """
-        if df_dict is None or not isinstance(df_dict, dict) or not isinstance(df_dict, pd.DataFrame):
-            logger.warning("No spike data provided or data is not a dictionary")
-            return pd.DataFrame()
+        Update parameter values with basic type coercion.
 
-        # Simple implementation - just concatenate all sweeps
-        all_spikes = []
-        for sweep, df in df_dict.items():
-            if not df.empty:
-                df_copy = df.copy()
-                df_copy['sweep'] = sweep
-                all_spikes.append(df_copy)
-                
-        if all_spikes:
-            return pd.concat(all_spikes, ignore_index=True)
-        else:
-            return pd.DataFrame()
-
-
-    def input_wrapper(self, *, x=None, y=None, c=None, file=None, celldata=None, 
-                selected_sweeps=None, func=None, **kwargs):
-        """
-            Unified analysis interface that accepts various input types.
-
-            Args:
-                x (np.array, optional): Time array of the sweep(s)
-                y (np.array, optional): Voltage array of the sweep(s) 
-                c (np.array, optional): Current array of the sweep(s)
-                file (str, optional): File path to analyze
-                celldata (cellData, optional): cellData object to analyze
-                selected_sweeps (list, optional): List of sweep numbers to analyze
-                **kwargs: Additional parameters to override defaults
-                
-            Returns:
-                AnalysisResult: Container with analysis results and metadata
-        """
-        from ..patch_utils import parse_user_input  # Import here to avoid circular imports
-        
-        # Create result container
-        result = AnalysisResult(
-            analyzer_name=''.join(func.__qualname__.split('.')[:-1]),
-            file_path=file or getattr(celldata, 'filePath', 'unknown'),
-            success=True
-        )
-        if True:  # Uncomment to enable error handling
-        #try:
-            # Update parameters with any kwargs
-            if kwargs:
-                self.update_parameters(**kwargs)
-            
-            # Parse input to get consistent data format
-            if celldata is not None:
-                data = celldata
-            else:
-                data = parse_user_input(x, y, c, file)
-            
-            # Convert parameters to param_dict for compatibility
-            param_dict = self._parameters_to_dict()
-            
-            # Determine sweeps to analyze
-            if selected_sweeps is None:
-                if hasattr(data, 'sweepList'):
-                    selected_sweeps = data.sweepList
-                else:
-                    selected_sweeps = [0]
-            
-            # Run the analysis using the existing individual analysis method
-            analysis_results = func(
-                data=data,
-                selected_sweeps=selected_sweeps,
-                param_dict=param_dict
-            )
-            
-        #except Exception as e:
-        #    result.add_error(f"Analysis failed: {str(e)}")
-            
-        return analysis_results
-    
-
-    @property
-    def parameters(self) -> AnalysisParameters:
-        """Get the analysis parameters object"""
-        return self._parameters
-    
-    @parameters.setter
-    def parameters(self, value: AnalysisParameters) -> None:
-        """Set the analysis parameters object"""
-        if not isinstance(value, AnalysisParameters):
-            raise TypeError(
-                "Parameters must be an AnalysisParameters instance")
-        self._parameters = value
-    
-    def get_parameter(self, key: str, default: Any = None) -> Any:
-        """
-        Get a specific parameter value
-        
-        Args:
-            key: Parameter name
-            default: Default value if parameter not found
-            
-        Returns:
-            Parameter value or default
-        """
-        return self._parameters.get(key, default)
-    
-    def set_parameter(self, key: str, value: Any) -> None:
-        """
-        Set a specific parameter value
-        
-        Args:
-            key: Parameter name
-            value: Parameter value
-        """
-        self._parameters.set(key, value)
-    
-    def update_parameters(self, **kwargs) -> None:
-        """
-        Update multiple parameters at once
-        
-        Args:
-            **kwargs: Parameter key-value pairs
+        Parameters
+        ----------
+        **kwargs
+            ``name=value`` pairs.
         """
         for key, value in kwargs.items():
-            self.set_parameter(key, value)
-    
-    def reset_parameters(self) -> None:
-        """Reset parameters to default values"""
-        self._parameters = AnalysisParameters()
+            if key not in self._param_names():
+                logger.warning(f"{self.name}: unknown parameter '{key}'")
+                continue
+            expected = self._get_annotation(key)
+            if expected is not None and not isinstance(value, expected):
+                try:
+                    value = expected(value)
+                except (ValueError, TypeError):
+                    logger.warning(
+                        f"{self.name}: cannot coerce '{key}' value "
+                        f"{value!r} to {expected.__name__}"
+                    )
+                    continue
+            setattr(self, key, value)
 
-    def get_ui_elements(self):
+    def _collect_param_dict(self) -> dict:
         """
-        Return a dictionary mapping UI element names to their expected types
-        and default values. This helps the GUI know what controls to bind
-        for this analysis.
-        
-        Returns:
-            dict: {element_name: element_type, ...}
-        """
-        ui_params = {}
-        for param_name in self._parameters.list():
-            # param_type = self._parameters.get(param_name).param_type
-            # param_value = self._parameters.get(param_name).value
-            ui_params[param_name] = getattr(self._parameters, param_name)
-        return ui_params
-    
-    @abstractmethod
-    def parse_ui_params(self, ui_elements):
-        """
-        Parse parameters from UI elements into the format needed for analysis.
-        
-        Args:
-            ui_elements: Dictionary of UI elements
-            
-        Returns:
-            dict: Parameter dictionary for this analysis
-        """
-        pass
-    
-    @abstractmethod
-    def run_individual_analysis(self, abf, selected_sweeps, param_dict,
-                                popup=None, show_rejected=False):
-        """
-        Run analysis on a single file for preview/individual analysis.
-        
-        Args:
-            abf: The ABF file object
-            selected_sweeps: List of sweep numbers to analyze
-            param_dict: Analysis parameters
-            popup: Progress dialog (optional)
-            show_rejected: Whether to show rejected spikes (optional)
-            
-        Returns:
-            dict: Results dictionary with analysis data
-        """
-        pass
-    
-    
+        Build a plain dict of current parameter values.
 
-    @abstractmethod
-    def save_results(self, results, output_dir, output_tag, save_options=None):
+        Useful for passing to legacy functions that expect ``param_dict``.
         """
-        Save analysis results to files.
-        
-        Args:
-            results: Results from batch analysis
-            output_dir: Directory to save to
-            output_tag: Tag to append to filenames
-            save_options: Dictionary of save options (optional)
-        """
-        pass
-    
-    def get_plot_data(self, results, sweep_number=None):
-        """
-        Extract data for plotting from analysis results.
-        Optional method - implement if analysis has specific plotting needs.
-        
-        Args:
-            results: Analysis results
-            sweep_number: Specific sweep to plot (optional)
-            
-        Returns:
-            dict: Plot data or None for default plotting
-        """
+        return {
+            name: getattr(self, name)
+            for name in self._param_names()
+        }
+
+    # ------------------------------------------------------------------
+    # Annotation helpers
+    # ------------------------------------------------------------------
+
+    def _get_annotation(self, name: str):
+        """Get the type annotation for a parameter, or None."""
+        for klass in type(self).__mro__:
+            anns = getattr(klass, "__annotations__", {})
+            if name in anns:
+                return anns[name]
         return None
-    
-    def __str__(self):
-        return (f"AnalysisModule(name='{self.name}', "
-                f"display_name='{self.display_name}')")
-    
-    def __repr__(self):
-        return self.__str__()
 
+    @classmethod
+    def _get_class_default(cls, name: str):
+        """Get the class-level default for a parameter."""
+        for klass in cls.__mro__:
+            if name in klass.__dict__:
+                return klass.__dict__[name]
+        return None
+
+    # ==================================================================
+    # Dunder helpers
+    # ==================================================================
+
+    def __str__(self):
+        return f"{type(self).__name__}(name='{self.name}', mode='{self.sweep_mode}')"
+
+    def __repr__(self):
+        params = self._collect_param_dict()
+        return (f"{type(self).__name__}(name='{self.name}', "
+                f"mode='{self.sweep_mode}', params={params})")

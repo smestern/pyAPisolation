@@ -12,8 +12,9 @@ import sys
 #only call if ipfx is not installed #this was an old issue and should
 try:
     import ipfx
-except:
-    install_ipfx()
+except ImportError:
+    import warnings
+    warnings.warn("ipfx is not installed. Some features may not be available.")
 
 from . import patch_utils
 from . import dataset
