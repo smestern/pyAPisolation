@@ -60,7 +60,7 @@ def analyze(x=None, y=None, c=None, file=None, param_dict=DEFAULT_DICT, return_s
     """
     data = parse_user_input(x, y, c, file)
     #determine what we should return
-    temp_spike_df, df, temp_running_bin = analyze_sweepset(data, sweeplist=None, param_dict=param_dict)
+    temp_spike_df, df, temp_running_bin = analyze_sweepset(file=data, sweeplist=None, param_dict=param_dict)
     if return_summary_frames:
         return temp_spike_df, df, temp_running_bin
     return temp_spike_df

@@ -297,6 +297,13 @@ class TestWithDemoData:
         # Should have processed at least the 2 demo ABF files
         assert len(df) > 0
 
+    def test_legacy_spike_analysis_runs(self):
+        from pyAPisolation.analysis import get
+        module = get("legacy_spike")
+        result = module.run(file=DEMO_ABF_1)
+        assert result.success
+        df = result.to_dataframe()
+        assert "spike_count" in df.columns
 
 # ======================================================================
 # 5) Legacy import compatibility
@@ -312,3 +319,6 @@ class TestLegacyImports:
     def test_dataset_still_importable(self):
         from pyAPisolation.dataset import cellData
         assert callable(cellData)
+
+if __name__ == "__main__":
+    pytest.main([__file__])

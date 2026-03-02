@@ -7,7 +7,7 @@ Importing this package auto-registers the standard analysis modules
 
 from ..registry import register
 
-from .spike import SpikeAnalysis
+from .spike import SpikeAnalysis, LegacySpikeAnalysis
 from .subthreshold import SubthresholdAnalysis
 from .example import PeakDetector
 
@@ -15,3 +15,4 @@ from .example import PeakDetector
 register(SpikeAnalysis)
 register(SubthresholdAnalysis)
 register(PeakDetector)
+register(LegacySpikeAnalysis)
