@@ -83,6 +83,9 @@ class SpikeAnalysis(AnalysisBase):
 
         bessel = self.bessel_filter if self.bessel_filter != -1 else None
 
+        if param_dict["end"] == 0.0:
+            param_dict["end"] = x[-1]
+
         spike_df, spike_train = analyze_sweep(x, y, c,
                                                param_dict=param_dict,
                                                bessel_filter=bessel)
