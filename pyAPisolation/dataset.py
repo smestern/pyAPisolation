@@ -127,7 +127,6 @@ class cellData(object):
         return self.sweepX[-1]
     
 
-
     def __str__(self):
         return f"cellData object: {self.name}, loaded from {self.file}"
     
