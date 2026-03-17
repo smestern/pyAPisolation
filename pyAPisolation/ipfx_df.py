@@ -22,8 +22,6 @@ subsheets_spike = {'full sheet': ['']}
     #                'mean':['mean'], 'isi':['isi'], 'latency': ['latency_'], 'current':['current'],'QC':['QC'], 
         #            'spike features':['spike_'], 'subthres features':['baseline voltage', 'Sag', 'Taum'], 
 
-
-
 def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', tag='', savespikeFinder=True, saveRunningAvg=True, saveRaw=False):
     print("saving data frames to excel")
     dfs, df_spike_count, df_running_avg_count = organize_data_frames(dfs, df_spike_count, df_running_avg_count)

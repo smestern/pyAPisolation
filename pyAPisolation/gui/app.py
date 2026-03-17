@@ -268,8 +268,11 @@ class MainWindow(QMainWindow):
         else:
             # Modular AnalysisResult
             rejected = getattr(result, "metadata", {}).get("rejected")
+            #check if the result has a legacy_spike_df in its metadata, and if so use it for plotting
+            legacy_spike_df = getattr(result, "metadata", {}).get("legacy_spike_df")
             self._plot_file(cd, sweeps, analysis_result=result,
                             dvdt_threshold=dvdt_thr,
+                            legacy_spike_df=legacy_spike_df,
                             legacy_rejected=rejected)
             try:
                 df = result.to_dataframe()

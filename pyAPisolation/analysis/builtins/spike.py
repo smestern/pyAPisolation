@@ -84,7 +84,7 @@ class LegacySpikeAnalysis(AnalysisBase):
         
 
         if param_dict["end"] == 0.0:
-            param_dict["end"] = x[0, -1] #presumably the sweeps are the same length, which are like (1, N) arrays, so we can just take the first one to get the length
+            param_dict["end"] = float(x[0, -1]) #presumably the sweeps are the same length, which are like (1, N) arrays, so we can just take the first one to get the length
 
         spike_df, spike_train, df_running_bin = analyze(x, y, c,
                                         file=None,
@@ -92,19 +92,7 @@ class LegacySpikeAnalysis(AnalysisBase):
                                         return_summary_frames=True)
 
         # Build output dict
-        result = {"spike_count": len(spike_df)}
-
-        if not spike_df.empty:
-            # Include per-spike features from ipfx
-            for col in spike_df.columns:
-                values = spike_df[col].tolist()
-                result[col] = values if len(values) > 1 else values[0]
-
-        # Include spike-train-level features
-        if isinstance(spike_train, dict):
-            for key, val in spike_train.items():
-                result[f"train_{key}"] = val
-
+        result = spike_df.to_dict()
         return result
 
 class SpikeAnalysis(AnalysisBase):

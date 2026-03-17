@@ -14,5 +14,7 @@ from .example import PeakDetector
 # Register all built-in modules
 register(SpikeAnalysis)
 register(SubthresholdAnalysis)
-register(PeakDetector)
 register(LegacySpikeAnalysis)
+
+#you could register example here as well, but we don't want it to show up in the GUI by default since it's just a demo
+#register(PeakDetector)

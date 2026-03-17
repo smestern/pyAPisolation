@@ -367,7 +367,7 @@ def determine_subt(abf, idx_bounds, filter_spikes=False):
     Returns:
         _type_: _description_
     """
-    #for compat reasons this function needs to open the abf file itself. ideally this should be done in the main script, but for now we will do it here.
+    #for compat reasons this function needs to open the abf file itself. Ideally this should be done in the main script, but for now we will do it here.
     if isinstance(abf, str):
         abf = loadFile.loadFile(abf)
     elif isinstance(abf, pyabf.ABF):

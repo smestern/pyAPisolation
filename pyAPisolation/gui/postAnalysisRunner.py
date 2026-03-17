@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 from scipy.stats import f_oneway
-from statsmodels.stats.multitest import multipletests 
+#from statsmodels.stats.multitest import multipletests
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QWizard, QWizardPage, QVBoxLayout, QHBoxLayout, QGroupBox, QLineEdit,
@@ -23,7 +23,7 @@ from PySide6.QtWidgets import (
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-import seaborn as sns
+
 
 
 class PostAnalysisWizard(QWizard):

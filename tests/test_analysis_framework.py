@@ -299,11 +299,19 @@ class TestWithDemoData:
 
     def test_legacy_spike_analysis_runs(self):
         from pyAPisolation.analysis import get
+        from pyAPisolation.loadFile import loadABF
         module = get("legacy_spike")
         result = module.run(file=DEMO_ABF_1)
+
         assert result.success
         df = result.to_dataframe()
-        assert "spike_count" in df.columns
+
+        #try on x,y,c arrays as well
+        x, y, c = loadABF(DEMO_ABF_1)
+        result = module.run(x=x, y=y, c=c)
+        assert result.success
+        df = result.to_dataframe()
+        assert "Sweep 003 spike count" in df.columns #the legacy spike analysis names its columns like this, so we check for one of them to confirm it worked
 
 # ======================================================================
 # 5) Legacy import compatibility
