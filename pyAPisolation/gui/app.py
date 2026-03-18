@@ -149,6 +149,10 @@ class MainWindow(QMainWindow):
         except ImportError:
             pass
 
+        # Database Builder
+        act_dbbuilder = tools_menu.addAction("Database Builder")
+        act_dbbuilder.triggered.connect(self._open_database_builder)
+
     # ==================================================================
     # Status bar
     # ==================================================================
@@ -377,6 +381,11 @@ class MainWindow(QMainWindow):
             self._prism_win.show()
         except Exception as exc:
             QMessageBox.warning(self, "Prism Writer", str(exc))
+
+    def _open_database_builder(self):
+        from .database_builder import DatabaseBuilderWindow
+        self._dbbuilder_win = DatabaseBuilderWindow()
+        self._dbbuilder_win.show()
 
 
 # ======================================================================
