@@ -60,7 +60,7 @@ class _FileTree(QTreeWidget):
         self.setHeaderLabels(["File", "Protocol"])
         self.setColumnCount(2)
         self.setDragEnabled(True)
-        self.setSelectionMode(self.ExtendedSelection)
+        self.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
         self.setAlternatingRowColors(True)
         header = self.header()
         header.setStretchLastSection(True)
@@ -95,7 +95,7 @@ class _CellTable(QTableWidget):
         self.setAcceptDrops(True)
         self.setDragDropOverwriteMode(False)
         self.setAlternatingRowColors(True)
-        self.setSelectionBehavior(self.SelectItems)
+        self.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectItems)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self._context_menu)
 
