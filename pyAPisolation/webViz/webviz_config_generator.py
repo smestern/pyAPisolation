@@ -3,9 +3,8 @@ import os
 import sys
 import time
 import argparse
-import pyAPisolation.web_viz.ephysdatabase as ephysdatabase
+#import pyAPisolation.web_viz.ephysdatabase as ephysdatabase
 import pyAPisolation.database.build_database as build_database
-import pyAPisolation.webViz.dashApp as dashApp
 import PySide6.QtWidgets as QtWidgets
 import pandas as pd
 
@@ -28,7 +27,6 @@ class WebVizConfigGenerator(QtWidgets.QWidget):
         self.backend_select = QtWidgets.QComboBox()
         self.backend_select.addItem('static')
         self.backend_select.addItem('dynamic')
-        self.backend_select.addItem('dash')
         self.layout.addWidget(self.backend_select)
 
         #an empty dropdown to select the column for filename, populated after the data folder is selected
@@ -52,9 +50,6 @@ class WebVizConfigGenerator(QtWidgets.QWidget):
     
     def run_web_viz(self):
         ephysdatabase.main(database_file=self.data_df, static=(self.backend=='static'))
-        if self.backend == 'dash':
-            app = dashApp.run_app(self.data_df)
-            return app
         
 
 if __name__ == '__main__':

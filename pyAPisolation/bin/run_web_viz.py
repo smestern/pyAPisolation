@@ -6,7 +6,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='web app for visualizing data')
     parser.add_argument('--backend', type=str, default='dynamic',
-                        help='backend to use for the web app. Options are static, dynamic, dash')
+                        help='backend to use for the web app. Options are static, dynamic')
     
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--data_folder', type=str,
@@ -24,7 +24,5 @@ if __name__ == '__main__':
     data_df = args.data_df
     backend = args.backend
 
-    app = run_web_viz.run_web_viz(data_folder, database_file=data_df, backend=backend)
-    if backend == 'dash':
-        app.app.run(host='0.0.0.0', debug=False)                 
+    run_web_viz.run_web_viz(data_folder, database_file=data_df, backend=backend)
     
