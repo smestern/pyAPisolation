@@ -159,6 +159,8 @@ def test_full_dataframe_save():
     #also test the save_data_frames function
     save_data_frames(spike, feat_df, running, root_fold=os.path.dirname(__file__))
     #checked manually later
+
+
 @pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
 def test_full_feature_extractor():
     # Load the known good df
@@ -230,6 +232,9 @@ def test_full_feature_extractor():
 
 
         assert False, f"Dataframes are not equal, mean percent error is {np.nanmean(diff)*100}"
+    print("Dataframes are not equal, but mean percent error is below threshold, please check diffs.xlsx for details")
+
+
 @pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
 def test_full_analyze_funcs():
     files = glob.glob(os.path.expanduser('~/Dropbox/sara_cell_v2') + '/**/*.abf', recursive=True)
@@ -237,6 +242,8 @@ def test_full_analyze_funcs():
     #try to load the protocols
     spike_times = analyze_spike_times(file=files[-1])
     print(spike_times)
+
+
 @pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
 def test_full_subthreshold_funcs():
     #load a file
@@ -245,6 +252,8 @@ def test_full_subthreshold_funcs():
     
     dfs = analyze_subthres(file=files[0],  savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False)
     save_subthres_data(dfs[1], dfs[0], root_fold=os.path.dirname(__file__))
+
+
 @pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
 def test_full_modular_analysis():
     #we need to make sure the modular feature analysis is working:
@@ -267,12 +276,5 @@ def test_full_modular_analysis():
 
 
 if __name__ == '__main__':
-    test_demo_analyze_spike_times()
-    test_demo_analyze_subthres()
-    test_demo_batch_feature_extract()
-    test_demo_save_data_frames("./")
-
-
-    #test_full_subthreshold_funcs()
-    #test_full_dataframe_save()
-    test_full_feature_extractor()
+    pytest.main([__file__])
+    
