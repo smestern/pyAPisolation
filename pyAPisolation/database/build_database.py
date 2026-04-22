@@ -16,6 +16,8 @@ import argparse
 import pandas as pd
 import numpy as np
 import logging
+import traceback
+from collections import Counter
 from functools import partial
 import copy
 #import joblib
@@ -53,6 +55,88 @@ _UNIT_ONTOLOGY = {'amp': ['amp', 'ampere', 'amps', 'amperes', 'A'],
                   'volt': ['volt', 'v', 'volts', 'V'], 
                   'sec': ['sec', 's', 'second', 'seconds', 'secs', 'sec']}
 log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+
+
+# ==== ERROR CLASSIFICATION ====
+# Maps substrings found in exception messages / traceback to a short error_class tag.
+# These help aggregate common ipfx failure modes across a batch.
+# Needles are matched in order; first match wins. Short/ambiguous substrings
+# are avoided to prevent false positives from path fragments (e.g. "amp" in
+# "fapl", "sag" in "message").
+_ERROR_CLASS_PATTERNS = [
+    ("file_not_found", ["no such file", "errno = 2", "filenotfounderror"]),
+    ("no_rheobase", ["rheobase", "no spiking sweep"]),
+    ("no_spikes_detected", ["no spikes detected", "empty spike", "spikes_set"]),
+    ("insufficient_sweeps", ["not enough sweeps", "insufficient sweeps", "at least 2 sweeps"]),
+    ("sag_calc_failed", ["sag fraction", "subthresh_min_amp", "hyperpolarizing"]),
+    ("fi_fit_failed", ["fi_fit", "fi curve", "curve_fit"]),
+    ("unit_mismatch", ["unit mismatch", "stim unit", "clamp_mode"]),
+    ("stim_protocol", ["stim_characteristics", "long square", "stimulus protocol"]),
+    ("sweep_alignment", ["start_time mismatch", "end_time mismatch"]),
+    ("index_error", ["indexerror", "out of bounds", "out of range"]),
+    ("nan_or_inf", ["contains nan", "contains infinity", "zero-size array"]),
+]
+
+
+def _classify_error(exc, tb_str):
+    """Return a short error-class tag based on exception type/message/traceback."""
+    msg = (str(exc) or "").lower()
+    tb_lower = (tb_str or "").lower()
+    # Prefer exception-message matches over traceback matches to reduce false
+    # positives from substrings that happen to appear in file paths.
+    for haystack in (msg, tb_lower):
+        for tag, needles in _ERROR_CLASS_PATTERNS:
+            for needle in needles:
+                if needle in haystack:
+                    return tag
+    # Fallback: exception class name.
+    exc_name = type(exc).__name__.lower()
+    if "notfound" in exc_name or "filenotfound" in exc_name:
+        return "file_not_found"
+    if "index" in exc_name:
+        return "index_error"
+    if "value" in exc_name:
+        return "value_error"
+    return "unclassified"
+
+
+def _deepest_frame(tb_str):
+    """Return 'module.py:lineno in func' for the deepest frame in a traceback string."""
+    # traceback.format_exc() frames look like: '  File "/path/x.py", line 123, in func_name'
+    frames = [ln for ln in (tb_str or "").splitlines() if ln.strip().startswith("File \"")]
+    if not frames:
+        return ""
+    last = frames[-1].strip()
+    # Turn absolute path into just filename for brevity.
+    try:
+        # 'File "/a/b/c.py", line 12, in foo'
+        path_part = last.split('"')[1]
+        fname = os.path.basename(path_part)
+        rest = last.split('"')[-1]  # ', line 12, in foo'
+        return (fname + rest).strip(", ")
+    except Exception:
+        return last
+
+
+def _record_exception(result, stage, exc, specimen_label=None):
+    """Populate result dict with structured error fields + log via logger.exception."""
+    tb_str = traceback.format_exc()
+    result["error_stage"] = stage
+    result["error_type"] = type(exc).__name__
+    result["error_message"] = str(exc)[:500]
+    result["error_origin"] = _deepest_frame(tb_str)
+    # Keep only the last ~8 lines of the traceback to stay CSV-friendly.
+    tb_lines = tb_str.strip().splitlines()
+    result["error_traceback"] = "\n".join(tb_lines[-12:])
+    result["error_class"] = _classify_error(exc, tb_str)
+    logger.exception(
+        "specimen=%s stage=%s class=%s: %s",
+        specimen_label if specimen_label is not None else result.get("specimen_id", "?"),
+        stage,
+        result["error_class"],
+        exc,
+    )
 
 
 
@@ -81,7 +165,7 @@ def run_analysis(folder, backend="ipfx", outfile='out.csv', ext="nwb", parallel=
             #Run in parallel
             parallel = joblib.cpu_count()
         results = joblib.Parallel(n_jobs=1, backend='multiprocessing')(joblib.delayed(get_data_partial)(specimen_id) for specimen_id in file_idx)
-        
+
     elif backend == "custom":
         # Use custom backend to extract features, this uses the spike_finder and patch_utils method, on the very far backend it uses ipfx, so feature values will more or less be the same
         results = []
@@ -93,8 +177,54 @@ def run_analysis(folder, backend="ipfx", outfile='out.csv', ext="nwb", parallel=
         df = pd.DataFrame(results)
         df.to_csv(outfile, index=False)
 
+    # ----- summarize per-cell errors & write errors csv -----
+    try:
+        _log_and_write_error_summary(results, outfile)
+    except Exception:
+        logger.exception("failed to write error summary")
+
     results = pd.DataFrame().from_dict(results).set_index('specimen_id')
     return results
+
+
+def _log_and_write_error_summary(results, outfile):
+    """Log a per-stage/per-class breakdown of failures and write `<outfile>.errors.csv`."""
+    if not results:
+        return
+    total = len(results)
+    error_rows = []
+    stage_counts = Counter()
+    class_counts = Counter()
+    for r in results:
+        if not isinstance(r, dict):
+            continue
+        stage = r.get("error_stage")
+        if stage:
+            stage_counts[stage] += 1
+            class_counts[r.get("error_class", "unclassified")] += 1
+            error_rows.append({
+                "specimen_id": r.get("specimen_id"),
+                "error_stage": stage,
+                "error_class": r.get("error_class", ""),
+                "error_type": r.get("error_type", ""),
+                "error_message": r.get("error_message", ""),
+                "error_origin": r.get("error_origin", ""),
+                "sweep_skip_summary": r.get("sweep_skip_summary", ""),
+                "error_traceback": r.get("error_traceback", ""),
+            })
+    failed = len(error_rows)
+    logger.info(
+        "run_analysis: total=%d succeeded=%d failed=%d stages=%s classes=%s",
+        total, total - failed, failed,
+        dict(stage_counts), dict(class_counts),
+    )
+    if error_rows and outfile:
+        err_path = str(outfile) + ".errors.csv"
+        try:
+            pd.DataFrame(error_rows).to_csv(err_path, index=False)
+            logger.info("run_analysis: wrote per-cell error summary to %s", err_path)
+        except Exception:
+            logger.exception("failed writing %s", err_path)
 
 
 def main():
@@ -215,126 +345,167 @@ def parse_long_pulse_from_dataset(data_set):
     return sweeps, start_times, end_times
 
 def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_list=None, amp_interval=20, max_above_rheo=100, debug=True):
-    
+
     result = {}
     result["specimen_id"] = file_list[specimen_id]
-    #if True:
+    specimen_label = file_list[specimen_id]
+    skip_reasons = Counter()
+    # Track a small number of representative rejection details so the log can
+    # show actual numbers (duration, transitions, first/last stim values, etc.)
+    # rather than just a count — see diagnose_non_long_square.
+    sample_rejects = {}
+    SAMPLE_LIMIT_PER_TAG = 10
+    # Track a small number of representative rejection details so the log can
+    # show actual numbers (duration, transitions, first/last stim values, etc.)
+    # rather than just a count — see diagnose_non_long_square.
+    sample_rejects = {}
+    SAMPLE_LIMIT_PER_TAG = 10
+
+    # ----- stage: load -----
     try:
-        #this is a clone of the function in ipfx/bin/run_feature_collection.py,
-        # here we are gonna try to use it to handle data that may not be in an NWB format IPFX can handle
         _, _, _, data_set = loadNWB(file_list[specimen_id], return_obj=True)
-        if data_set is None or len(data_set.dataY)<1:
-            return result
-        #here we are going to perform long square analysis on the data, 
-        #ipfx does not play nice with many NWBs on dandi, so we are going to link into the lower level functions
-        #and do the analysis ourselves
-        #hopefully this will be fixed in the future and we can use ipfx for this
-        sweeps = []
-        start_times = []
-        end_times = []
-        stim_amps = []
-        debug_log = {}
+    except Exception as e:
+        _record_exception(result, "load", e, specimen_label)
+        plt.close()
+        return result
+    if data_set is None or len(data_set.dataY) < 1:
+        result["error_stage"] = "load"
+        result["error_class"] = "empty_dataset"
+        result["error_message"] = "loadNWB returned no sweep data"
+        logger.warning("specimen=%s stage=load: empty dataset", specimen_label)
+        return result
+
+    # ----- stage: parse_sweeps -----
+    sweeps = []
+    start_times = []
+    end_times = []
+    stim_amps = []
+    debug_log = {}
+    try:
         for sweep in np.arange(len(data_set.dataY)):
-            i = np.nan_to_num(data_set.dataC[sweep]*1)
+            i = np.nan_to_num(data_set.dataC[sweep] * 1)
             t = data_set.dataX[sweep]
             v = np.nan_to_num(data_set.dataY[sweep])
             dt = t[1] - t[0]
-            #if its not current clamp
-            if match_unit(data_set.sweepMetadata[sweep]['stim_dict']["unit"]) != "amp":
-                logging.debug(f"sweep {sweep} is not current clamp")
-                debug_log[sweep] = f"not current clamp, found units of {match_unit(data_set.sweepMetadata[sweep]['stim_dict']['unit'])}"
+            # if its not current clamp
+            stim_unit = None
+            try:
+                stim_unit = match_unit(data_set.sweepMetadata[sweep]['stim_dict']["unit"])
+            except Exception:
+                skip_reasons["unit_parse_fail"] += 1
+                debug_log[sweep] = "unit parse failed"
                 continue
-            #if the sweep v is in volts, convert to mV, ipfx wants mV
+            if stim_unit != "amp":
+                skip_reasons["not_current_clamp"] += 1
+                debug_log[sweep] = f"not current clamp (unit={stim_unit})"
+                continue
+            # if the sweep v is in volts, convert to mV, ipfx wants mV
             if match_unit(data_set.sweepMetadata[sweep]['resp_dict']["unit"]) == "volt":
-                #sometimes the voltage is in volts, sometimes in mV,  even thought it is logged as bolts this is a hack to fix that
                 if np.max(v) > 500 and np.min(v) < -500:
-                    #possibly in nV or something else, convert to mV anyway
-                    v = v/1000
+                    v = v / 1000
                 elif np.max(v) < 1 and np.min(v) > -1:
-                    #probably in volts, convert to mV
-                    v = v*1000
-            
-            #if the sweep i is in amps, convert to pA, ipfx wants pA
-            if match_unit(data_set.sweepMetadata[sweep]['stim_dict']["unit"])=="amp":
+                    v = v * 1000
+            # if the sweep i is in amps, convert to pA, ipfx wants pA
+            if stim_unit == "amp":
                 if np.max(i) < 0.1 and np.min(i) > -0.1:
-                    #probably in amp, convert to picoAmps
-                    i = i*1000000000000
-                
-                #probably in pA already
-                #i[np.logical_and(i < 5, i > -5)] = 0
+                    i = i * 1000000000000
 
-            #try to figure out if this is a long square
+            # try to figure out if this is a long square
             if match_protocol(i, t) != "Long Square":
-                logging.debug(f"skipping sweep {sweep} because it is not a long square")
-                debug_log[sweep] = "likely not a long square"
+                tag, detail = diagnose_non_long_square(i, t)
+                bucket = f"not_long_square:{tag}"
+                skip_reasons[bucket] += 1
+                debug_log[sweep] = bucket
+                samples = sample_rejects.setdefault(tag, [])
+                if len(samples) < SAMPLE_LIMIT_PER_TAG:
+                    samples.append({"sweep": int(sweep), **detail})
                 continue
 
             start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(i, t)
+            if start_time is None:
+                skip_reasons["no_stim_characteristics"] += 1
+                debug_log[sweep] = "no stim characteristics"
+                continue
 
             if QC_voltage_data(t, v, i) == 0:
-                logging.debug(f"skipping sweep {sweep} because it failed QC")
+                skip_reasons["failed_QC"] += 1
                 debug_log[sweep] = "failed QC"
                 continue
-            #construct a sweep obj
 
-            #again floating point errors can cause issues here, so we will round to the nearest ms, pA, and uV
-            #t = np.round(t, decimals=3)
-            i = np.round(i, decimals=1) #since we are doing long square, round to nearest 0.1 pA, 
-            #if this was ramp or noise or something this is bad.
-            #v = np.round(v, decimals=3)
-
+            i = np.round(i, decimals=1)
             start_times.append(start_time)
-            end_times.append(start_time+duration)
-            sweep_item = Sweep(t, v, i, clamp_mode="CurrentClamp", sampling_rate=int(1/dt), sweep_number=sweep)
+            end_times.append(start_time + duration)
+            sweep_item = Sweep(t, v, i, clamp_mode="CurrentClamp", sampling_rate=int(1 / dt), sweep_number=sweep)
             sweeps.append(sweep_item)
             stim_amps.append(amplitude)
-        if debug:
-            for sweep in debug_log.keys():
-                print(f"sweep {sweep} failed QC because it was {debug_log[sweep]}")
-                if debug_log[sweep] == "failed QC":
-                    plt.plot(data_set.dataX[sweep], data_set.dataY[sweep], label=f"{sweep} {debug_log[sweep]}", c='r')
-                else:
-                    #plt.plot(data_set.dataX[sweep], data_set.dataY[sweep], label=f"{sweep} {debug_log[sweep]}", c='k')
-                    continue
-                
-            #plt.legend()
-            plt.pause(0.2)
-        if len(sweeps) < 1:
-            return result
-        #get the most common start and end times
-        paired_times = np.hstack((np.array(start_times).reshape(-1,1), np.array(end_times).reshape(-1,1)))
-        #round to the nearest ms to avoid floating point issues
+    except Exception as e:
+        _record_exception(result, "parse_sweeps", e, specimen_label)
+        result["sweep_skip_summary"] = json.dumps(dict(skip_reasons))
+        plt.close()
+        return result
+
+    if debug:
+        for sweep_key, reason in debug_log.items():
+            logger.debug("specimen=%s sweep=%s: %s", specimen_label, sweep_key, reason)
+
+    result["sweep_skip_summary"] = json.dumps(dict(skip_reasons))
+
+    if len(sweeps) < 1:
+        result["error_stage"] = "no_usable_sweeps"
+        result["error_class"] = "no_usable_sweeps"
+        top = ", ".join(f"{k}={v}" for k, v in skip_reasons.most_common(5))
+        result["error_message"] = f"no sweeps survived parsing ({top})" if top else "no sweeps survived parsing"
+        logger.warning("specimen=%s stage=no_usable_sweeps: %s", specimen_label, result["error_message"])
+        # Emit the sample rejects so the user can see the actual stimulus stats
+        # (duration, num_transitions, i_first/i_last, slope, etc.) for a few
+        # representative rejected sweeps.
+        for tag, samples in sample_rejects.items():
+            for s in samples:
+                logger.warning(
+                    "specimen=%s reject_sample tag=%s %s",
+                    specimen_label, tag,
+                    ", ".join(f"{k}={v}" for k, v in s.items()),
+                )
+        plt.close()
+        return result
+
+    # ----- stage: ipfx_extractors -----
+    try:
+        paired_times = np.hstack((np.array(start_times).reshape(-1, 1), np.array(end_times).reshape(-1, 1)))
         paired_times = np.round(paired_times, decimals=3)
         unique_times, counts = np.unique(paired_times, axis=0, return_counts=True)
         most_common_idx = np.argmax(counts)
         start_time, end_time = unique_times[most_common_idx]
-        #index out the sweeps that have the most common start and end times
-        #idx_pass = np.where((np.isclose(np.array(start_times), start_time)) & (np.isclose(np.array(end_times), end_time)))[0]
-        sweeps = SweepSet(np.array(sweeps, dtype=object).tolist())#[idx_pass].tolist())
+        sweeps = SweepSet(np.array(sweeps, dtype=object).tolist())
 
         lsq_spx, lsq_spfx = dsf.extractors_for_sweeps(
             sweeps,
-            start=start_time , #if the start times are not the same, this will fail
-            end=end_time, #if the end times are not the same, this will fail
+            start=start_time,
+            end=end_time,
             min_peak=-25,
         )
-        lsq_an = spa.LongSquareAnalysis(lsq_spx, lsq_spfx,
-            subthresh_min_amp=-200.0)
+        lsq_an = spa.LongSquareAnalysis(lsq_spx, lsq_spfx, subthresh_min_amp=-200.0)
         if np.mean(start_times) < 0.01:
-           lsq_an.sptx.baseline_interval = np.mean(start_times)*0.1
-           lsq_an.sptx.sag_baseline_interval = np.mean(start_times)*0.1
+            lsq_an.sptx.baseline_interval = np.mean(start_times) * 0.1
+            lsq_an.sptx.sag_baseline_interval = np.mean(start_times) * 0.1
         lsq_features = lsq_an.analyze(sweeps)
 
         result.update({
-                "input_resistance": lsq_features["input_resistance"],
-                "tau": lsq_features["tau"],
-                "v_baseline": lsq_features["v_baseline"],
-                "sag_nearest_minus_100": lsq_features["sag"],
-                "sag_measured_at": lsq_features["vm_for_sag"],
-                "rheobase_i": int(lsq_features["rheobase_i"]),
-                "fi_linear_fit_slope": lsq_features["fi_fit_slope"],
-            })
-        # Identify suprathreshold set for analysis
+            "input_resistance": lsq_features["input_resistance"],
+            "tau": lsq_features["tau"],
+            "v_baseline": lsq_features["v_baseline"],
+            "sag_nearest_minus_100": lsq_features["sag"],
+            "sag_measured_at": lsq_features["vm_for_sag"],
+            "rheobase_i": int(lsq_features["rheobase_i"]),
+            "fi_linear_fit_slope": lsq_features["fi_fit_slope"],
+        })
+    except Exception as e:
+        _record_exception(result, "ipfx_extractors", e, specimen_label)
+        plt.close()
+        return result
+
+    # ----- stage: ipfx_per_amp_features -----
+    try:
         sweep_table = lsq_features["spiking_sweeps"]
         mask_supra = sweep_table["stim_amp"] >= lsq_features["rheobase_i"]
         sweep_indexes = fv._consolidated_long_square_indexes(sweep_table.loc[mask_supra, :])
@@ -348,11 +519,11 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
 
             first_spike_lsq_sweep_features = run_feature_collection.first_spike_lsq(spike_data[swp_ind])
             result.update({"ap_1_{:s}_{:d}_long_square".format(f, amp_label): v
-                                for f, v in first_spike_lsq_sweep_features.items()})
+                           for f, v in first_spike_lsq_sweep_features.items()})
 
             mean_spike_lsq_sweep_features = run_feature_collection.mean_spike_lsq(spike_data[swp_ind])
             result.update({"ap_mean_{:s}_{:d}_long_square".format(f, amp_label): v
-                                for f, v in mean_spike_lsq_sweep_features.items()})
+                           for f, v in mean_spike_lsq_sweep_features.items()})
 
             sweep_feature_list = [
                 "first_isi",
@@ -362,26 +533,29 @@ def data_for_specimen_id(specimen_id, passed_only, data_source, ontology, file_l
                 "median_isi",
                 "adapt",
             ]
-
             result.update({"{:s}_{:d}_long_square".format(f, amp_label): sweep_table.at[swp_ind, f]
-                                for f in sweep_feature_list})
+                           for f in sweep_feature_list})
             result["stimulus_amplitude_{:d}_long_square".format(amp_label)] = int(amp + lsq_features["rheobase_i"])
+    except Exception as e:
+        _record_exception(result, "ipfx_per_amp_features", e, specimen_label)
+        plt.close()
+        return result
 
+    # ----- stage: ipfx_fi_curve -----
+    try:
         rates = sweep_table.loc[sweep_indexes, "avg_rate"].values
         result.update(run_feature_collection.fi_curve_fit(amps, rates))
+    except Exception as e:
+        _record_exception(result, "ipfx_fi_curve", e, specimen_label)
+        plt.close()
+        return result
 
-        #we should record the name of the stimuli used and the sweeps used, for either plotting or debugging
+    try:
         result["stimulus_name"] = data_set.sweepMetadata[0]['stim_dict']['description']
         result["sweeps_used"] = sweep_indexes
-
-        
-
-        
     except Exception as e:
-       print("error with specimen_id: ", specimen_id)
-       print(e)
-       plt.close()
-       return result
+        logger.debug("specimen=%s stage=metadata: %s", specimen_label, e)
+
     plt.close()
     return result
 
@@ -455,7 +629,8 @@ def match_protocol(i, t, test_pulse=True, start_epoch=None, end_epoch=None, test
     #classifier = sc.stimClassifier()
     try:
         start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(i, t, test_pulse=test_pulse, start_epoch=start_epoch, end_epoch=end_epoch, test_pulse_length=test_pulse_length)
-    except:
+    except Exception:
+        logger.debug("match_protocol: get_stim_characteristics failed", exc_info=True)
         return None
     #pred = classifier.decode(classifier.predict(i.reshape(1, -1)))[0]
     #if pred=="long_square":
@@ -472,6 +647,66 @@ def match_protocol(i, t, test_pulse=True, start_epoch=None, end_epoch=None, test
     else:
         #check if ramp
         return match_ramp_protocol(i, t)
+
+
+def diagnose_non_long_square(i, t, test_pulse=True, test_pulse_length=0.1):
+    """Return (tag, detail_dict) explaining why `match_protocol` did not return
+    'Long Square' for the given stimulus. Used purely for logging — does not
+    affect analysis. `tag` values mirror the reject branches in
+    `match_protocol` / `match_long_square_protocol`."""
+    detail = {
+        "len": int(len(i)) if i is not None else 0,
+        "i_first": float(i[0]) if len(i) else float("nan"),
+        "i_last": float(i[-1]) if len(i) else float("nan"),
+        "i_min": float(np.nanmin(i)) if len(i) else float("nan"),
+        "i_max": float(np.nanmax(i)) if len(i) else float("nan"),
+        "i_abs_max": float(np.nanmax(np.abs(i))) if len(i) else float("nan"),
+    }
+    try:
+        start_time, duration, amplitude, start_idx, end_idx = get_stim_characteristics(
+            i, t, test_pulse=test_pulse, test_pulse_length=test_pulse_length,
+        )
+    except Exception as e:
+        detail["err"] = f"{type(e).__name__}: {e}"
+        return "stim_characteristics_raised", detail
+
+    detail["start_time"] = None if start_time is None else float(start_time)
+    detail["duration"] = None if duration is None else float(duration)
+    detail["amplitude"] = None if amplitude is None else float(amplitude)
+    if start_time is None:
+        return "no_start_time", detail
+    if duration is None:
+        return "no_duration", detail
+    if 0.1 <= duration <= 0.25:
+        return "duration_mid_range", detail  # ramp path, currently returns None
+    if duration < 0.1:
+        return "duration_too_short", detail  # short square path, currently returns None
+    # duration > 0.25 -> long-square branch
+    di = np.diff(i)
+    di_idx = np.flatnonzero(di)
+    detail["num_transitions"] = int(len(di_idx))
+    if len(di_idx) == 0:
+        return "no_transitions", detail
+    if len(di_idx) == 1:
+        return "single_transition", detail
+    if len(di_idx) > 6:
+        try:
+            y_data = i[start_idx:end_idx]
+            x_data = t[start_idx:end_idx]
+            slope, intercept, r_value, p_value, _ = scipy.stats.linregress(x_data, y_data)
+            detail.update({
+                "slope": float(slope),
+                "p_value": float(p_value),
+                "r_value": float(r_value),
+            })
+        except Exception as e:
+            detail["regress_err"] = f"{type(e).__name__}: {e}"
+        return "too_many_transitions_slope_fail", detail
+    if len(i) and i[0] != 0:
+        return "stim_nonzero_at_start", detail
+    if len(i) and i[-1] != 0:
+        return "stim_nonzero_at_end", detail
+    return "unknown", detail
     
 
 def match_long_square_protocol(i, t, start_idx, end_idx):

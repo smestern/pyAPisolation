@@ -131,6 +131,7 @@ def analyze_sweepset(x=None, y=None, c=None, file=None, sweeplist=None, param_di
     else:
         bessel_filter = None
 
+    b_running_bin = param_dict.pop('b_running_bin') if 'b_running_bin' in param_dict else False
 
     if stim_find:
         data.setSweep(data.sweepList[-1])
@@ -155,7 +156,7 @@ def analyze_sweepset(x=None, y=None, c=None, file=None, sweeplist=None, param_di
         spike_in_sweep, spike_train = analyze_sweep(x[sweepNumber], y[sweepNumber] ,c[sweepNumber], param_dict, bessel_filter=bessel_filter) ### Returns the default Dataframe Returned by ipfx
         
         #build the dataframe, this will be the dataframe that is used for the full data, essentially the sweepwise dataframe, each file will have a dataframe like this
-        temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict) 
+        temp_spike_df, df, temp_running_bin = _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict, running_bin=b_running_bin) 
         
         #attach the custom features
         custom_features = _custom_sweepwise_features(x[sweepNumber], y[sweepNumber] ,c[sweepNumber] , real_sweep_number, param_dict, temp_spike_df, spike_in_sweep)
@@ -266,7 +267,8 @@ def analyze_template(x=None, y=None, c=None, file=None, param_dict=DEFAULT_DICT,
     returns:
         df_raw (pd.DataFrame): The dataframe that contains the standard ipfx features for the sweep
     """
-
+    param_dict.update({'stim_find': False, 'b_running_bin': False}) #we dont want to use the stim_find or the 
+    #running bin for these functions, as they are just for extracting certain features, and we want to keep it simple
     spike_count_df, df_raw, running_bin = analyze(x, y, c, file=file, param_dict=param_dict, return_summary_frames=True)
 
     #index the dataframe by the filename, sweep

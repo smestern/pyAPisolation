@@ -103,7 +103,7 @@ def organize_data_frames(dfs, df_spike_count, df_running_avg_count):
 # Ensure functions do no require the abf object
 # functions should not depend on further analysis, only concat of dataframes
 # functions should not depend on the order of the sweeps
-def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict):
+def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, temp_spike_df, df, temp_running_bin, param_dict, running_bin=True):
     """Build a "sweepwise" dataframe for a single sweep. Essentialy compacts the features of a single sweep into several singluar columns
     Args:
         abf (_type_): _description_
@@ -139,15 +139,19 @@ def _build_sweepwise_dataframe(real_sweep_number, spike_in_sweep, spike_train, t
 
     if spike_count > 0:
         # Calculate running averages
-        trough_average = build_running_bin(spike_in_sweep['fast_trough_v'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
-        peak_average = build_running_bin(spike_in_sweep['peak_v'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
-        peak_max_rise = build_running_bin(spike_in_sweep['upstroke'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
-        peak_max_down = build_running_bin(spike_in_sweep['downstroke'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
-        peak_width = build_running_bin(spike_in_sweep['width'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
-        isi_bin = build_running_bin(np.diff(spike_in_sweep['peak_t']), spike_in_sweep['peak_t'][:-1], start=param_dict['start'], end=param_dict['end'])[0]
+        if running_bin:
+            trough_average = build_running_bin(spike_in_sweep['fast_trough_v'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
+            peak_average = build_running_bin(spike_in_sweep['peak_v'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
+            peak_max_rise = build_running_bin(spike_in_sweep['upstroke'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
+            peak_max_down = build_running_bin(spike_in_sweep['downstroke'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
+            peak_width = build_running_bin(spike_in_sweep['width'], spike_in_sweep['peak_t'], start=param_dict['start'], end=param_dict['end'])[0]
+            isi_bin = build_running_bin(np.diff(spike_in_sweep['peak_t']), spike_in_sweep['peak_t'][:-1], start=param_dict['start'], end=param_dict['end'])[0]
 
-        # Create dataframes of the running averages
-        sweep_running_bin = pd.DataFrame(data=np.hstack((trough_average, peak_average, peak_max_rise, peak_max_down, peak_width, isi_bin)).reshape(1,-1), columns=_run_labels, index=[real_sweep_number])
+            # Create dataframes of the running averages
+            sweep_running_bin = pd.DataFrame(data=np.hstack((trough_average, peak_average, peak_max_rise, peak_max_down, peak_width, isi_bin)).reshape(1,-1), columns=_run_labels, index=[real_sweep_number])
+        else: 
+            #dummy dataframe with nans for the running bin features
+            sweep_running_bin = pd.DataFrame(data=nan_row_run, columns=_run_labels, index=[real_sweep_number])
         spike_train_df = pd.DataFrame(spike_train, index=[0])
         
         spike_in_sweep['spike count'] = np.hstack((spike_count, np.full(abs(spike_count-1), np.nan)))
