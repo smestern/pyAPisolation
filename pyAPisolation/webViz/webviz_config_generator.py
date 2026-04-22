@@ -6,7 +6,7 @@ import argparse
 import pyAPisolation.web_viz.ephysdatabase as ephysdatabase
 import pyAPisolation.database.build_database as build_database
 import pyAPisolation.webViz.dashApp as dashApp
-import PySide2.QtWidgets as QtWidgets
+import PySide6.QtWidgets as QtWidgets
 import pandas as pd
 
 class WebVizConfigGenerator(QtWidgets.QWidget):
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     w = WebVizConfigGenerator()
     w.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 

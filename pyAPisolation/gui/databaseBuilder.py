@@ -1,13 +1,13 @@
 from . import databaseBuilderBase as dbb
 
 from ..database import tsDatabase
-from PySide2.QtWidgets import QApplication, QMainWindow, QFileDialog, QTreeView, QVBoxLayout, QWidget, \
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QTreeView, QVBoxLayout, QWidget, \
 QFileSystemModel, QLabel, QLineEdit, QCommandLinkButton, QGroupBox, QTextEdit, QHeaderView, QAbstractItemView, \
-QMenu, QAction, QWizard, QWizardPage, QHBoxLayout, QPushButton, \
+QMenu, QWizard, QWizardPage, QHBoxLayout, QPushButton, \
 QListWidget, QListWidgetItem, QProgressBar, QCheckBox, QSpinBox, \
 QDoubleSpinBox, QComboBox, QFormLayout, QTableWidget, QTableWidgetItem, QScrollArea, QMessageBox
-from PySide2.QtGui import QStandardItem, QStandardItemModel, QPalette
-from PySide2.QtCore import QDir, Qt, QMimeData, QUrl, Signal
+from PySide6.QtGui import QStandardItem, QStandardItemModel, QPalette, QAction
+from PySide6.QtCore import QDir, Qt, QMimeData, QUrl, Signal
 import numpy as np
 import pandas as pd
 import sys
@@ -201,7 +201,7 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
 
     def saveDatabase(self):
         """Save the database to an Excel file"""
-        from PySide2.QtWidgets import QFileDialog, QMessageBox
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
         
         # Open file dialog to get save location
         file_path, _ = QFileDialog.getSaveFileName(
@@ -242,7 +242,7 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
 
     def loadDatabase(self):
         """Load a database from an Excel file"""
-        from PySide2.QtWidgets import QFileDialog, QMessageBox
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
         
         # Open file dialog to get file to load
         file_path, _ = QFileDialog.getOpenFileName(
@@ -362,7 +362,7 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
         else:
             # Legacy event handling
             mime_data = event_info.mimeData()
-            target_index = self.cellIndex.indexAt(event_info.pos())
+            target_index = self.cellIndex.indexAt(event_info.position().toPoint())
             file_paths = []
             if mime_data.hasUrls():
                 for url in mime_data.urls():
@@ -402,7 +402,7 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
 
     def _handleDropOnEmptySpace(self, file_paths):
         """Handle dropping files in empty space - prompt for new cell creation"""
-        from PySide2.QtWidgets import QInputDialog, QMessageBox
+        from PySide6.QtWidgets import QInputDialog, QMessageBox
         
         # Prompt user for cell name
         cell_name, ok = QInputDialog.getText(
@@ -484,7 +484,7 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
             message_parts.append(f"Updated {len(protocols_updated)} existing protocol(s)")
         
         if message_parts:
-            from PySide2.QtWidgets import QMessageBox
+            from PySide6.QtWidgets import QMessageBox
             QMessageBox.information(
                 None, 
                 'Files Added', 
@@ -509,7 +509,7 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
                     files_added += 1
                 else:
                     # File doesn't match, could offer to add as new protocol
-                    from PySide2.QtWidgets import QMessageBox
+                    from PySide6.QtWidgets import QMessageBox
                     reply = QMessageBox.question(
                         None,
                         'Protocol Mismatch',
@@ -533,7 +533,7 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
         
         # Show feedback
         if files_added > 0:
-            from PySide2.QtWidgets import QMessageBox
+            from PySide6.QtWidgets import QMessageBox
             QMessageBox.information(
                 None,
                 'Files Added',
@@ -755,7 +755,7 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
     def importSpikeData(self):
         """Launch a wizard to import spike analysis data from CSV files"""
         wizard = SpikeDataImportWizard(self.database, self)
-        if wizard.exec_() == wizard.Accepted:
+        if wizard.exec() == wizard.Accepted:
             # Update the cell index display after successful import
             self._updateCellIndex()
             self.statusBar.showMessage("Spike data import completed successfully")
@@ -763,7 +763,7 @@ class DatabaseBuilder(dbb.Ui_databaseBuilderBase):
     def importDataframeData(self):
         """Launch a wizard to import arbitrary CSV/Excel files"""
         wizard = DataframeImportWizard(self.database, self)
-        if wizard.exec_() == wizard.Accepted:
+        if wizard.exec() == wizard.Accepted:
             # Update the cell index display after successful import
             self._updateCellIndex()
             self.statusBar.showMessage("CSV/Excel import completed successfully")
@@ -891,7 +891,7 @@ class CustomTreeView(QTreeView):
             h_scroll = self.horizontalScrollBar()
             v_scroll = self.verticalScrollBar()
             # Use QTimer to delay scroll restoration to ensure it works
-            from PySide2.QtCore import QTimer
+            from PySide6.QtCore import QTimer
             QTimer.singleShot(10, lambda: h_scroll.setValue(state['h_scroll']))
             QTimer.singleShot(10, lambda: v_scroll.setValue(state['v_scroll']))
         
@@ -931,7 +931,7 @@ class CustomTreeView(QTreeView):
         refresh_action.triggered.connect(self._forceViewRefresh)
         menu.addAction(refresh_action)
         
-        menu.exec_(self.mapToGlobal(position))
+        menu.exec(self.mapToGlobal(position))
     
     def _forceViewRefresh(self):
         """Force a complete view refresh - resize columns and reset positions"""
@@ -1034,7 +1034,7 @@ class CustomTreeView(QTreeView):
         """Enhanced mouse behavior for spreadsheet-like cell selection"""
         super().mousePressEvent(event)
         if event.button() == Qt.LeftButton:
-            index = self.indexAt(event.pos())
+            index = self.indexAt(event.position().toPoint())
             if index.isValid():
                 # Clear selection and select only the clicked cell
                 self.selectionModel().clearSelection()
@@ -1068,7 +1068,7 @@ class CustomTreeView(QTreeView):
         """Handle drag move events to show drop indicators"""
         if event.mimeData().hasUrls():
             # Get the index under the cursor
-            index = self.indexAt(event.pos())
+            index = self.indexAt(event.position().toPoint())
             
             if index.isValid():
                 # Highlight the target item
@@ -1123,7 +1123,7 @@ class CustomTreeView(QTreeView):
         
         if event.mimeData().hasUrls():
             # Get drop position and target
-            drop_position = event.pos()
+            drop_position = event.position().toPoint()
             target_index = self.indexAt(drop_position)
             
             # Extract file paths
@@ -1155,7 +1155,7 @@ class CustomTreeView(QTreeView):
 
     def _showDropFeedback(self, file_count, target_index):
         """Show visual feedback for successful drop"""
-        from PySide2.QtWidgets import QMessageBox
+        from PySide6.QtWidgets import QMessageBox
         
         if target_index.isValid():
             item = self.model().itemFromIndex(target_index)
@@ -2665,4 +2665,4 @@ def run():
     ui = DatabaseBuilder()
     ui.setupUi(MainWindow)
     MainWindow.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

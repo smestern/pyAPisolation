@@ -1,31 +1,42 @@
 name: Python Package using Conda
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       max-parallel: 5
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.11', '3.12']
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v3
+    
+    - name: Set up Miniconda
+      uses: conda-incubator/setup-miniconda@v3
       with:
-        python-version: '3.9'
-    - name: Add conda to system path
+        python-version: ${{ matrix.python-version }}
+        channels: conda-forge
+        channel-priority: strict
+        activate-environment: pyAPisolation
+        auto-activate-base: false
+    
+    - name: Install conda dependencies
+      shell: bash -el {0}
       run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install dependencies
+        conda install -y numpy pandas scipy matplotlib h5py pytest
+    
+    - name: Install pip dependencies
+      shell: bash -el {0}
       run: |
-        conda env update --file environment.yml --name base
-        conda activate base
-        pip install --upgrade setuptools
-        pip install -e .
+        pip install --upgrade pip setuptools
+        pip install -e ".[full]"
+    
     - name: Test with pytest
+      shell: bash -el {0}
       run: |
-        conda install pytest
-        pytest
+        pytest tests/ -v --tb=short

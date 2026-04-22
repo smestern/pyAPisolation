@@ -5,9 +5,9 @@ Integration helper for Post-hoc Analysis Runner Wizard
 Provides functions to integrate the wizard into the main pyAPisolation GUI
 """
 
-from PySide2.QtCore import QObject
-from PySide2.QtGui import QIcon
-from PySide2.QtWidgets import QAction, QMessageBox, QPushButton
+from PySide6.QtCore import QObject
+from PySide6.QtGui import QIcon, QAction
+from PySide6.QtWidgets import QMessageBox, QPushButton
 from .postAnalysisRunner import PostAnalysisWizard
 
 

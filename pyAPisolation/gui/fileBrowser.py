@@ -3,11 +3,11 @@ File Browser Widget for CSV/Excel Editor
 Provides file system navigation with drag support
 """
 
-from PySide2.QtWidgets import (QWidget, QVBoxLayout, QTreeView, 
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QTreeView, 
                                QFileSystemModel, QHeaderView, QLineEdit,
                                QHBoxLayout, QPushButton, QLabel)
-from PySide2.QtCore import QDir, Qt, Signal
-from PySide2.QtGui import QIcon
+from PySide6.QtCore import QDir, Qt, Signal
+from PySide6.QtGui import QIcon
 import os
 
 

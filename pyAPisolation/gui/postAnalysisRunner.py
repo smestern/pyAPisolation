@@ -2,7 +2,7 @@
 
 """
 Post-hoc Analysis Runner Wizard
-A PySide2-based wizard for running statistical analysis on electrophysiological data.
+A PySide6-based wizard for running statistical analysis on electrophysiological data.
 Performs multiple one-way ANOVAs across features with user-selected categorical variables.
 """
 
@@ -13,11 +13,15 @@ import numpy as np
 from scipy import stats
 from scipy.stats import f_oneway
 from statsmodels.stats.multitest import multipletests 
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
+    QWizard, QWizardPage, QVBoxLayout, QHBoxLayout, QGroupBox, QLineEdit,
+    QPushButton, QTableWidget, QTableWidgetItem, QLabel, QFileDialog,
+    QComboBox, QListWidget, QListWidgetItem, QAbstractItemView, QProgressBar,
+    QTextEdit, QMessageBox, QApplication
+)
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import seaborn as sns
 
@@ -750,7 +754,7 @@ def main():
     wizard = PostAnalysisWizard()
     wizard.show()
     
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

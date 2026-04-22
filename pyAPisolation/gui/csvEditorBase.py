@@ -5,9 +5,12 @@
 ## Simplified version based on databaseBuilderBase without tsDatabase dependencies
 ################################################################################
 
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
+from PySide6.QtCore import QMetaObject, QCoreApplication, QRect, QSize
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
+    QWidget, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
+    QSizePolicy, QPushButton, QGroupBox, QTextEdit, QMenuBar, QMenu, QStatusBar
+)
 
 
 class Ui_csvEditorBase(object):

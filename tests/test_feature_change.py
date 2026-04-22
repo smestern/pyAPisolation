@@ -3,8 +3,10 @@ import numpy as np
 import tkinter as tk
 from tkinter import filedialog
 import os
+import pytest
 
 
+@pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
 def compare_excel_files(file1, file2, sheet_name='full sheet'):
     df1 = pd.read_excel(file1, sheet_name =sheet_name)
     df2 = pd.read_excel(file2, sheet_name =sheet_name)

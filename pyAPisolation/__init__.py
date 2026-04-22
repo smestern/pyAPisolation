@@ -9,7 +9,7 @@ import sys
 #     subprocess.run([sys.executable, "-m", "pip", "install", "ipfx", "--no-deps"])
 
     
-#only call if ipfx is not installed
+#only call if ipfx is not installed #this was an old issue and should
 try:
     import ipfx
 except:

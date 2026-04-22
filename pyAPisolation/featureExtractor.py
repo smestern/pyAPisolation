@@ -148,6 +148,10 @@ def analyze_sweepset(x=None, y=None, c=None, file=None, sweeplist=None, param_di
         data.setSweep(sweepNumber)
         #here we just make sure the sweep number is in the correct format for the dataframe
         real_sweep_number = sweepNumber_to_real_sweep_number(sweepNumber)
+        if 'start' not in param_dict: #possibly someone didnt include the start and end in the param dict, we will set it to 0 and the end of the sweep respectively
+            param_dict['start'] = 0.0
+        if 'end' not in param_dict:
+            param_dict['end'] = 0.0
         if param_dict['start'] == 0 and param_dict['end'] == 0: 
             param_dict['end']= real_sweep_length
         elif param_dict['end'] > real_sweep_length:
@@ -565,7 +569,9 @@ def analyze_subthres(x=None, y=None, c=None, file=None, protocol_name='', savfil
     averages = []
     plt.close('all')
     if (data.sweepLabelY != 'Clamp Current (pA)' and data.protocol != 'Gap free' and protocol_name in data.protocol):
-        np.nan_to_num(data, nan=-9999, copy=False)
+        #nan to num the data
+        data.dataX, data.dataY, data.dataC = np.nan_to_num(data.dataX, nan=-9999, copy=True), np.nan_to_num(data.dataY, nan=-9999, copy=True), np.nan_to_num(data.dataC, nan=-9999, copy=True)
+        
         if savfilter > 0:
             data.data = signal.savgol_filter(data.data, savfilter, polyorder=3)
 

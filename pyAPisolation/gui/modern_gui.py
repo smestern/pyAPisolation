@@ -12,12 +12,12 @@ import copy
 
 # Import Qt components
 try:
-    from PySide2.QtWidgets import QApplication, QWidget, QProgressDialog, QComboBox, QVBoxLayout, QLineEdit
-    from PySide2.QtCore import Qt, QThread
-    from PySide2.QtCore import Signal as pyqtSignal
-    import PySide2.QtCore as QtCore
+    from PySide6.QtWidgets import QApplication, QWidget, QProgressDialog, QComboBox, QVBoxLayout, QLineEdit
+    from PySide6.QtCore import Qt, QThread
+    from PySide6.QtCore import Signal as pyqtSignal
+    import PySide6.QtCore as QtCore
 except ImportError:
-    print("PySide2 not available, GUI functionality disabled")
+    print("PySide6 not available, GUI functionality disabled")
     sys.exit(1)
 
 # Import analysis framework

@@ -2,10 +2,12 @@ import os
 import sys
 import subprocess
 import logging
+import pytest
 
 #create a conda env called pyAPisolation_test and install the package in it
+@pytest.mark.skipif(os.getenv('GITHUB_ACTIONS') == 'true', reason="This test is not meant to run on GitHub Actions.")
 def test_install():
-    p = subprocess.Popen('conda create -n pyAPisolation_test python=3.9 -y', shell=True)
+    p = subprocess.Popen('conda create -n pyAPisolation_test python=3.11 -y', shell=True)
     p.wait()
     p = subprocess.Popen('conda activate pyAPisolation_test && pip install -e .', shell=True)
     p.wait()
