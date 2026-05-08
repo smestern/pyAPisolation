@@ -28,7 +28,7 @@ from PySide6.QtWidgets import QMessageBox, QProgressDialog
 class _WorkerSignals(QObject):
     finished = Signal(object)  # result payload
     error = Signal(str)
-    progress = Signal(int, int)  # current, total
+    progress = Signal(int, int)  # current, total — must be used for GUI updates
 
 
 class _AnalysisWorker(QRunnable):
@@ -261,10 +261,6 @@ class AnalysisController(QObject):
         progress.setMinimumDuration(0)
         progress.show()
 
-        def _progress_cb(done, total):
-            progress.setMaximum(total)
-            progress.setValue(done)
-
         def _run():
             from pyAPisolation.analysis.runner import run_batch, save_results
 
@@ -287,6 +283,18 @@ class AnalysisController(QObject):
             return result
 
         worker = _AnalysisWorker(_run)
+
+        # Route progress updates through a signal so they are marshalled
+        # to the main thread.  Calling QProgressDialog methods directly
+        # from the worker thread is undefined behaviour and segfaults.
+        def _progress_cb(done, total):
+            worker.signals.progress.emit(done, total)
+
+        def _update_progress(done, total):
+            progress.setMaximum(total)
+            progress.setValue(done)
+
+        worker.signals.progress.connect(_update_progress)
 
         def _on_done(result):
             progress.close()

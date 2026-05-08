@@ -1,33 +1,15 @@
 import numpy as np
-from .loadABF import loadABF
 try:
-    import h5py
+    import h5py  
     ##Does not import when using python-matlab interface on windows machines
 except:
-    print("h5py import fail")
+    print("h5py import fail, NWB loading will not work. If using python-matlab interface on windows machines this is expected and can be ignored.")
+
+try:
+    import pynwb
+except:
+    print("pynwb import fail, NWB loading will not work. If using python-matlab interface on windows machines this is expected and can be ignored.")
 import pandas as pd
-
-def loadFile(file_path, return_obj=False, old=False):
-    """Loads the nwb object and returns three arrays dataX, dataY, dataC and optionally the object.
-    same input / output as loadABF for easy pipeline inclusion
-
-    Args:
-        file_path (str): [description]
-        return_obj (bool, optional): return the NWB object to access various properites. Defaults to False.
-        old (bool, optional): use the old indexing method, uneeded in most cases. Defaults to False.
-
-    Returns:
-        dataX: time (should be seconds)
-        dataY: voltage (should be mV)
-        dataC: current (should be pA)
-        dt: time step (should be seconds)
-    """    
-    if file_path.endswith(".nwb"):
-        return loadNWB(file_path, return_obj, old)
-    elif file_path.endswith(".abf"):
-        return loadABF(file_path, return_obj)
-    else:
-        raise Exception("File type not supported")
 
 
 
