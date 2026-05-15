@@ -323,8 +323,8 @@ def main():
                             temp_avg["Resistance Ladder SweepCount Measured"] = np.nan
                         
                         print(f"Computed a membrane resistance of {(resist  / 1000000000)} giga ohms, and a capatiance of {Cm2 * 1000000000000} pF, and tau of {decay_slow*1000} ms")
-                        dfs = dfs.append(temp_df, sort=True)
-                        averages = averages.append(temp_avg, sort=True)
+                        dfs = df.concat([dfs, temp_df], sort=True)
+                        averages = averages.concat([averages, temp_avg], sort=True)
                     #except:
                     # print('Issue Processing ' + filename)
 

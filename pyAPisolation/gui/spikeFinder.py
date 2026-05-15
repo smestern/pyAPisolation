@@ -908,8 +908,12 @@ class analysis_gui(object):
                 dataT, dataV, dataI = self.abf.sweepX, self.abf.sweepY, self.abf.sweepC
                 time_aft = 0.5
                 diff_I = np.diff(dataI)
-                downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+                downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0] if len(np.nonzero(np.where(diff_I<0, diff_I, 0))[0]) > 0 else np.nan
+                if np.isnan(downwardinfl): #no downward inflection point?
+                    continue
                 end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
+                if end_index < downwardinfl:
+                    continue
 
                 upperC = np.amax(dataV[downwardinfl:end_index])
                 lowerC = np.amin(dataV[downwardinfl:end_index])
@@ -918,10 +922,14 @@ class analysis_gui(object):
                 y = exp_decay_2p(t1, a,b1, decay_fast, b2, decay_slow)
                 self.axe1.plot(dataT[downwardinfl:end_index], y, color='#00FF00', zorder=99)
                 #also plot the sag
-                upwardinfl = np.nonzero(np.where(diff_I>0, diff_I, 0))[0][0]
+                upwardinfl = np.nonzero(np.where(diff_I>0, diff_I, 0))[0][0] if len(np.nonzero(np.where(diff_I>0, diff_I, 0))[0]) > 0 else np.nan
+                if np.isnan(upwardinfl): #no upward inflection point?
+                    continue
                 
                 diff_I = np.diff(dataI)
-                downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
+                downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0] if len(np.nonzero(np.where(diff_I<0, diff_I, 0))[0]) > 0 else np.nan
+                if np.isnan(downwardinfl): #no downward inflection point?
+                    continue
                 end_index2 = upwardinfl - int((upwardinfl - downwardinfl) * time_aft)
                 dt = dataT[1] - dataT[0] #in s
                 vm = np.nanmean(dataV[end_index:upwardinfl])
@@ -1126,7 +1134,7 @@ class PandasModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             return str(self._dataframe.iloc[index.row(), index.column()])
-        elif role == Qt.BackgroundColorRole and 'outlier' in self._dataframe.columns:
+        elif role == Qt.BackgroundRole and 'outlier' in self._dataframe.columns:
             if self._dataframe.iloc[index.row()]['outlier'] == -1:
                 return QtGui.QColor(255, 0, 0)
         return None
