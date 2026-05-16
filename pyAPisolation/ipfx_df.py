@@ -247,7 +247,10 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
         _type_: _description_
     
     """
-    temp_spike_df['protocol'] = [abf.protocol]
+    #accumulate all new features in a dict, then assign once at the end
+    #to avoid fragmenting temp_spike_df with many single-column inserts
+    features = {}
+    features['protocol'] = [abf.protocol]
     if df.empty:
         df = df.assign(file_name=np.full(1,abf.name))
         df = df.assign(__fold_name=np.full(1,os.path.dirname(abf.filePath)))
@@ -258,31 +261,33 @@ def _build_full_df(abf, temp_spike_df, df, temp_running_bin, sweepList):
         rheo_sweep = df['sweep Number'].to_numpy()[0]
         abf.setSweep(int(rheo_sweep - 1))
         rheobase_current = abf.sweepC[np.argmax(abf.sweepC)]
-        temp_spike_df["rheobase_current"] = [rheobase_current]
-                
-        temp_spike_df["rheobase_latency"] = [df['latency'].to_numpy()[0]]
-        temp_spike_df["rheobase_thres"] = [df['threshold_v'].to_numpy()[0]]
-        temp_spike_df["rheobase_width"] = [df['width'].to_numpy()[0]] 
-        temp_spike_df["rheobase_heightPT"] = [abs(df['peak_v'].to_numpy()[0] - df['fast_trough_v'].to_numpy()[0])]
-        temp_spike_df["rheobase_heightTP"] = [abs(df['threshold_v'].to_numpy()[0] - df['peak_v'].to_numpy()[0])]
-            
-        temp_spike_df["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
-        temp_spike_df["rheobase_downstroke"] = [df['downstroke'].to_numpy()[0]]
-        temp_spike_df["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
-        temp_spike_df["rheobase_slow_trough"] = [df['slow_trough_v'].to_numpy()[0] if 'slow_trough_v' in df.columns else np.nan]
+        features["rheobase_current"] = [rheobase_current]
+
+        features["rheobase_latency"] = [df['latency'].to_numpy()[0]]
+        features["rheobase_thres"] = [df['threshold_v'].to_numpy()[0]]
+        features["rheobase_width"] = [df['width'].to_numpy()[0]]
+        features["rheobase_heightPT"] = [abs(df['peak_v'].to_numpy()[0] - df['fast_trough_v'].to_numpy()[0])]
+        features["rheobase_heightTP"] = [abs(df['threshold_v'].to_numpy()[0] - df['peak_v'].to_numpy()[0])]
+
+        features["rheobase_upstroke"] = [df['upstroke'].to_numpy()[0]]
+        features["rheobase_downstroke"] = [df['downstroke'].to_numpy()[0]]
+        features["rheobase_fast_trough"] = [df['fast_trough_v'].to_numpy()[0]]
+        features["rheobase_slow_trough"] = [df['slow_trough_v'].to_numpy()[0] if 'slow_trough_v' in df.columns else np.nan]
         for key in ipfx_train_feature_labels:
-            temp_spike_df[f"mean_{key}"] = [np.nanmean(df[key].to_numpy())]
-        temp_spike_df["mean_current"] = [np.nanmean(df['peak_i'].to_numpy())]
-        temp_spike_df["mean_latency"] = [np.nanmean(df['latency'].to_numpy())]
-        temp_spike_df["mean_thres"] = [np.nanmean(df['threshold_v'].to_numpy())]
-        temp_spike_df["mean_width"] = [np.nanmean(df['width'].to_numpy())]
-        temp_spike_df["mean_heightPT"] = [np.nanmean(abs(df['peak_v'].to_numpy() - df['fast_trough_v'].to_numpy()))]
-        temp_spike_df["mean_heightTP"] = [np.nanmean(abs(df['threshold_v'].to_numpy() - df['peak_v'].to_numpy()))]
-        temp_spike_df["mean_upstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
-        temp_spike_df["mean_downstroke"] = [np.nanmean(df['downstroke'].to_numpy())]
-        temp_spike_df["mean_fast_trough"] = [np.nanmean(df['fast_trough_v'].to_numpy())]
-        temp_spike_df["mean_slow_trough"] = [np.nanmean(df['slow_trough_v'].to_numpy()) if 'slow_trough_v' in df.columns else np.nan]
-        
+            features[f"mean_{key}"] = [np.nanmean(df[key].to_numpy())]
+        features["mean_current"] = [np.nanmean(df['peak_i'].to_numpy())]
+        features["mean_latency"] = [np.nanmean(df['latency'].to_numpy())]
+        features["mean_thres"] = [np.nanmean(df['threshold_v'].to_numpy())]
+        features["mean_width"] = [np.nanmean(df['width'].to_numpy())]
+        features["mean_heightPT"] = [np.nanmean(abs(df['peak_v'].to_numpy() - df['fast_trough_v'].to_numpy()))]
+        features["mean_heightTP"] = [np.nanmean(abs(df['threshold_v'].to_numpy() - df['peak_v'].to_numpy()))]
+        features["mean_upstroke"] = [np.nanmean(df['upstroke'].to_numpy())]
+        features["mean_downstroke"] = [np.nanmean(df['downstroke'].to_numpy())]
+        features["mean_fast_trough"] = [np.nanmean(df['fast_trough_v'].to_numpy())]
+        features["mean_slow_trough"] = [np.nanmean(df['slow_trough_v'].to_numpy()) if 'slow_trough_v' in df.columns else np.nan]
+
+    #single assignment to avoid DataFrame fragmentation warnings
+    temp_spike_df = temp_spike_df.assign(**features)
 
     return  temp_spike_df, df, temp_running_bin
                 
