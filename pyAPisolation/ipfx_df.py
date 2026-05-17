@@ -51,7 +51,8 @@ def save_data_frames(dfs, df_spike_count, df_running_avg_count, root_fold='', ta
     print("data frames saved to excel")
 
 def save_subthres_data(avg_df, sweepwise_df, root_fold='', tag='', saveRaw=False):
-    
+    """
+    """
     #create a dict df
     subsheets_subthres = {'averages': avg_df, 'sweepwise': sweepwise_df}
     with pd.ExcelWriter(root_fold + '/subthres_' + tag + '.xlsx') as runf:

@@ -209,8 +209,12 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
 
     diff_I = np.diff(dataI)
     downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0]
-    
     end_index = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
+
+    #if the end index is too close (or lower) to the start index, we likely have a problem with the data, and we will return nans
+    if end_index - downwardinfl < 10:
+        return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
+
     upperC = np.amax(dataV[downwardinfl:end_index])
     lowerC = np.amin(dataV[downwardinfl:end_index])
     minpoint = np.argmin(dataV[downwardinfl:end_index])
@@ -233,7 +237,7 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
     ss_tot = np.sum((dataV[downwardinfl:end_index]-np.mean(dataV[downwardinfl:end_index]))**2)
     r_squared_2p = 1 - (ss_res_2p / ss_tot)
     r_squared_1p = 1 - (ss_res_1p / ss_tot)
-    if plot == True:
+    if plot == True: #too be removed later, but useful for debugging
         end_index2 = downwardinfl + int((np.argmax(diff_I)- downwardinfl) * time_aft)
         t1 = dataT[downwardinfl:end_index2] - dataT[downwardinfl]
         plt.figure(2)
@@ -250,10 +254,9 @@ def exp_decay_factor_alt(dataT,dataV,dataI, time_aft, abf_id='abf', plot=False, 
     tau1 = 1/curve[2]
     tau2 = 1/curve[4]
     tau_1p = 1/curve2[2]
-    fast = np.min([tau1, tau2])
+    fast = np.min([tau1, tau2]) #
     slow = np.max([tau1, tau2])
     return tau1, tau2, curve, r_squared_2p, r_squared_1p, tau_1p
-    return np.nan, np.nan, np.array([np.nan,np.nan,np.nan,np.nan,np.nan]), np.nan, np.nan, np.nan
 
 def df_select_by_col(df, string_to_find):
     def flatten_stf(lis):
@@ -297,6 +300,10 @@ def compute_sag(dataT,dataV,dataI, time_aft, plot=False, clear=True) -> tuple[fl
     diff_I = np.diff(dataI) # find the points where current changes
     upwardinfl = np.nonzero(np.where(diff_I>0, diff_I, 0))[0][0] #first point where current goes up
     downwardinfl = np.nonzero(np.where(diff_I<0, diff_I, 0))[0][0] #first point where current goes down
+
+    if upwardinfl < downwardinfl: #if the current goes up before it goes down, we likely have a problem with the data, and we will return nans
+        return np.nan, np.nan
+
     dt = dataT[1] - dataT[0] #in s #time difference between points
     end_index = upwardinfl - int(0.100/dt) #calculate end index based on 100ms before end of pulse
     end_index2 = upwardinfl - int((upwardinfl - downwardinfl) * time_aft) #calculate end index based on time after
@@ -477,8 +484,8 @@ def ladder_rm(dataT, dataV, dataI, mean_current=False):
     return slope, intercept, len(non_spike_sweeps)
 
 
-
-def subthres_a(dataT, dataV, dataI, lowerlim, upperlim):
+@utils.debug_wrap
+def subthres_a(dataT, dataV, dataI, lowerlim, upperlim) -> tuple[float, float, tuple[float, float]]:
     """Analyze the subthreshold features of the current using allen institute's method.
 
     Args:
@@ -491,30 +498,25 @@ def subthres_a(dataT, dataV, dataI, lowerlim, upperlim):
     Returns:
         _type_: _description_
     """
-    if dataI[np.argmin(dataI)] < 0: #if the current is negative check
-                        try:
-                            if lowerlim < 0.1:
-                                b_lowerlim = 0.1
-                            else:
-                                b_lowerlim = 0.1
+    if dataI[np.argmin(dataI)] < 0: #if the current is negative check, this is a hyperpolarizing current injection, we can compute the sag and the time constant of the decay
+        if lowerlim < 0.1:
+            b_lowerlim = 0.1
+        else:
+            b_lowerlim = lowerlim
 
-                            #get only the hyperpor segments
-                            dwninf, upinf = find_hyperpolarization_segment(dataT, dataI, lowerlim, upperlim)
-                            lowerlim_t = np.clip(dataT[dwninf]  - 0.1, 0, 1e9)
-                            upperlim_t = dataT[upinf]
+        #get only the hyperpor segments
+        dwninf, upinf = find_hyperpolarization_segment(dataT, dataI, lowerlim, upperlim)
+        lowerlim_t = np.clip(dataT[dwninf]  - 0.1, 0, 1e9)
+        upperlim_t = dataT[upinf]
 
-                            #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
-                            sag = subt.sag(dataT,dataV,dataI, start=lowerlim_t, end=upperlim_t)
-                            taum = subt.time_constant(dataT,dataV,dataI, start=lowerlim_t, end=upperlim_t)
-                            
-                            voltage_deflection = subt.voltage_deflection(dataT,dataV,dataI, start=lowerlim_t, end=upperlim_t)
-                            return sag, taum, voltage_deflection
-                        except Exception as e:
-                            print("Subthreshold Processing Error ")
-                            print(e.args)
-                            return np.nan, np.nan, [np.nan, np.nan]
-    else:
-        return np.nan, np.nan, [np.nan, np.nan]
+        #temp_spike_df['baseline voltage' + real_sweep_number] = subt.baseline_voltage(dataT, dataV, start=b_lowerlim)
+        sag = subt.sag(dataT,dataV,dataI, start=lowerlim_t, end=upperlim_t)
+        taum = subt.time_constant(dataT,dataV,dataI, start=lowerlim_t, end=upperlim_t)
+        
+        voltage_deflection = subt.voltage_deflection(dataT,dataV,dataI, start=lowerlim_t, end=upperlim_t)
+        return sag, taum, voltage_deflection
+                        
+    
 
 def find_hyperpolarization_segment(dataT, dataI, lowerlim, upperlim):
     """Finds the hyperpolarization segment, assuming the current is a square pulse. Or the hyperpolarization is continuous.

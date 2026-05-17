@@ -570,16 +570,16 @@ def analyze_subthres(x=None, y=None, c=None, file=None, protocol_name='', savfil
         #nan to num the data
         data.dataX, data.dataY, data.dataC = np.nan_to_num(data.dataX, nan=-9999, copy=True), np.nan_to_num(data.dataY, nan=-9999, copy=True), np.nan_to_num(data.dataC, nan=-9999, copy=True)
         
-        if savfilter > 0:
+        if savfilter > 0: #savgol filter the data if the user requested it, this can help with some of the subthreshold features that are very sensitive to noise
             data.data = signal.savgol_filter(data.data, savfilter, polyorder=3)
 
         dataT = data.sweepX
-        if start_sear is not None:
+        if start_sear is not None: #if the user specified a start time, we will find the index of the closest time point to that start time
             idx_start = np.argmin(np.abs(dataT - start_sear))
         else:
             idx_start = 0
 
-        if end_sear is not None:
+        if end_sear is not None: #if the user specified an end time, we will find the index of the closest time point to that end time
             idx_end = np.argmin(np.abs(dataT - end_sear))
         else:
             idx_end = -1
@@ -621,9 +621,9 @@ def analyze_subthres(x=None, y=None, c=None, file=None, protocol_name='', savfil
 
             decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor(dataT, dataV, dataI, time_after, abf_id=data.abfID)
             resist = membrane_resistance(dataT, dataV, dataI)
-            Cm2, Cm1 = mem_cap(resist, decay_slow)
+            Cm2, Cm1 = mem_cap(resist, decay_slow, tau_1p=p_decay)
             Cm3 = mem_cap_alt(resist, decay_slow, curve[3], np.amin(dataI))
-            temp_df[f"_1 phase tau {real_sweep_number}"] = [p_decay]
+            temp_df[f"1 phase tau {real_sweep_number}"] = [p_decay]
             temp_df[f"fast 2 phase tau {real_sweep_number}"] = [decay_fast]
             temp_df[f"slow 2 phase tau {real_sweep_number}"] = [decay_slow]
             temp_df[f"Curve fit A {real_sweep_number}"] = [curve[0]]
@@ -633,9 +633,9 @@ def analyze_subthres(x=None, y=None, c=None, file=None, protocol_name='', savfil
             temp_df[f"R squared 1 phase {real_sweep_number}"] = [r_squared_1p]
             temp_df[f"RMP {real_sweep_number}"] = [rmp_mode(dataV, dataI)]
             temp_df[f"Membrane Resist {real_sweep_number}"] = resist / 1000000000
-            temp_df[f"_2 phase Cm {real_sweep_number}"] = Cm2 * 1000000000000
-            temp_df[f"_ALT_2 phase Cm {real_sweep_number}"] = Cm3 * 1000000000000
-            temp_df[f"_1 phase Cm {real_sweep_number}"] = Cm1 * 1000000000000
+            temp_df[f"2 phase Cm {real_sweep_number}"] = Cm2 * 1000000000000
+            temp_df[f"ALT 2 phase Cm {real_sweep_number}"] = Cm3 * 1000000000000
+            temp_df[f"1 phase Cm {real_sweep_number}"] = Cm1 * 1000000000000
             temp_df[f"Voltage sag {real_sweep_number}"], temp_df[f"Voltage min {real_sweep_number}"] = compute_sag(dataT, dataV, dataI, time_after, plot=bplot, clear=False)
             try:
                 sag_ratio, taum_allen, voltage_allen = subthres_a(dataT, dataV, dataI, 0.0, np.amax(dataT))
@@ -659,8 +659,54 @@ def analyze_subthres(x=None, y=None, c=None, file=None, protocol_name='', savfil
             #plt.savefig(os.path.join(os.path.dirname(data.abfFilePath), 'cm_plots', f'sagfit{data.abfID}sweep{real_sweep_number}.png'))
 
         full_dataI = np.vstack(full_dataI)
-        indices_of_same = np.arange(full_dataI.shape[0])
+        indices_of_same = np.arange(full_dataI.shape[0]) #this was originally meant to be used for when we have multiple sweeps, but for now we will just use it to compute the average across all sweeps
         full_dataV = np.vstack(full_dataV)
+
+        # === Sweepwise (per-sweep) aggregates ===
+        # Average the scalar fits already computed per sweep in the loop above.
+        # This is more robust than the trace-averaged fits below when sweeps
+        # have heterogeneous current amplitudes (e.g. -110/-100/-20 pA), since
+        # averaging the raw traces in that case mixes incompatible responses.
+        _sweepwise_bases = [
+            "1 phase tau", "fast 2 phase tau", "slow 2 phase tau",
+            "Curve fit A", "Curve fit b1", "Curve fit b2",
+            "R squared 2 phase", "R squared 1 phase",
+            "RMP", "Membrane Resist",
+            "2 phase Cm", "ALT 2 phase Cm", "1 phase Cm",
+            "Voltage sag", "Voltage min",
+            "Voltage sag ratio", "Tau_m Allen", "Voltage sag Allen",
+        ]
+        _real_sweep_numbers = [sweepNumber_to_real_sweep_number(s) for s in sweepList]
+        for _base in _sweepwise_bases:
+            _vals = []
+            for _n in _real_sweep_numbers:
+                _key = f"{_base} {_n}"
+                if _key in temp_df:
+                    _v = temp_df[_key]
+                    if isinstance(_v, (list, tuple, np.ndarray)):
+                        _vals.extend(np.ravel(_v).tolist())
+                    else:
+                        _vals.append(_v)
+            _arr = np.asarray(_vals, dtype=float) if len(_vals) else np.array([np.nan])
+            temp_avg[f"Sweepwise Averaged {_base}"] = [np.nanmean(_arr)]
+            temp_avg[f"Sweepwise SD {_base}"] = [np.nanstd(_arr)]
+            temp_avg[f"Sweepwise N {_base}"] = [int(np.sum(np.isfinite(_arr)))]
+
+        # Sweepwise majority-vote best fit (2-phase vs 1-phase)
+        _r2_list, _r1_list = [], []
+        for _n in _real_sweep_numbers:
+            _k2, _k1 = f"R squared 2 phase {_n}", f"R squared 1 phase {_n}"
+            if _k2 in temp_df and _k1 in temp_df:
+                _r2_list.append(np.ravel(temp_df[_k2])[0])
+                _r1_list.append(np.ravel(temp_df[_k1])[0])
+        if len(_r2_list):
+            _r2_arr = np.asarray(_r2_list, dtype=float)
+            _r1_arr = np.asarray(_r1_list, dtype=float)
+            _votes_2 = int(np.sum(_r2_arr > _r1_arr))
+            temp_avg["Sweepwise Averaged Best Fit"] = [2 if _votes_2 * 2 > len(_r2_list) else 1]
+        else:
+            temp_avg["Sweepwise Averaged Best Fit"] = [np.nan]
+
         temp_df = pd.DataFrame.from_dict(temp_df)
         decay_fast, decay_slow, curve, r_squared_2p, r_squared_1p, p_decay = exp_decay_factor_alt(dataT, np.nanmean(full_dataV[indices_of_same, :], axis=0),
                                                                                                   np.nanmean(full_dataI[indices_of_same, :], axis=0), time_after, abf_id=data.abfID, plot=bplot, root_fold=os.path.dirname(data.abfFilePath))

@@ -28,6 +28,12 @@ DEFAULT_DICT = {'filter': 0,
                  'start':0,
                  'end': 0,}
 
+# Per-file kwargs overrides for analyze_subthres. Keyed by ABF basename.
+# demo_3.abf begins with a test pulse that ends by ~0.5s; skip it.
+SUBTHRES_OVERRIDES = {
+    'demo_3.abf': {'start_sear': 0.5},
+}
+
 utils.DEBUG = True #enable debug mode for more verbose output
 
 # ---- Demo data paths (included in repo under tests/test_data/) ----
@@ -182,11 +188,13 @@ def test_demo_analyze_spike_times(abf_path):
 @pytest.mark.parametrize("abf_path", DEMO_ABFS, ids=DEMO_ABF_IDS)
 def test_demo_analyze_subthres(abf_path):
     """Run analyze_subthres on each demo ABF file."""
-    dfs = analyze_subthres(
+    kwargs = dict(
         file=abf_path, savfilter=0,
         start_sear=None, end_sear=None,
         subt_sweeps=None, time_after=50, bplot=False,
     )
+    kwargs.update(SUBTHRES_OVERRIDES.get(os.path.basename(abf_path), {}))
+    dfs = analyze_subthres(**kwargs)
     assert isinstance(dfs, tuple), "analyze_subthres should return a tuple"
     assert len(dfs) == 2, "analyze_subthres should return (df, avg)"
     assert isinstance(dfs[0], pd.DataFrame)
@@ -207,11 +215,13 @@ def test_demo_save_data_frames(tmp_path):
 @pytest.mark.parametrize("abf_path", DEMO_ABFS, ids=DEMO_ABF_IDS)
 def test_demo_save_subthres_data(tmp_path, abf_path):
     """Run analyze_subthres then save_subthres_data to a temp directory for each demo ABF."""
-    dfs = analyze_subthres(
+    kwargs = dict(
         file=abf_path, savfilter=0,
         start_sear=None, end_sear=None,
         subt_sweeps=None, time_after=50, bplot=False,
     )
+    kwargs.update(SUBTHRES_OVERRIDES.get(os.path.basename(abf_path), {}))
+    dfs = analyze_subthres(**kwargs)
     save_subthres_data(dfs[1], dfs[0], root_fold=str(tmp_path))
     out_files = glob.glob(os.path.join(str(tmp_path), 'subthres_*.xlsx'))
     assert len(out_files) >= 1, "save_subthres_data should create an xlsx file"
@@ -317,7 +327,7 @@ def test_full_subthreshold_funcs():
     files = glob.glob(os.path.dirname(__file__) + '/**/*.abf', recursive=True)
     
     
-    dfs = [analyze_subthres(file=files[x],  savfilter=0, start_sear=None, end_sear=None, subt_sweeps=None, time_after=50, bplot=False) for x in range(len(files))]
+    dfs = [analyze_subthres(file=files[x],**SUBTHRES_OVERRIDES[os.path.basename(files[x])] if os.path.basename(files[x]) in SUBTHRES_OVERRIDES.keys() else {}) for x in range(len(files))]
     main = pd.concat([dfs[x][0] for x in range(len(dfs))])
     avg = pd.concat([dfs[x][1] for x in range(len(dfs))])
     save_subthres_data(avg, main, root_fold=os.path.dirname(__file__))
