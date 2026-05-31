@@ -1,7 +1,17 @@
-from PySide6.QtWidgets import QApplication
-from pyAPisolation.dev.prism_writer_gui import PrismWriterGUI
+"""Deprecated. Use ``pyapisolation gui prism-writer`` instead."""
+import warnings
 
-if __name__ == '__main__':
-    app = QApplication([])
-    ex = PrismWriterGUI()
-    app.exec()
+
+def main():
+    warnings.warn(
+        "run_prism_writer.py is deprecated; use "
+        "`pyapisolation gui prism-writer` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from pyAPisolation.cli import main as cli_main
+    raise SystemExit(cli_main(["gui", "prism-writer"]))
+
+
+if __name__ == "__main__":
+    main()

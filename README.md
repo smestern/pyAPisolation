@@ -4,6 +4,8 @@ A Python package for batch electrophysiology feature extraction, analysis, and v
 
 ![](PVN_CLAMP.PNG)
 
+> **Authoring policy (soft target).** Core analysis code: spike detection, subthreshold fits, IPFX integration, lab-specific protocol logic, is written by a human. AI assistants are used for frameworking, generalization, plumbing, tests, and cleanup. See [COPILOT_PRIORITIES.md](COPILOT_PRIORITIES.md) for the current backlog and division of labor.
+
 ## Features
 
 - **Spike Detection & Analysis**: Automated spike detection using IPFX with customizable parameters (dV/dt cutoff, height thresholds, etc.)

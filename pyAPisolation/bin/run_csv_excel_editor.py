@@ -1,17 +1,17 @@
-#!/usr/bin/env python3
-"""
-CSV/Excel Editor Launcher
-Standalone application for editing CSV and Excel files with file drag-and-drop support
-"""
+"""Deprecated. Use ``pyapisolation gui csv-editor`` instead."""
+import warnings
 
-import sys
-import os
 
-# Add the parent directory to the path so we can import pyAPisolation
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+def main():
+    warnings.warn(
+        "run_csv_excel_editor.py is deprecated; use "
+        "`pyapisolation gui csv-editor` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from pyAPisolation.cli import main as cli_main
+    raise SystemExit(cli_main(["gui", "csv-editor"]))
 
-from pyAPisolation.gui.csvExcelEditor import main
-    
+
 if __name__ == "__main__":
     main()
-        

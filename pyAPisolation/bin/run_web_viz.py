@@ -1,28 +1,17 @@
-from pyAPisolation.web_viz import run_web_viz
-import argparse
-if __name__ == '__main__':
-    # make an argparse to parse the command line arguments. command line args should be the path to the data folder, or
-    # pregenerated dataframes
-    parser = argparse.ArgumentParser(
-        description='web app for visualizing data')
-    parser.add_argument('--backend', type=str, default='dynamic',
-                        help='backend to use for the web app. Options are static, dynamic')
-    
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--data_folder', type=str,
-                       help='path to the data folder containing the ABF files')
-    group.add_argument('--data_df', type=str,
-                       help='path to the pregenerated database')
-    group.add_argument('--data_dir', type=str,
-                       help='path to the directory containing the pregenerated database')
-    
-    
-    #parser = arg_wrap(parser)
+"""Deprecated. Use ``pyapisolation web-viz [args...]`` instead."""
+import sys
+import warnings
 
-    args = parser.parse_args()
-    data_folder = args.data_folder
-    data_df = args.data_df
-    backend = args.backend
 
-    run_web_viz.run_web_viz(data_folder, database_file=data_df, backend=backend)
-    
+def main():
+    warnings.warn(
+        "run_web_viz.py is deprecated; use `pyapisolation web-viz` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from pyAPisolation.cli import main as cli_main
+    raise SystemExit(cli_main(["web-viz", *sys.argv[1:]]))
+
+
+if __name__ == "__main__":
+    main()

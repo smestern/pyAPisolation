@@ -1,16 +1,19 @@
-
+"""Deprecated. Use ``pyapisolation gui new-spike-finder`` instead."""
 import multiprocessing
-from pyAPisolation.gui.app import main as spike_finder_main
+import warnings
+
 
 def main():
-    # This function is a placeholder for the main functionality of the spike finder.
-    # It can be replaced with the actual implementation.
-    print("Spike Finder GUI is starting...")
-    spike_finder_main()
+    warnings.warn(
+        "run_new_spike_finder.py is deprecated; use "
+        "`pyapisolation gui new-spike-finder` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from pyAPisolation.cli import main as cli_main
+    raise SystemExit(cli_main(["gui", "new-spike-finder"]))
+
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support()  # Ensure compatibility with frozen applications
-    
+    multiprocessing.freeze_support()
     main()
-# This script serves as an entry point to run the spike finder GUI.
-# It imports the main function from the spikeFinder module and executes it.

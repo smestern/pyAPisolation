@@ -23,7 +23,8 @@ include = ["*"]  # package names should match these glob patterns (["*"] by defa
 exclude = ["tests"]  # exclude packages matching these glob patterns (empty by default)
 
 [project.scripts]
-spike_finder = "pyAPisolation.bin:run_spike_finder.main"
+pyapisolation = "pyAPisolation.cli:main"
+spike_finder = "pyAPisolation.bin.run_spike_finder:main"
 
 [tool.setuptools.package-data]
 "*" = ["*.pzfx", "*.ui"]

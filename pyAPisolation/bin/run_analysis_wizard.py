@@ -1,17 +1,18 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Deprecated. Use ``pyapisolation gui analysis-wizard`` instead."""
+import warnings
 
-"""
-Launcher script for the Post-hoc Analysis Runner Wizard
-"""
 
-import sys
-import os
+def main():
+    warnings.warn(
+        "run_analysis_wizard.py is deprecated; use "
+        "`pyapisolation gui analysis-wizard` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from pyAPisolation.cli import main as cli_main
+    raise SystemExit(cli_main(["gui", "analysis-wizard"]))
 
-# Add the pyAPisolation package to the path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from pyAPisolation.gui.postAnalysisRunner import main
 
 if __name__ == "__main__":
     main()
+

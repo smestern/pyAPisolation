@@ -334,9 +334,12 @@ def process_file(file_path, param_dict, protocol_name):
 #CUSTOM FEATURES
 def _custom_sweepwise_features(sweepX, sweepY, sweepC, real_sweep_number, param_dict, spike_df, rawspike_df):
     custom_features = {}
-    sag, taum, voltage = subthres_a(sweepX, sweepY, sweepC, param_dict['start'], param_dict['end'])
-    custom_features["Sag Ratio " + real_sweep_number + ""] = sag
-    custom_features["Taum " + real_sweep_number + ""] = taum
+    try:
+        sag, taum, voltage = subthres_a(sweepX, sweepY, sweepC, param_dict['start'], param_dict['end'])
+        custom_features["Sag Ratio " + real_sweep_number + ""] = sag
+        custom_features["Taum " + real_sweep_number + ""] = taum
+    except:
+        print('Fail to find sag or taum')
 
     try:
         custom_features['baseline voltage' + real_sweep_number] = subt.baseline_voltage(sweepX, sweepY, start=0.1, filter_frequency=param_dict['filter'])
