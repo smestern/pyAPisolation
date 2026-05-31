@@ -1,4 +1,4 @@
-name: pyAPisolation
+name: gigaseal
 channels:
   - conda-forge
 dependencies:

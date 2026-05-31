@@ -4,29 +4,29 @@ print(f"Python: {sys.version}")
 
 try:
     print("Testing widget imports...")
-    from pyAPisolation.gui.widgets.pandas_model import PandasModel
+    from gigaseal.gui.widgets.pandas_model import PandasModel
     print("  PandasModel OK")
-    from pyAPisolation.gui.widgets.param_form import ParamFormWidget
+    from gigaseal.gui.widgets.param_form import ParamFormWidget
     print("  ParamFormWidget OK")
-    from pyAPisolation.gui.widgets.sweep_selector import SweepSelector
+    from gigaseal.gui.widgets.sweep_selector import SweepSelector
     print("  SweepSelector OK")
 
     print("Testing panel imports...")
-    from pyAPisolation.gui.panels.file_panel import FilePanel
+    from gigaseal.gui.panels.file_panel import FilePanel
     print("  FilePanel OK")
-    from pyAPisolation.gui.panels.analysis_panel import AnalysisPanel
+    from gigaseal.gui.panels.analysis_panel import AnalysisPanel
     print("  AnalysisPanel OK")
-    from pyAPisolation.gui.panels.results_panel import ResultsPanel
+    from gigaseal.gui.panels.results_panel import ResultsPanel
     print("  ResultsPanel OK")
-    from pyAPisolation.gui.panels.plot_panel import PlotPanel
+    from gigaseal.gui.panels.plot_panel import PlotPanel
     print("  PlotPanel OK")
 
     print("Testing controller import...")
-    from pyAPisolation.gui.controllers.analysis_controller import AnalysisController
+    from gigaseal.gui.controllers.analysis_controller import AnalysisController
     print("  AnalysisController OK")
 
     print("Testing app import...")
-    from pyAPisolation.gui.app import MainWindow, main
+    from gigaseal.gui.app import MainWindow, main
     print("  MainWindow OK")
 
     print("\nAll imports successful!")

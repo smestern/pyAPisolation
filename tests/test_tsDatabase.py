@@ -12,7 +12,7 @@ import pytest
 # Directly load the tsDatabase module without triggering the main package __init__
 # (which pulls in ipfx and other heavy deps that may not be installed)
 _mod_path = os.path.join(
-    os.path.dirname(__file__), "..", "pyAPisolation", "database", "tsDatabase.py"
+    os.path.dirname(__file__), "..", "gigaseal", "database", "tsDatabase.py"
 )
 _spec = importlib.util.spec_from_file_location("tsDatabase", _mod_path)
 _mod = importlib.util.module_from_spec(_spec)

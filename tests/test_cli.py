@@ -1,4 +1,4 @@
-"""Smoke tests for the unified `pyapisolation` CLI."""
+"""Smoke tests for the unified `gigaseal` CLI."""
 
 import json
 import os
@@ -13,9 +13,9 @@ HAS_DEMO = os.path.exists(DEMO_ABF)
 
 
 def _run_cli(*args, check=True):
-    """Invoke the CLI through `python -m pyAPisolation.cli` and capture output."""
+    """Invoke the CLI through `python -m gigaseal.cli` and capture output."""
     result = subprocess.run(
-        [sys.executable, "-m", "pyAPisolation.cli", *args],
+        [sys.executable, "-m", "gigaseal.cli", *args],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
@@ -31,7 +31,7 @@ def _run_cli(*args, check=True):
 class TestCLIBasics:
     def test_help_runs(self):
         r = _run_cli("--help")
-        assert "pyapisolation" in r.stdout
+        assert "gigaseal" in r.stdout
 
     def test_no_args_prints_help(self):
         r = _run_cli()

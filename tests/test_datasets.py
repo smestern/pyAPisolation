@@ -1,6 +1,6 @@
 import numpy as np
-from pyAPisolation.dataset import cellData
-from pyAPisolation.database import tsDatabase
+from gigaseal.dataset import cellData
+from gigaseal.database import tsDatabase
 import os
 from joblib import load
 def test_x_y_c():

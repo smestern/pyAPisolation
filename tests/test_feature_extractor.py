@@ -1,7 +1,7 @@
 ###############################################################################
 # This script will ensure that feature extraction is working properly
 #
-# Path: pyAPisolation/tests/test_feature_extractor.py
+# Path: gigaseal/tests/test_feature_extractor.py
 # We want to compare the output df to a known good df
 # Unfortunately, the datafiles are not included in the repo, please contact me if you would like to run this test
 # The known good df is saved in the test_data folder
@@ -11,11 +11,11 @@ import shutil
 import pandas as pd
 import numpy as np
 from joblib import dump, load
-from pyAPisolation.featureExtractor import batch_feature_extract, save_data_frames, analyze_spike_times, analyze_subthres
-from pyAPisolation.patch_utils import load_protocols
-from pyAPisolation.ipfx_df import save_subthres_data
-import pyAPisolation.utils as utils
-#from pyAPisolation.analysis import SpikeAnalysisModule
+from gigaseal.featureExtractor import batch_feature_extract, save_data_frames, analyze_spike_times, analyze_subthres
+from gigaseal.patch_utils import load_protocols
+from gigaseal.ipfx_df import save_subthres_data
+import gigaseal.utils as utils
+#from gigaseal.analysis import SpikeAnalysisModule
 import glob
 import pytest
 

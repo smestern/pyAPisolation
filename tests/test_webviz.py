@@ -1,13 +1,13 @@
 """
-Tests for pyAPisolation webViz functionality
+Tests for gigaseal webViz functionality
 
 Note: These tests focus on non-visual aspects like config loading, data validation,
 and HTML structure. Visual plot rendering requires manual validation.
 """
-from pyAPisolation.webViz.tsDatabaseViewer import tsDatabaseViewer
-from pyAPisolation.webViz.ephysDatabaseViewer import ephysDatabaseViewer
-from pyAPisolation.webViz.webVizConfig import webVizConfig
-from pyAPisolation.webViz.flaskApp import tsServer
+from gigaseal.webViz.tsDatabaseViewer import tsDatabaseViewer
+from gigaseal.webViz.ephysDatabaseViewer import ephysDatabaseViewer
+from gigaseal.webViz.webVizConfig import webVizConfig
+from gigaseal.webViz.flaskApp import tsServer
 import pandas as pd
 from joblib import load
 import os

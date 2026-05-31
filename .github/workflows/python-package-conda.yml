@@ -22,7 +22,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
         channels: conda-forge
         channel-priority: strict
-        activate-environment: pyAPisolation
+        activate-environment: gigaseal
         auto-activate-base: false
     
     - name: Install conda dependencies

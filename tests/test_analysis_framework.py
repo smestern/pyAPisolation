@@ -55,20 +55,20 @@ def _make_fake_data_2d(n_sweeps=3, n_points=10000, dt=1e-4):
 
 class TestAnalysisResult:
     def test_basic_creation(self):
-        from pyAPisolation.analysis.result import AnalysisResult
+        from gigaseal.analysis.result import AnalysisResult
         r = AnalysisResult(name="test", file_path="foo.abf")
         assert r.success is True
         assert r.name == "test"
 
     def test_add_error_marks_failure(self):
-        from pyAPisolation.analysis.result import AnalysisResult
+        from gigaseal.analysis.result import AnalysisResult
         r = AnalysisResult(name="test")
         r.add_error("something broke")
         assert r.success is False
         assert "something broke" in r.errors
 
     def test_to_dataframe_single(self):
-        from pyAPisolation.analysis.result import AnalysisResult
+        from gigaseal.analysis.result import AnalysisResult
         r = AnalysisResult(name="test", data={"peak": 42, "width": 1.5})
         df = r.to_dataframe()
         assert isinstance(df, pd.DataFrame)
@@ -76,7 +76,7 @@ class TestAnalysisResult:
         assert df["peak"].iloc[0] == 42
 
     def test_to_dataframe_sweep_results(self):
-        from pyAPisolation.analysis.result import AnalysisResult
+        from gigaseal.analysis.result import AnalysisResult
         r = AnalysisResult(name="test", file_path="f.abf", data={"cell_id": "A"},
                            sweep_results=[{"v": -70}, {"v": -65}, {"v": -60}])
         df = r.to_dataframe()
@@ -86,7 +86,7 @@ class TestAnalysisResult:
         assert all(df["cell_id"] == "A")
 
     def test_concatenate(self):
-        from pyAPisolation.analysis.result import AnalysisResult
+        from gigaseal.analysis.result import AnalysisResult
         r1 = AnalysisResult(name="t", file_path="a.abf", data={"x": 1})
         r2 = AnalysisResult(name="t", file_path="b.abf", data={"x": 2})
         combined = AnalysisResult.concatenate([r1, r2])
@@ -95,7 +95,7 @@ class TestAnalysisResult:
         assert set(df["file"]) == {"a.abf", "b.abf"}
 
     def test_concatenate_empty(self):
-        from pyAPisolation.analysis.result import AnalysisResult
+        from gigaseal.analysis.result import AnalysisResult
         combined = AnalysisResult.concatenate([])
         assert combined.success is False
 
@@ -106,7 +106,7 @@ class TestAnalysisResult:
 
 class TestAnalysisBase:
     def _make_simple_module(self):
-        from pyAPisolation.analysis.base import AnalysisBase
+        from gigaseal.analysis.base import AnalysisBase
 
         class SimpleModule(AnalysisBase):
             name = "simple"
@@ -147,7 +147,7 @@ class TestAnalysisBase:
         assert d == {"threshold": -30.0, "window_ms": 5}
 
     def test_auto_name(self):
-        from pyAPisolation.analysis.base import AnalysisBase
+        from gigaseal.analysis.base import AnalysisBase
 
         class MyFancyAnalysis(AnalysisBase):
             def analyze(self, x, y, c, **kwargs):
@@ -168,7 +168,7 @@ class TestAnalysisBase:
             assert sr["max_v"] == pytest.approx(-70.0)
 
     def test_run_per_file_mode(self):
-        from pyAPisolation.analysis.base import AnalysisBase
+        from gigaseal.analysis.base import AnalysisBase
 
         class FileMode(AnalysisBase):
             name = "filemode"
@@ -186,7 +186,7 @@ class TestAnalysisBase:
         assert result.data["mean_v"] == pytest.approx(-70.0)
 
     def test_run_handles_exceptions(self):
-        from pyAPisolation.analysis.base import AnalysisBase
+        from gigaseal.analysis.base import AnalysisBase
 
         class Crasher(AnalysisBase):
             name = "crasher"
@@ -220,8 +220,8 @@ class TestAnalysisBase:
 
 class TestRegistry:
     def test_register_and_get(self):
-        from pyAPisolation.analysis.registry import register, get, clear
-        from pyAPisolation.analysis.base import AnalysisBase
+        from gigaseal.analysis.registry import register, get, clear
+        from gigaseal.analysis.base import AnalysisBase
 
         class Dummy(AnalysisBase):
             name = "test_dummy"
@@ -235,7 +235,7 @@ class TestRegistry:
         assert m.name == "test_dummy"
 
     def test_list_modules(self):
-        from pyAPisolation.analysis.registry import list_modules
+        from gigaseal.analysis.registry import list_modules
         names = list_modules()
         assert isinstance(names, list)
         # Built-ins should be registered by default
@@ -244,8 +244,8 @@ class TestRegistry:
         assert "peak_detector" in names
 
     def test_register_with_overrides(self):
-        from pyAPisolation.analysis.registry import register, get
-        from pyAPisolation.analysis.base import AnalysisBase
+        from gigaseal.analysis.registry import register, get
+        from gigaseal.analysis.base import AnalysisBase
 
         class ParamTest(AnalysisBase):
             name = "param_test_reg"
@@ -265,7 +265,7 @@ class TestRegistry:
 @pytest.mark.skipif(not HAS_DEMO_DATA, reason="Demo ABF files not found")
 class TestWithDemoData:
     def test_spike_analysis_runs(self):
-        from pyAPisolation.analysis import get
+        from gigaseal.analysis import get
         module = get("spike")
         result = module.run(file=DEMO_ABF_1)
         assert result.success
@@ -274,7 +274,7 @@ class TestWithDemoData:
         assert "spike_count" in df.columns
 
     def test_subthreshold_analysis_runs(self):
-        from pyAPisolation.analysis import get
+        from gigaseal.analysis import get
         module = get("subthreshold")
         result = module.run(file=DEMO_ABF_1)
         assert result.success
@@ -282,7 +282,7 @@ class TestWithDemoData:
         assert "sag_ratio" in df.columns
 
     def test_peak_detector_runs(self):
-        from pyAPisolation.analysis import get
+        from gigaseal.analysis import get
         module = get("peak_detector")
         result = module.run(file=DEMO_ABF_1)
         assert result.success
@@ -290,7 +290,7 @@ class TestWithDemoData:
         assert "peak_voltage" in df.columns
 
     def test_run_batch(self):
-        from pyAPisolation.analysis import get, run_batch
+        from gigaseal.analysis import get, run_batch
         module = get("peak_detector")
         result = run_batch(module, DATA_DIR)
         df = result.to_dataframe()
@@ -298,8 +298,8 @@ class TestWithDemoData:
         assert len(df) > 0
 
     def test_legacy_spike_analysis_runs(self):
-        from pyAPisolation.analysis import get
-        from pyAPisolation.loadFile import loadABF
+        from gigaseal.analysis import get
+        from gigaseal.loadFile import loadABF
         module = get("legacy_spike")
         result = module.run(file=DEMO_ABF_1)
 
@@ -319,13 +319,13 @@ class TestWithDemoData:
 
 class TestLegacyImports:
     def test_feature_extractor_still_importable(self):
-        from pyAPisolation.featureExtractor import analyze, batch_feature_extract, analyze_sweep
+        from gigaseal.featureExtractor import analyze, batch_feature_extract, analyze_sweep
         assert callable(analyze)
         assert callable(batch_feature_extract)
         assert callable(analyze_sweep)
 
     def test_dataset_still_importable(self):
-        from pyAPisolation.dataset import cellData
+        from gigaseal.dataset import cellData
         assert callable(cellData)
 
 if __name__ == "__main__":

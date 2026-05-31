@@ -1,11 +1,11 @@
 ---
-description: "Use when authoring or modifying analysis modules in pyAPisolation/analysis/ — covers AnalysisBase contract, parameter discovery, sweep_mode semantics, and registry patterns. Apply when subclassing AnalysisBase, registering modules, or touching builtins."
-applyTo: "pyAPisolation/analysis/**"
+description: "Use when authoring or modifying analysis modules in gigaseal/analysis/ — covers AnalysisBase contract, parameter discovery, sweep_mode semantics, and registry patterns. Apply when subclassing AnalysisBase, registering modules, or touching builtins."
+applyTo: "gigaseal/analysis/**"
 ---
 
 # Analysis Framework Rules
 
-The modular analysis framework lives in [pyAPisolation/analysis/](../../pyAPisolation/analysis/). See [ANALYSIS_REFACTOR.md](../../ANALYSIS_REFACTOR.md) for the full migration guide; the canonical test reference is [tests/test_analysis_framework.py](../../tests/test_analysis_framework.py).
+The modular analysis framework lives in [gigaseal/analysis/](../../gigaseal/analysis/). See [ANALYSIS_REFACTOR.md](../../ANALYSIS_REFACTOR.md) for the full migration guide; the canonical test reference is [tests/test_analysis_framework.py](../../tests/test_analysis_framework.py).
 
 ## Hard rules
 
@@ -33,13 +33,13 @@ The modular analysis framework lives in [pyAPisolation/analysis/](../../pyAPisol
 
 - **Register at module level**, not inside functions or `if __name__ == ...`. `run_batch(n_jobs>1)` uses `ProcessPoolExecutor` on Windows — modules must be importable in worker processes.
 
-- **Built-ins delegate to legacy code.** Wrappers in [pyAPisolation/analysis/builtins/](../../pyAPisolation/analysis/builtins/) call into `featureExtractor.py` / `patch_subthres.py`. Do not duplicate logic — wrap it.
+- **Built-ins delegate to legacy code.** Wrappers in [gigaseal/analysis/builtins/](../../gigaseal/analysis/builtins/) call into `featureExtractor.py` / `patch_subthres.py`. Do not duplicate logic — wrap it.
 
 - **Legacy `featureExtractor.py` is frozen.** Never change its public function signatures (`analyze`, `analyze_sweep`, `analyze_sweepset`, `batch_feature_extract`) — the GUI and bin scripts still depend on them.
 
 ## Patterns
 
-**Reference implementation** (10 lines of user code): [pyAPisolation/analysis/builtins/example.py](../../pyAPisolation/analysis/builtins/example.py).
+**Reference implementation** (10 lines of user code): [gigaseal/analysis/builtins/example.py](../../gigaseal/analysis/builtins/example.py).
 
 **Runtime parameter override:**
 ```python
@@ -49,7 +49,7 @@ module.set_parameters(dv_cutoff=12.0)           # post-hoc
 
 **Batch entry point** — always use the standalone function, never a method:
 ```python
-from pyAPisolation.analysis import run_batch, save_results
+from gigaseal.analysis import run_batch, save_results
 result = run_batch(module, "folder/", protocol_filter="IC1", n_jobs=4)
 save_results(result, "out/", tag="exp1")
 ```

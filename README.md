@@ -1,4 +1,4 @@
-# pyAPisolation
+# gigaseal
 
 A Python package for batch electrophysiology feature extraction, analysis, and visualization of ABF files. Built for the Inoue Lab @ Western University.
 
@@ -29,9 +29,9 @@ A Python package for batch electrophysiology feature extraction, analysis, and v
 Create a dedicated conda environment:
 
 ```bash
-conda create -n pyAPisolation python=3.11 -y
-conda activate pyAPisolation
-pip install git+https://github.com/smestern/pyAPisolation
+conda create -n gigaseal python=3.11 -y
+conda activate gigaseal
+pip install git+https://github.com/smestern/gigaseal
 ```
 
 ### Installation Options
@@ -40,16 +40,16 @@ Install with optional dependencies based on your needs:
 
 ```bash
 # GUI application (PySide6, pyqtgraph)
-pip install "pyAPisolation[gui] @ git+https://github.com/smestern/pyAPisolation"
+pip install "gigaseal[gui] @ git+https://github.com/smestern/gigaseal"
 
 # Web visualization (Flask, anndata)
-pip install "pyAPisolation[web] @ git+https://github.com/smestern/pyAPisolation"
+pip install "gigaseal[web] @ git+https://github.com/smestern/gigaseal"
 
 # Machine learning features (scikit-learn, UMAP)
-pip install "pyAPisolation[ml] @ git+https://github.com/smestern/pyAPisolation"
+pip install "gigaseal[ml] @ git+https://github.com/smestern/gigaseal"
 
 # Full installation (all features)
-pip install "pyAPisolation[full] @ git+https://github.com/smestern/pyAPisolation"
+pip install "gigaseal[full] @ git+https://github.com/smestern/gigaseal"
 ```
 
 ### Troubleshooting
@@ -57,7 +57,7 @@ pip install "pyAPisolation[full] @ git+https://github.com/smestern/pyAPisolation
 If IPFX installation fails due to strict requirements, run:
 
 ```bash
-pyAPisolation_setup
+gigaseal_setup
 ```
 
 ### GUI Application
@@ -89,7 +89,7 @@ Key parameters for spike detection:
 ## Project Structure
 
 ```
-pyAPisolation/
+gigaseal/
 ├── featureExtractor.py  # Core spike analysis
 ├── patch_subthres.py    # Subthreshold analysis
 ├── patch_ml.py          # ML/clustering utilities
