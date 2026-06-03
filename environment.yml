@@ -2,29 +2,29 @@ name: pyAPisolation
 channels:
   - conda-forge
 dependencies:
-  - python=3.11
+  - python=3.13.5
   - pip
   # Core scientific stack (faster via conda)
   - numpy>=1.21
   - pandas>=1.3
   - scipy>=1.7
   - matplotlib>=3.5
-  - h5py>=3.0
+  - h5py
   # GUI dependencies (optional, comment out if not needed)
-  - pyqtgraph>=0.12
-  - seaborn>=0.11
+  - pyqtgraph
+  - seaborn
   # Dev tools
   - ipython
   - jupyter
   - pytest
   - pip:
-    - pyabf>=2.3.0
+    - pyabf
     - ipfx>=2.1.0
     - prismWriter
-    - anndata>=0.8
-    - flask>=2.0
-    - pyyaml>=6.0
-    - beautifulsoup4>=4.9
-    - openpyxl>=3.0
+    - anndata
+    - flask
+    - pyyaml
+    - beautifulsoup4
+    - openpyxl
     - scikit-learn
     - -e .
