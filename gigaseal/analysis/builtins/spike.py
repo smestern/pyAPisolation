@@ -48,7 +48,7 @@ class LegacySpikeAnalysis(AnalysisBase):
     name = "legacy_spike"
     display_name = "Legacy Spike Analysis"
     sweep_mode = "per_file"
-    hidden = False
+    hidden = True
 
     # Parameters as typed class attributes with defaults
     dv_cutoff: float = 7.0

@@ -486,6 +486,68 @@ class tsDatabase:
             n += 1
         return f"Cell_{n:03d}"
 
+    def from_dataframe(self, df: pd.DataFrame, *,
+                       cell_id_col: Optional[str] = None,
+                       filename_cols: Optional[List[str]] = None,
+                       metadata_cols: Optional[List[str]] = None) -> bool:
+        """Populate the database from an arbitrary DataFrame.
+
+        Parameters
+        ----------
+        df : pd.DataFrame
+            Source data.  Each row represents a cell.
+        cell_id_col : str, optional
+            Column to use as the cell index.  When omitted the existing
+            DataFrame index is used.
+        filename_cols : list of str, optional
+            Columns that hold recording file paths (protocol columns).
+            When *None* all non-metadata columns are treated as protocol
+            columns.
+        metadata_cols : list of str, optional
+            Columns to mark as metadata (cell-level annotations).
+
+        Returns
+        -------
+        bool
+            ``True`` on success, ``False`` if the DataFrame is empty or
+            an unexpected error occurs.
+        """
+        if df is None or df.empty:
+            logger.warning("from_dataframe: received empty DataFrame")
+            return False
+        try:
+            df = df.copy()
+            if cell_id_col and cell_id_col in df.columns:
+                df = df.set_index(cell_id_col)
+            df.index.name = "cell"
+            self.cellindex = df
+            self.exp = experimentalStructure()
+
+            meta_set = set(metadata_cols or [])
+            proto_set = set(filename_cols or [])
+
+            for col in df.columns:
+                if col in meta_set:
+                    self.exp.mark_metadata(col)
+                elif proto_set and col in proto_set:
+                    base = self.protocol_base_name(col)
+                    cond = self.protocol_condition(col)
+                    self.exp.add_protocol(base, conditions=[cond] if cond else None)
+                else:
+                    # heuristic classification when not explicitly listed
+                    if col.lower() in {m.lower() for m in DEFAULT_METADATA_COLS}:
+                        self.exp.mark_metadata(col)
+                    elif not proto_set:
+                        base = self.protocol_base_name(col)
+                        cond = self.protocol_condition(col)
+                        self.exp.add_protocol(base, conditions=[cond] if cond else None)
+
+            logger.info("from_dataframe: loaded %d cells", len(self.cellindex))
+            return True
+        except Exception as exc:
+            logger.error("from_dataframe failed: %s", exc)
+            return False
+
     # ------------------------------------------------------------------
     # Backward-compat shims (old API -> new API)
     # ------------------------------------------------------------------
@@ -532,4 +594,7 @@ class tsDatabase:
         return self.cellindex.to_dict(orient="records")
 
     def getCells(self):
+        if not self.cellindex.index.is_unique:
+            # Fall back to records orientation when index is non-unique
+            return {str(i): row for i, row in enumerate(self.cellindex.to_dict(orient="records"))}
         return self.cellindex.to_dict(orient="index")

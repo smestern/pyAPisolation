@@ -15,6 +15,4 @@ from .example import PeakDetector
 register(SpikeAnalysis)
 register(SubthresholdAnalysis)
 register(LegacySpikeAnalysis)
-
-#you could register example here as well, but we don't want it to show up in the GUI by default since it's just a demo
-#register(PeakDetector)
+register(PeakDetector)

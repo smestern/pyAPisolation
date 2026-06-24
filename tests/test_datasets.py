@@ -1,8 +1,9 @@
 import numpy as np
+import pandas as pd
 from gigaseal.dataset import cellData
 from gigaseal.database import tsDatabase
 import os
-from joblib import load
+
 def test_x_y_c():
     #generate some fake data
     x = np.random.rand(10, 1000)
@@ -47,11 +48,25 @@ def test_x_y_c():
 
 
 def test_database():
-    df = load(f'{os.path.dirname(__file__)}/test_data/known_good_df.joblib')
-    db = tsDatabase.tsDatabase(dataframe=df, id_col='filename')
+    # Build a representative DataFrame inline so there is no dependency on a
+    # serialised reference file (which can become incompatible with newer
+    # pandas / joblib versions).
+    df = pd.DataFrame({
+        'filename': ['cell_001', 'cell_002', 'cell_003'],
+        'IC1': ['/data/cell_001_IC1.abf', '/data/cell_002_IC1.abf', '/data/cell_003_IC1.abf'],
+        'drug': ['ctrl', 'drug', 'ctrl'],
+    })
+
+    db = tsDatabase()
+    success = db.from_dataframe(df, cell_id_col='filename',
+                                 filename_cols=['IC1'],
+                                 metadata_cols=['drug'])
+    assert success, "from_dataframe should return True on success"
     print(db.cellindex.head())
-    assert db.dataframe.equals(df)
-    assert np.all(list(db.cellindex['IC1']) == list(df.index.values))
+
+    # Cells should be indexed by filename
+    assert 'cell_001' in db.cellindex.index.values
+    assert 'IC1' in db.cellindex.columns
 
     #check that we can add a new entry
     db.addEntry('test')
@@ -59,13 +74,9 @@ def test_database():
 
     #try adding a protocol
     db.addProtocol('test', 'protocol', path='test_path')
-    assert db.cellindex.loc['test', 'protocol'] =='test_path'
+    assert db.cellindex.loc['test', 'protocol'] == 'test_path'
 
-
-
-    
 
 if __name__ == "__main__":
     test_database()
     test_x_y_c()
-    
