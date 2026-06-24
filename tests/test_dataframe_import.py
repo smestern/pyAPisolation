@@ -9,10 +9,10 @@ import pandas as pd
 import logging
 logging.basicConfig(level=logging.INFO)
 
-# Add the parent directory to sys.path to import pyAPisolation
+# Add the parent directory to sys.path to import gigaseal
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pyAPisolation.database.tsDatabase import tsDatabase
+from gigaseal.database.tsDatabase import tsDatabase
 
 def test_demo_dataframe_import():
     """Test importing the demo arbitrary data CSV"""

@@ -14580,7 +14580,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="CLI/Functional-analysis-of-patch-clamp-data">CLI/Functional analysis of patch clamp data<a class="anchor-link" href="#CLI/Functional-analysis-of-patch-clamp-data">&#182;</a></h2><p>The pyAPisolation package has several entry points for analysis. While most of the package is currently built for use with ABF, I have been making progress in making functions that accept and process various data types.</p>
+<h2 id="CLI/Functional-analysis-of-patch-clamp-data">CLI/Functional analysis of patch clamp data<a class="anchor-link" href="#CLI/Functional-analysis-of-patch-clamp-data">&#182;</a></h2><p>The gigaseal package has several entry points for analysis. While most of the package is currently built for use with ABF, I have been making progress in making functions that accept and process various data types.</p>
 <p><strong><em> Note: For install instructions please see the main readme </em></strong></p>
 
 </div>
@@ -14612,7 +14612,7 @@ body[data-format='mobile'] .jp-OutputArea-child .jp-OutputArea-output {
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pyAPisolation.loadFile</span> <span class="k">as</span> <span class="nn">lf</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">gigaseal.loadFile</span> <span class="k">as</span> <span class="nn">lf</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
@@ -14689,7 +14689,7 @@ class="
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h3 id="Spike-Feature-analysis">Spike Feature analysis<a class="anchor-link" href="#Spike-Feature-analysis">&#182;</a></h3><p>The majority of the code for extracting spiking features is in <code>pyAPisolation.featureExtractor</code>. In this case, the functions to take note of are <code>analyze</code> and <code>batch_feature_extract</code>. These handle a variety inputs and output dataframes with all features used in Sunstrum et. al. 202X.<br>
+<h3 id="Spike-Feature-analysis">Spike Feature analysis<a class="anchor-link" href="#Spike-Feature-analysis">&#182;</a></h3><p>The majority of the code for extracting spiking features is in <code>gigaseal.featureExtractor</code>. In this case, the functions to take note of are <code>analyze</code> and <code>batch_feature_extract</code>. These handle a variety inputs and output dataframes with all features used in Sunstrum et. al. 202X.<br>
 Lets take a look at the call signature for analyze:</p>
 <div class="highlight"><pre><span></span><span class="c1">#=== functional interface for programmatic use ===</span>
 <span class="k">def</span> <span class="nf">analyze</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">param_dict</span><span class="o">=</span><span class="n">DEFAULT_DICT</span><span class="p">,</span> <span class="n">return_summary_frames</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -14738,7 +14738,7 @@ df_running_avg_count: This is a dataframe that contains the running average acro
 <div class="jp-InputPrompt jp-InputArea-prompt">In&nbsp;[3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
      <div class="CodeMirror cm-s-jupyter">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pyAPisolation.featureExtractor</span> <span class="k">as</span> <span class="nn">fe</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">gigaseal.featureExtractor</span> <span class="k">as</span> <span class="nn">fe</span>
 
 <span class="n">df_spike_count</span><span class="p">,</span> <span class="n">df_raw_out</span><span class="p">,</span> <span class="n">df_running_avg</span> <span class="o">=</span> <span class="n">fe</span><span class="o">.</span><span class="n">analyze</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">param_dict</span><span class="o">=</span><span class="n">fe</span><span class="o">.</span><span class="n">DEFAULT_DICT</span><span class="p">,</span> <span class="n">return_summary_frames</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">" === df_raw_out === "</span><span class="p">)</span>
@@ -14955,9 +14955,9 @@ This function attempts to automatically detect the subthreshold components. In t
 
 
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr">
-<pre>INFO:pyAPisolation.dataset:Creating cellData object
-INFO:pyAPisolation.dataset:Loading data from arrays
-INFO:pyAPisolation.dataset:Generating name from data
+<pre>INFO:gigaseal.dataset:Creating cellData object
+INFO:gigaseal.dataset:Loading data from arrays
+INFO:gigaseal.dataset:Generating name from data
 </pre>
 </div>
 </div>

@@ -22,19 +22,23 @@ jobs:
         python-version: ${{ matrix.python-version }}
         channels: conda-forge
         channel-priority: strict
-        activate-environment: pyAPisolation
+        activate-environment: gigaseal
         auto-activate-base: false
     
     - name: Install conda dependencies
       shell: bash -el {0}
       run: |
-        conda install -y numpy pandas scipy matplotlib h5py pytest
+        conda install -y pip numpy pandas scipy matplotlib h5py pytest
     
     - name: Install pip dependencies
       shell: bash -el {0}
       run: |
-        pip install --upgrade pip setuptools
-        pip install -e ".[full]"
+        # Use `python -m pip` so installs land in the active conda env
+        # rather than falling through PATH to the system Python.
+        python -m pip install --upgrade pip setuptools
+        python -m pip install -e ".[full]"
+        # Fail loudly here if a core dependency did not land in this env.
+        python -c "import pyabf, gigaseal"
     
     - name: Test with pytest
       shell: bash -el {0}

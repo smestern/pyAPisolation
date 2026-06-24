@@ -1,0 +1,32 @@
+# docker-compose stack for the gigaseal lab self-host.
+#
+# Usage:
+#   cp .env.example .env   # edit GIGASEAL_API_TOKEN at minimum
+#   docker compose up -d
+#   open http://<host>:8000  (or whatever port you forward)
+
+services:
+  gigaseal-web:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: gigaseal-web:latest
+    container_name: gigaseal-web
+    restart: unless-stopped
+    ports:
+      - "${GIGASEAL_PORT:-8000}:8000"
+    environment:
+      GIGASEAL_WEB_PROFILE: lab
+      GIGASEAL_API_TOKEN: "${GIGASEAL_API_TOKEN:-}"
+      GIGASEAL_SERVER_PATH_ROOT: "${GIGASEAL_SERVER_PATH_ROOT:-}"
+      GIGASEAL_MAX_CONCURRENT_JOBS: "${GIGASEAL_MAX_CONCURRENT_JOBS:-4}"
+      GIGASEAL_SESSION_TTL_H: "${GIGASEAL_SESSION_TTL_H:-24}"
+      GIGASEAL_SECRET_KEY: "${GIGASEAL_SECRET_KEY:-}"
+    volumes:
+      - sessions:/var/lib/gigaseal/sessions
+      # Mount your shared lab data here (read-only). Match
+      # GIGASEAL_SERVER_PATH_ROOT in .env to this container path.
+      - "${GIGASEAL_DATA_DIR:-./data}:/data:ro"
+
+volumes:
+  sessions:

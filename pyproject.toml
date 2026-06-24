@@ -3,7 +3,7 @@ requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pyAPisolation"
+name = "gigaseal"
 version = "0.9.1"
 requires-python = ">=3.11"
 dependencies = [
@@ -23,10 +23,11 @@ include = ["*"]  # package names should match these glob patterns (["*"] by defa
 exclude = ["tests"]  # exclude packages matching these glob patterns (empty by default)
 
 [project.scripts]
-spike_finder = "pyAPisolation.bin:run_spike_finder.main"
+gigaseal = "gigaseal.cli:main"
+spike_finder = "gigaseal.bin.run_spike_finder:main"
 
 [tool.setuptools.package-data]
-"*" = ["*.pzfx", "*.ui"]
+"*" = ["*.pzfx", "*.ui", "*.html", "*.css", "*.js"]
 
 [project.optional-dependencies]
 # Desktop GUI application
@@ -43,12 +44,13 @@ web = [
     "beautifulsoup4>=4.9",
     "pyyaml>=6.0",
     "anndata>=0.8",
-    "openpyxl>=3.0"
+    "openpyxl>=3.0",
+    "flask-limiter>=3.0"
 ]
 
 # Production web server
 server = [
-    "pyAPisolation[web]",
+    "gigaseal[web]",
     "gunicorn>=20.0",
     "flask-cors>=3.0"
 ]
@@ -65,7 +67,7 @@ dev = ["torch>=1.10"]
 
 # Full installation (all features except dev)
 full = [
-    "pyAPisolation[gui]",
-    "pyAPisolation[web]",
-    "pyAPisolation[ml]"
+    "gigaseal[gui]",
+    "gigaseal[web]",
+    "gigaseal[ml]"
 ]

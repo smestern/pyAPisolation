@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>gigaseal — analysis web</title>
+  <meta property="og:title" content="gigaseal analysis web" />
+  <meta property="og:description" content="Browser-based electrophysiology feature extraction for ABF/NWB recordings." />
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
+  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.6.1/dist/css/tabulator.min.css" />
+  <script src="https://unpkg.com/tabulator-tables@5.6.1/dist/js/tabulator.min.js" defer></script>
+</head>
+<body data-profile="{{ profile }}"
+      data-max-files="{{ max_files or '' }}"
+      data-max-mb="{{ max_mb or '' }}"
+      data-has-demo="{{ 'true' if has_demo else 'false' }}"
+      data-allow-server-paths="{{ 'true' if allow_server_paths else 'false' }}">
+
+  <header class="topbar">
+    <div class="brand">
+      <strong>gigaseal</strong>
+      <span class="tag">analysis web · {{ profile }}</span>
+    </div>
+    <nav>
+      <a href="/about">about</a>
+      <a href="https://github.com/smestern/pyAPisolation" target="_blank" rel="noopener">source</a>
+    </nav>
+  </header>
+
+  {% if profile == 'public' %}
+  <div class="banner">
+    Public demo · limited to {{ max_files }} files × {{ max_mb }} MB per session.
+    For full batches, <a href="/about#self-host">self-host with Docker</a>.
+  </div>
+  {% endif %}
+
+  <main class="layout">
+
+    <section id="file-panel" class="panel">
+      <h2>files</h2>
+      <div class="quota" id="quota">—</div>
+      <div class="uploader">
+        <label class="upload-btn">
+          <input type="file" id="file-input" multiple accept=".abf,.nwb" />
+          <span>upload ABF / NWB</span>
+        </label>
+        {% if has_demo %}
+        <button id="demo-btn" type="button">load demo data</button>
+        {% endif %}
+      </div>
+      <ul id="file-list" class="file-list"></ul>
+    </section>
+
+    <section id="analysis-panel" class="panel">
+      <h2>analysis</h2>
+      <label for="module-select">module</label>
+      <select id="module-select"></select>
+      <p id="module-doc" class="muted"></p>
+      <form id="param-form" class="param-form"></form>
+      <div class="run-row">
+        <button id="run-current-btn" type="button" disabled>run current file</button>
+        <button id="run-batch-btn" type="button" disabled>run batch</button>
+      </div>
+      <div id="job-status" class="job-status"></div>
+    </section>
+
+    <section id="plot-panel" class="panel plot-panel">
+      <h2>traces</h2>
+      <div class="plot-controls">
+        <label><input type="checkbox" id="show-command" /> show command</label>
+        <label><input type="checkbox" id="show-spikes" checked /> overlay spikes</label>
+      </div>
+      <div id="plot" class="plot"></div>
+      <div id="sweep-picker" class="sweep-picker"></div>
+    </section>
+
+    <section id="results-panel" class="panel results-panel">
+      <h2>results</h2>
+      <div class="results-actions">
+        <button id="export-csv" type="button" disabled>export CSV</button>
+        <button id="export-xlsx" type="button" disabled>export XLSX</button>
+        <span id="row-count" class="muted"></span>
+      </div>
+      <div id="results-table"></div>
+    </section>
+
+  </main>
+
+  <script type="module" src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

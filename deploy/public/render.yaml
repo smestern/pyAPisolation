@@ -1,0 +1,23 @@
+# Render.com manifest (alternative to Fly.io).
+#
+# Add this repo as a Blueprint in the Render dashboard, then deploy.
+# The free instance type has a cold-start delay; document this in /about.
+
+services:
+  - type: web
+    name: gigaseal-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: oregon
+    healthCheckPath: /api/config
+    envVars:
+      - key: GIGASEAL_WEB_PROFILE
+        value: public
+      - key: GIGASEAL_SESSION_DIR
+        value: /tmp/gigaseal_sessions
+      - key: GIGASEAL_SESSION_TTL_H
+        value: "1"
+      - key: GIGASEAL_SECRET_KEY
+        generateValue: true

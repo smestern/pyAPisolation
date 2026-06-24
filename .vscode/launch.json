@@ -5,6 +5,21 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "New GUI",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "gigaseal.gui.app"
+        },
+        {
+            "name": "Python Debugger: Module",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "gigaseal.cli",
+            "args": [
+                "web-analysis",
+            ]
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
@@ -12,7 +27,10 @@
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": ["--data_df", "C:/Users/SMest/Dropbox/sara_cell_v2/spike_count_1712533162.9597082filtered.xlsx"],
+            "args": [
+                "--data_df",
+                "C:/Users/SMest/Dropbox/sara_cell_v2/spike_count_1712533162.9597082filtered.xlsx"
+            ],
             //"sudo": true,
         }
     ]

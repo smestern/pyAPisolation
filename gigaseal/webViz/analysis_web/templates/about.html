@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>gigaseal analysis web · about</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <strong>gigaseal</strong>
+      <span class="tag">analysis web · {{ profile }}</span>
+    </div>
+    <nav><a href="/">app</a></nav>
+  </header>
+
+  <article class="prose">
+    <h1>about this app</h1>
+    <p>
+      gigaseal is a batch electrophysiology feature-extraction toolkit for
+      <code>.abf</code> and <code>.nwb</code> recordings. This page is a
+      browser-based equivalent of the desktop GUI: pick a file, choose an
+      analysis module, edit parameters, run, view results, export CSV / Excel.
+    </p>
+
+    <h2>two deployment profiles, one codebase</h2>
+    <p>
+      The same Flask app ships in two profiles, switched by a single env var:
+    </p>
+    <ul>
+      <li><strong>public</strong> — caps uploads at 5 files × 50 MB, anonymous,
+        rate-limited. The instance you're using right now.</li>
+      <li><strong>lab</strong> — no caps, optional bearer-token auth, optional
+        NFS-mounted server-side file picker. Run it on a lab VM.</li>
+    </ul>
+
+    <h2 id="self-host">self-host with Docker</h2>
+    <pre><code>git clone https://github.com/smestern/pyAPisolation
+cd pyAPisolation
+docker build -t gigaseal-web .
+docker run -p 8000:8000 \
+  -e GIGASEAL_WEB_PROFILE=lab \
+  -e GIGASEAL_API_TOKEN=changeme \
+  -v /path/to/abfs:/data:ro \
+  -e GIGASEAL_SERVER_PATH_ROOT=/data \
+  gigaseal-web
+</code></pre>
+
+    <h2>architecture</h2>
+    <p>
+      The analysis logic itself is unchanged: every job runs through
+      <code>gigaseal.analysis.run_batch</code>, the same entry point the
+      desktop GUI uses. The web layer is a thin shell — session storage,
+      a job queue with a concurrency cap, and a Plotly / Tabulator
+      frontend served by Flask.
+    </p>
+
+    <p><a href="https://github.com/smestern/pyAPisolation">source on GitHub →</a></p>
+  </article>
+</body>
+</html>
