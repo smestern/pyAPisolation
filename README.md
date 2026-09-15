@@ -1,3 +1,9 @@
+# Deprecated -> pyAPisolation is now Gigaseal: https://github.com/smestern/gigaseal
+
+Much more modern reqs, cleaned code, and hopefully better user experience.
+
+This repo will remain as-is for posterity 
+
 # pyAPisolation
 
 A Python package for batch electrophysiology feature extraction, analysis, and visualization of ABF files. Built for the Inoue Lab @ Western University.
